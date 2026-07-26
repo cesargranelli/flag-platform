@@ -1,0 +1,57 @@
+name: "Feature"
+description: Nova funcionalidade
+title: "[FEAT] "
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: "## Nova Funcionalidade"
+
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: "Como [usuario], quero [acao], para [objetivo]"
+      placeholder: "Como organizador, quero criar um campeonato, para comecar a cadastrar os times"
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Criterios de Aceitacao
+      description: "Lista de criterios que definem quando a feature esta pronta"
+      placeholder: |
+        - [ ] Endpoint POST /api/v1/...
+        - [ ] Validacao de campos obrigatorios
+        - [ ] Testes unitarios
+        - [ ] API documentada no Swagger
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Notas Tecnicas
+      description: "Decisoes tecnicas, restricoes ou referencias"
+      placeholder: "Ex: Ver ADR-003, modulo organization"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Modulo
+      options:
+        - organization
+        - competition
+        - category
+        - venue
+        - team
+        - round
+        - game
+        - standing
+        - security
+        - infra
+    validations:
+      required: true
