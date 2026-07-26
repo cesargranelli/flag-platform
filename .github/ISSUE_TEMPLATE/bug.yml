@@ -1,0 +1,52 @@
+name: "Bug"
+description: Reportar um problema
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "## Relatorio de Bug"
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descricao
+      description: "Descreva o problema encontrado"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para Reproduzir
+      placeholder: |
+        1. Acesse ...
+        2. Clique em ...
+        3. Observe o erro
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento Esperado
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamento Atual
+    validations:
+      required: true
+
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Camada
+      options:
+        - Backend
+        - Frontend
+        - Infraestrutura
+    validations:
+      required: true
