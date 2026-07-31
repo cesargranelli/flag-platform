@@ -1,4 +1,4 @@
-package br.com.flagplatform.config;
+package br.com.modules.flagplatform.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

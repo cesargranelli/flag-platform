@@ -1,4 +1,4 @@
-package br.com.flagplatform;
+package br.com.modules.flagplatform;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
