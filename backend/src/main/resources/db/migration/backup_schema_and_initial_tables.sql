@@ -1,0 +1,133 @@
+-- -- backup_schema_and_initial_tables.sql
+-- -- Flag Platform - Initial Schema
+--
+-- CREATE SCHEMA IF NOT EXISTS platform;
+--
+-- -- Organization
+-- CREATE TABLE platform.organization (
+--     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--     name        VARCHAR(150) NOT NULL,
+--     slug        VARCHAR(100) NOT NULL UNIQUE,
+--     description TEXT,
+--     logo_url    VARCHAR(500),
+--     active      BOOLEAN NOT NULL DEFAULT TRUE,
+--     created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+--     updated_at  TIMESTAMP NOT NULL DEFAULT NOW()
+-- );
+--
+-- -- Competition
+-- CREATE TABLE platform.competition (
+--     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--     organization_id UUID NOT NULL REFERENCES platform.organization(id),
+--     name            VARCHAR(150) NOT NULL,
+--     slug            VARCHAR(100) NOT NULL,
+--     season          VARCHAR(20),
+--     status          VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+--     start_date      DATE,
+--     end_date        DATE,
+--     created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
+--     updated_at      TIMESTAMP NOT NULL DEFAULT NOW(),
+--     UNIQUE (organization_id, slug)
+-- );
+--
+-- -- Category
+-- CREATE TABLE platform.category (
+--     id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--     competition_id UUID NOT NULL REFERENCES platform.competition(id),
+--     name           VARCHAR(100) NOT NULL,
+--     description    VARCHAR(255),
+--     created_at     TIMESTAMP NOT NULL DEFAULT NOW(),
+--     updated_at     TIMESTAMP NOT NULL DEFAULT NOW()
+-- );
+--
+-- -- Venue (campo)
+-- CREATE TABLE platform.venue (
+--     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--     organization_id UUID NOT NULL REFERENCES platform.organization(id),
+--     name            VARCHAR(150) NOT NULL,
+--     address         VARCHAR(500),
+--     maps_url        VARCHAR(500),
+--     active          BOOLEAN NOT NULL DEFAULT TRUE,
+--     created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
+--     updated_at      TIMESTAMP NOT NULL DEFAULT NOW()
+-- );
+--
+-- -- Team
+-- CREATE TABLE platform.team (
+--     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--     category_id UUID NOT NULL REFERENCES platform.category(id),
+--     name        VARCHAR(150) NOT NULL,
+--     short_name  VARCHAR(20),
+--     logo_url    VARCHAR(500),
+--     active      BOOLEAN NOT NULL DEFAULT TRUE,
+--     created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+--     updated_at  TIMESTAMP NOT NULL DEFAULT NOW()
+-- );
+--
+-- -- Round
+-- CREATE TABLE platform.round (
+--     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--     category_id UUID NOT NULL REFERENCES platform.category(id),
+--     number      INTEGER NOT NULL,
+--     name        VARCHAR(100),
+--     type        VARCHAR(20) NOT NULL DEFAULT 'REGULAR',
+--     created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+--     updated_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+--     UNIQUE (category_id, number)
+-- );
+--
+-- -- Game
+-- CREATE TABLE platform.game (
+--     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--     round_id     UUID NOT NULL REFERENCES platform.round(id),
+--     venue_id     UUID REFERENCES platform.venue(id),
+--     home_team_id UUID NOT NULL REFERENCES platform.team(id),
+--     away_team_id UUID NOT NULL REFERENCES platform.team(id),
+--     scheduled_at TIMESTAMP,
+--     status       VARCHAR(20) NOT NULL DEFAULT 'SCHEDULED',
+--     home_score   INTEGER,
+--     away_score   INTEGER,
+--     created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+--     updated_at   TIMESTAMP NOT NULL DEFAULT NOW()
+-- );
+--
+-- -- Standing
+-- CREATE TABLE platform.standing (
+--     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--     category_id   UUID NOT NULL REFERENCES platform.category(id),
+--     team_id       UUID NOT NULL REFERENCES platform.team(id),
+--     played        INTEGER NOT NULL DEFAULT 0,
+--     wins          INTEGER NOT NULL DEFAULT 0,
+--     draws         INTEGER NOT NULL DEFAULT 0,
+--     losses        INTEGER NOT NULL DEFAULT 0,
+--     goals_for     INTEGER NOT NULL DEFAULT 0,
+--     goals_against INTEGER NOT NULL DEFAULT 0,
+--     points        INTEGER NOT NULL DEFAULT 0,
+--     updated_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+--     UNIQUE (category_id, team_id)
+-- );
+-- CREATE TABLE IF NOT EXISTS platform.event_publication
+-- (
+--     id               UUID                     NOT NULL,
+--     listener_id      TEXT                     NOT NULL,
+--     event_type       TEXT                     NOT NULL,
+--     serialized_event TEXT                     NOT NULL,
+--     publication_date TIMESTAMP WITH TIME ZONE NOT NULL,
+--     completion_date  TIMESTAMP WITH TIME ZONE,
+--     PRIMARY KEY (id)
+-- );
+--
+-- CREATE INDEX IF NOT EXISTS idx_event_publication_completion_date
+--     ON platform.event_publication (completion_date);
+--
+-- -- Indexes
+-- CREATE INDEX idx_competition_organization ON platform.competition(organization_id);
+-- CREATE INDEX idx_category_competition     ON platform.category(competition_id);
+-- CREATE INDEX idx_venue_organization       ON platform.venue(organization_id);
+-- CREATE INDEX idx_team_category            ON platform.team(category_id);
+-- CREATE INDEX idx_round_category           ON platform.round(category_id);
+-- CREATE INDEX idx_game_round               ON platform.game(round_id);
+-- CREATE INDEX idx_game_status              ON platform.game(status);
+-- CREATE INDEX idx_game_scheduled_at        ON platform.game(scheduled_at);
+-- CREATE INDEX idx_standing_category        ON platform.standing(category_id);
+-- CREATE INDEX idx_standing_team            ON platform.standing(team_id);

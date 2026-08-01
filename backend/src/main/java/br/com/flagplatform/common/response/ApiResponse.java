@@ -1,4 +1,4 @@
-package br.com.modules.flagplatform.common.response;
+package br.com.flagplatform.common.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
