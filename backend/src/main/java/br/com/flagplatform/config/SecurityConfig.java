@@ -45,7 +45,7 @@ public class SecurityConfig {
                         // Leitura pública para todas as entidades
                         .requestMatchers(HttpMethod.GET, PUBLIC_GET_PATTERNS).permitAll()
                         // Escrita exige autenticação
-                        .anyRequest().permitAll()//.authenticated()
+                        .anyRequest().authenticated()
                 );
 
         return http.build();

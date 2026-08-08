@@ -4,6 +4,7 @@ import br.com.flagplatform.organization.entity.OrganizationEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,6 +13,10 @@ public interface OrganizationRepository extends JpaRepository<OrganizationEntity
 
     boolean existsByTradeNameIgnoreCase(String tradeName);
 
+    boolean existsByTradeNameIgnoreCaseAndIdNot(String tradeName, UUID id);
+
     Optional<OrganizationEntity> findByTradeNameIgnoreCase(String tradeName);
+
+    List<OrganizationEntity> findAllByOrderByTradeNameAsc();
 
 }

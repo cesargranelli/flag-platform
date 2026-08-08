@@ -12,9 +12,9 @@ public abstract class ApiException extends ErrorResponseException {
 
     protected ApiException(
             HttpStatus status,
-            String code,
             String title,
-            String detail) {
+            String detail,
+            String code) {
 
         super(status, createProblemDetail(status, title, detail), null);
         this.code = code;
