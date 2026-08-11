@@ -1,10 +1,6 @@
--- V1__create_schema_and_organizations_table.sql
--- Flag Platform - Initial Schema
-
 CREATE SCHEMA IF NOT EXISTS platform;
 
--- Organization
-CREATE TABLE organizations
+CREATE TABLE platform.organizations
 (
     id                UUID PRIMARY KEY      DEFAULT gen_random_uuid(),
     legal_name        VARCHAR(150) NOT NULL,
