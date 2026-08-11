@@ -18,15 +18,21 @@ Uma plataforma unica onde qualquer organizacao pode:
 - Divulgar jogos e resultados
 - Oferecer uma experiencia moderna para atletas e torcedores
 
-## Usuarios
+## Aplicacoes (3 Clientes)
 
-### Organizador
-Responsavel por criar e gerenciar o campeonato. Precisa de uma ferramenta rapida e simples — sem planilhas, sem PDF, sem grupo de WhatsApp.
+| App | Plataforma | Usuario | Login |
+|-----|-----------|---------|-------|
+| **Public App** | Flutter mobile | Atletas / Torcedores | Nao |
+| **Referee App** | Flutter mobile | Mesa / Delegado | Sim |
+| **Admin Web** | Flutter Web | Organizador | Sim |
 
-### Mesa / Delegado
-Opera as partidas no dia do jogo. Precisa iniciar o jogo, atualizar o placar e finalizar a partida em menos de 30 segundos.
+### Organizador (Admin Web)
+Responsavel por criar e gerenciar o campeonato. Usa a aplicacao web para manter todos os cadastros: organizacao, campeonato, categorias, campos, times, rodadas, jogos, atletas e rosters. Sem planilhas, sem PDF, sem grupo de WhatsApp.
 
-### Atleta / Publico
+### Mesa / Delegado (Referee App)
+Opera as partidas no dia do jogo pelo celular: inicia o jogo, atualiza o placar, valida os atletas no pre-jogo e durante a partida, e finaliza — em menos de 30 segundos.
+
+### Atleta / Publico (Public App)
 Quer abrir o celular e saber tudo sobre o campeonato: proximo jogo, campo, adversario, placar e classificacao. Sem login.
 
 ## Experiencia Desejada (Publico)
@@ -41,13 +47,15 @@ Pagina do jogo:
 - Times, placar, campo, horario, status
 - Classificacao atual
 - Historico de confrontos
+- Validacao de atletas (mesa, durante o jogo)
 
 ## MVP — Criterio de Sucesso
 
 Em ate 8 semanas, entregar uma aplicacao em que:
 
 1. Qualquer atleta consiga acompanhar um campeonato completo (calendario, resultados, classificacao)
-2. Qualquer organizador consiga manter essas informacoes atualizadas em poucos cliques
+2. Qualquer organizador consiga manter essas informacoes atualizadas em poucos cliques pela web
+3. A mesa valide os atletas no pre-jogo e durante a partida, e atualize o placar ao vivo
 
 ## Roadmap
 
@@ -55,11 +63,15 @@ Em ate 8 semanas, entregar uma aplicacao em que:
 Backend completo para criar e operar um campeonato:
 Organization, Competition, Category, Venue, Team, Round, Game, Standing
 
-### Release 0.2 — Public Experience
-Interface publica (Flutter) para acompanhamento do campeonato
+### Release 0.2 — Cadastros + Public Experience
+- Autenticacao e autorizacao (JWT, roles)
+- Atletas e rosters (TeamRoster/Athlete)
+- Admin Web (Flutter Web) para gestao de cadastros
+- Public App (Flutter) para acompanhamento do campeonato
 
-### Release 0.3 — Live Game
-Operacao ao vivo: placar em tempo real
+### Release 0.3 — Live Game + Validacao
+- Referee App (Flutter): operacao ao vivo com placar em tempo real
+- Validacao de atletas (CheckIn) no pre-jogo e durante a partida
 
 ### Fase 2 — Perfil dos Times
 Logo, uniforme, redes sociais, historia
