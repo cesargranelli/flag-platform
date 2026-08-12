@@ -1,6 +1,7 @@
 package br.com.flagplatform.competition.service;
 
 import br.com.flagplatform.common.enums.CompetitionStatus;
+import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.competition.dto.request.CreateCompetitionRequest;
 import br.com.flagplatform.competition.dto.request.UpdateCompetitionRequest;
 import br.com.flagplatform.competition.dto.response.CompetitionResponse;
@@ -20,7 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Service
-public class CompetitionService {
+public class CompetitionService implements CompetitionLookup {
 
     private final CompetitionMapper mapper;
     private final CompetitionRepository repository;
@@ -63,6 +64,11 @@ public class CompetitionService {
         mapper.updateEntity(entity, request);
 
         return mapper.toResponse(repository.save(entity));
+    }
+
+    @Override
+    public void assertExists(UUID id) {
+        findEntityById(id);
     }
 
     private CompetitionEntity findEntityById(UUID id) {
