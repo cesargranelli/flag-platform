@@ -1,6 +1,7 @@
 package br.com.flagplatform.organization.service;
 
 import br.com.flagplatform.common.enums.OrganizationStatus;
+import br.com.flagplatform.organization.OrganizationLookup;
 import br.com.flagplatform.organization.dto.request.CreateOrganizationRequest;
 import br.com.flagplatform.organization.dto.request.UpdateOrganizationRequest;
 import br.com.flagplatform.organization.dto.response.OrganizationCreatedResponse;
@@ -20,7 +21,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Service
-public class OrganizationService {
+public class OrganizationService implements OrganizationLookup {
 
     private final OrganizationMapper mapper;
     private final OrganizationRepository repository;
@@ -60,6 +61,11 @@ public class OrganizationService {
         mapper.updateEntity(entity, request);
 
         return mapper.toDetailResponse(repository.save(entity));
+    }
+
+    @Override
+    public void assertExists(UUID id) {
+        findEntityById(id);
     }
 
     private OrganizationEntity findEntityById(UUID id) {
