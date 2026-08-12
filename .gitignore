@@ -1,4 +1,5 @@
 # ===== Backend (Java/Maven) =====
+target/
 backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar
 backend/*.class
