@@ -1,0 +1,70 @@
+name: Release
+
+# Roda automaticamente quando a main recebe mudanças no backend,
+# ou manualmente via `gh workflow run release.yml --ref main` (comando /deploy).
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', 'infrastructure/**']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão da release (ex: 0.1.0)'
+        required: false
+        default: '0.1.0'
+
+jobs:
+  build:
+    name: Build do artefato
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 25 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Empacotar backend (sem testes — cobertos no CI)
+        run: ./mvnw --batch-mode -DskipTests package
+
+      - name: Upload do artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: backend/target/*.jar
+
+  deploy:
+    name: Deploy (produção)
+    needs: build
+    runs-on: ubuntu-latest
+    # Gate de aprovação: a environment "production" exige aprovação manual
+    # (Settings > Environments > production > protection rules).
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Baixar artefato
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: backend/target
+
+      - name: Validar artefato
+        run: ls -la backend/target
+
+      # PONTO DE INTEGRAÇÃO COM O DESTINO REAL DE DEPLOY.
+      # Substitua o passo abaixo pelo deploy do seu ambiente
+      # (ex: SSH + docker compose, EC2, Fly.io, etc.), usando
+      # secrets da environment "production" (GH_TOKEN, HOST, etc.).
+      - name: Deploy do backend
+        env:
+          DEPLOY_TARGET: ${{ vars.DEPLOY_TARGET || 'local' }}
+        run: echo "Deploy concluído para o destino '$DEPLOY_TARGET' (artefato versionado em ${{ github.ref_name }})"

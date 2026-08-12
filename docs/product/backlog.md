@@ -1,5 +1,30 @@
 # Flag Platform — Backlog
 
+## Arquitetura Multi-Cliente
+
+Uma unica API REST (`/api/v1`) atende a **tres clientes**:
+
+| Cliente | Plataforma | Usuario | Login | Epico |
+|---------|-----------|---------|-------|-------|
+| **Public App** | Flutter mobile | Atletas / Torcedores | Sem login | #6 |
+| **Referee App** | Flutter mobile | Mesa / Delegado | Obrigatorio | #7 |
+| **Admin Web** | Flutter Web | Organizador | Obrigatorio | #35 |
+
+Novo dominio (em relacao ao backlog anterior):
+
+```
+Organization
+  └── Competition
+        └── Category
+              ├── Venue
+              ├── Team
+              │     └── TeamRoster ────── Athlete
+              └── Round
+                    └── Game
+                          ├── Standing (calculado)
+                          └── CheckIn (validacao de atleta por jogo)
+```
+
 ## Ordem de Execucao
 
 ```
@@ -14,15 +39,19 @@ Fase 2 — Dominio Core Backend
                  #16 ──────────→ #19
                   ↓
                  #18 ──────────→ #19
-                                   |
-Fase 3 — Operacao e Classificacao
+                                    |
+Fase 3 — Operacao e Classificacao (backend)
                                 #21 → #20 → #22 → #23
-                                                     |
-Fase 4 — Experiencia Publica (Flutter)
-                        #24 #25 #26 #27 #28 (paralelo apos Fase 2+3)
-                                                     |
-Fase 5 — Live Game
-                                              #29 → #30
+                                                      |
+Fase 4 — Autenticacao e Cadastros (base para apps com login)
+        #36 → #37 → #38 → #39 → #40
+                          (paralelo)        Admin Web: #43 → #44-#51
+                                                      |
+Fase 5 — Experiencia Publica (Public App)
+                                    #24 #25 #26 #27 #28
+                                                      |
+Fase 6 — Live Game + Validacao (Referee App)
+                                    #52 → #41 → #42 → #29 → #30 → #53
 ```
 
 ---
@@ -38,170 +67,28 @@ Fase 5 — Live Game
 | 3 | #10 Configurar Flutter (frontend base) | Tarefa | — |
 | 4 | #9 Configurar banco de dados e Flyway | Tarefa | #8 |
 | 5 | #12 Configurar Swagger / OpenAPI | Tarefa | #8 |
+| 6 | #54 Reestruturar frontend para multi-app (Public, Referee, Admin Web) | Tarefa | #10 |
 
-**Obs:** #8, #11 e #10 podem ser executadas em paralelo. #9 e #12 dependem de #8.
-
-### TASK-001 — #8 Configurar backend Spring Boot
-
-Criterios de aceitacao:
-- [ ] Projeto compila sem erros
-- [ ] Estrutura de pacotes criada: common, config, security, modules/*
-- [ ] SecurityConfig minima: endpoints publicos liberados, protegidos exigem autenticacao
-- [ ] GlobalExceptionHandler com resposta padronizada de erros
-- [ ] Maven Wrapper (mvnw) adicionado
-- [ ] application-local.yml criado com perfil de desenvolvimento
-- [ ] Health check respondendo em /actuator/health
-- [ ] Testes de contexto Spring passando (src/test/)
-
-### TASK-002 — #9 Configurar banco de dados e Flyway
-
-Criterios de aceitacao:
-- [ ] PostgreSQL rodando via Docker Compose
-- [ ] Schema 'platform' criado via Flyway
-- [ ] V1 migration executada com sucesso
-- [ ] Todas as tabelas do dominio criadas com indices
-
-### TASK-003 — #10 Configurar Flutter (frontend base)
-
-Criterios de aceitacao:
-- [ ] flutter pub get sem erros
-- [ ] Estrutura de pastas: lib/core/, lib/features/, lib/shared/
-- [ ] Riverpod configurado com ProviderScope
-- [ ] GoRouter configurado com rotas iniciais
-- [ ] Tela inicial exibindo nome do app
-
-### TASK-004 — #11 Configurar Docker Compose
-
-Criterios de aceitacao:
-- [ ] docker-compose up sobe PostgreSQL
-- [ ] Banco acessivel em localhost:5432
-- [ ] pgAdmin disponivel com profile tools
-- [ ] .env.example documentando variaveis necessarias
-- [ ] README atualizado com instrucoes
-
-### TASK-005 — #12 Configurar Swagger / OpenAPI
-
-Criterios de aceitacao:
-- [ ] OpenApiConfig com titulo, versao e descricao do projeto
-- [ ] Swagger UI acessivel em /swagger-ui.html
-- [ ] API docs em /api-docs
-- [ ] Autenticacao JWT configurada no Swagger UI
+**Obs:** #8, #11 e #10 podem ser executadas em paralelo. #9 e #12 dependem de #8. #54 cria a estrutura `frontend/apps/*` + `frontend/packages/*` (melos) e é pré-requisito das histórias dos 3 apps.
 
 ---
 
-## Fase 2 — Dominio Core Backend (Epicos #2 e #3)
+## Fase 2 — Dominio Core Backend (Epicos #3)
 
 > Construir o dominio de baixo para cima, respeitando as foreign keys do banco.
 > Ordem obrigatoria: Organization → Competition → Category → (Venue, Team, Round) → Game
 
 | Ordem | Issue | Tipo | Depende de |
 |-------|-------|------|------------|
-| 6 | #13 Criar e gerenciar organizacao | Historia | Fase 1 |
-| 7 | #14 Criar e gerenciar campeonato | Historia | #13 |
-| 8 | #15 Criar e gerenciar categoria | Historia | #14 |
-| 9 | #16 Cadastrar campos de jogo (venues) | Historia | #13 |
-| 10 | #17 Cadastrar times do campeonato | Historia | #15 |
-| 11 | #18 Criar rodadas do campeonato | Historia | #15 |
-| 12 | #19 Criar e agendar jogos | Historia | #17 + #18 + #16 |
+| 7 | #13 Criar e gerenciar organizacao | Historia | Fase 1 |
+| 8 | #14 Criar e gerenciar campeonato | Historia | #13 |
+| 9 | #15 Criar e gerenciar categoria | Historia | #14 |
+| 10 | #16 Cadastrar campos de jogo (venues) | Historia | #13 |
+| 11 | #17 Cadastrar times do campeonato | Historia | #15 |
+| 12 | #18 Criar rodadas do campeonato | Historia | #15 |
+| 13 | #19 Criar e agendar jogos | Historia | #17 + #18 + #16 |
 
-**Obs:** #16 (Venue) pode ser feito em paralelo com #15 (Category), ambos dependem apenas de #14 (Competition) e #13 (Organization) respectivamente.
-
-### ISSUE-001 — #13 Organization
-**Como** organizador
-**Quero** criar e gerenciar minha organizacao esportiva
-**Para** que ela seja o ponto central de todos os meus campeonatos
-
-Criterios de aceitacao:
-- [ ] POST /api/v1/organizations
-- [ ] GET /api/v1/organizations — listar (publico)
-- [ ] GET /api/v1/organizations/{id} — detalhe (publico)
-- [ ] PUT /api/v1/organizations/{id} — atualizar (autenticado)
-- [ ] Validacao: nome obrigatorio, slug unico
-- [ ] Testes unitarios no OrganizationService
-- [ ] API documentada no Swagger
-
-### ISSUE-002 — #14 Competition
-**Como** organizador
-**Quero** criar um campeonato dentro da minha organizacao
-**Para** comecar a estruturar os jogos
-
-Criterios de aceitacao:
-- [ ] POST /api/v1/competitions
-- [ ] GET /api/v1/competitions/{id} (publico)
-- [ ] GET /api/v1/organizations/{id}/competitions (publico)
-- [ ] PUT /api/v1/competitions/{id} (autenticado)
-- [ ] Status: DRAFT, PUBLISHED, FINISHED
-- [ ] Testes unitarios
-- [ ] API documentada no Swagger
-
-### ISSUE-003 — #15 Category
-**Como** organizador
-**Quero** criar categorias dentro de um campeonato (ex: Masculino 5x5, Feminino)
-**Para** organizar os times por modalidade
-
-Criterios de aceitacao:
-- [ ] POST /api/v1/categories
-- [ ] GET /api/v1/competitions/{id}/categories (publico)
-- [ ] PUT /api/v1/categories/{id} (autenticado)
-- [ ] DELETE /api/v1/categories/{id} (autenticado)
-- [ ] Testes unitarios
-- [ ] API documentada
-
-### ISSUE-004 — #16 Venue
-**Como** organizador
-**Quero** cadastrar os campos onde os jogos acontecem
-**Para** que atletas saibam onde jogar
-
-Criterios de aceitacao:
-- [ ] POST /api/v1/venues
-- [ ] GET /api/v1/venues (publico)
-- [ ] GET /api/v1/venues/{id} (publico)
-- [ ] PUT /api/v1/venues/{id} (autenticado)
-- [ ] Campos: nome, endereco, link do mapa (opcional)
-- [ ] Testes unitarios
-- [ ] API documentada
-
-### ISSUE-005 — #17 Team
-**Como** organizador
-**Quero** cadastrar os times participantes de uma categoria
-**Para** montar a tabela e criar os jogos
-
-Criterios de aceitacao:
-- [ ] POST /api/v1/teams
-- [ ] GET /api/v1/categories/{id}/teams (publico)
-- [ ] GET /api/v1/teams/{id} (publico)
-- [ ] PUT /api/v1/teams/{id} (autenticado)
-- [ ] Campos: nome, sigla, logo_url (opcional)
-- [ ] Testes unitarios
-- [ ] API documentada
-
-### ISSUE-006 — #18 Round
-**Como** organizador
-**Quero** criar rodadas dentro de uma categoria
-**Para** organizar os jogos em grupos ou fases
-
-Criterios de aceitacao:
-- [ ] POST /api/v1/rounds
-- [ ] GET /api/v1/categories/{id}/rounds (publico)
-- [ ] PUT /api/v1/rounds/{id} (autenticado)
-- [ ] Campos: numero, nome, tipo (REGULAR, PLAYOFFS)
-- [ ] Testes unitarios
-- [ ] API documentada
-
-### ISSUE-007 — #19 Game
-**Como** organizador
-**Quero** criar jogos dentro de uma rodada
-**Para** publicar o calendario do campeonato
-
-Criterios de aceitacao:
-- [ ] POST /api/v1/games
-- [ ] GET /api/v1/rounds/{id}/games (publico)
-- [ ] GET /api/v1/games/{id} (publico)
-- [ ] PUT /api/v1/games/{id} — atualizar horario ou campo (autenticado)
-- [ ] Campos: homeTeam, awayTeam, venue, scheduledAt
-- [ ] Status inicial: SCHEDULED
-- [ ] Testes unitarios
-- [ ] API documentada
+**Obs:** #16 (Venue) pode ser feito em paralelo com #15 (Category), ambos dependem apenas de #14 (Competition) e #13 (Organization) respectivamente. Consumido pelo **Admin Web** (#35).
 
 ---
 
@@ -211,169 +98,119 @@ Criterios de aceitacao:
 
 | Ordem | Issue | Tipo | Depende de |
 |-------|-------|------|------------|
-| 13 | #21 Gerenciar status do jogo | Historia | #19 |
-| 14 | #20 Registrar resultado de partida | Historia | #21 |
-| 15 | #22 Calcular classificacao automaticamente | Historia | #20 |
-| 16 | #23 Consultar classificacao publica | Historia | #22 |
+| 14 | #21 Gerenciar status do jogo | Historia | #19 |
+| 15 | #20 Registrar resultado de partida | Historia | #21 |
+| 16 | #22 Calcular classificacao automaticamente | Historia | #20 |
+| 17 | #23 Consultar classificacao publica | Historia | #22 |
 
-### ISSUE-008 — #21 Game Status
-**Como** mesa/delegado
-**Quero** atualizar o status de um jogo
-**Para** refletir o estado real da partida
-
-Criterios de aceitacao:
-- [ ] PATCH /api/v1/games/{id}/status
-- [ ] Transicoes validas: SCHEDULED→IN_PROGRESS, IN_PROGRESS→FINISHED, SCHEDULED→CANCELLED
-- [ ] Requer autenticacao (role MESA ou ADMIN)
-- [ ] Testes unitarios
-- [ ] API documentada
-
-### ISSUE-009 — #20 Game Result
-**Como** mesa/delegado
-**Quero** registrar o placar final de um jogo
-**Para** que o resultado fique disponivel e a classificacao seja atualizada
-
-Criterios de aceitacao:
-- [ ] POST /api/v1/games/{id}/result
-- [ ] Campos: homeScore, awayScore
-- [ ] Jogo passa para status FINISHED
-- [ ] Standing recalculado automaticamente apos registro
-- [ ] Nao permite sobrescrever resultado sem permissao de ADMIN
-- [ ] Requer autenticacao (role MESA ou ADMIN)
-- [ ] Testes unitarios
-- [ ] API documentada
-
-### ISSUE-010 — #22 Standing (calculo)
-**Como** sistema
-**Quero** recalcular a classificacao apos cada resultado
-**Para** manter a tabela sempre atualizada
-
-Criterios de aceitacao:
-- [ ] StandingService.recalculate(categoryId) chamado apos resultado
-- [ ] Calculo correto de: PJ, V, E, D, GP, GC, SG, PTS
-- [ ] Criterios de desempate: pontos > saldo > gols pro
-- [ ] Upsert na tabela standing
-- [ ] Testes unitarios com cenarios de empate
-
-### ISSUE-011 — #23 Standing (consulta publica)
-**Como** atleta ou torcedor
-**Quero** consultar a classificacao de uma categoria
-**Para** saber a posicao do meu time no campeonato
-
-Criterios de aceitacao:
-- [ ] GET /api/v1/categories/{id}/standings (sem autenticacao)
-- [ ] Ordenado por: pontos DESC, saldo DESC, gols pro DESC
-- [ ] Campos: posicao, time, PJ, V, E, D, GP, GC, SG, PTS
-- [ ] Testes unitarios
-- [ ] API documentada
+**Obs:** #21 e #20 sao consumidos pelo **Referee App** (#7). #23 e consumido pelo **Public App** (#6).
 
 ---
 
-## Fase 4 — Experiencia Publica Flutter (Epico #6)
+## Fase 4 — Autenticacao e Cadastros (Epicos #32 e #33)
+
+> Pre-requisito para os apps com login (Admin Web e Referee App).
+
+### Autenticacao e Autorizacao (Epico #32)
+
+| Ordem | Issue | Tipo | Depende de |
+|-------|-------|------|------------|
+| 18 | #36 Cadastro de usuario e login com JWT | Historia | Fase 1 |
+| 19 | #37 Autorizacao por roles (ADMIN, ORGANIZER, MESA) | Historia | #36 |
+
+### Atletas e Roster (Epico #33)
+
+| Ordem | Issue | Tipo | Depende de |
+|-------|-------|------|------------|
+| 20 | #38 CRUD de atleta | Historia | #13 |
+| 21 | #39 Gerenciar roster (inscricao de atleta em time) | Historia | #17 + #38 |
+| 22 | #40 Consulta publica de elenco de time | Historia | #39 |
+
+**Obs:** #38 e #39 sao consumidos pelo **Admin Web** (#35). #40 sera consumido pelo **Public App** em fase futura.
+
+### Admin Web — Gestao de Cadastros (Epico #35)
+
+> Toda a gestao de cadastros migra do Swagger para esta aplicacao web (Flutter Web).
+
+| Ordem | Issue | Tipo | Depende de |
+|-------|-------|------|------------|
+| 23 | #43 Login do organizador (Admin Web) | Historia | #36 |
+| 24 | #44 Gestao de organizacoes | Historia | #43 + #13 |
+| 25 | #45 Gestao de campeonatos | Historia | #43 + #14 |
+| 26 | #46 Gestao de categorias | Historia | #45 + #15 |
+| 27 | #47 Gestao de campos | Historia | #43 + #16 |
+| 28 | #48 Gestao de times | Historia | #46 + #17 |
+| 29 | #49 Gestao de rodadas | Historia | #46 + #18 |
+| 30 | #50 Gestao de jogos | Historia | #49 + #19 |
+| 31 | #51 Gestao de atletas e rosters | Historia | #38 + #39 |
+
+---
+
+## Fase 5 — Experiencia Publica (Epico #6)
 
 > Pode iniciar apos Fase 2 concluida. Algumas telas dependem tambem da Fase 3.
 
 | Ordem | Issue | Tipo | Depende de |
 |-------|-------|------|------------|
-| 17 | #24 Tela inicial — lista de campeonatos | Historia | #14 |
-| 18 | #25 Calendario de jogos | Historia | #19 |
-| 19 | #26 Resultados recentes | Historia | #20 |
-| 20 | #27 Tabela de classificacao (Flutter) | Historia | #23 |
-| 21 | #28 Detalhes do jogo | Historia | #19 |
+| 32 | #24 Tela inicial — lista de campeonatos | Historia | #14 |
+| 33 | #25 Calendario de jogos | Historia | #19 |
+| 34 | #26 Resultados recentes | Historia | #20 |
+| 35 | #27 Tabela de classificacao (Flutter) | Historia | #23 |
+| 36 | #28 Detalhes do jogo | Historia | #19 |
 
 **Obs:** #24, #25 e #28 podem iniciar assim que a Fase 2 estiver pronta. #26 e #27 dependem da Fase 3.
 
-### ISSUE-012 — #24 Tela inicial
-**Como** atleta ou torcedor
-**Quero** ver os campeonatos disponiveis ao abrir o app
-**Para** escolher qual acompanhar
-
-Criterios de aceitacao:
-- [ ] Lista de campeonatos com nome, organizacao e status
-- [ ] Navegar para detalhe ao tocar
-- [ ] Loading state e estado vazio tratados
-- [ ] Sem login necessario
-
-### ISSUE-013 — #25 Calendario de jogos
-**Como** atleta
-**Quero** ver o calendario de jogos do campeonato
-**Para** saber quando e onde vou jogar
-
-Criterios de aceitacao:
-- [ ] Lista de jogos ordenada por data
-- [ ] Filtro por rodada
-- [ ] Exibe: times, horario, campo
-- [ ] Proximos jogos em destaque
-
-### ISSUE-014 — #26 Resultados recentes
-**Como** atleta ou torcedor
-**Quero** ver os resultados dos jogos recentes
-**Para** acompanhar o fim de semana
-
-Criterios de aceitacao:
-- [ ] Lista de jogos FINISHED com placar
-- [ ] Ordenado por data decrescente
-- [ ] Exibe: times, placar, campo, rodada
-
-### ISSUE-015 — #27 Tabela de classificacao
-**Como** atleta ou torcedor
-**Quero** ver a classificacao no app
-**Para** saber quem lidera o campeonato
-
-Criterios de aceitacao:
-- [ ] Tabela com posicao, time, PJ, V, D, SG, PTS
-- [ ] Destaque para o lider
-- [ ] Pull to refresh
-
-### ISSUE-016 — #28 Detalhes do jogo
-**Como** atleta ou torcedor
-**Quero** ver os detalhes de um jogo especifico
-**Para** ter todas as informacoes em um lugar
-
-Criterios de aceitacao:
-- [ ] Exibe: times, placar, campo, horario, status
-- [ ] Link para mapa do campo
-- [ ] Status visual: AGENDADO, AO VIVO, FINALIZADO
-
 ---
 
-## Fase 5 — Live Game (Epico #7)
+## Fase 6 — Live Game + Validacao de Atletas (Epicos #7 e #34)
 
-> Depende da Fase 3 completa e da tela de detalhes (#28) no Flutter.
+> Depende da Fase 3 completa, da tela de detalhes (#28) no Public App e do login da mesa (#52).
+
+### Validacao de Atletas (Epico #34)
 
 | Ordem | Issue | Tipo | Depende de |
 |-------|-------|------|------------|
-| 22 | #29 Iniciar e finalizar partida ao vivo | Historia | #21 + #28 |
-| 23 | #30 Atualizar placar ao vivo | Historia | #29 |
+| 37 | #41 Check-in de atletas no pre-jogo | Historia | #21 + #39 |
+| 38 | #42 Validacao de atleta durante a partida | Historia | #41 |
 
-### ISSUE-017 — #29 Iniciar e finalizar partida (mesa)
-**Como** mesa/delegado
-**Quero** iniciar e finalizar uma partida pelo app
-**Para** que o status apareca ao vivo para o publico
+### Aplicativo da Mesa — Referee App (Epico #7)
 
-Criterios de aceitacao:
-- [ ] Tela de operacao de jogo (autenticado)
-- [ ] Botao iniciar: muda status para IN_PROGRESS
-- [ ] Botao finalizar: muda status para FINISHED
-- [ ] Confirmacao antes de finalizar
-
-### ISSUE-018 — #30 Atualizar placar ao vivo
-**Como** mesa/delegado
-**Quero** atualizar o placar durante o jogo
-**Para** que atletas e torcedores vejam em tempo real
-
-Criterios de aceitacao:
-- [ ] Botoes +1 para cada time
-- [ ] Placar atualiza na tela do publico em ate 10 segundos
-- [ ] Possibilidade de correcao de placar
-- [ ] Historico de pontuacao
+| Ordem | Issue | Tipo | Depende de |
+|-------|-------|------|------------|
+| 39 | #52 Login da mesa (Referee App) | Historia | #36 |
+| 40 | #29 Iniciar e finalizar partida ao vivo | Historia | #21 + #28 + #52 |
+| 41 | #30 Atualizar placar ao vivo | Historia | #29 |
+| 42 | #53 Tela de check-in e validacao de atletas | Historia | #41 + #29 + #52 |
 
 ---
 
 ## Resumo por Release
 
-| Release | Issues | Fases |
-|---------|--------|-------|
-| v0.1 — Foundation | #8 ao #23 | Fase 1 + Fase 2 + Fase 3 |
-| v0.2 — Public Experience | #24 ao #28 | Fase 4 |
-| v0.3 — Live Game | #29 e #30 | Fase 5 |
+| Release | Escopo | Epicos | Issues |
+|---------|--------|--------|--------|
+| **v0.1 — Foundation** | Backend core + operacao + classificacao | #1, #3, #4, #5 | #8 ao #23 |
+| **v0.2 — Cadastros + Publico** | Reestruturacao frontend, auth, atletas/roster, Admin Web e Public App | #32, #33, #35, #6 | #54, #36 ao #51, #24 ao #28 |
+| **v0.3 — Live Game** | Validacao de atletas e Referee App | #34, #7 | #41, #42, #52, #29, #30, #53 |
+
+---
+
+## Resumo por Epico
+
+| # | Epico | Release | Clientes |
+|---|-------|---------|----------|
+| 1 | Bootstrap do Projeto | v0.1 | infra |
+| 3 | Gestao de Campeonato | v0.1 | Admin Web |
+| 4 | Operacao de Partidas | v0.1 | Referee App |
+| 5 | Classificacao | v0.1 | Public App |
+| 32 | Autenticacao e Autorizacao | v0.2 | Admin Web + Referee App |
+| 33 | Atletas e Roster | v0.2 | Admin Web (+ Public App fut.) |
+| 35 | Aplicacao Web de Administracao (Admin Web) | v0.2 | Admin Web |
+| 6 | Aplicativo Publico (Public App) | v0.2 | Public App |
+| 34 | Validacao de Atletas | v0.3 | Referee App |
+| 7 | Aplicativo da Mesa (Referee App) | v0.3 | Referee App |
+
+## Tarefas estruturais
+
+| # | Tarefa | Release | Depende de |
+|---|--------|---------|------------|
+| 54 | Reestruturar frontend para multi-app (Public, Referee, Admin Web) | v0.2 | #10 |
