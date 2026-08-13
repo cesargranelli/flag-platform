@@ -117,3 +117,13 @@ final teamsProvider = FutureProvider.family<List<Team>, String>(
 final teamProvider = FutureProvider.family<Team, String>(
   (ref, id) => ref.watch(teamApiProvider).getById(id),
 );
+
+/// Serviço de rodadas.
+final roundApiProvider = Provider<RoundApi>(
+  (ref) => RoundApi(ref.watch(apiClientProvider)),
+);
+
+/// Rodadas de uma categoria.
+final roundsProvider = FutureProvider.family<List<Round>, String>(
+  (ref, categoryId) => ref.watch(roundApiProvider).listByCategory(categoryId),
+);
