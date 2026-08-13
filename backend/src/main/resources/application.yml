@@ -34,6 +34,10 @@ server:
 app:
   cors:
     allowed-origins:
+  jwt:
+    # Em produção, definir via variável de ambiente JWT_SECRET (mín. 32 bytes).
+    secret: ${JWT_SECRET:flag-platform-development-secret-change-me-now}
+    expiration-seconds: ${JWT_EXPIRATION_SECONDS:3600}
 
 springdoc:
   api-docs:

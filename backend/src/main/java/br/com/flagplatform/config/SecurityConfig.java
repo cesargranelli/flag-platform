@@ -1,5 +1,7 @@
 package br.com.flagplatform.config;
 
+import br.com.flagplatform.security.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -8,11 +10,17 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     private static final String[] PUBLIC_GET_PATTERNS = {
             "/api/v1/organizations/**",
@@ -23,6 +31,11 @@ public class SecurityConfig {
             "/api/v1/rounds/**",
             "/api/v1/games/**",
             "/api/v1/standings/**"
+    };
+
+    private static final String[] PUBLIC_AUTH_PATTERNS = {
+            "/api/v1/auth/register",
+            "/api/v1/auth/login"
     };
 
     private static final String[] SWAGGER_PATTERNS = {
@@ -44,12 +57,21 @@ public class SecurityConfig {
                         .requestMatchers(SWAGGER_PATTERNS).permitAll()
                         // Health check público
                         .requestMatchers("/actuator/health").permitAll()
+                        // Cadastro e login públicos
+                        .requestMatchers(HttpMethod.POST, PUBLIC_AUTH_PATTERNS).permitAll()
                         // Leitura pública para todas as entidades
                         .requestMatchers(HttpMethod.GET, PUBLIC_GET_PATTERNS).permitAll()
                         // Escrita exige autenticação
                         .anyRequest().authenticated()
-                );
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
 }
