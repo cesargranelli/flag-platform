@@ -4,6 +4,7 @@ import br.com.flagplatform.organization.dto.request.CreateOrganizationRequest;
 import br.com.flagplatform.organization.dto.request.UpdateOrganizationRequest;
 import br.com.flagplatform.organization.dto.response.OrganizationCreatedResponse;
 import br.com.flagplatform.organization.dto.response.OrganizationResponse;
+import br.com.flagplatform.common.security.SecurityExpressions;
 import br.com.flagplatform.organization.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,6 +39,7 @@ public class OrganizationController {
     )
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public OrganizationCreatedResponse create(@Valid @RequestBody CreateOrganizationRequest request) {
         return service.create(request);
     }
@@ -65,6 +68,7 @@ public class OrganizationController {
             description = "Atualiza uma organização existente. Requer autenticação."
     )
     @PutMapping("/{id}")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public OrganizationResponse update(
             @Parameter(description = "Id da organização") @PathVariable UUID id,
             @Valid @RequestBody UpdateOrganizationRequest request) {

@@ -1,5 +1,6 @@
 package br.com.flagplatform.venue.controller;
 
+import br.com.flagplatform.common.security.SecurityExpressions;
 import br.com.flagplatform.venue.dto.request.CreateVenueRequest;
 import br.com.flagplatform.venue.dto.request.UpdateVenueRequest;
 import br.com.flagplatform.venue.dto.response.VenueResponse;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,6 +36,7 @@ public class VenueController {
     )
     @PostMapping("/api/v1/venues")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public VenueResponse create(@Valid @RequestBody CreateVenueRequest request) {
         return service.create(request);
     }
@@ -62,6 +65,7 @@ public class VenueController {
             description = "Atualiza um campo de jogo existente. Requer autenticação."
     )
     @PutMapping("/api/v1/venues/{id}")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public VenueResponse update(
             @Parameter(description = "Id do campo de jogo") @PathVariable UUID id,
             @Valid @RequestBody UpdateVenueRequest request) {

@@ -1,5 +1,6 @@
 package br.com.flagplatform.team.controller;
 
+import br.com.flagplatform.common.security.SecurityExpressions;
 import br.com.flagplatform.team.dto.request.CreateTeamRequest;
 import br.com.flagplatform.team.dto.request.UpdateTeamRequest;
 import br.com.flagplatform.team.dto.response.TeamResponse;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,6 +36,7 @@ public class TeamController {
     )
     @PostMapping("/api/v1/teams")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public TeamResponse create(@Valid @RequestBody CreateTeamRequest request) {
         return service.create(request);
     }
@@ -63,6 +66,7 @@ public class TeamController {
             description = "Atualiza um time existente. Requer autenticação."
     )
     @PutMapping("/api/v1/teams/{id}")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public TeamResponse update(
             @Parameter(description = "Id do time") @PathVariable UUID id,
             @Valid @RequestBody UpdateTeamRequest request) {
