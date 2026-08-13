@@ -1,0 +1,13 @@
+package br.com.flagplatform.athlete.repository;
+
+import br.com.flagplatform.athlete.entity.AthleteEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.UUID;
+
+public interface AthleteRepository extends JpaRepository<AthleteEntity, UUID> {
+
+    List<AthleteEntity> findAllByOrderByNameAsc();
+
+}

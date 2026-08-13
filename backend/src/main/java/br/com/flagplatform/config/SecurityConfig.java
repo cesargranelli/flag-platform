@@ -32,7 +32,8 @@ public class SecurityConfig {
             "/api/v1/teams/**",
             "/api/v1/rounds/**",
             "/api/v1/games/**",
-            "/api/v1/standings/**"
+            "/api/v1/standings/**",
+            "/api/v1/athletes/**"
     };
 
     private static final String[] PUBLIC_AUTH_PATTERNS = {
