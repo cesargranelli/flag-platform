@@ -51,7 +51,7 @@ class RoundControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_listByCategory_andUpdate_flow() throws Exception {
         String organizationId = createOrganization("ROUND_APFA", "Associação Paulista de Flag Football");
         String competitionId = createCompetition(organizationId, "COMP_ROUND_TAÇA SP");
@@ -82,7 +82,7 @@ class RoundControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withUnknownCategory_returnsNotFound() throws Exception {
         mockMvc.perform(post(ROUNDS_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -92,7 +92,7 @@ class RoundControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_duplicateNumber_returnsConflict() throws Exception {
         String organizationId = createOrganization("ROUND_DUP", "Org Duplicada Round");
         String competitionId = createCompetition(organizationId, "COMP_ROUND_DUPLICADO");
@@ -107,7 +107,7 @@ class RoundControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void listByCategory_returnsRoundsOrderedByNumber_publicAccess() throws Exception {
         String organizationId = createOrganization("ROUND_ORD", "Org Ordenada Round");
         String competitionId = createCompetition(organizationId, "COMP_ROUND_ORDENADO");
@@ -138,7 +138,7 @@ class RoundControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void update_duplicateNumber_returnsConflict() throws Exception {
         String organizationId = createOrganization("ROUND_UPD", "Org Update Round");
         String competitionId = createCompetition(organizationId, "COMP_ROUND_UPDATE");
@@ -154,7 +154,7 @@ class RoundControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void update_unknownId_returnsNotFound() throws Exception {
         String organizationId = createOrganization("ROUND_NF", "Org Not Found Round");
         String competitionId = createCompetition(organizationId, "COMP_ROUND_NOT_FOUND");
@@ -167,7 +167,7 @@ class RoundControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withInvalidBody_returnsValidationErrors() throws Exception {
         Map<String, Object> invalid = new HashMap<>();
         invalid.put("name", "");

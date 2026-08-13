@@ -51,7 +51,7 @@ class TeamControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_listByCategory_getById_andUpdate_flow() throws Exception {
         String organizationId = createOrganization("TEAM_APFA", "Associação Paulista de Flag Football");
         String competitionId = createCompetition(organizationId, "COMP_TEAM_TAÇA SP");
@@ -91,7 +91,7 @@ class TeamControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withUnknownCategory_returnsNotFound() throws Exception {
         mockMvc.perform(post(TEAMS_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -101,7 +101,7 @@ class TeamControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_duplicateName_returnsConflict() throws Exception {
         String organizationId = createOrganization("TEAM_DUP", "Org Duplicada Team");
         String competitionId = createCompetition(organizationId, "COMP_TEAM_DUPLICADO");
@@ -116,7 +116,7 @@ class TeamControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void listByCategory_returnsTeamsOrderedByName_publicAccess() throws Exception {
         String organizationId = createOrganization("TEAM_ORD", "Org Ordenada Team");
         String competitionId = createCompetition(organizationId, "COMP_TEAM_ORDENADO");
@@ -153,7 +153,7 @@ class TeamControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void update_duplicateName_returnsConflict() throws Exception {
         String organizationId = createOrganization("TEAM_UPD", "Org Update Team");
         String competitionId = createCompetition(organizationId, "COMP_TEAM_UPDATE");
@@ -169,7 +169,7 @@ class TeamControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withInvalidBody_returnsValidationErrors() throws Exception {
         Map<String, Object> invalid = new HashMap<>();
         invalid.put("name", "");

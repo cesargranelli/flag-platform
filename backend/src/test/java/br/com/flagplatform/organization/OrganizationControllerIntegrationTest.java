@@ -48,7 +48,7 @@ class OrganizationControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_list_getAndUpdate_flow() throws Exception {
         String firstId = createOrganization("APFA", "Associação Paulista de Futebol Americano");
 
@@ -80,7 +80,7 @@ class OrganizationControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_duplicateTradeName_returnsConflict() throws Exception {
         createOrganization("UNICA", "Organização Única");
 
@@ -91,7 +91,7 @@ class OrganizationControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withInvalidBody_returnsValidationErrors() throws Exception {
         Map<String, Object> invalid = new HashMap<>(organizationFields("", ""));
         invalid.put("tradeName", "");

@@ -49,7 +49,7 @@ class VenueControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_getById_listAll_andUpdate_flow() throws Exception {
         String organizationId = createOrganization(
                 "VEN_APFA", "Associação Paulista de Futebol Americano");
@@ -77,7 +77,7 @@ class VenueControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withUnknownOrganization_returnsNotFound() throws Exception {
         mockMvc.perform(post(VENUES_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -87,7 +87,7 @@ class VenueControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_duplicateName_returnsConflict() throws Exception {
         String organizationId = createOrganization("VEN_DUP", "Org Duplicada Venue");
 
@@ -101,7 +101,7 @@ class VenueControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void listAll_returnsVenuesOrderedByName_publicAccess() throws Exception {
         String organizationId = createOrganization("VEN_ORD", "Org Ordenada Venue");
 
@@ -122,14 +122,14 @@ class VenueControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void getById_unknownId_returnsNotFound() throws Exception {
         mockMvc.perform(get(VENUES_URL + "/" + UUID.randomUUID()))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void update_duplicateName_returnsConflict() throws Exception {
         String organizationId = createOrganization("VEN_UPD", "Org Update Venue");
 
@@ -143,7 +143,7 @@ class VenueControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withInvalidBody_returnsValidationErrors() throws Exception {
         Map<String, Object> invalid = new HashMap<>();
         invalid.put("name", "");
