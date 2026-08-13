@@ -2,9 +2,11 @@ import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 import '../widgets/game_card.dart';
+import 'game_detail_screen.dart';
 
 /// Tela de calendário de jogos de um campeonato (issue #25).
 ///
@@ -58,6 +60,7 @@ class _CompetitionGamesScreenState
           return _GamesView(
             games: games,
             selectedRound: _selectedRound,
+            competitionName: widget.competitionName,
             onRoundSelected: (round) => setState(() => _selectedRound = round),
           );
         },
@@ -70,11 +73,13 @@ class _CompetitionGamesScreenState
 class _GamesView extends StatelessWidget {
   final List<Game> games;
   final int? selectedRound;
+  final String competitionName;
   final ValueChanged<int?> onRoundSelected;
 
   const _GamesView({
     required this.games,
     required this.selectedRound,
+    required this.competitionName,
     required this.onRoundSelected,
   });
 
@@ -108,7 +113,11 @@ class _GamesView extends StatelessWidget {
           ...upcoming.map(
             (game) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: GameCard(game: game, highlighted: true),
+              child: GameCard(
+                game: game,
+                highlighted: true,
+                onTap: () => _openGameDetail(context, game),
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -128,10 +137,25 @@ class _GamesView extends StatelessWidget {
           ...visibleGames.map(
             (game) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: GameCard(game: game),
+              child: GameCard(
+                game: game,
+                onTap: () => _openGameDetail(context, game),
+              ),
             ),
           ),
       ],
+    );
+  }
+
+  /// Navega para o detalhe do jogo passando o objeto completo via `extra`.
+  void _openGameDetail(BuildContext context, Game game) {
+    context.push(
+      '/game/${game.id}',
+      extra: GameDetailArgs(
+        gameId: game.id,
+        game: game,
+        competitionName: competitionName,
+      ),
     );
   }
 

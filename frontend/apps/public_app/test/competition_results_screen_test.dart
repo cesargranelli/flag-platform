@@ -194,6 +194,37 @@ void main() {
       expect(middleY, lessThan(oldestY));
     });
 
+    testWidgets('navega para o detalhe do jogo ao tocar no card', (
+      WidgetTester tester,
+    ) async {
+      await openResults(
+        tester,
+        games: [
+          game(
+            id: 'game-1',
+            roundNumber: 1,
+            homeTeamName: 'Flames',
+            awayTeamName: 'Titans',
+            venueName: 'Campo do Parque',
+            scheduledAt: DateTime(2026, 8, 20, 19, 30),
+            status: GameStatus.finished,
+            homeScore: 3,
+            awayScore: 1,
+          ),
+        ],
+      );
+
+      await tester.tap(find.text('Flames × Titans'));
+      await tester.pumpAndSettle();
+
+      // Detalhe: placar final, campo e campeonato carregados via `extra`.
+      expect(find.text('Placar final'), findsOneWidget);
+      expect(find.text('3 × 1'), findsOneWidget);
+      expect(find.text('Campo do Parque'), findsOneWidget);
+      expect(find.text('Liga Nacional'), findsOneWidget);
+      expect(find.text('Encerrado'), findsOneWidget);
+    });
+
     testWidgets('mostra estado vazio quando não há jogos encerrados', (
       WidgetTester tester,
     ) async {
