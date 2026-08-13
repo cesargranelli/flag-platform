@@ -5,9 +5,11 @@ import br.com.flagplatform.common.enums.GameStatus;
 import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.competition.exception.CompetitionNotFoundException;
 import br.com.flagplatform.game.GameResultRegisteredEvent;
+import br.com.flagplatform.game.dto.request.AddScoreEventRequest;
 import br.com.flagplatform.game.dto.request.CreateGameRequest;
 import br.com.flagplatform.game.dto.request.RegisterGameResultRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameRequest;
+import br.com.flagplatform.game.dto.request.UpdateScoreRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
 import br.com.flagplatform.game.dto.response.GameSummaryResponse;
 import br.com.flagplatform.game.entity.GameEntity;
@@ -15,8 +17,10 @@ import br.com.flagplatform.game.exception.GameNotFoundException;
 import br.com.flagplatform.game.exception.GameNotInProgressException;
 import br.com.flagplatform.game.exception.InvalidGameStatusTransitionException;
 import br.com.flagplatform.game.exception.SameTeamGameException;
+import br.com.flagplatform.game.exception.TeamNotInGameException;
 import br.com.flagplatform.game.mapper.GameMapper;
 import br.com.flagplatform.game.repository.GameRepository;
+import br.com.flagplatform.game.repository.ScoreEventRepository;
 import br.com.flagplatform.round.RoundInfo;
 import br.com.flagplatform.round.RoundLookup;
 import br.com.flagplatform.round.exception.RoundNotFoundException;
@@ -76,6 +80,9 @@ class GameServiceTest {
 
     @Mock
     private ApplicationEventPublisher applicationEventPublisher;
+
+    @Mock
+    private ScoreEventRepository scoreEventRepository;
 
     @InjectMocks
     private GameService service;
@@ -671,6 +678,76 @@ class GameServiceTest {
         entity.setScheduledAt(scheduledAt);
         entity.setStatus(status);
         return entity;
+    }
+
+    @Test
+    void registerScoreEvent_incrementsHomeScoreAndSavesEvent() {
+        UUID gameId = UUID.randomUUID();
+        UUID homeTeamId = UUID.randomUUID();
+        UUID awayTeamId = UUID.randomUUID();
+        GameEntity entity = entity(UUID.randomUUID(), homeTeamId, awayTeamId, null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.IN_PROGRESS);
+        entity.setHomeScore(0);
+        GameResponse expected = response(entity);
+
+        when(repository.findById(gameId)).thenReturn(Optional.of(entity));
+        when(repository.save(entity)).thenReturn(entity);
+        when(mapper.toResponse(entity)).thenReturn(expected);
+
+        GameResponse result = service.registerScoreEvent(gameId, new AddScoreEventRequest(homeTeamId));
+
+        assertThat(result).isSameAs(expected);
+        assertThat(entity.getHomeScore()).isEqualTo(1);
+        verify(scoreEventRepository).save(any());
+        verify(repository).save(entity);
+    }
+
+    @Test
+    void registerScoreEvent_throwsWhenGameNotInProgress() {
+        UUID gameId = UUID.randomUUID();
+        GameEntity entity = entity(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.SCHEDULED);
+
+        when(repository.findById(gameId)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.registerScoreEvent(gameId, new AddScoreEventRequest(UUID.randomUUID())))
+                .isInstanceOf(GameNotInProgressException.class);
+
+        verify(scoreEventRepository, never()).save(any());
+    }
+
+    @Test
+    void registerScoreEvent_throwsWhenTeamNotInGame() {
+        UUID gameId = UUID.randomUUID();
+        UUID homeTeamId = UUID.randomUUID();
+        UUID awayTeamId = UUID.randomUUID();
+        GameEntity entity = entity(UUID.randomUUID(), homeTeamId, awayTeamId, null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.IN_PROGRESS);
+
+        when(repository.findById(gameId)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.registerScoreEvent(gameId, new AddScoreEventRequest(UUID.randomUUID())))
+                .isInstanceOf(TeamNotInGameException.class);
+
+        verify(scoreEventRepository, never()).save(any());
+    }
+
+    @Test
+    void correctScore_setsScoresDuringInProgress() {
+        UUID gameId = UUID.randomUUID();
+        GameEntity entity = entity(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.IN_PROGRESS);
+        GameResponse expected = response(entity);
+
+        when(repository.findById(gameId)).thenReturn(Optional.of(entity));
+        when(repository.save(entity)).thenReturn(entity);
+        when(mapper.toResponse(entity)).thenReturn(expected);
+
+        GameResponse result = service.correctScore(gameId, new UpdateScoreRequest(3, 1));
+
+        assertThat(result).isSameAs(expected);
+        assertThat(entity.getHomeScore()).isEqualTo(3);
+        assertThat(entity.getAwayScore()).isEqualTo(1);
     }
 
     private GameResponse response(GameEntity entity) {
