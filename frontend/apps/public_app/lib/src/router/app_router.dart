@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../screens/competition_detail_screen.dart';
+import '../screens/competition_games_screen.dart';
 import '../screens/home_screen.dart';
 
 /// Rotas do Public App.
@@ -26,6 +27,16 @@ class AppRouter {
           competitionId: state.pathParameters['id']!,
           competitionName: state.extra as String? ?? '',
         ),
+        routes: [
+          GoRoute(
+            path: 'games',
+            name: 'competitionGames',
+            builder: (context, state) => CompetitionGamesScreen(
+              competitionId: state.pathParameters['id']!,
+              competitionName: state.extra as String? ?? '',
+            ),
+          ),
+        ],
       ),
     ],
   );
