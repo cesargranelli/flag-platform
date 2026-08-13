@@ -58,6 +58,15 @@ class CompetitionDetailScreen extends StatelessWidget {
                 icon: const Icon(Icons.calendar_month_outlined),
                 label: const Text('Ver calendário de jogos'),
               ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => context.push(
+                  '/competition/$competitionId/results',
+                  extra: competitionName,
+                ),
+                icon: const Icon(Icons.sports_score_outlined),
+                label: const Text('Ver resultados'),
+              ),
             ],
           ),
         ),
