@@ -13,4 +13,6 @@ public interface GameLookup {
 
     List<FinishedGame> findFinishedByCategoryId(UUID categoryId);
 
+    GameInfo findGameInfoById(UUID id);
+
 }

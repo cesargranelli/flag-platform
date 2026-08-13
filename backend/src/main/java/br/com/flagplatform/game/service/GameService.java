@@ -4,6 +4,7 @@ import br.com.flagplatform.category.CategoryLookup;
 import br.com.flagplatform.common.enums.GameStatus;
 import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.game.FinishedGame;
+import br.com.flagplatform.game.GameInfo;
 import br.com.flagplatform.game.GameLookup;
 import br.com.flagplatform.game.GameResultRegisteredEvent;
 import br.com.flagplatform.game.dto.request.CreateGameRequest;
@@ -161,6 +162,12 @@ public class GameService implements GameLookup {
                         game.getHomeScore(),
                         game.getAwayScore()))
                 .toList();
+    }
+
+    @Override
+    public GameInfo findGameInfoById(UUID id) {
+        GameEntity game = findEntityById(id);
+        return new GameInfo(game.getId(), game.getHomeTeamId(), game.getAwayTeamId());
     }
 
     private boolean isValidTransition(GameStatus current, GameStatus requested) {

@@ -2,6 +2,7 @@ package br.com.flagplatform.user.service;
 
 import br.com.flagplatform.common.enums.UserRole;
 import br.com.flagplatform.user.TokenProvider;
+import br.com.flagplatform.user.UserLookup;
 import br.com.flagplatform.user.dto.request.LoginRequest;
 import br.com.flagplatform.user.dto.request.RegisterRequest;
 import br.com.flagplatform.user.dto.response.LoginResponse;
@@ -16,10 +17,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AuthService {
+public class AuthService implements UserLookup {
 
     private final UserRepository userRepository;
     private final UserMapper mapper;
@@ -63,6 +66,13 @@ public class AuthService {
         UserEntity user = userRepository.findByEmailIgnoreCase(normalize(email))
                 .orElseThrow(InvalidCredentialsException::new);
         return mapper.toResponse(user);
+    }
+
+    @Override
+    public UUID findUserIdByEmail(String email) {
+        return userRepository.findByEmailIgnoreCase(normalize(email))
+                .orElseThrow(InvalidCredentialsException::new)
+                .getId();
     }
 
     private String normalize(String email) {
