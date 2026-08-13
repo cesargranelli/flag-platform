@@ -7,12 +7,20 @@ import 'package:intl/intl.dart';
 ///
 /// Mostra times (casa × visitante), horário formatado, campo e o status do
 /// jogo. Quando [highlighted] é `true` (próximo jogo), ganha borda na cor
-/// primária, fundo levemente tingido e o selo "Próximo".
+/// primária, fundo levemente tingido e o selo "Próximo". Quando [showRound]
+/// é `true` e o jogo tem número de rodada, a rodada é exibida junto ao
+/// horário.
 class GameCard extends StatelessWidget {
   final Game game;
   final bool highlighted;
+  final bool showRound;
 
-  const GameCard({super.key, required this.game, this.highlighted = false});
+  const GameCard({
+    super.key,
+    required this.game,
+    this.highlighted = false,
+    this.showRound = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +35,9 @@ class GameCard extends StatelessWidget {
         ? 'Local não informado'
         : 'Campo: $venue';
     final dateLabel = DateFormat('dd/MM/yyyy HH:mm').format(game.scheduledAt);
+    final headerLabel = showRound && game.roundNumber != null
+        ? 'Rodada ${game.roundNumber} · $dateLabel'
+        : dateLabel;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -51,7 +62,7 @@ class GameCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  dateLabel,
+                  headerLabel,
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
