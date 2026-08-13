@@ -9,6 +9,8 @@ export 'src/models/standing.dart';
 export 'src/models/athlete.dart';
 export 'src/models/team_roster.dart';
 export 'src/models/check_in.dart';
+export 'src/models/user.dart';
+export 'src/models/login_response.dart';
 export 'src/enums/game_status.dart';
 export 'src/enums/competition_status.dart';
 export 'src/enums/check_in_status.dart';
