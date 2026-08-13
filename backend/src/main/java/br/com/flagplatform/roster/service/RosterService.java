@@ -3,6 +3,7 @@ package br.com.flagplatform.roster.service;
 import br.com.flagplatform.athlete.AthleteInfo;
 import br.com.flagplatform.athlete.AthleteLookup;
 import br.com.flagplatform.common.enums.RosterStatus;
+import br.com.flagplatform.roster.RosterLookup;
 import br.com.flagplatform.roster.dto.request.AddRosterEntryRequest;
 import br.com.flagplatform.roster.dto.response.RosterEntryResponse;
 import br.com.flagplatform.roster.entity.RosterEntryEntity;
@@ -22,7 +23,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Service
-public class RosterService {
+public class RosterService implements RosterLookup {
 
     private final RosterEntryMapper mapper;
     private final RosterEntryRepository repository;
@@ -66,6 +67,13 @@ public class RosterService {
                 .orElseThrow(() -> new RosterEntryNotFoundException(teamId, athleteId));
 
         repository.delete(entity);
+    }
+
+    @Override
+    public List<UUID> findAthleteIdsByTeamId(UUID teamId) {
+        return repository.findAllByTeamIdOrderByCreatedAtAsc(teamId).stream()
+                .map(RosterEntryEntity::getAthleteId)
+                .toList();
     }
 
     private RosterEntryResponse toResponse(RosterEntryEntity entity) {
