@@ -67,6 +67,9 @@ void main() {
       tester,
       overrides: [
         competitionGamesProvider.overrideWith((ref, id) async => games),
+        gameDetailProvider.overrideWith(
+          (ref, id) async => games.firstWhere((g) => g.id == id),
+        ),
       ],
     );
     await tester.pump();

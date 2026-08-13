@@ -481,8 +481,58 @@ class GameControllerIntegrationTest {
 
     @Test
     @WithMockUser(roles = {"ORGANIZER", "MESA"})
-    void registerResult_recalculatesStandingsForCategory() throws Exception {
-        Chain chain = setupChain("RESULT_STANDINGS");
+    void addScoreEvent_inProgressGame_incrementsScore() throws Exception {
+        Chain chain = setupChain("SCORE_IP");
+        String gameId = createGame(chain.roundId, chain.homeTeamId, chain.awayTeamId,
+                null, "2026-02-01T19:00:00");
+        patchGameStatus(gameId, "IN_PROGRESS");
+
+        mockMvc.perform(post(GAMES_URL + "/" + gameId + "/score/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(scoreEventBody(chain.homeTeamId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.homeScore").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ORGANIZER", "MESA"})
+    void correctScore_setsScoresDuringInProgress() throws Exception {
+        Chain chain = setupChain("SCORE_CORR");
+        String gameId = createGame(chain.roundId, chain.homeTeamId, chain.awayTeamId,
+                null, "2026-02-01T19:00:00");
+        patchGameStatus(gameId, "IN_PROGRESS");
+
+        mockMvc.perform(patch(GAMES_URL + "/" + gameId + "/score")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(scoreCorrectionBody(3, 1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.homeScore").value(3))
+                .andExpect(jsonPath("$.awayScore").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ORGANIZER", "MESA"})
+    void listScoreEvents_returnsHistory_publicAccess() throws Exception {
+        Chain chain = setupChain("SCORE_LIST");
+        String gameId = createGame(chain.roundId, chain.homeTeamId, chain.awayTeamId,
+                null, "2026-02-01T19:00:00");
+        patchGameStatus(gameId, "IN_PROGRESS");
+
+        mockMvc.perform(post(GAMES_URL + "/" + gameId + "/score/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(scoreEventBody(chain.homeTeamId)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get(GAMES_URL + "/" + gameId + "/score/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].teamId").value(chain.homeTeamId));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ORGANIZER", "MESA"})
+    void registerResult_recalculatesStandingsForCategory() throws Exception {        Chain chain = setupChain("RESULT_STANDINGS");
 
         String gameId = createGame(chain.roundId, chain.homeTeamId, chain.awayTeamId,
                 null, "2026-02-01T19:00:00");
@@ -762,6 +812,19 @@ class GameControllerIntegrationTest {
     }
 
     private String resultBody(int homeScore, int awayScore) throws Exception {
+        Map<String, Object> fields = new HashMap<>();
+        fields.put("homeScore", homeScore);
+        fields.put("awayScore", awayScore);
+        return objectMapper.writeValueAsString(fields);
+    }
+
+    private String scoreEventBody(String teamId) throws Exception {
+        Map<String, Object> fields = new HashMap<>();
+        fields.put("teamId", teamId);
+        return objectMapper.writeValueAsString(fields);
+    }
+
+    private String scoreCorrectionBody(int homeScore, int awayScore) throws Exception {
         Map<String, Object> fields = new HashMap<>();
         fields.put("homeScore", homeScore);
         fields.put("awayScore", awayScore);

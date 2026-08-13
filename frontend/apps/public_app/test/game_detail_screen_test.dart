@@ -41,14 +41,18 @@ Game game({
 
 void main() {
   /// Renderiza a tela de detalhe com o jogo já carregado (via `extra`).
-  Future<void> pumpDetail(WidgetTester tester, Game game) {
-    return tester.pumpWidget(
+  Future<void> pumpDetail(WidgetTester tester, Game game) async {
+    await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          gameDetailProvider.overrideWith((ref, id) async => game),
+        ],
         child: MaterialApp(
           home: GameDetailScreen(gameId: game.id, game: game),
         ),
       ),
     );
+    await tester.pumpAndSettle();
   }
 
   /// Sobe o app e navega: home → detalhe → calendário → card do jogo.
@@ -66,6 +70,9 @@ void main() {
             ],
           ),
           competitionGamesProvider.overrideWith((ref, id) async => games),
+          gameDetailProvider.overrideWith(
+            (ref, id) async => games.firstWhere((g) => g.id == id),
+          ),
         ],
         child: const FlagPublicApp(),
       ),

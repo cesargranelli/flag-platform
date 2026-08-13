@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
@@ -25,10 +27,9 @@ class GameDetailArgs {
 
 /// Tela de detalhe de um jogo (issue #28).
 ///
-/// Recebe o [gameId] via rota; quando o jogo já foi carregado na listagem,
-/// o objeto completo pode ser passado via `extra` para exibição imediata.
-/// Caso contrário, busca o jogo por id na API.
-class GameDetailScreen extends ConsumerWidget {
+/// Durante partidas ao vivo o placar é atualizado automaticamente a cada 10s
+/// (issue #30). Os nomes de times/campo vêm da listagem quando disponíveis.
+class GameDetailScreen extends ConsumerStatefulWidget {
   final String gameId;
   final Game? game;
   final String competitionName;
@@ -41,10 +42,29 @@ class GameDetailScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final gameAsync = game != null
-        ? AsyncValue.data(game!)
-        : ref.watch(gameDetailProvider(gameId));
+  ConsumerState<GameDetailScreen> createState() => _GameDetailScreenState();
+}
+
+class _GameDetailScreenState extends ConsumerState<GameDetailScreen> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) ref.invalidate(gameDetailProvider(widget.gameId));
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final gameAsync = ref.watch(gameDetailProvider(widget.gameId));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Jogo')),
@@ -52,11 +72,12 @@ class GameDetailScreen extends ConsumerWidget {
         loading: () => const AppLoading(message: 'Carregando jogo...'),
         error: (error, stackTrace) => AppErrorState(
           message: 'Não foi possível carregar o jogo',
-          onRetry: () => ref.invalidate(gameDetailProvider(gameId)),
+          onRetry: () => ref.invalidate(gameDetailProvider(widget.gameId)),
         ),
         data: (game) => _GameDetailContent(
           game: game,
-          competitionName: competitionName,
+          namesFrom: widget.game,
+          competitionName: widget.competitionName,
         ),
       ),
     );
@@ -66,14 +87,20 @@ class GameDetailScreen extends ConsumerWidget {
 /// Conteúdo do detalhe do jogo: times, horário, status, placar e campo.
 class _GameDetailContent extends StatelessWidget {
   final Game game;
+  final Game? namesFrom;
   final String competitionName;
 
-  const _GameDetailContent({required this.game, required this.competitionName});
+  const _GameDetailContent({
+    required this.game,
+    required this.namesFrom,
+    required this.competitionName,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final home = game.homeTeamName?.trim();
-    final away = game.awayTeamName?.trim();
+    final names = namesFrom ?? game;
+    final home = names.homeTeamName?.trim();
+    final away = names.awayTeamName?.trim();
     final homeLabel = (home == null || home.isEmpty) ? 'Casa a definir' : home;
     final awayLabel = (away == null || away.isEmpty)
         ? 'Visitante a definir'
@@ -81,8 +108,8 @@ class _GameDetailContent extends StatelessWidget {
     final dateLabel = DateFormat('dd/MM/yyyy \'às\' HH:mm').format(
       game.scheduledAt,
     );
-    final venueName = game.venueName?.trim();
-    final venueAddress = game.venueAddress?.trim();
+    final venueName = names.venueName?.trim();
+    final venueAddress = names.venueAddress?.trim();
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -148,12 +175,15 @@ class _GameDetailContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        if (game.status == GameStatus.finished &&
+        if ((game.status == GameStatus.inProgress ||
+                game.status == GameStatus.finished) &&
             game.homeScore != null &&
             game.awayScore != null) ...[
           _InfoCard(
             icon: Icons.sports_score,
-            title: 'Placar final',
+            title: game.status == GameStatus.inProgress
+                ? 'Placar ao vivo'
+                : 'Placar final',
             child: Text(
               '${game.homeScore} × ${game.awayScore}',
               style: const TextStyle(

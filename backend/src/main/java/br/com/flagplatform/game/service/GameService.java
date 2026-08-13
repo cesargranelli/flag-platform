@@ -7,18 +7,25 @@ import br.com.flagplatform.game.FinishedGame;
 import br.com.flagplatform.game.GameInfo;
 import br.com.flagplatform.game.GameLookup;
 import br.com.flagplatform.game.GameResultRegisteredEvent;
+import br.com.flagplatform.game.dto.request.AddScoreEventRequest;
 import br.com.flagplatform.game.dto.request.CreateGameRequest;
 import br.com.flagplatform.game.dto.request.RegisterGameResultRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameRequest;
+import br.com.flagplatform.game.dto.request.UpdateGameStatusRequest;
+import br.com.flagplatform.game.dto.request.UpdateScoreRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
 import br.com.flagplatform.game.dto.response.GameSummaryResponse;
+import br.com.flagplatform.game.dto.response.ScoreEventResponse;
 import br.com.flagplatform.game.entity.GameEntity;
+import br.com.flagplatform.game.entity.ScoreEventEntity;
 import br.com.flagplatform.game.exception.GameNotFoundException;
 import br.com.flagplatform.game.exception.GameNotInProgressException;
 import br.com.flagplatform.game.exception.InvalidGameStatusTransitionException;
 import br.com.flagplatform.game.exception.SameTeamGameException;
+import br.com.flagplatform.game.exception.TeamNotInGameException;
 import br.com.flagplatform.game.mapper.GameMapper;
 import br.com.flagplatform.game.repository.GameRepository;
+import br.com.flagplatform.game.repository.ScoreEventRepository;
 import br.com.flagplatform.round.RoundInfo;
 import br.com.flagplatform.round.RoundLookup;
 import br.com.flagplatform.team.TeamLookup;
@@ -42,6 +49,7 @@ public class GameService implements GameLookup {
 
     private final GameMapper mapper;
     private final GameRepository repository;
+    private final ScoreEventRepository scoreEventRepository;
     private final CompetitionLookup competitionLookup;
     private final CategoryLookup categoryLookup;
     private final RoundLookup roundLookup;
@@ -168,6 +176,59 @@ public class GameService implements GameLookup {
     public GameInfo findGameInfoById(UUID id) {
         GameEntity game = findEntityById(id);
         return new GameInfo(game.getId(), game.getHomeTeamId(), game.getAwayTeamId(), game.getStatus());
+    }
+
+    @Transactional
+    public GameResponse registerScoreEvent(UUID gameId, AddScoreEventRequest request) {
+        GameEntity game = findEntityById(gameId);
+        requireInProgress(game);
+
+        if (!game.getHomeTeamId().equals(request.teamId())
+                && !game.getAwayTeamId().equals(request.teamId())) {
+            throw new TeamNotInGameException(gameId, request.teamId());
+        }
+
+        if (game.getHomeTeamId().equals(request.teamId())) {
+            game.setHomeScore((game.getHomeScore() == null ? 0 : game.getHomeScore()) + 1);
+        } else {
+            game.setAwayScore((game.getAwayScore() == null ? 0 : game.getAwayScore()) + 1);
+        }
+
+        ScoreEventEntity event = new ScoreEventEntity();
+        event.setGameId(gameId);
+        event.setTeamId(request.teamId());
+        scoreEventRepository.save(event);
+
+        return mapper.toResponse(repository.save(game));
+    }
+
+    @Transactional
+    public GameResponse correctScore(UUID gameId, UpdateScoreRequest request) {
+        GameEntity game = findEntityById(gameId);
+        requireInProgress(game);
+
+        game.setHomeScore(request.homeScore());
+        game.setAwayScore(request.awayScore());
+
+        return mapper.toResponse(repository.save(game));
+    }
+
+    public List<ScoreEventResponse> listScoreEvents(UUID gameId) {
+        findEntityById(gameId);
+
+        return scoreEventRepository.findAllByGameIdOrderByCreatedAtAsc(gameId).stream()
+                .map(event -> new ScoreEventResponse(
+                        event.getId(),
+                        event.getGameId(),
+                        event.getTeamId(),
+                        event.getCreatedAt()))
+                .toList();
+    }
+
+    private void requireInProgress(GameEntity game) {
+        if (game.getStatus() != GameStatus.IN_PROGRESS) {
+            throw new GameNotInProgressException(game.getStatus());
+        }
     }
 
     private boolean isValidTransition(GameStatus current, GameStatus requested) {

@@ -1,12 +1,15 @@
 package br.com.flagplatform.game.controller;
 
 import br.com.flagplatform.common.security.SecurityExpressions;
+import br.com.flagplatform.game.dto.request.AddScoreEventRequest;
 import br.com.flagplatform.game.dto.request.CreateGameRequest;
 import br.com.flagplatform.game.dto.request.RegisterGameResultRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameStatusRequest;
+import br.com.flagplatform.game.dto.request.UpdateScoreRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
 import br.com.flagplatform.game.dto.response.GameSummaryResponse;
+import br.com.flagplatform.game.dto.response.ScoreEventResponse;
 import br.com.flagplatform.game.service.GameService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -110,6 +113,40 @@ public class GameController {
             @Parameter(description = "Id do jogo") @PathVariable UUID id,
             @Valid @RequestBody RegisterGameResultRequest request) {
         return service.registerResult(id, request);
+    }
+
+    @Operation(
+            summary = "Adicionar ponto ao placar",
+            description = "Adiciona 1 ponto ao time informado durante a partida (IN_PROGRESS) e registra o evento. Requer autenticacao."
+    )
+    @PostMapping("/api/v1/games/{id}/score/events")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_MESA)
+    public GameResponse addScoreEvent(
+            @Parameter(description = "Id do jogo") @PathVariable UUID id,
+            @Valid @RequestBody AddScoreEventRequest request) {
+        return service.registerScoreEvent(id, request);
+    }
+
+    @Operation(
+            summary = "Corrigir placar",
+            description = "Define os pontos de casa e fora durante a partida (IN_PROGRESS). Requer autenticacao."
+    )
+    @PatchMapping("/api/v1/games/{id}/score")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_MESA)
+    public GameResponse correctScore(
+            @Parameter(description = "Id do jogo") @PathVariable UUID id,
+            @Valid @RequestBody UpdateScoreRequest request) {
+        return service.correctScore(id, request);
+    }
+
+    @Operation(
+            summary = "Historico de pontuacao",
+            description = "Retorna os eventos de pontuacao de um jogo, ordenados por data. Acesso publico."
+    )
+    @GetMapping("/api/v1/games/{id}/score/events")
+    public List<ScoreEventResponse> listScoreEvents(
+            @Parameter(description = "Id do jogo") @PathVariable UUID id) {
+        return service.listScoreEvents(id);
     }
 
 }
