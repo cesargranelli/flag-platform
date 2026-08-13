@@ -50,6 +50,13 @@ class AdminHomeScreen extends ConsumerWidget {
             subtitle: 'Criar e editar campeonatos',
             onTap: () => context.push('/competitions'),
           ),
+          _menuItem(
+            context,
+            icon: Icons.category_outlined,
+            title: 'Categorias',
+            subtitle: 'Criar e editar categorias',
+            onTap: () => context.push('/categories'),
+          ),
         ],
       ),
     );

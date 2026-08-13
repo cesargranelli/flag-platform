@@ -203,6 +203,57 @@ class FakeCompetitionApi extends CompetitionApi {
   }
 }
 
+/// [CategoryApi] com dados controlados para testes.
+class FakeCategoryApi extends CategoryApi {
+  FakeCategoryApi() : super(ApiClient(session: SessionManager()));
+
+  List<Category> categories = [];
+  int createCalls = 0;
+  int deleteCalls = 0;
+  Map<String, dynamic>? lastBody;
+
+  @override
+  Future<List<Category>> listByCompetition(String competitionId) async =>
+      categories.where((c) => c.competitionId == competitionId).toList();
+
+  @override
+  Future<Category> create({
+    required String competitionId,
+    required String name,
+  }) async {
+    createCalls++;
+    lastBody = {'competitionId': competitionId, 'name': name};
+    final category = Category(id: 'cat-nova', competitionId: competitionId, name: name);
+    categories = [...categories, category];
+    return category;
+  }
+
+  @override
+  Future<Category> update(
+    String id, {
+    required String competitionId,
+    required String name,
+  }) async {
+    lastBody = {'competitionId': competitionId, 'name': name};
+    return Category(id: id, competitionId: competitionId, name: name);
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    deleteCalls++;
+    categories = categories.where((c) => c.id != id).toList();
+  }
+}
+
+/// Categoria de exemplo para testes.
+Category testCategory({
+  String id = '11111111-1111-1111-1111-111111111111',
+  String competitionId = '11111111-1111-1111-1111-111111111111',
+  String name = 'Masculino 5x5',
+}) {
+  return Category(id: id, competitionId: competitionId, name: name);
+}
+
 /// Campeonato de exemplo para testes.
 Competition testCompetition({
   String id = '11111111-1111-1111-1111-111111111111',

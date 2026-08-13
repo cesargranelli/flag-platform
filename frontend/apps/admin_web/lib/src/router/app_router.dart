@@ -2,6 +2,8 @@ import 'package:flag_domain/flag_domain.dart';
 import 'package:go_router/go_router.dart';
 
 import '../auth/auth_controller.dart';
+import '../screens/categories_screen.dart';
+import '../screens/category_form_screen.dart';
 import '../screens/competition_form_screen.dart';
 import '../screens/competitions_screen.dart';
 import '../screens/home_screen.dart';
@@ -83,6 +85,29 @@ class AppRouter {
               return CompetitionFormScreen(
                 competitionId: state.pathParameters['id'],
                 competition: competition,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/categories',
+            name: 'categories',
+            builder: (context, state) => const CategoriesScreen(),
+          ),
+          GoRoute(
+            path: '/categories/new',
+            name: 'categoryNew',
+            builder: (context, state) => const CategoryFormScreen(),
+          ),
+          GoRoute(
+            path: '/categories/:id',
+            name: 'categoryEdit',
+            builder: (context, state) {
+              final category = state.extra is Category
+                  ? state.extra as Category
+                  : null;
+              return CategoryFormScreen(
+                categoryId: state.pathParameters['id'],
+                category: category,
               );
             },
           ),
