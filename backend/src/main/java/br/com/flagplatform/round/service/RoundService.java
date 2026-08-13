@@ -1,6 +1,7 @@
 package br.com.flagplatform.round.service;
 
 import br.com.flagplatform.category.CategoryLookup;
+import br.com.flagplatform.round.RoundInfo;
 import br.com.flagplatform.round.RoundLookup;
 import br.com.flagplatform.round.dto.request.CreateRoundRequest;
 import br.com.flagplatform.round.dto.request.UpdateRoundRequest;
@@ -75,6 +76,13 @@ public class RoundService implements RoundLookup {
     public List<UUID> findRoundIdsByCategoryId(UUID categoryId) {
         return repository.findAllByCategoryId(categoryId).stream()
                 .map(RoundEntity::getId)
+                .toList();
+    }
+
+    @Override
+    public List<RoundInfo> findRoundInfoByCategoryIds(List<UUID> categoryIds) {
+        return repository.findAllByCategoryIdIn(categoryIds).stream()
+                .map(round -> new RoundInfo(round.getId(), round.getNumber()))
                 .toList();
     }
 

@@ -8,10 +8,16 @@ class GameApi {
 
   GameApi(this._client);
 
-  Future<List<Game>> listByRound(int roundId) =>
+  /// Lista os jogos de uma competição (endpoint público, ordenados por data).
+  Future<List<Game>> listByCompetition(String competitionId) => _client.getList(
+    '/api/v1/competitions/$competitionId/games',
+    Game.fromJson,
+  );
+
+  Future<List<Game>> listByRound(String roundId) =>
       _client.getList('/api/v1/rounds/$roundId/games', Game.fromJson);
 
-  Future<Game> getById(int id) =>
+  Future<Game> getById(String id) =>
       _client.getOne('/api/v1/games/$id', Game.fromJson);
 
   Future<Game> create({
@@ -20,16 +26,11 @@ class GameApi {
     required int awayTeamId,
     required int? venueId,
     required DateTime scheduledAt,
-  }) =>
-      _client.post(
-        '/api/v1/games',
-        {
-          'roundId': roundId,
-          'homeTeamId': homeTeamId,
-          'awayTeamId': awayTeamId,
-          'venueId': venueId,
-          'scheduledAt': scheduledAt.toIso8601String(),
-        },
-        Game.fromJson,
-      );
+  }) => _client.post('/api/v1/games', {
+    'roundId': roundId,
+    'homeTeamId': homeTeamId,
+    'awayTeamId': awayTeamId,
+    'venueId': venueId,
+    'scheduledAt': scheduledAt.toIso8601String(),
+  }, Game.fromJson);
 }

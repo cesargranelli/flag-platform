@@ -17,4 +17,6 @@ public interface TeamLookup {
 
     List<TeamInfo> findTeamInfoByCategoryId(UUID categoryId);
 
+    TeamInfo findTeamInfoById(UUID id);
+
 }

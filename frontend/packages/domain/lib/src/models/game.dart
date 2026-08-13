@@ -1,11 +1,17 @@
 import '../enums/game_status.dart';
 
+/// Jogo do calendário de uma competição.
+///
+/// Shape público do endpoint de calendário:
+/// times e campo chegam como nomes (exibição direta) e a data em ISO-8601.
 class Game {
-  final int id;
-  final int roundId;
-  final int homeTeamId;
-  final int awayTeamId;
-  final int? venueId;
+  final String id;
+  final String roundId;
+  final int? roundNumber;
+  final String? homeTeamName;
+  final String? awayTeamName;
+  final String? venueId;
+  final String? venueName;
   final DateTime scheduledAt;
   final GameStatus status;
   final int? homeScore;
@@ -14,36 +20,42 @@ class Game {
   const Game({
     required this.id,
     required this.roundId,
-    required this.homeTeamId,
-    required this.awayTeamId,
     required this.scheduledAt,
     required this.status,
+    this.roundNumber,
+    this.homeTeamName,
+    this.awayTeamName,
     this.venueId,
+    this.venueName,
     this.homeScore,
     this.awayScore,
   });
 
   factory Game.fromJson(Map<String, dynamic> json) => Game(
-        id: json['id'] as int,
-        roundId: json['roundId'] as int,
-        homeTeamId: json['homeTeamId'] as int,
-        awayTeamId: json['awayTeamId'] as int,
-        venueId: json['venueId'] as int?,
-        scheduledAt: DateTime.parse(json['scheduledAt'] as String),
-        status: GameStatus.fromJson(json['status'] as String),
-        homeScore: json['homeScore'] as int?,
-        awayScore: json['awayScore'] as int?,
-      );
+    id: json['id'] as String,
+    roundId: json['roundId'] as String,
+    roundNumber: json['roundNumber'] as int?,
+    homeTeamName: json['homeTeamName'] as String?,
+    awayTeamName: json['awayTeamName'] as String?,
+    venueId: json['venueId'] as String?,
+    venueName: json['venueName'] as String?,
+    scheduledAt: DateTime.parse(json['scheduledAt'] as String),
+    status: GameStatus.fromJson(json['status'] as String),
+    homeScore: json['homeScore'] as int?,
+    awayScore: json['awayScore'] as int?,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'roundId': roundId,
-        'homeTeamId': homeTeamId,
-        'awayTeamId': awayTeamId,
-        'venueId': venueId,
-        'scheduledAt': scheduledAt.toIso8601String(),
-        'status': status.toJson(),
-        'homeScore': homeScore,
-        'awayScore': awayScore,
-      };
+    'id': id,
+    'roundId': roundId,
+    if (roundNumber != null) 'roundNumber': roundNumber,
+    if (homeTeamName != null) 'homeTeamName': homeTeamName,
+    if (awayTeamName != null) 'awayTeamName': awayTeamName,
+    if (venueId != null) 'venueId': venueId,
+    if (venueName != null) 'venueName': venueName,
+    'scheduledAt': scheduledAt.toIso8601String(),
+    'status': status.toJson(),
+    if (homeScore != null) 'homeScore': homeScore,
+    if (awayScore != null) 'awayScore': awayScore,
+  };
 }

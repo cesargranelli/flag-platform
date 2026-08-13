@@ -25,3 +25,14 @@ final competitionApiProvider = Provider<CompetitionApi>(
 final competitionsProvider = FutureProvider<List<Competition>>(
   (ref) => ref.watch(competitionApiProvider).listAll(),
 );
+
+/// Serviço de jogos.
+final gameApiProvider = Provider<GameApi>(
+  (ref) => GameApi(ref.watch(apiClientProvider)),
+);
+
+/// Jogos (calendário) de uma competição, ordenados por data.
+final competitionGamesProvider = FutureProvider.family<List<Game>, String>(
+  (ref, competitionId) =>
+      ref.watch(gameApiProvider).listByCompetition(competitionId),
+);

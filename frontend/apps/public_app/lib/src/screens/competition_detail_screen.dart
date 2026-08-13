@@ -1,5 +1,6 @@
 import 'package:flag_core/flag_core.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 /// Tela de detalhe do campeonato (placeholder da issue #28).
 ///
@@ -47,6 +48,15 @@ class CompetitionDetailScreen extends StatelessWidget {
               const Text(
                 'Detalhes em breve',
                 style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () => context.push(
+                  '/competition/$competitionId/games',
+                  extra: competitionName,
+                ),
+                icon: const Icon(Icons.calendar_month_outlined),
+                label: const Text('Ver calendário de jogos'),
               ),
             ],
           ),
