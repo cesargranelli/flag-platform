@@ -11,3 +11,4 @@ export 'src/services/team_api.dart';
 export 'src/services/round_api.dart';
 export 'src/services/athlete_api.dart';
 export 'src/services/roster_api.dart';
+export 'src/services/check_in_api.dart';

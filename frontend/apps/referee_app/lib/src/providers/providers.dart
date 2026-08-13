@@ -65,3 +65,11 @@ final gameApiProvider = Provider<GameApi>(
 final gamesByRoundProvider = FutureProvider.family<List<Game>, String>(
   (ref, roundId) => ref.watch(gameApiProvider).listByRound(roundId),
 );
+
+final checkInApiProvider = Provider<CheckInApi>(
+  (ref) => CheckInApi(ref.watch(apiClientProvider)),
+);
+
+final checkinProvider = FutureProvider.family<List<CheckIn>, String>(
+  (ref, gameId) => ref.watch(checkInApiProvider).getList(gameId),
+);
