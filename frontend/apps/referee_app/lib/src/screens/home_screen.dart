@@ -42,6 +42,12 @@ class RefereeHomeScreen extends ConsumerWidget {
               label: const Text('Operar partida'),
               onPressed: () => context.push('/operation'),
             ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.how_to_reg),
+              label: const Text('Check-in de atletas'),
+              onPressed: () => context.push('/checkin'),
+            ),
           ],
         ),
       ),

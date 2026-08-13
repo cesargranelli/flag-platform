@@ -164,3 +164,61 @@ Game testGame({
       scheduledAt: DateTime(2026, 2, 1, 19),
       status: status,
     );
+
+class FakeCheckInApi extends CheckInApi {
+  FakeCheckInApi() : super(ApiClient(session: SessionManager()));
+
+  List<CheckIn> entries = [];
+  CheckInStatus? lastStatus;
+  CheckInStatus? validateResult;
+
+  @override
+  Future<List<CheckIn>> getList(String gameId) async => entries;
+
+  @override
+  Future<CheckIn> checkin({
+    required String gameId,
+    required String athleteId,
+    required CheckInStatus status,
+  }) async {
+    lastStatus = status;
+    return CheckIn(
+      gameId: gameId,
+      teamId: 't1',
+      athleteId: athleteId,
+      athleteName: 'João Silva',
+      status: status,
+    );
+  }
+
+  @override
+  Future<CheckIn> validate({
+    required String gameId,
+    required String athleteId,
+  }) async {
+    return CheckIn(
+      gameId: gameId,
+      teamId: 't1',
+      athleteId: athleteId,
+      athleteName: 'João Silva',
+      status: validateResult ?? CheckInStatus.present,
+    );
+  }
+}
+
+CheckIn testCheckIn({
+  String gameId = 'g1',
+  String athleteId = 'a1',
+  String athleteName = 'João Silva',
+  String teamName = 'Tritões',
+  CheckInStatus? status,
+}) =>
+    CheckIn(
+      gameId: gameId,
+      teamId: 't1',
+      teamName: teamName,
+      athleteId: athleteId,
+      athleteName: athleteName,
+      number: 7,
+      status: status,
+    );

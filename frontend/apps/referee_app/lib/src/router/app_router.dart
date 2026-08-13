@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../auth/auth_controller.dart';
+import '../screens/check_in_screen.dart';
 import '../screens/game_operation_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
@@ -34,6 +35,11 @@ class AppRouter {
             path: '/operation',
             name: 'operation',
             builder: (context, state) => const GameOperationScreen(),
+          ),
+          GoRoute(
+            path: '/checkin',
+            name: 'checkin',
+            builder: (context, state) => const CheckInScreen(),
           ),
         ],
       );
