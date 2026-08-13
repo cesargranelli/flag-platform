@@ -1,5 +1,6 @@
 package br.com.flagplatform.game.controller;
 
+import br.com.flagplatform.common.security.SecurityExpressions;
 import br.com.flagplatform.game.dto.request.CreateGameRequest;
 import br.com.flagplatform.game.dto.request.RegisterGameResultRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameRequest;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,6 +40,7 @@ public class GameController {
     )
     @PostMapping("/api/v1/games")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public GameResponse create(@Valid @RequestBody CreateGameRequest request) {
         return service.create(request);
     }
@@ -77,6 +80,7 @@ public class GameController {
             description = "Atualiza horário ou campo de um jogo existente. Requer autenticação."
     )
     @PutMapping("/api/v1/games/{id}")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public GameResponse update(
             @Parameter(description = "Id do jogo") @PathVariable UUID id,
             @Valid @RequestBody UpdateGameRequest request) {
@@ -88,6 +92,7 @@ public class GameController {
             description = "Atualiza o status de um jogo conforme as transições válidas (SCHEDULED->IN_PROGRESS, IN_PROGRESS->FINISHED, SCHEDULED->CANCELLED). Requer autenticação."
     )
     @PatchMapping("/api/v1/games/{id}/status")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_MESA)
     public GameResponse updateStatus(
             @Parameter(description = "Id do jogo") @PathVariable UUID id,
             @Valid @RequestBody UpdateGameStatusRequest request) {
@@ -100,6 +105,7 @@ public class GameController {
     )
     @PostMapping("/api/v1/games/{id}/result")
     @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_MESA)
     public GameResponse registerResult(
             @Parameter(description = "Id do jogo") @PathVariable UUID id,
             @Valid @RequestBody RegisterGameResultRequest request) {

@@ -49,7 +49,7 @@ class CompetitionControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_get_listByOrganization_andUpdate_flow() throws Exception {
         String organizationId = createOrganization(
                 "COMP_APFA", "Associação Paulista de Futebol Americano");
@@ -78,7 +78,7 @@ class CompetitionControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_duplicateName_returnsConflict() throws Exception {
         String organizationId = createOrganization("COMP_FLAGSP", "Flag SP");
 
@@ -91,7 +91,7 @@ class CompetitionControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withInvalidBody_returnsValidationErrors() throws Exception {
         Map<String, Object> invalid = new HashMap<>();
         invalid.put("name", "");
@@ -127,7 +127,7 @@ class CompetitionControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void listAll_returnsCompetitionsOrderedByNameWithOrganizationName() throws Exception {
         String firstOrgId = createOrganization("COMP_SUM_APFA", "Associação Paulista de Futebol Americano");
         String secondOrgId = createOrganization("COMP_SUM_FLAGSP", "Flag SP");

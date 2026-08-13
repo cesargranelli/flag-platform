@@ -51,7 +51,7 @@ class CategoryControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_listByCompetition_update_andDelete_flow() throws Exception {
         String organizationId = createOrganization("CATORG_FLOW", "Org Fluxo Categoria");
         String competitionId = createCompetition(organizationId, "COMP_CAT_TAÇA SP");
@@ -86,7 +86,7 @@ class CategoryControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_duplicateName_returnsConflict() throws Exception {
         String organizationId = createOrganization("CATORG_DUP", "Org Duplicada Categoria");
         String competitionId = createCompetition(organizationId, "COMP_CAT_DUPLICADO");
@@ -100,7 +100,7 @@ class CategoryControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withInvalidBody_returnsValidationErrors() throws Exception {
         Map<String, Object> invalid = new HashMap<>();
         invalid.put("name", "");

@@ -59,7 +59,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_game_returnsCreatedWithScheduledStatus() throws Exception {
         Chain chain = setupChain("CREATE");
 
@@ -79,7 +79,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withUnknownRound_returnsNotFound() throws Exception {
         mockMvc.perform(post(GAMES_URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -90,7 +90,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withUnknownTeam_returnsNotFound() throws Exception {
         Chain chain = setupChain("TEAM_NF");
 
@@ -102,7 +102,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withUnknownVenue_returnsNotFound() throws Exception {
         Chain chain = setupChain("VENUE_NF");
 
@@ -114,7 +114,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withSameHomeAndAwayTeam_returnsBadRequest() throws Exception {
         Chain chain = setupChain("SAME_TEAM");
 
@@ -126,7 +126,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void listByRound_returnsGamesOrderedByScheduledAt_publicAccess() throws Exception {
         Chain chain = setupChain("ORDER");
 
@@ -162,7 +162,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void listByCompetition_returnsGamesOrderedByScheduledAt_withTeamAndVenueNames_publicAccess()
             throws Exception {
         Chain chain = setupChain("COMP_GAMES");
@@ -222,7 +222,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void getById_returnsGame_publicAccess() throws Exception {
         Chain chain = setupChain("GET_BY_ID");
 
@@ -247,7 +247,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void update_changesScheduledAtAndVenue() throws Exception {
         Chain chain = setupChain("UPDATE");
 
@@ -269,7 +269,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void update_unknownId_returnsNotFound() throws Exception {
         Chain chain = setupChain("UPDATE_NF");
 
@@ -281,7 +281,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     void create_withInvalidBody_returnsValidationErrors() throws Exception {
         Map<String, Object> invalid = new HashMap<>();
         invalid.put("roundId", null);
@@ -320,7 +320,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ORGANIZER", "MESA"})
     void updateStatus_scheduledToInProgress_returnsUpdatedGame() throws Exception {
         Chain chain = setupChain("STATUS_IP");
 
@@ -336,7 +336,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ORGANIZER", "MESA"})
     void updateStatus_invalidTransition_returnsConflict() throws Exception {
         Chain chain = setupChain("STATUS_CONFLICT");
 
@@ -355,7 +355,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "MESA")
     void updateStatus_unknownId_returnsNotFound() throws Exception {
         mockMvc.perform(patch(GAMES_URL + "/" + UUID.randomUUID() + "/status")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -364,7 +364,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ORGANIZER", "MESA"})
     void updateStatus_nullStatus_returnsBadRequest() throws Exception {
         Chain chain = setupChain("STATUS_NULL");
 
@@ -390,7 +390,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ORGANIZER", "MESA"})
     void registerResult_inProgressGame_returnsFinishedGameWithScores() throws Exception {
         Chain chain = setupChain("RESULT_OK");
 
@@ -409,7 +409,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ORGANIZER", "MESA"})
     void registerResult_scheduledGame_returnsConflict() throws Exception {
         Chain chain = setupChain("RESULT_SCHEDULED");
 
@@ -425,7 +425,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ORGANIZER", "MESA"})
     void registerResult_finishedGame_returnsConflict() throws Exception {
         Chain chain = setupChain("RESULT_FINISHED");
 
@@ -443,7 +443,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "MESA")
     void registerResult_unknownId_returnsNotFound() throws Exception {
         mockMvc.perform(post(GAMES_URL + "/" + UUID.randomUUID() + "/result")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -452,7 +452,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ORGANIZER", "MESA"})
     void registerResult_negativeScore_returnsBadRequest() throws Exception {
         Chain chain = setupChain("RESULT_NEGATIVE");
 
@@ -480,7 +480,7 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ORGANIZER", "MESA"})
     void registerResult_recalculatesStandingsForCategory() throws Exception {
         Chain chain = setupChain("RESULT_STANDINGS");
 

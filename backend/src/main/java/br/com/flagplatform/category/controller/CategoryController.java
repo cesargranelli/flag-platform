@@ -4,12 +4,14 @@ import br.com.flagplatform.category.dto.request.CreateCategoryRequest;
 import br.com.flagplatform.category.dto.request.UpdateCategoryRequest;
 import br.com.flagplatform.category.dto.response.CategoryResponse;
 import br.com.flagplatform.category.service.CategoryService;
+import br.com.flagplatform.common.security.SecurityExpressions;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,6 +37,7 @@ public class CategoryController {
     )
     @PostMapping("/api/v1/categories")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public CategoryResponse create(@Valid @RequestBody CreateCategoryRequest request) {
         return service.create(request);
     }
@@ -54,6 +57,7 @@ public class CategoryController {
             description = "Atualiza uma categoria existente. Requer autenticação."
     )
     @PutMapping("/api/v1/categories/{id}")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public CategoryResponse update(
             @Parameter(description = "Id da categoria") @PathVariable UUID id,
             @Valid @RequestBody UpdateCategoryRequest request) {
@@ -67,6 +71,7 @@ public class CategoryController {
     )
     @DeleteMapping("/api/v1/categories/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public void delete(
             @Parameter(description = "Id da categoria") @PathVariable UUID id) {
         service.delete(id);

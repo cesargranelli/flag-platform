@@ -53,7 +53,7 @@ class StandingControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ORGANIZER", "MESA"})
     void getStandings_returnsOrderedTable_publicAccess() throws Exception {
         Chain chain = setupStandings("ORDER");
 
@@ -111,7 +111,7 @@ class StandingControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ORGANIZER", "MESA"})
     void getStandings_withDraw_accumulatesPointForDraw() throws Exception {
         Chain chain = setupStandings("DRAW");
 
