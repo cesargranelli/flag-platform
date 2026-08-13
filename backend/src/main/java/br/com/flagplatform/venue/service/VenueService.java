@@ -1,6 +1,7 @@
 package br.com.flagplatform.venue.service;
 
 import br.com.flagplatform.organization.OrganizationLookup;
+import br.com.flagplatform.venue.VenueLookup;
 import br.com.flagplatform.venue.dto.request.CreateVenueRequest;
 import br.com.flagplatform.venue.dto.request.UpdateVenueRequest;
 import br.com.flagplatform.venue.dto.response.VenueResponse;
@@ -19,7 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Service
-public class VenueService {
+public class VenueService implements VenueLookup {
 
     private final VenueMapper mapper;
     private final VenueRepository repository;
@@ -62,6 +63,11 @@ public class VenueService {
     private VenueEntity findEntityById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new VenueNotFoundException(id));
+    }
+
+    @Override
+    public void assertExists(UUID id) {
+        findEntityById(id);
     }
 
 }

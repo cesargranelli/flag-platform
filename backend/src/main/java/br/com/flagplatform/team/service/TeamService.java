@@ -1,6 +1,7 @@
 package br.com.flagplatform.team.service;
 
 import br.com.flagplatform.category.CategoryLookup;
+import br.com.flagplatform.team.TeamLookup;
 import br.com.flagplatform.team.dto.request.CreateTeamRequest;
 import br.com.flagplatform.team.dto.request.UpdateTeamRequest;
 import br.com.flagplatform.team.dto.response.TeamResponse;
@@ -19,7 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Service
-public class TeamService {
+public class TeamService implements TeamLookup {
 
     private final TeamMapper mapper;
     private final TeamRepository repository;
@@ -62,6 +63,11 @@ public class TeamService {
     private TeamEntity findEntityById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new TeamNotFoundException(id));
+    }
+
+    @Override
+    public void assertExists(UUID id) {
+        findEntityById(id);
     }
 
 }
