@@ -134,26 +134,34 @@ class RosterServiceTest {
     }
 
     @Test
-    void findRosterByTeam_returnsEntriesOrderedByName() {
+    void findRosterByTeam_returnsEntriesOrderedByJerseyNumber() {
         UUID teamId = UUID.randomUUID();
         UUID biaId = UUID.randomUUID();
         UUID anaId = UUID.randomUUID();
+        UUID zecaId = UUID.randomUUID();
 
         RosterEntryEntity biaEntry = entity(teamId, biaId, RosterStatus.ACTIVE);
         RosterEntryEntity anaEntry = entity(teamId, anaId, RosterStatus.ACTIVE);
+        RosterEntryEntity zecaEntry = entity(teamId, zecaId, RosterStatus.ACTIVE);
 
         when(repository.findAllByTeamIdOrderByCreatedAtAsc(teamId))
-                .thenReturn(List.of(biaEntry, anaEntry));
+                .thenReturn(List.of(biaEntry, zecaEntry, anaEntry));
         when(athleteLookup.findAthleteInfoById(biaId))
                 .thenReturn(info(biaId, "Bia Santos", "Bia", AthletePosition.DB, 21, null));
         when(athleteLookup.findAthleteInfoById(anaId))
                 .thenReturn(info(anaId, "Ana Souza", "Ana", AthletePosition.RB, 3, null));
+        when(athleteLookup.findAthleteInfoById(zecaId))
+                .thenReturn(info(zecaId, "Zeca Silva", null, AthletePosition.WR, null, null));
 
         List<RosterEntryResponse> response = service.findRosterByTeam(teamId);
 
-        assertThat(response).hasSize(2);
+        assertThat(response).hasSize(3);
         assertThat(response.get(0).athleteName()).isEqualTo("Ana Souza");
+        assertThat(response.get(0).number()).isEqualTo(3);
         assertThat(response.get(1).athleteName()).isEqualTo("Bia Santos");
+        assertThat(response.get(1).number()).isEqualTo(21);
+        assertThat(response.get(2).athleteName()).isEqualTo("Zeca Silva");
+        assertThat(response.get(2).number()).isNull();
         verify(teamLookup).assertExists(teamId);
     }
 

@@ -130,22 +130,28 @@ class RosterControllerIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ORGANIZER")
-    void list_ordersByAthleteName_publicAccess() throws Exception {
+    void list_ordersByJerseyNumber_publicAccess() throws Exception {
         Chain chain = setupChain("ORDER");
-        String anaId = createAthlete("Ana Souza", "Ana", "RB", 3, null);
         String biaId = createAthlete("Bia Santos", "Bia", "DB", 21, null);
+        String anaId = createAthlete("Ana Souza", "Ana", "RB", 3, null);
+        String zecaId = createAthlete("Zeca Silva", "Zeca", "WR", null, null);
 
         addToRoster(chain.teamId, biaId, "ACTIVE");
-        addToRoster(chain.teamId, anaId, "INACTIVE");
+        addToRoster(chain.teamId, anaId, "ACTIVE");
+        addToRoster(chain.teamId, zecaId, "ACTIVE");
 
         MvcResult result = mockMvc.perform(get(ROSTER_URL.formatted(chain.teamId)))
                 .andExpect(status().isOk())
                 .andReturn();
 
         JsonNode array = objectMapper.readTree(result.getResponse().getContentAsString());
-        assertThat(array).hasSize(2);
+        assertThat(array).hasSize(3);
         assertThat(array.get(0).path("athleteName").asText()).isEqualTo("Ana Souza");
+        assertThat(array.get(0).path("number").asInt()).isEqualTo(3);
         assertThat(array.get(1).path("athleteName").asText()).isEqualTo("Bia Santos");
+        assertThat(array.get(1).path("number").asInt()).isEqualTo(21);
+        assertThat(array.get(2).path("athleteName").asText()).isEqualTo("Zeca Silva");
+        assertThat(array.get(2).path("number").isNull()).isTrue();
     }
 
     @Test

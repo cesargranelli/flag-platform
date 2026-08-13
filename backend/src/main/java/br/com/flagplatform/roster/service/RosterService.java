@@ -52,8 +52,11 @@ public class RosterService {
 
         return repository.findAllByTeamIdOrderByCreatedAtAsc(teamId).stream()
                 .map(this::toResponse)
-                .sorted(Comparator.comparing(RosterEntryResponse::athleteName,
-                        String.CASE_INSENSITIVE_ORDER))
+                .sorted(Comparator
+                        .comparing(RosterEntryResponse::number,
+                                Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(RosterEntryResponse::athleteName,
+                                String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 
