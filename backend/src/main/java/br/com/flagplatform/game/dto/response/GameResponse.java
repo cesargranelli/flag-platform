@@ -13,6 +13,8 @@ public record GameResponse(
         UUID venueId,
         LocalDateTime scheduledAt,
         GameStatus status,
+        Integer homeScore,
+        Integer awayScore,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

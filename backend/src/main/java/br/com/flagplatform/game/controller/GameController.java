@@ -1,6 +1,7 @@
 package br.com.flagplatform.game.controller;
 
 import br.com.flagplatform.game.dto.request.CreateGameRequest;
+import br.com.flagplatform.game.dto.request.RegisterGameResultRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameStatusRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
@@ -80,6 +81,18 @@ public class GameController {
             @Parameter(description = "Id do jogo") @PathVariable UUID id,
             @Valid @RequestBody UpdateGameStatusRequest request) {
         return service.updateStatus(id, request.status());
+    }
+
+    @Operation(
+            summary = "Registrar resultado de partida",
+            description = "Registra o placar final de um jogo em andamento, finaliza o jogo (FINISHED) e recalcula a classificacao da categoria automaticamente. Requer autenticacao."
+    )
+    @PostMapping("/api/v1/games/{id}/result")
+    @ResponseStatus(HttpStatus.OK)
+    public GameResponse registerResult(
+            @Parameter(description = "Id do jogo") @PathVariable UUID id,
+            @Valid @RequestBody RegisterGameResultRequest request) {
+        return service.registerResult(id, request);
     }
 
 }

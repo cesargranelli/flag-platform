@@ -1,5 +1,6 @@
 package br.com.flagplatform.team;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -11,5 +12,7 @@ import java.util.UUID;
 public interface TeamLookup {
 
     void assertExists(UUID id);
+
+    List<UUID> findTeamIdsByCategoryId(UUID categoryId);
 
 }
