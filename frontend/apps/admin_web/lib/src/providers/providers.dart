@@ -127,3 +127,21 @@ final roundApiProvider = Provider<RoundApi>(
 final roundsProvider = FutureProvider.family<List<Round>, String>(
   (ref, categoryId) => ref.watch(roundApiProvider).listByCategory(categoryId),
 );
+
+/// Serviço de jogos.
+final gameApiProvider = Provider<GameApi>(
+  (ref) => GameApi(ref.watch(apiClientProvider)),
+);
+
+/// Rodada selecionada na tela de jogos.
+final selectedRoundProvider = StateProvider<String?>((ref) => null);
+
+/// Jogos de uma rodada.
+final gamesByRoundProvider = FutureProvider.family<List<Game>, String>(
+  (ref, roundId) => ref.watch(gameApiProvider).listByRound(roundId),
+);
+
+/// Detalhe de um jogo por id.
+final gameProvider = FutureProvider.family<Game, String>(
+  (ref, id) => ref.watch(gameApiProvider).getById(id),
+);

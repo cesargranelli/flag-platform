@@ -405,6 +405,68 @@ class FakeRoundApi extends RoundApi {
   }
 }
 
+/// [GameApi] com dados controlados para testes.
+class FakeGameApi extends GameApi {
+  FakeGameApi() : super(ApiClient(session: SessionManager()));
+
+  List<Game> games = [];
+  int createCalls = 0;
+  Map<String, dynamic>? lastBody;
+
+  @override
+  Future<List<Game>> listByRound(String roundId) async =>
+      games.where((g) => g.roundId == roundId).toList();
+
+  @override
+  Future<Game> getById(String id) async => games.firstWhere((g) => g.id == id);
+
+  @override
+  Future<Game> create({
+    required String roundId,
+    required String homeTeamId,
+    required String awayTeamId,
+    String? venueId,
+    required DateTime scheduledAt,
+  }) async {
+    createCalls++;
+    lastBody = {
+      'roundId': roundId,
+      'homeTeamId': homeTeamId,
+      'awayTeamId': awayTeamId,
+      'venueId': venueId,
+      'scheduledAt': scheduledAt,
+    };
+    final game = Game(
+      id: 'game-novo',
+      roundId: roundId,
+      homeTeamId: homeTeamId,
+      awayTeamId: awayTeamId,
+      venueId: venueId,
+      scheduledAt: scheduledAt,
+      status: GameStatus.scheduled,
+    );
+    games = [...games, game];
+    return game;
+  }
+}
+
+/// Jogo de exemplo para testes.
+Game testGame({
+  String id = '11111111-1111-1111-1111-111111111111',
+  String roundId = '11111111-1111-1111-1111-111111111111',
+  String homeTeamId = '22222222-2222-2222-2222-222222222222',
+  String awayTeamId = '33333333-3333-3333-3333-333333333333',
+}) {
+  return Game(
+    id: id,
+    roundId: roundId,
+    homeTeamId: homeTeamId,
+    awayTeamId: awayTeamId,
+    scheduledAt: DateTime(2026, 2, 1, 19, 0),
+    status: GameStatus.scheduled,
+  );
+}
+
 /// Rodada de exemplo para testes.
 Round testRound({
   String id = '11111111-1111-1111-1111-111111111111',
