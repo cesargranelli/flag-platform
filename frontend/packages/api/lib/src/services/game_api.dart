@@ -21,16 +21,61 @@ class GameApi {
       _client.getOne('/api/v1/games/$id', Game.fromJson);
 
   Future<Game> create({
-    required int roundId,
-    required int homeTeamId,
-    required int awayTeamId,
-    required int? venueId,
+    required String roundId,
+    required String homeTeamId,
+    required String awayTeamId,
+    String? venueId,
     required DateTime scheduledAt,
-  }) => _client.post('/api/v1/games', {
-    'roundId': roundId,
-    'homeTeamId': homeTeamId,
-    'awayTeamId': awayTeamId,
-    'venueId': venueId,
-    'scheduledAt': scheduledAt.toIso8601String(),
-  }, Game.fromJson);
+  }) => _client.post(
+    '/api/v1/games',
+    _body(
+      roundId: roundId,
+      homeTeamId: homeTeamId,
+      awayTeamId: awayTeamId,
+      venueId: venueId,
+      scheduledAt: scheduledAt,
+    ),
+    Game.fromJson,
+  );
+
+  Future<Game> update(
+    String id, {
+    required String roundId,
+    required String homeTeamId,
+    required String awayTeamId,
+    String? venueId,
+    required DateTime scheduledAt,
+  }) => _client.put(
+    '/api/v1/games/$id',
+    _body(
+      roundId: roundId,
+      homeTeamId: homeTeamId,
+      awayTeamId: awayTeamId,
+      venueId: venueId,
+      scheduledAt: scheduledAt,
+    ),
+    Game.fromJson,
+  );
+
+  Map<String, dynamic> _body({
+    required String roundId,
+    required String homeTeamId,
+    required String awayTeamId,
+    String? venueId,
+    required DateTime scheduledAt,
+  }) =>
+      {
+        'roundId': roundId,
+        'homeTeamId': homeTeamId,
+        'awayTeamId': awayTeamId,
+        if (venueId != null) 'venueId': venueId,
+        'scheduledAt': _formatDateTime(scheduledAt),
+      };
 }
+
+String _formatDateTime(DateTime value) =>
+    '${value.year.toString().padLeft(4, '0')}-'
+    '${value.month.toString().padLeft(2, '0')}-'
+    '${value.day.toString().padLeft(2, '0')}T'
+    '${value.hour.toString().padLeft(2, '0')}:'
+    '${value.minute.toString().padLeft(2, '0')}:00';
