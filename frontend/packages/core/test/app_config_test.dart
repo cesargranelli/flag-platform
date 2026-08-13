@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('AppConfig', () {
     test('usa valores default de API_BASE_URL e ENVIRONMENT', () {
-      expect(AppConfig.apiBaseUrl, 'http://localhost:8081');
+      expect(AppConfig.apiBaseUrl, 'http://localhost:8080');
       expect(AppConfig.environment, 'dev');
     });
   });
