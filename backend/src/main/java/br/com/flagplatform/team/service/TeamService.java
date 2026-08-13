@@ -70,4 +70,11 @@ public class TeamService implements TeamLookup {
         findEntityById(id);
     }
 
+    @Override
+    public List<UUID> findTeamIdsByCategoryId(UUID categoryId) {
+        return repository.findAllByCategoryIdOrderByNameAsc(categoryId).stream()
+                .map(TeamEntity::getId)
+                .toList();
+    }
+
 }

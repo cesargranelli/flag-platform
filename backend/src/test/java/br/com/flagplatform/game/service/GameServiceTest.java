@@ -1,11 +1,14 @@
 package br.com.flagplatform.game.service;
 
 import br.com.flagplatform.common.enums.GameStatus;
+import br.com.flagplatform.game.GameResultRegisteredEvent;
 import br.com.flagplatform.game.dto.request.CreateGameRequest;
+import br.com.flagplatform.game.dto.request.RegisterGameResultRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
 import br.com.flagplatform.game.entity.GameEntity;
 import br.com.flagplatform.game.exception.GameNotFoundException;
+import br.com.flagplatform.game.exception.GameNotInProgressException;
 import br.com.flagplatform.game.exception.InvalidGameStatusTransitionException;
 import br.com.flagplatform.game.exception.SameTeamGameException;
 import br.com.flagplatform.game.mapper.GameMapper;
@@ -18,9 +21,11 @@ import br.com.flagplatform.venue.VenueLookup;
 import br.com.flagplatform.venue.exception.VenueNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,6 +59,9 @@ class GameServiceTest {
 
     @Mock
     private TeamLookup teamLookup;
+
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @InjectMocks
     private GameService service;
@@ -381,6 +389,145 @@ class GameServiceTest {
         verify(repository, never()).save(any());
     }
 
+    @Test
+    void registerResult_inProgressGame_savesScoresAndPublishesEvent() {
+        UUID id = UUID.randomUUID();
+        UUID roundId = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        UUID homeTeamId = UUID.randomUUID();
+        UUID awayTeamId = UUID.randomUUID();
+        RegisterGameResultRequest request = new RegisterGameResultRequest(3, 1);
+        GameEntity entity = entity(roundId, homeTeamId, awayTeamId, null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.IN_PROGRESS);
+        entity.setId(id);
+        GameResponse expected = response(entity);
+
+        when(repository.findById(id)).thenReturn(Optional.of(entity));
+        when(repository.save(entity)).thenReturn(entity);
+        when(roundLookup.findCategoryId(roundId)).thenReturn(categoryId);
+        when(mapper.toResponse(entity)).thenReturn(expected);
+
+        GameResponse result = service.registerResult(id, request);
+
+        assertThat(result).isSameAs(expected);
+        assertThat(entity.getHomeScore()).isEqualTo(3);
+        assertThat(entity.getAwayScore()).isEqualTo(1);
+        assertThat(entity.getStatus()).isEqualTo(GameStatus.FINISHED);
+        verify(repository).save(entity);
+
+        ArgumentCaptor<GameResultRegisteredEvent> captor =
+                ArgumentCaptor.forClass(GameResultRegisteredEvent.class);
+        verify(applicationEventPublisher).publishEvent(captor.capture());
+        GameResultRegisteredEvent event = captor.getValue();
+        assertThat(event.gameId()).isEqualTo(id);
+        assertThat(event.categoryId()).isEqualTo(categoryId);
+    }
+
+    @Test
+    void registerResult_scheduledGame_throws() {
+        UUID id = UUID.randomUUID();
+        GameEntity entity = entity(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.SCHEDULED);
+
+        when(repository.findById(id)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.registerResult(id, new RegisterGameResultRequest(2, 0)))
+                .isInstanceOf(GameNotInProgressException.class);
+
+        assertThat(entity.getStatus()).isEqualTo(GameStatus.SCHEDULED);
+        assertThat(entity.getHomeScore()).isNull();
+        assertThat(entity.getAwayScore()).isNull();
+        verify(repository, never()).save(any());
+        verify(applicationEventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    void registerResult_finishedGame_throws() {
+        UUID id = UUID.randomUUID();
+        GameEntity entity = entity(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.FINISHED);
+
+        when(repository.findById(id)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.registerResult(id, new RegisterGameResultRequest(2, 0)))
+                .isInstanceOf(GameNotInProgressException.class);
+
+        assertThat(entity.getStatus()).isEqualTo(GameStatus.FINISHED);
+        verify(repository, never()).save(any());
+        verify(applicationEventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    void registerResult_cancelledGame_throws() {
+        UUID id = UUID.randomUUID();
+        GameEntity entity = entity(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.CANCELLED);
+
+        when(repository.findById(id)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.registerResult(id, new RegisterGameResultRequest(2, 0)))
+                .isInstanceOf(GameNotInProgressException.class);
+
+        assertThat(entity.getStatus()).isEqualTo(GameStatus.CANCELLED);
+        verify(repository, never()).save(any());
+        verify(applicationEventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    void registerResult_gameNotFound_throws() {
+        UUID id = UUID.randomUUID();
+
+        when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.registerResult(id, new RegisterGameResultRequest(2, 0)))
+                .isInstanceOf(GameNotFoundException.class);
+
+        verify(repository, never()).save(any());
+        verify(applicationEventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    void findFinishedByCategoryId_mapsFinishedGames() {
+        UUID categoryId = UUID.randomUUID();
+        UUID roundId = UUID.randomUUID();
+        UUID homeTeamId = UUID.randomUUID();
+        UUID awayTeamId = UUID.randomUUID();
+        GameEntity finished = entity(roundId, homeTeamId, awayTeamId, null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.FINISHED);
+        finished.setHomeScore(3);
+        finished.setAwayScore(1);
+
+        when(roundLookup.findRoundIdsByCategoryId(categoryId)).thenReturn(List.of(roundId));
+        when(repository.findAllByRoundIdInAndStatus(List.of(roundId), GameStatus.FINISHED))
+                .thenReturn(List.of(finished));
+
+        var result = service.findFinishedByCategoryId(categoryId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().homeTeamId()).isEqualTo(homeTeamId);
+        assertThat(result.getFirst().awayTeamId()).isEqualTo(awayTeamId);
+        assertThat(result.getFirst().homeScore()).isEqualTo(3);
+        assertThat(result.getFirst().awayScore()).isEqualTo(1);
+        // Só jogos FINISHED são consultados: jogos IN_PROGRESS/SCHEDULED não
+        // chegam ao módulo standing (filtro de status no lookup).
+        verify(repository).findAllByRoundIdInAndStatus(List.of(roundId), GameStatus.FINISHED);
+    }
+
+    @Test
+    void findFinishedByCategoryId_withoutRounds_returnsEmptyList() {
+        UUID categoryId = UUID.randomUUID();
+
+        when(roundLookup.findRoundIdsByCategoryId(categoryId)).thenReturn(List.of());
+
+        var result = service.findFinishedByCategoryId(categoryId);
+
+        assertThat(result).isEmpty();
+        verify(repository, never()).findAllByRoundIdInAndStatus(any(), any());
+    }
+
     private CreateGameRequest createRequest(UUID roundId, UUID homeTeamId, UUID awayTeamId,
                                             UUID venueId) {
         return new CreateGameRequest(
@@ -417,6 +564,8 @@ class GameServiceTest {
                 entity.getVenueId(),
                 entity.getScheduledAt(),
                 entity.getStatus(),
+                entity.getHomeScore(),
+                entity.getAwayScore(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -41,6 +42,9 @@ class GameControllerIntegrationTest {
 
     @Autowired
     private WebApplicationContext context;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -325,6 +329,133 @@ class GameControllerIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @WithMockUser
+    void registerResult_inProgressGame_returnsFinishedGameWithScores() throws Exception {
+        Chain chain = setupChain("RESULT_OK");
+
+        String gameId = createGame(chain.roundId, chain.homeTeamId, chain.awayTeamId,
+                null, "2026-02-01T19:00:00");
+        patchGameStatus(gameId, "IN_PROGRESS");
+
+        mockMvc.perform(post(GAMES_URL + "/" + gameId + "/result")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(resultBody(3, 1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(gameId))
+                .andExpect(jsonPath("$.status").value("FINISHED"))
+                .andExpect(jsonPath("$.homeScore").value(3))
+                .andExpect(jsonPath("$.awayScore").value(1));
+    }
+
+    @Test
+    @WithMockUser
+    void registerResult_scheduledGame_returnsConflict() throws Exception {
+        Chain chain = setupChain("RESULT_SCHEDULED");
+
+        String gameId = createGame(chain.roundId, chain.homeTeamId, chain.awayTeamId,
+                null, "2026-02-01T19:00:00");
+
+        mockMvc.perform(post(GAMES_URL + "/" + gameId + "/result")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(resultBody(2, 0)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message")
+                        .value("Cannot register a result for a game in status 'SCHEDULED'."));
+    }
+
+    @Test
+    @WithMockUser
+    void registerResult_finishedGame_returnsConflict() throws Exception {
+        Chain chain = setupChain("RESULT_FINISHED");
+
+        String gameId = createGame(chain.roundId, chain.homeTeamId, chain.awayTeamId,
+                null, "2026-02-01T19:00:00");
+        patchGameStatus(gameId, "IN_PROGRESS");
+        registerResult(gameId, 2, 0);
+
+        mockMvc.perform(post(GAMES_URL + "/" + gameId + "/result")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(resultBody(1, 1)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message")
+                        .value("Cannot register a result for a game in status 'FINISHED'."));
+    }
+
+    @Test
+    @WithMockUser
+    void registerResult_unknownId_returnsNotFound() throws Exception {
+        mockMvc.perform(post(GAMES_URL + "/" + UUID.randomUUID() + "/result")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(resultBody(2, 0)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
+    void registerResult_negativeScore_returnsBadRequest() throws Exception {
+        Chain chain = setupChain("RESULT_NEGATIVE");
+
+        String gameId = createGame(chain.roundId, chain.homeTeamId, chain.awayTeamId,
+                null, "2026-02-01T19:00:00");
+        patchGameStatus(gameId, "IN_PROGRESS");
+
+        Map<String, Object> invalid = new HashMap<>();
+        invalid.put("homeScore", -1);
+        invalid.put("awayScore", 0);
+
+        mockMvc.perform(post(GAMES_URL + "/" + gameId + "/result")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields[?(@.field == 'homeScore')]").exists());
+    }
+
+    @Test
+    void registerResult_requiresAuthentication() throws Exception {
+        mockMvc.perform(post(GAMES_URL + "/" + UUID.randomUUID() + "/result")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(resultBody(2, 0)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser
+    void registerResult_recalculatesStandingsForCategory() throws Exception {
+        Chain chain = setupChain("RESULT_STANDINGS");
+
+        String gameId = createGame(chain.roundId, chain.homeTeamId, chain.awayTeamId,
+                null, "2026-02-01T19:00:00");
+        patchGameStatus(gameId, "IN_PROGRESS");
+        registerResult(gameId, 3, 1);
+
+        // Segundo jogo entre os mesmos times em outra rodada, deixado como
+        // SCHEDULED: não deve contar no recálculo automático da classificação.
+        String secondRoundId = createRound(chain.categoryId, 2, "Segunda Rodada RESULT_STANDINGS", "REGULAR");
+        createGame(secondRoundId, chain.homeTeamId, chain.awayTeamId,
+                null, "2026-02-02T19:00:00");
+
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM platform.standings WHERE category_id = ?",
+                Integer.class,
+                UUID.fromString(chain.categoryId()));
+        assertThat(count).isEqualTo(2);
+
+        Integer played = jdbcTemplate.queryForObject(
+                "SELECT played FROM platform.standings WHERE category_id = ? AND team_id = ?",
+                Integer.class,
+                UUID.fromString(chain.categoryId()),
+                UUID.fromString(chain.homeTeamId()));
+        assertThat(played).isEqualTo(1);
+
+        Integer points = jdbcTemplate.queryForObject(
+                "SELECT points FROM platform.standings WHERE category_id = ? AND team_id = ?",
+                Integer.class,
+                UUID.fromString(chain.categoryId()),
+                UUID.fromString(chain.homeTeamId()));
+        assertThat(points).isEqualTo(3);
+    }
+
     private int indexOfId(JsonNode array, String id) {
         for (int i = 0; i < array.size(); i++) {
             if (id.equals(array.get(i).path("id").asText())) {
@@ -556,9 +687,24 @@ class GameControllerIntegrationTest {
                 .andExpect(jsonPath("$.status").value(status));
     }
 
+    private void registerResult(String gameId, int homeScore, int awayScore) throws Exception {
+        mockMvc.perform(post(GAMES_URL + "/" + gameId + "/result")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(resultBody(homeScore, awayScore)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("FINISHED"));
+    }
+
     private String statusBody(String status) throws Exception {
         Map<String, Object> fields = new HashMap<>();
         fields.put("status", status);
+        return objectMapper.writeValueAsString(fields);
+    }
+
+    private String resultBody(int homeScore, int awayScore) throws Exception {
+        Map<String, Object> fields = new HashMap<>();
+        fields.put("homeScore", homeScore);
+        fields.put("awayScore", awayScore);
         return objectMapper.writeValueAsString(fields);
     }
 

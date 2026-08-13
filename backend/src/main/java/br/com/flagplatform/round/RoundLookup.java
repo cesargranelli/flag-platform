@@ -1,5 +1,6 @@
 package br.com.flagplatform.round;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -11,5 +12,9 @@ import java.util.UUID;
 public interface RoundLookup {
 
     void assertExists(UUID id);
+
+    UUID findCategoryId(UUID roundId);
+
+    List<UUID> findRoundIdsByCategoryId(UUID categoryId);
 
 }

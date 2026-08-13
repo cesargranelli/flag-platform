@@ -1,5 +1,6 @@
 package br.com.flagplatform.game.repository;
 
+import br.com.flagplatform.common.enums.GameStatus;
 import br.com.flagplatform.game.entity.GameEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -11,5 +12,7 @@ import java.util.UUID;
 public interface GameRepository extends JpaRepository<GameEntity, UUID> {
 
     List<GameEntity> findAllByRoundIdOrderByScheduledAtAsc(UUID roundId);
+
+    List<GameEntity> findAllByRoundIdInAndStatus(List<UUID> roundIds, GameStatus status);
 
 }

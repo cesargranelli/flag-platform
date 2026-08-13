@@ -66,4 +66,16 @@ public class RoundService implements RoundLookup {
         findEntityById(id);
     }
 
+    @Override
+    public UUID findCategoryId(UUID roundId) {
+        return findEntityById(roundId).getCategoryId();
+    }
+
+    @Override
+    public List<UUID> findRoundIdsByCategoryId(UUID categoryId) {
+        return repository.findAllByCategoryId(categoryId).stream()
+                .map(RoundEntity::getId)
+                .toList();
+    }
+
 }

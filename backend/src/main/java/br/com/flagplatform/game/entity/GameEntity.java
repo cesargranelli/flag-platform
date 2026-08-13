@@ -43,4 +43,10 @@ public class GameEntity extends BaseEntity {
 
     @Column(nullable = false)
     private GameStatus status;
+
+    @Column(name = "home_score")
+    private Integer homeScore;
+
+    @Column(name = "away_score")
+    private Integer awayScore;
 }
