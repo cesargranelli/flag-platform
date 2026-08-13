@@ -4,6 +4,7 @@ import '../screens/competition_detail_screen.dart';
 import '../screens/competition_games_screen.dart';
 import '../screens/competition_results_screen.dart';
 import '../screens/competition_standings_screen.dart';
+import '../screens/game_detail_screen.dart';
 import '../screens/home_screen.dart';
 
 /// Rotas do Public App.
@@ -55,6 +56,23 @@ class AppRouter {
             ),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/game/:id',
+        name: 'gameDetail',
+        builder: (context, state) {
+          // O jogo completo e o nome do campeonato podem vir via `extra`
+          // (GameDetailArgs) para exibição imediata; em deep links a tela
+          // busca o jogo por id.
+          final args = state.extra is GameDetailArgs
+              ? state.extra as GameDetailArgs
+              : null;
+          return GameDetailScreen(
+            gameId: args?.gameId ?? state.pathParameters['id']!,
+            game: args?.game,
+            competitionName: args?.competitionName ?? '',
+          );
+        },
       ),
     ],
   );

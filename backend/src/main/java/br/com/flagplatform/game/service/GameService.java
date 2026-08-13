@@ -21,6 +21,7 @@ import br.com.flagplatform.game.repository.GameRepository;
 import br.com.flagplatform.round.RoundInfo;
 import br.com.flagplatform.round.RoundLookup;
 import br.com.flagplatform.team.TeamLookup;
+import br.com.flagplatform.venue.VenueInfo;
 import br.com.flagplatform.venue.VenueLookup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -84,18 +85,25 @@ public class GameService implements GameLookup {
         List<UUID> roundIds = new ArrayList<>(roundNumbers.keySet());
 
         return repository.findAllByRoundIdInOrderByScheduledAtAsc(roundIds).stream()
-                .map(game -> new GameSummaryResponse(
-                        game.getId(),
-                        game.getRoundId(),
-                        roundNumbers.get(game.getRoundId()),
-                        teamLookup.findTeamInfoById(game.getHomeTeamId()).name(),
-                        teamLookup.findTeamInfoById(game.getAwayTeamId()).name(),
-                        game.getVenueId(),
-                        game.getVenueId() != null ? venueLookup.findNameById(game.getVenueId()) : null,
-                        game.getScheduledAt(),
-                        game.getStatus(),
-                        game.getHomeScore(),
-                        game.getAwayScore()))
+                .map(game -> {
+                    VenueInfo venue = game.getVenueId() != null
+                            ? venueLookup.findVenueInfoById(game.getVenueId())
+                            : null;
+                    return new GameSummaryResponse(
+                            game.getId(),
+                            game.getRoundId(),
+                            roundNumbers.get(game.getRoundId()),
+                            teamLookup.findTeamInfoById(game.getHomeTeamId()).name(),
+                            teamLookup.findTeamInfoById(game.getAwayTeamId()).name(),
+                            game.getVenueId(),
+                            venue != null ? venue.name() : null,
+                            venue != null ? venue.address() : null,
+                            venue != null ? venue.mapsUrl() : null,
+                            game.getScheduledAt(),
+                            game.getStatus(),
+                            game.getHomeScore(),
+                            game.getAwayScore());
+                })
                 .toList();
     }
 

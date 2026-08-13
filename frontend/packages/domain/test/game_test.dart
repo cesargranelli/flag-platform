@@ -12,6 +12,8 @@ void main() {
         'awayTeamName': 'Titans',
         'venueId': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
         'venueName': 'Campo do Parque',
+        'venueAddress': 'Rua das Flores, 123',
+        'venueMapsUrl': 'https://maps.google.com/?q=Rua+das+Flores',
         'scheduledAt': '2026-08-20T19:30:00',
         'status': 'SCHEDULED',
         'homeScore': null,
@@ -25,6 +27,8 @@ void main() {
       expect(game.awayTeamName, 'Titans');
       expect(game.venueId, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
       expect(game.venueName, 'Campo do Parque');
+      expect(game.venueAddress, 'Rua das Flores, 123');
+      expect(game.venueMapsUrl, 'https://maps.google.com/?q=Rua+das+Flores');
       expect(game.scheduledAt, DateTime.parse('2026-08-20T19:30:00'));
       expect(game.status, GameStatus.scheduled);
       expect(game.homeScore, isNull);
@@ -73,6 +77,8 @@ void main() {
       expect(game.awayTeamName, isNull);
       expect(game.venueId, isNull);
       expect(game.venueName, isNull);
+      expect(game.venueAddress, isNull);
+      expect(game.venueMapsUrl, isNull);
       expect(game.homeScore, isNull);
       expect(game.awayScore, isNull);
       expect(game.status, GameStatus.cancelled);
@@ -103,6 +109,8 @@ void main() {
         homeTeamName: 'Flames',
         awayTeamName: 'Titans',
         venueName: 'Campo do Parque',
+        venueAddress: 'Rua das Flores, 123',
+        venueMapsUrl: 'https://maps.google.com/?q=Rua+das+Flores',
         scheduledAt: DateTime(2026, 8, 20, 19, 30),
         status: GameStatus.scheduled,
       );
@@ -115,6 +123,8 @@ void main() {
       expect(json['homeTeamName'], 'Flames');
       expect(json['awayTeamName'], 'Titans');
       expect(json['venueName'], 'Campo do Parque');
+      expect(json['venueAddress'], 'Rua das Flores, 123');
+      expect(json['venueMapsUrl'], 'https://maps.google.com/?q=Rua+das+Flores');
       expect(json['scheduledAt'], '2026-08-20T19:30:00.000');
       expect(json['status'], 'SCHEDULED');
     });
@@ -134,6 +144,8 @@ void main() {
       expect(json.containsKey('awayTeamName'), isFalse);
       expect(json.containsKey('venueId'), isFalse);
       expect(json.containsKey('venueName'), isFalse);
+      expect(json.containsKey('venueAddress'), isFalse);
+      expect(json.containsKey('venueMapsUrl'), isFalse);
       expect(json.containsKey('homeScore'), isFalse);
       expect(json.containsKey('awayScore'), isFalse);
     });

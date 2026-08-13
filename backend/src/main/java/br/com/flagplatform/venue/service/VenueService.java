@@ -1,6 +1,7 @@
 package br.com.flagplatform.venue.service;
 
 import br.com.flagplatform.organization.OrganizationLookup;
+import br.com.flagplatform.venue.VenueInfo;
 import br.com.flagplatform.venue.VenueLookup;
 import br.com.flagplatform.venue.dto.request.CreateVenueRequest;
 import br.com.flagplatform.venue.dto.request.UpdateVenueRequest;
@@ -71,8 +72,9 @@ public class VenueService implements VenueLookup {
     }
 
     @Override
-    public String findNameById(UUID id) {
-        return findEntityById(id).getName();
+    public VenueInfo findVenueInfoById(UUID id) {
+        VenueEntity entity = findEntityById(id);
+        return new VenueInfo(entity.getId(), entity.getName(), entity.getAddress(), entity.getMapsUrl());
     }
 
 }

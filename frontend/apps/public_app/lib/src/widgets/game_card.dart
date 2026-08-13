@@ -14,12 +14,14 @@ class GameCard extends StatelessWidget {
   final Game game;
   final bool highlighted;
   final bool showRound;
+  final VoidCallback? onTap;
 
   const GameCard({
     super.key,
     required this.game,
     this.highlighted = false,
     this.showRound = false,
+    this.onTap,
   });
 
   @override
@@ -41,6 +43,7 @@ class GameCard extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
       color: highlighted ? AppColors.primary.withValues(alpha: 0.04) : null,
       shape: highlighted
           ? RoundedRectangleBorder(
@@ -48,7 +51,9 @@ class GameCard extends StatelessWidget {
               side: const BorderSide(color: AppColors.primary, width: 2),
             )
           : null,
-      child: Padding(
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,6 +131,7 @@ class GameCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

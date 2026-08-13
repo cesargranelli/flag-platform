@@ -13,6 +13,8 @@ public record GameSummaryResponse(
         String awayTeamName,
         UUID venueId,
         String venueName,
+        String venueAddress,
+        String venueMapsUrl,
         LocalDateTime scheduledAt,
         GameStatus status,
         Integer homeScore,

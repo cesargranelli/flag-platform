@@ -12,6 +12,8 @@ class Game {
   final String? awayTeamName;
   final String? venueId;
   final String? venueName;
+  final String? venueAddress;
+  final String? venueMapsUrl;
   final DateTime scheduledAt;
   final GameStatus status;
   final int? homeScore;
@@ -27,6 +29,8 @@ class Game {
     this.awayTeamName,
     this.venueId,
     this.venueName,
+    this.venueAddress,
+    this.venueMapsUrl,
     this.homeScore,
     this.awayScore,
   });
@@ -39,6 +43,8 @@ class Game {
     awayTeamName: json['awayTeamName'] as String?,
     venueId: json['venueId'] as String?,
     venueName: json['venueName'] as String?,
+    venueAddress: json['venueAddress'] as String?,
+    venueMapsUrl: json['venueMapsUrl'] as String?,
     scheduledAt: DateTime.parse(json['scheduledAt'] as String),
     status: GameStatus.fromJson(json['status'] as String),
     homeScore: json['homeScore'] as int?,
@@ -53,6 +59,8 @@ class Game {
     if (awayTeamName != null) 'awayTeamName': awayTeamName,
     if (venueId != null) 'venueId': venueId,
     if (venueName != null) 'venueName': venueName,
+    if (venueAddress != null) 'venueAddress': venueAddress,
+    if (venueMapsUrl != null) 'venueMapsUrl': venueMapsUrl,
     'scheduledAt': scheduledAt.toIso8601String(),
     'status': status.toJson(),
     if (homeScore != null) 'homeScore': homeScore,

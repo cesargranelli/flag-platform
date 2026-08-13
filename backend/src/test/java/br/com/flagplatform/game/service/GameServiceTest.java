@@ -23,6 +23,7 @@ import br.com.flagplatform.round.exception.RoundNotFoundException;
 import br.com.flagplatform.team.TeamInfo;
 import br.com.flagplatform.team.TeamLookup;
 import br.com.flagplatform.team.exception.TeamNotFoundException;
+import br.com.flagplatform.venue.VenueInfo;
 import br.com.flagplatform.venue.VenueLookup;
 import br.com.flagplatform.venue.exception.VenueNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -290,7 +291,8 @@ class GameServiceTest {
                 .thenReturn(new TeamInfo(otherHomeTeamId, "Furacão"));
         when(teamLookup.findTeamInfoById(otherAwayTeamId))
                 .thenReturn(new TeamInfo(otherAwayTeamId, "Trovões"));
-        when(venueLookup.findNameById(venueId)).thenReturn("Arena Central");
+        when(venueLookup.findVenueInfoById(venueId))
+                .thenReturn(new VenueInfo(venueId, "Arena Central", "Rua das Laranjeiras, 100", "https://maps.example.com/arena"));
 
         GameEntity later = entity(roundId2, homeTeamId, awayTeamId, venueId,
                 LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.SCHEDULED);
@@ -308,6 +310,8 @@ class GameServiceTest {
         assertThat(result.getFirst().awayTeamName()).isEqualTo("Trovões");
         assertThat(result.getFirst().venueId()).isNull();
         assertThat(result.getFirst().venueName()).isNull();
+        assertThat(result.getFirst().venueAddress()).isNull();
+        assertThat(result.getFirst().venueMapsUrl()).isNull();
         assertThat(result.getFirst().scheduledAt())
                 .isEqualTo(LocalDateTime.of(2026, 2, 1, 15, 0));
         assertThat(result.getFirst().status()).isEqualTo(GameStatus.SCHEDULED);
@@ -317,6 +321,8 @@ class GameServiceTest {
         assertThat(result.getLast().awayTeamName()).isEqualTo("Águias");
         assertThat(result.getLast().venueId()).isEqualTo(venueId);
         assertThat(result.getLast().venueName()).isEqualTo("Arena Central");
+        assertThat(result.getLast().venueAddress()).isEqualTo("Rua das Laranjeiras, 100");
+        assertThat(result.getLast().venueMapsUrl()).isEqualTo("https://maps.example.com/arena");
         assertThat(result.getLast().scheduledAt())
                 .isEqualTo(LocalDateTime.of(2026, 2, 1, 19, 0));
         assertThat(result.getLast().status()).isEqualTo(GameStatus.SCHEDULED);
