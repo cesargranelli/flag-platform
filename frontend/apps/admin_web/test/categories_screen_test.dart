@@ -1,0 +1,77 @@
+import 'package:flag_admin_web/src/app.dart';
+import 'package:flag_admin_web/src/providers/providers.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'helpers/fakes.dart';
+
+void main() {
+  Future<void> pumpApp(
+    WidgetTester tester, {
+    required FakeCategoryApi categoryApi,
+    FakeCompetitionApi? competitionApi,
+  }) {
+    final session = InMemorySessionManager()
+      ..seedToken('jwt', roles: ['ORGANIZER'], userName: 'Ana Lima');
+    final authApi = FakeAuthApi()..meUser = testUser();
+
+    return tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sessionManagerProvider.overrideWithValue(session),
+          authApiProvider.overrideWithValue(authApi),
+          competitionApiProvider.overrideWithValue(
+              competitionApi ?? FakeCompetitionApi()..competitions = [testCompetition()]),
+          categoryApiProvider.overrideWithValue(categoryApi),
+        ],
+        child: const FlagAdminWeb(),
+      ),
+    );
+  }
+
+  Future<void> openCategories(WidgetTester tester) async {
+    await tester.tap(find.text('Categorias'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('lista as categorias do campeonato selecionado',
+      (WidgetTester tester) async {
+    final api = FakeCategoryApi()
+      ..categories = [testCategory(name: 'Masculino 5x5'), testCategory(id: '22222222-2222-2222-2222-222222222222', name: 'Feminino 5x5')];
+
+    await pumpApp(tester, categoryApi: api);
+    await tester.pumpAndSettle();
+    await openCategories(tester);
+
+    expect(find.text('Masculino 5x5'), findsOneWidget);
+    expect(find.text('Feminino 5x5'), findsOneWidget);
+  });
+
+  testWidgets('cria uma categoria pelo formulário', (WidgetTester tester) async {
+    final api = FakeCategoryApi();
+
+    await pumpApp(tester, categoryApi: api);
+    await tester.pumpAndSettle();
+    await openCategories(tester);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nova categoria'), findsOneWidget);
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Taça SP').last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nome'), 'Sub-17');
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+
+    expect(api.createCalls, 1);
+    expect(api.lastBody?['name'], 'Sub-17');
+    expect(find.text('Sub-17'), findsOneWidget);
+  });
+}

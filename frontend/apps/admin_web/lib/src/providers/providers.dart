@@ -70,3 +70,17 @@ final competitionsProvider = FutureProvider<List<Competition>>(
 final competitionProvider = FutureProvider.family<Competition, String>(
   (ref, id) => ref.watch(competitionApiProvider).getById(id),
 );
+
+/// Serviço de categorias.
+final categoryApiProvider = Provider<CategoryApi>(
+  (ref) => CategoryApi(ref.watch(apiClientProvider)),
+);
+
+/// Campeonato selecionado na tela de categorias.
+final selectedCompetitionProvider = StateProvider<String?>((ref) => null);
+
+/// Categorias de um campeonato.
+final categoriesProvider = FutureProvider.family<List<Category>, String>(
+  (ref, competitionId) =>
+      ref.watch(categoryApiProvider).listByCompetition(competitionId),
+);
