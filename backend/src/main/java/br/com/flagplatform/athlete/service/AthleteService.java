@@ -1,5 +1,7 @@
 package br.com.flagplatform.athlete.service;
 
+import br.com.flagplatform.athlete.AthleteInfo;
+import br.com.flagplatform.athlete.AthleteLookup;
 import br.com.flagplatform.athlete.dto.request.CreateAthleteRequest;
 import br.com.flagplatform.athlete.dto.request.UpdateAthleteRequest;
 import br.com.flagplatform.athlete.dto.response.AthleteResponse;
@@ -17,7 +19,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Service
-public class AthleteService {
+public class AthleteService implements AthleteLookup {
 
     private final AthleteMapper mapper;
     private final AthleteRepository repository;
@@ -46,6 +48,23 @@ public class AthleteService {
     private AthleteEntity findEntityById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new AthleteNotFoundException(id));
+    }
+
+    @Override
+    public void assertExists(UUID id) {
+        findEntityById(id);
+    }
+
+    @Override
+    public AthleteInfo findAthleteInfoById(UUID id) {
+        AthleteEntity entity = findEntityById(id);
+        return new AthleteInfo(
+                entity.getId(),
+                entity.getName(),
+                entity.getNickname(),
+                entity.getPosition(),
+                entity.getNumber(),
+                entity.getPhotoUrl());
     }
 
 }
