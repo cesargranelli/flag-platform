@@ -1,10 +1,11 @@
 import 'package:flag_core/flag_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
-/// Tela inicial do Admin Web (painel do organizador).
+/// Tela inicial do Admin Web: menu de gestão do organizador.
 class AdminHomeScreen extends ConsumerWidget {
   const AdminHomeScreen({super.key});
 
@@ -25,23 +26,43 @@ class AdminHomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.dashboard, size: 64, color: AppColors.primary),
-            const SizedBox(height: 16),
-            Text(
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
               'Bem-vindo, ${userName ?? 'organizador'}!',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Gestão de cadastros do organizador',
-              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
+          ),
+          _menuItem(
+            context,
+            icon: Icons.business,
+            title: 'Organizações',
+            subtitle: 'Criar e editar organizações',
+            onTap: () => context.push('/organizations'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _menuItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        leading: Icon(icon, color: AppColors.primary),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
       ),
     );
   }
