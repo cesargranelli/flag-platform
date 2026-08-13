@@ -16,6 +16,8 @@ import '../screens/team_form_screen.dart';
 import '../screens/teams_screen.dart';
 import '../screens/round_form_screen.dart';
 import '../screens/rounds_screen.dart';
+import '../screens/game_form_screen.dart';
+import '../screens/games_screen.dart';
 
 /// Rotas do Admin Web com proteção de autenticação.
 class AppRouter {
@@ -183,6 +185,25 @@ class AppRouter {
                 round: round,
               );
             },
+          ),
+          GoRoute(
+            path: '/games',
+            name: 'games',
+            builder: (context, state) => const GamesScreen(),
+          ),
+          GoRoute(
+            path: '/games/new',
+            name: 'gameNew',
+            builder: (context, state) => GameFormScreen(
+              args: state.extra is GameFormArgs ? state.extra as GameFormArgs : null,
+            ),
+          ),
+          GoRoute(
+            path: '/games/:id',
+            name: 'gameEdit',
+            builder: (context, state) => GameFormScreen(
+              args: state.extra is GameFormArgs ? state.extra as GameFormArgs : null,
+            ),
           ),
         ],
       );
