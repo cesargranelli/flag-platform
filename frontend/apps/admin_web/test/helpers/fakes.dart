@@ -75,6 +75,39 @@ class FakeAuthApi extends AuthApi {
   }
 }
 
+/// [OrganizationApi] com dados controlados para testes.
+class FakeOrganizationApi extends OrganizationApi {
+  FakeOrganizationApi() : super(ApiClient(session: SessionManager()));
+
+  List<Organization> organizations = [];
+  int createCalls = 0;
+  int updateCalls = 0;
+  Map<String, dynamic>? lastBody;
+
+  @override
+  Future<List<Organization>> list() async => organizations;
+
+  @override
+  Future<Organization> getById(String id) async =>
+      organizations.firstWhere((o) => o.id == id);
+
+  @override
+  Future<Organization> create(Map<String, dynamic> body) async {
+    createCalls++;
+    lastBody = body;
+    final org = Organization.fromJson({...body, 'id': 'org-nova'});
+    organizations = [...organizations, org];
+    return org;
+  }
+
+  @override
+  Future<Organization> update(String id, Map<String, dynamic> body) async {
+    updateCalls++;
+    lastBody = body;
+    return Organization.fromJson({...body, 'id': id});
+  }
+}
+
 /// Usuário de exemplo para testes.
 User testUser({
   String id = '11111111-1111-1111-1111-111111111111',
@@ -93,5 +126,22 @@ LoginResponse testLoginResponse({User? user}) {
     tokenType: 'Bearer',
     expiresInSeconds: 3600,
     user: u,
+  );
+}
+
+/// Organização de exemplo para testes.
+Organization testOrganization({
+  String id = '11111111-1111-1111-1111-111111111111',
+  String tradeName = 'Flag Brasil',
+  String legalName = 'Associação Flag Brasil',
+}) {
+  return Organization(
+    id: id,
+    tradeName: tradeName,
+    legalName: legalName,
+    country: 'BR',
+    timezone: 'America/Sao_Paulo',
+    locale: 'pt-BR',
+    organizationType: OrganizationType.association,
   );
 }

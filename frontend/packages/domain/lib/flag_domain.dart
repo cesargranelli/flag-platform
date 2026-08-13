@@ -14,3 +14,5 @@ export 'src/models/login_response.dart';
 export 'src/enums/game_status.dart';
 export 'src/enums/competition_status.dart';
 export 'src/enums/check_in_status.dart';
+export 'src/enums/organization_status.dart';
+export 'src/enums/organization_type.dart';

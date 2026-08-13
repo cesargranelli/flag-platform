@@ -1,5 +1,6 @@
 import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
+import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -39,3 +40,18 @@ final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.read(authControllerProvider);
   return AppRouter.build(auth);
 });
+
+/// Serviço de organizações.
+final organizationApiProvider = Provider<OrganizationApi>(
+  (ref) => OrganizationApi(ref.watch(apiClientProvider)),
+);
+
+/// Lista de organizações da tela de gestão.
+final organizationsProvider = FutureProvider<List<Organization>>(
+  (ref) => ref.watch(organizationApiProvider).list(),
+);
+
+/// Detalhe de uma organização por id.
+final organizationProvider = FutureProvider.family<Organization, String>(
+  (ref, id) => ref.watch(organizationApiProvider).getById(id),
+);
