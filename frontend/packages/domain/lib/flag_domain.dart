@@ -11,6 +11,7 @@ export 'src/models/roster_entry.dart';
 export 'src/models/check_in.dart';
 export 'src/models/user.dart';
 export 'src/models/login_response.dart';
+export 'src/models/score_event.dart';
 export 'src/enums/game_status.dart';
 export 'src/enums/competition_status.dart';
 export 'src/enums/check_in_status.dart';

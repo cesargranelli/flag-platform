@@ -27,8 +27,8 @@ class TeamApi {
         {
           'categoryId': categoryId,
           'name': name,
-          if (shortName != null) 'shortName': shortName,
-          if (logoUrl != null) 'logoUrl': logoUrl,
+          'shortName': ?shortName,
+          'logoUrl': ?logoUrl,
         },
         Team.fromJson,
       );
@@ -45,9 +45,10 @@ class TeamApi {
         {
           'categoryId': categoryId,
           'name': name,
-          if (shortName != null) 'shortName': shortName,
-          if (logoUrl != null) 'logoUrl': logoUrl,
+          'shortName': ?shortName,
+          'logoUrl': ?logoUrl,
         },
         Team.fromJson,
       );
 }
+

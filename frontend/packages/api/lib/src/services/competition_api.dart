@@ -77,8 +77,8 @@ class CompetitionApi {
         'name': name,
         if (description != null && description.isNotEmpty)
           'description': description,
-        if (startDate != null) 'startDate': startDate,
-        if (endDate != null) 'endDate': endDate,
-        if (status != null) 'status': status.toJson(),
+        'startDate': ?startDate,
+        'endDate': ?endDate,
+        'status': ?(status?.toJson()),
       };
 }

@@ -176,20 +176,128 @@ class _GameOperationScreenState extends ConsumerState<GameOperationScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        if (game.status == GameStatus.scheduled)
-          FilledButton.icon(
-            icon: const Icon(Icons.play_arrow),
-            label: const Text('Iniciar partida'),
-            onPressed: _submitting ? null : () => _changeStatus(game, GameStatus.inProgress),
-          ),
-        if (game.status == GameStatus.inProgress)
+        if (game.status == GameStatus.inProgress) ...[
+          _buildScoreControls(game),
+          const SizedBox(height: 16),
           FilledButton.icon(
             icon: const Icon(Icons.stop),
             label: const Text('Finalizar partida'),
             onPressed: _submitting ? null : () => _confirmFinish(game),
           ),
+        ] else if (game.status == GameStatus.scheduled)
+          FilledButton.icon(
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('Iniciar partida'),
+            onPressed: _submitting ? null : () => _changeStatus(game, GameStatus.inProgress),
+          ),
       ],
     );
+  }
+
+  Widget _buildScoreControls(Game game) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _scoreTeam('Casa', game.homeScore ?? 0, () => _addPoint(game, game.homeTeamId!)),
+                Text(
+                  '${game.homeScore ?? 0} x ${game.awayScore ?? 0}',
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                _scoreTeam('Fora', game.awayScore ?? 0, () => _addPoint(game, game.awayTeamId!)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              icon: const Icon(Icons.edit),
+              label: const Text('Corrigir placar'),
+              onPressed: () => _correctScore(game),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _scoreTeam(String label, int score, VoidCallback onAdd) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text('$score', style: const TextStyle(fontSize: 20)),
+        IconButton(
+          tooltip: '+1 $label',
+          icon: const Icon(Icons.add_circle_outline),
+          onPressed: onAdd,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _addPoint(Game game, String teamId) async {
+    setState(() => _submitting = true);
+    try {
+      await ref.read(gameApiProvider).addScoreEvent(game.id, teamId);
+      ref.invalidate(gamesByRoundProvider(game.roundId));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível registrar o ponto')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _correctScore(Game game) async {
+    final home = TextEditingController(text: (game.homeScore ?? 0).toString());
+    final away = TextEditingController(text: (game.awayScore ?? 0).toString());
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Corrigir placar'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: home,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Casa'),
+            ),
+            TextField(
+              controller: away,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Fora'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+    if (saved == true) {
+      final h = int.tryParse(home.text) ?? 0;
+      final a = int.tryParse(away.text) ?? 0;
+      await ref
+          .read(gameApiProvider)
+          .correctScore(game.id, homeScore: h, awayScore: a);
+      ref.invalidate(gamesByRoundProvider(game.roundId));
+    }
+    home.dispose();
+    away.dispose();
   }
 
   Future<void> _changeStatus(Game game, GameStatus status) async {

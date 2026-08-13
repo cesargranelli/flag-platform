@@ -64,6 +64,7 @@ void main() {
 
     expect(find.text('Finalizar partida'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Finalizar partida'));
     await tester.tap(find.text('Finalizar partida'));
     await tester.pumpAndSettle();
 

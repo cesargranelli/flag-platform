@@ -64,6 +64,28 @@ class GameApi {
         Game.fromJson,
       );
 
+  Future<Game> addScoreEvent(String gameId, String teamId) => _client.post(
+        '/api/v1/games/$gameId/score/events',
+        {'teamId': teamId},
+        Game.fromJson,
+      );
+
+  Future<Game> correctScore(
+    String gameId, {
+    required int homeScore,
+    required int awayScore,
+  }) =>
+      _client.patch(
+        '/api/v1/games/$gameId/score',
+        {'homeScore': homeScore, 'awayScore': awayScore},
+        Game.fromJson,
+      );
+
+  Future<List<ScoreEvent>> listScoreEvents(String gameId) => _client.getList(
+        '/api/v1/games/$gameId/score/events',
+        ScoreEvent.fromJson,
+      );
+
   Map<String, dynamic> _body({
     required String roundId,
     required String homeTeamId,
@@ -75,7 +97,7 @@ class GameApi {
         'roundId': roundId,
         'homeTeamId': homeTeamId,
         'awayTeamId': awayTeamId,
-        if (venueId != null) 'venueId': venueId,
+        'venueId': ?venueId,
         'scheduledAt': _formatDateTime(scheduledAt),
       };
 }

@@ -25,8 +25,8 @@ class VenueApi {
         {
           'organizationId': organizationId,
           'name': name,
-          if (address != null) 'address': address,
-          if (mapsUrl != null) 'mapsUrl': mapsUrl,
+          'address': ?address,
+          'mapsUrl': ?mapsUrl,
         },
         Venue.fromJson,
       );
@@ -43,9 +43,10 @@ class VenueApi {
         {
           'organizationId': organizationId,
           'name': name,
-          if (address != null) 'address': address,
-          if (mapsUrl != null) 'mapsUrl': mapsUrl,
+          'address': ?address,
+          'mapsUrl': ?mapsUrl,
         },
         Venue.fromJson,
       );
 }
+
