@@ -99,3 +99,21 @@ final venuesProvider = FutureProvider<List<Venue>>(
 final venueProvider = FutureProvider.family<Venue, String>(
   (ref, id) => ref.watch(venueApiProvider).getById(id),
 );
+
+/// Serviço de times.
+final teamApiProvider = Provider<TeamApi>(
+  (ref) => TeamApi(ref.watch(apiClientProvider)),
+);
+
+/// Categoria selecionada na tela de times.
+final selectedCategoryProvider = StateProvider<String?>((ref) => null);
+
+/// Times de uma categoria.
+final teamsProvider = FutureProvider.family<List<Team>, String>(
+  (ref, categoryId) => ref.watch(teamApiProvider).listByCategory(categoryId),
+);
+
+/// Detalhe de um time por id.
+final teamProvider = FutureProvider.family<Team, String>(
+  (ref, id) => ref.watch(teamApiProvider).getById(id),
+);

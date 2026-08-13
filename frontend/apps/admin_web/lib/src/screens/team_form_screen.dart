@@ -6,40 +6,45 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
-/// Formulário de criação/edição de categoria.
-class CategoryFormScreen extends ConsumerStatefulWidget {
-  const CategoryFormScreen({super.key, this.categoryId, this.category});
+/// Formulário de criação/edição de time.
+class TeamFormScreen extends ConsumerStatefulWidget {
+  const TeamFormScreen({super.key, this.teamId, this.team, this.initialCategoryId});
 
-  final String? categoryId;
-  final Category? category;
+  final String? teamId;
+  final Team? team;
+  final String? initialCategoryId;
 
   @override
-  ConsumerState<CategoryFormScreen> createState() =>
-      _CategoryFormScreenState();
+  ConsumerState<TeamFormScreen> createState() => _TeamFormScreenState();
 }
 
-class _CategoryFormScreenState extends ConsumerState<CategoryFormScreen> {
+class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _name;
-  String? _competitionId;
+  late final TextEditingController _shortName;
+  late final TextEditingController _logoUrl;
+  String? _categoryId;
   bool _submitting = false;
   String? _errorMessage;
 
-  bool get _isEditing => widget.categoryId != null || widget.category != null;
+  bool get _isEditing => widget.teamId != null || widget.team != null;
 
   @override
   void initState() {
     super.initState();
-    final category = widget.category;
-    _name = TextEditingController(text: category?.name ?? '');
-    _competitionId = category?.competitionId ??
-        (widget.categoryId == null ? ref.read(selectedCompetitionProvider) : null);
+    final team = widget.team;
+    _name = TextEditingController(text: team?.name ?? '');
+    _shortName = TextEditingController(text: team?.shortName ?? '');
+    _logoUrl = TextEditingController(text: team?.logoUrl ?? '');
+    _categoryId = team?.categoryId ?? widget.initialCategoryId;
   }
 
   @override
   void dispose() {
     _name.dispose();
+    _shortName.dispose();
+    _logoUrl.dispose();
     super.dispose();
   }
 
@@ -52,82 +57,52 @@ class _CategoryFormScreenState extends ConsumerState<CategoryFormScreen> {
     });
 
     try {
-      final api = ref.read(categoryApiProvider);
-      final id = widget.categoryId ?? widget.category?.id;
+      final api = ref.read(teamApiProvider);
+      final id = widget.teamId ?? widget.team?.id;
       if (id == null) {
         await api.create(
-          competitionId: _competitionId!,
+          categoryId: _categoryId!,
           name: _name.text.trim(),
+          shortName: _shortName.text.trim().isEmpty ? null : _shortName.text.trim(),
+          logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
         );
       } else {
         await api.update(
           id,
-          competitionId: _competitionId!,
+          categoryId: _categoryId!,
           name: _name.text.trim(),
+          shortName: _shortName.text.trim().isEmpty ? null : _shortName.text.trim(),
+          logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
         );
       }
-      if (_competitionId != null) {
-        ref.invalidate(categoriesProvider(_competitionId!));
-      }
+      if (_categoryId != null) ref.invalidate(teamsProvider(_categoryId!));
       if (mounted) context.pop();
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (_) {
-      setState(() => _errorMessage = 'Não foi possível salvar a categoria.');
+      setState(() => _errorMessage = 'Não foi possível salvar o time.');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
   }
 
-  Future<void> _delete() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Excluir categoria'),
-        content: const Text('Tem certeza que deseja excluir esta categoria?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true) return;
-
-    final id = widget.categoryId ?? widget.category!.id;
-    await ref.read(categoryApiProvider).delete(id);
-    if (_competitionId != null) {
-      ref.invalidate(categoriesProvider(_competitionId!));
-    }
-    if (mounted) context.pop();
-  }
-
   @override
   Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
-    final defaultCompetitionId = widget.category?.competitionId ??
-        (widget.categoryId == null
-            ? ref.read(selectedCompetitionProvider)
+    final compItems = competitions.valueOrNull ?? const [];
+    final effectiveComp = ref.watch(selectedCompetitionProvider) ??
+        (compItems.isNotEmpty ? compItems.first.id : null);
+    final categories = effectiveComp == null
+        ? null
+        : ref.watch(categoriesProvider(effectiveComp));
+    final defaultCategoryId = widget.team?.categoryId ??
+        (widget.teamId == null
+            ? (widget.initialCategoryId ?? ref.read(selectedCategoryProvider))
             : null);
-    final competitionValue = _competitionId ?? defaultCompetitionId;
+    final categoryValue = _categoryId ?? defaultCategoryId;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar categoria' : 'Nova categoria'),
-        actions: [
-          if (_isEditing)
-            IconButton(
-              tooltip: 'Excluir',
-              icon: const Icon(Icons.delete_outline),
-              onPressed: _delete,
-            ),
-        ],
-      ),
+      appBar: AppBar(title: Text(_isEditing ? 'Editar time' : 'Novo time')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -135,13 +110,13 @@ class _CategoryFormScreenState extends ConsumerState<CategoryFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              competitions.when(
+              (categories?.when(
                 loading: () => const LinearProgressIndicator(),
-                error: (e, s) => const Text('Erro ao carregar campeonatos'),
+                error: (e, s) => const Text('Erro ao carregar categorias'),
                 data: (items) => DropdownButtonFormField<String>(
-                  initialValue: competitionValue,
+                  initialValue: categoryValue,
                   decoration: const InputDecoration(
-                    labelText: 'Campeonato',
+                    labelText: 'Categoria',
                     border: OutlineInputBorder(),
                   ),
                   items: items
@@ -150,12 +125,12 @@ class _CategoryFormScreenState extends ConsumerState<CategoryFormScreen> {
                             child: Text(c.name),
                           ))
                       .toList(),
-                  onChanged: (value) =>
-                      setState(() => _competitionId = value),
+                  onChanged: (value) => setState(() => _categoryId = value),
                   validator: (value) =>
-                      (value == null || value.isEmpty) ? 'Selecione o campeonato' : null,
+                      (value == null || value.isEmpty) ? 'Selecione a categoria' : null,
                 ),
-              ),
+              ) ??
+              const LinearProgressIndicator()),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _name,
@@ -165,6 +140,22 @@ class _CategoryFormScreenState extends ConsumerState<CategoryFormScreen> {
                 ),
                 validator: (value) =>
                     (value == null || value.trim().isEmpty) ? 'Informe o nome' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _shortName,
+                decoration: const InputDecoration(
+                  labelText: 'Sigla',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _logoUrl,
+                decoration: const InputDecoration(
+                  labelText: 'URL do logo',
+                  border: OutlineInputBorder(),
+                ),
               ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 16),

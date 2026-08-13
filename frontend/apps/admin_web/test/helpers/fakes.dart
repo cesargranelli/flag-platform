@@ -302,6 +302,68 @@ class FakeVenueApi extends VenueApi {
   }
 }
 
+/// [TeamApi] com dados controlados para testes.
+class FakeTeamApi extends TeamApi {
+  FakeTeamApi() : super(ApiClient(session: SessionManager()));
+
+  List<Team> teams = [];
+  int createCalls = 0;
+  Map<String, dynamic>? lastBody;
+
+  @override
+  Future<List<Team>> listByCategory(String categoryId) async =>
+      teams.where((t) => t.categoryId == categoryId).toList();
+
+  @override
+  Future<Team> getById(String id) async =>
+      teams.firstWhere((t) => t.id == id);
+
+  @override
+  Future<Team> create({
+    required String categoryId,
+    required String name,
+    String? shortName,
+    String? logoUrl,
+  }) async {
+    createCalls++;
+    lastBody = {
+      'categoryId': categoryId,
+      'name': name,
+      'shortName': shortName,
+      'logoUrl': logoUrl,
+    };
+    final team = Team(id: 'team-novo', categoryId: categoryId, name: name);
+    teams = [...teams, team];
+    return team;
+  }
+
+  @override
+  Future<Team> update(
+    String id, {
+    required String categoryId,
+    required String name,
+    String? shortName,
+    String? logoUrl,
+  }) async {
+    lastBody = {
+      'categoryId': categoryId,
+      'name': name,
+      'shortName': shortName,
+      'logoUrl': logoUrl,
+    };
+    return Team(id: id, categoryId: categoryId, name: name);
+  }
+}
+
+/// Time de exemplo para testes.
+Team testTeam({
+  String id = '11111111-1111-1111-1111-111111111111',
+  String categoryId = '11111111-1111-1111-1111-111111111111',
+  String name = 'Tritões',
+}) {
+  return Team(id: id, categoryId: categoryId, name: name);
+}
+
 /// Campo de exemplo para testes.
 Venue testVenue({
   String id = '11111111-1111-1111-1111-111111111111',
