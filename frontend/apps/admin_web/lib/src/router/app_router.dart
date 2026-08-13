@@ -12,6 +12,8 @@ import '../screens/organization_form_screen.dart';
 import '../screens/organizations_screen.dart';
 import '../screens/venue_form_screen.dart';
 import '../screens/venues_screen.dart';
+import '../screens/team_form_screen.dart';
+import '../screens/teams_screen.dart';
 
 /// Rotas do Admin Web com proteção de autenticação.
 class AppRouter {
@@ -131,6 +133,29 @@ class AppRouter {
               return VenueFormScreen(
                 venueId: state.pathParameters['id'],
                 venue: venue,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/teams',
+            name: 'teams',
+            builder: (context, state) => const TeamsScreen(),
+          ),
+          GoRoute(
+            path: '/teams/new',
+            name: 'teamNew',
+            builder: (context, state) => TeamFormScreen(
+              initialCategoryId: state.extra is String ? state.extra as String : null,
+            ),
+          ),
+          GoRoute(
+            path: '/teams/:id',
+            name: 'teamEdit',
+            builder: (context, state) {
+              final team = state.extra is Team ? state.extra as Team : null;
+              return TeamFormScreen(
+                teamId: state.pathParameters['id'],
+                team: team,
               );
             },
           ),

@@ -1,0 +1,79 @@
+import 'package:flag_admin_web/src/app.dart';
+import 'package:flag_admin_web/src/providers/providers.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'helpers/fakes.dart';
+
+void main() {
+  Future<void> pumpApp(
+    WidgetTester tester,
+    FakeTeamApi teamApi, {
+    FakeCompetitionApi? competitionApi,
+    FakeCategoryApi? categoryApi,
+  }) {
+    final session = InMemorySessionManager()
+      ..seedToken('jwt', roles: ['ORGANIZER'], userName: 'Ana Lima');
+    final authApi = FakeAuthApi()..meUser = testUser();
+    final comps = competitionApi ??
+        (FakeCompetitionApi()..competitions = [testCompetition()]);
+    final cats = categoryApi ??
+        (FakeCategoryApi()
+          ..categories = [testCategory(name: 'Masculino 5x5')]);
+
+    return tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sessionManagerProvider.overrideWithValue(session),
+          authApiProvider.overrideWithValue(authApi),
+          competitionApiProvider.overrideWithValue(comps),
+          categoryApiProvider.overrideWithValue(cats),
+          teamApiProvider.overrideWithValue(teamApi),
+        ],
+        child: const FlagAdminWeb(),
+      ),
+    );
+  }
+
+  Future<void> openTeams(WidgetTester tester) async {
+    await tester.tap(find.text('Times'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('lista os times da categoria', (WidgetTester tester) async {
+    final api = FakeTeamApi()
+      ..teams = [
+        testTeam(name: 'Tritões'),
+        testTeam(id: '22222222-2222-2222-2222-222222222222', name: 'Águias'),
+      ];
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+    await openTeams(tester);
+
+    expect(find.text('Tritões'), findsOneWidget);
+    expect(find.text('Águias'), findsOneWidget);
+  });
+
+  testWidgets('cria um time pelo formulário', (WidgetTester tester) async {
+    final api = FakeTeamApi();
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+    await openTeams(tester);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Novo time'), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Nome'), 'Cometas');
+    await tester.ensureVisible(find.text('Salvar'));
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+    expect(api.createCalls, 1);
+    expect(api.lastBody?['name'], 'Cometas');
+    expect(find.text('Cometas'), findsOneWidget);
+  });
+}

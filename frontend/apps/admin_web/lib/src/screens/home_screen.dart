@@ -64,6 +64,13 @@ class AdminHomeScreen extends ConsumerWidget {
             subtitle: 'Criar e editar campos de jogo',
             onTap: () => context.push('/venues'),
           ),
+          _menuItem(
+            context,
+            icon: Icons.groups_outlined,
+            title: 'Times',
+            subtitle: 'Criar e editar times',
+            onTap: () => context.push('/teams'),
+          ),
         ],
       ),
     );
