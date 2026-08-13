@@ -1,6 +1,7 @@
 package br.com.flagplatform.round.service;
 
 import br.com.flagplatform.category.CategoryLookup;
+import br.com.flagplatform.round.RoundLookup;
 import br.com.flagplatform.round.dto.request.CreateRoundRequest;
 import br.com.flagplatform.round.dto.request.UpdateRoundRequest;
 import br.com.flagplatform.round.dto.response.RoundResponse;
@@ -19,7 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Service
-public class RoundService {
+public class RoundService implements RoundLookup {
 
     private final RoundMapper mapper;
     private final RoundRepository repository;
@@ -58,6 +59,11 @@ public class RoundService {
     private RoundEntity findEntityById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RoundNotFoundException(id));
+    }
+
+    @Override
+    public void assertExists(UUID id) {
+        findEntityById(id);
     }
 
 }
