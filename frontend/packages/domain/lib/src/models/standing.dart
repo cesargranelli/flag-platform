@@ -1,6 +1,11 @@
+/// Posição de um time na tabela de classificação de uma categoria.
+///
+/// Shape público do endpoint de classificação: ids são UUID (String) e o nome
+/// do time chega preenchido para exibição direta.
 class Standing {
-  final int teamId;
   final int position;
+  final String teamId;
+  final String? teamName;
   final int played;
   final int wins;
   final int draws;
@@ -11,8 +16,8 @@ class Standing {
   final int points;
 
   const Standing({
-    required this.teamId,
     required this.position,
+    required this.teamId,
     required this.played,
     required this.wins,
     required this.draws,
@@ -21,11 +26,13 @@ class Standing {
     required this.goalsAgainst,
     required this.goalDifference,
     required this.points,
+    this.teamName,
   });
 
   factory Standing.fromJson(Map<String, dynamic> json) => Standing(
-        teamId: json['teamId'] as int,
         position: json['position'] as int,
+        teamId: json['teamId'] as String,
+        teamName: json['teamName'] as String?,
         played: json['played'] as int,
         wins: json['wins'] as int,
         draws: json['draws'] as int,
@@ -37,8 +44,9 @@ class Standing {
       );
 
   Map<String, dynamic> toJson() => {
-        'teamId': teamId,
         'position': position,
+        'teamId': teamId,
+        if (teamName != null) 'teamName': teamName,
         'played': played,
         'wins': wins,
         'draws': draws,

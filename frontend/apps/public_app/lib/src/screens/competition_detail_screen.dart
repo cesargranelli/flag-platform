@@ -67,6 +67,15 @@ class CompetitionDetailScreen extends StatelessWidget {
                 icon: const Icon(Icons.sports_score_outlined),
                 label: const Text('Ver resultados'),
               ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => context.push(
+                  '/competition/$competitionId/standings',
+                  extra: competitionName,
+                ),
+                icon: const Icon(Icons.leaderboard_outlined),
+                label: const Text('Ver classificação'),
+              ),
             ],
           ),
         ),
