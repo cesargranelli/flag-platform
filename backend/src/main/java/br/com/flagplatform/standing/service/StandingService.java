@@ -2,16 +2,22 @@ package br.com.flagplatform.standing.service;
 
 import br.com.flagplatform.game.FinishedGame;
 import br.com.flagplatform.game.GameLookup;
+import br.com.flagplatform.standing.dto.response.StandingResponse;
 import br.com.flagplatform.standing.entity.StandingEntity;
 import br.com.flagplatform.standing.repository.StandingRepository;
+import br.com.flagplatform.team.TeamInfo;
 import br.com.flagplatform.team.TeamLookup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -84,5 +90,60 @@ public class StandingService {
         entity.setGoalsAgainst(goalsAgainst);
         entity.setPoints(wins * 3 + draws * 1);
         return entity;
+    }
+
+    /**
+     * Consulta pública da classificação de uma categoria, ordenada por
+     * pontos DESC, saldo de gols DESC, gols pró DESC e nome do time ASC
+     * (desempate estável).
+     */
+    public List<StandingResponse> findByCategoryId(UUID categoryId) {
+        Map<UUID, String> teamNames = teamLookup.findTeamInfoByCategoryId(categoryId).stream()
+                .collect(Collectors.toMap(TeamInfo::id, TeamInfo::name));
+
+        List<Entry> entries = repository.findAllByCategoryId(categoryId).stream()
+                .map(row -> new Entry(row, teamNames.getOrDefault(row.getTeamId(), "")))
+                .sorted(Comparator
+                        .comparingInt(Entry::points).reversed()
+                        .thenComparing(Comparator.comparingInt(Entry::goalDifference).reversed())
+                        .thenComparing(Comparator.comparingInt(Entry::goalsFor).reversed())
+                        .thenComparing(Entry::teamName))
+                .toList();
+
+        List<StandingResponse> responses = new ArrayList<>(entries.size());
+        for (int i = 0; i < entries.size(); i++) {
+            responses.add(entries.get(i).toResponse(i + 1));
+        }
+        return responses;
+    }
+
+    private record Entry(StandingEntity entity, String teamName) {
+
+        int points() {
+            return entity.getPoints();
+        }
+
+        int goalDifference() {
+            return entity.getGoalsFor() - entity.getGoalsAgainst();
+        }
+
+        int goalsFor() {
+            return entity.getGoalsFor();
+        }
+
+        StandingResponse toResponse(int position) {
+            return new StandingResponse(
+                    position,
+                    entity.getTeamId(),
+                    teamName,
+                    entity.getPlayed(),
+                    entity.getWins(),
+                    entity.getDraws(),
+                    entity.getLosses(),
+                    entity.getGoalsFor(),
+                    entity.getGoalsAgainst(),
+                    goalDifference(),
+                    entity.getPoints());
+        }
     }
 }

@@ -1,6 +1,7 @@
 package br.com.flagplatform.team.service;
 
 import br.com.flagplatform.category.CategoryLookup;
+import br.com.flagplatform.team.TeamInfo;
 import br.com.flagplatform.team.TeamLookup;
 import br.com.flagplatform.team.dto.request.CreateTeamRequest;
 import br.com.flagplatform.team.dto.request.UpdateTeamRequest;
@@ -74,6 +75,13 @@ public class TeamService implements TeamLookup {
     public List<UUID> findTeamIdsByCategoryId(UUID categoryId) {
         return repository.findAllByCategoryIdOrderByNameAsc(categoryId).stream()
                 .map(TeamEntity::getId)
+                .toList();
+    }
+
+    @Override
+    public List<TeamInfo> findTeamInfoByCategoryId(UUID categoryId) {
+        return repository.findAllByCategoryIdOrderByNameAsc(categoryId).stream()
+                .map(team -> new TeamInfo(team.getId(), team.getName()))
                 .toList();
     }
 

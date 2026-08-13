@@ -2,8 +2,10 @@ package br.com.flagplatform.standing.service;
 
 import br.com.flagplatform.game.FinishedGame;
 import br.com.flagplatform.game.GameLookup;
+import br.com.flagplatform.standing.dto.response.StandingResponse;
 import br.com.flagplatform.standing.entity.StandingEntity;
 import br.com.flagplatform.standing.repository.StandingRepository;
+import br.com.flagplatform.team.TeamInfo;
 import br.com.flagplatform.team.TeamLookup;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -156,6 +158,158 @@ class StandingServiceTest {
 
         verify(repository).deleteAllByCategoryId(categoryId);
         verify(repository, never()).saveAll(any());
+    }
+
+    @Test
+    void findByCategoryId_ordersByPointsDescending() {
+        UUID categoryId = UUID.randomUUID();
+        UUID teamA = UUID.randomUUID();
+        UUID teamB = UUID.randomUUID();
+
+        when(repository.findAllByCategoryId(categoryId)).thenReturn(List.of(
+                standing(teamB, 0, 1, 1, 2, 3),
+                standing(teamA, 2, 0, 0, 6, 1)));
+        when(teamLookup.findTeamInfoByCategoryId(categoryId)).thenReturn(List.of(
+                new TeamInfo(teamA, "Time A"),
+                new TeamInfo(teamB, "Time B")));
+
+        List<StandingResponse> result = service.findByCategoryId(categoryId);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).teamId()).isEqualTo(teamA);
+        assertThat(result.get(1).teamId()).isEqualTo(teamB);
+        assertThat(result.get(0).points()).isEqualTo(6);
+        assertThat(result.get(1).points()).isEqualTo(1);
+    }
+
+    @Test
+    void findByCategoryId_breaksTieByGoalDifference() {
+        UUID categoryId = UUID.randomUUID();
+        UUID teamA = UUID.randomUUID();
+        UUID teamB = UUID.randomUUID();
+
+        when(repository.findAllByCategoryId(categoryId)).thenReturn(List.of(
+                standing(teamA, 2, 0, 0, 4, 3),
+                standing(teamB, 2, 0, 0, 5, 1)));
+        when(teamLookup.findTeamInfoByCategoryId(categoryId)).thenReturn(List.of(
+                new TeamInfo(teamA, "Time A"),
+                new TeamInfo(teamB, "Time B")));
+
+        List<StandingResponse> result = service.findByCategoryId(categoryId);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).teamId()).isEqualTo(teamB);
+        assertThat(result.get(1).teamId()).isEqualTo(teamA);
+        assertThat(result.get(0).points()).isEqualTo(result.get(1).points());
+        assertThat(result.get(0).goalDifference()).isEqualTo(4);
+        assertThat(result.get(1).goalDifference()).isEqualTo(1);
+    }
+
+    @Test
+    void findByCategoryId_breaksTieByGoalsFor() {
+        UUID categoryId = UUID.randomUUID();
+        UUID teamA = UUID.randomUUID();
+        UUID teamB = UUID.randomUUID();
+
+        when(repository.findAllByCategoryId(categoryId)).thenReturn(List.of(
+                standing(teamA, 2, 0, 0, 3, 0),
+                standing(teamB, 2, 0, 0, 4, 1)));
+        when(teamLookup.findTeamInfoByCategoryId(categoryId)).thenReturn(List.of(
+                new TeamInfo(teamA, "Time A"),
+                new TeamInfo(teamB, "Time B")));
+
+        List<StandingResponse> result = service.findByCategoryId(categoryId);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).teamId()).isEqualTo(teamB);
+        assertThat(result.get(1).teamId()).isEqualTo(teamA);
+        assertThat(result.get(0).points()).isEqualTo(result.get(1).points());
+        assertThat(result.get(0).goalDifference()).isEqualTo(result.get(1).goalDifference());
+        assertThat(result.get(0).goalsFor()).isEqualTo(4);
+        assertThat(result.get(1).goalsFor()).isEqualTo(3);
+    }
+
+    @Test
+    void findByCategoryId_assignsSequentialPositions_andComputesGoalDifference() {
+        UUID categoryId = UUID.randomUUID();
+        UUID teamA = UUID.randomUUID();
+        UUID teamB = UUID.randomUUID();
+        UUID teamC = UUID.randomUUID();
+
+        when(repository.findAllByCategoryId(categoryId)).thenReturn(List.of(
+                standing(teamA, 1, 1, 0, 4, 2),
+                standing(teamC, 0, 0, 1, 1, 3),
+                standing(teamB, 1, 0, 1, 2, 2)));
+        when(teamLookup.findTeamInfoByCategoryId(categoryId)).thenReturn(List.of(
+                new TeamInfo(teamA, "Time A"),
+                new TeamInfo(teamB, "Time B"),
+                new TeamInfo(teamC, "Time C")));
+
+        List<StandingResponse> result = service.findByCategoryId(categoryId);
+
+        assertThat(result).hasSize(3);
+        assertThat(result).extracting(StandingResponse::position)
+                .containsExactly(1, 2, 3);
+        assertThat(result).extracting(StandingResponse::teamId)
+                .containsExactly(teamA, teamB, teamC);
+        assertThat(result.get(0).goalDifference()).isEqualTo(2);
+        assertThat(result.get(1).goalDifference()).isZero();
+        assertThat(result.get(2).goalDifference()).isEqualTo(-2);
+    }
+
+    @Test
+    void findByCategoryId_fillsTeamNameFromLookup() {
+        UUID categoryId = UUID.randomUUID();
+        UUID teamA = UUID.randomUUID();
+
+        when(repository.findAllByCategoryId(categoryId)).thenReturn(List.of(
+                standing(teamA, 1, 0, 0, 3, 1)));
+        when(teamLookup.findTeamInfoByCategoryId(categoryId)).thenReturn(List.of(
+                new TeamInfo(teamA, "Tritões")));
+
+        List<StandingResponse> result = service.findByCategoryId(categoryId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).teamName()).isEqualTo("Tritões");
+    }
+
+    @Test
+    void findByCategoryId_teamWithoutNameInLookup_usesEmptyString() {
+        UUID categoryId = UUID.randomUUID();
+        UUID teamA = UUID.randomUUID();
+
+        when(repository.findAllByCategoryId(categoryId)).thenReturn(List.of(
+                standing(teamA, 1, 0, 0, 3, 1)));
+        when(teamLookup.findTeamInfoByCategoryId(categoryId)).thenReturn(List.of());
+
+        List<StandingResponse> result = service.findByCategoryId(categoryId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).teamName()).isEmpty();
+    }
+
+    @Test
+    void findByCategoryId_withoutStandings_returnsEmptyList() {
+        UUID categoryId = UUID.randomUUID();
+
+        when(repository.findAllByCategoryId(categoryId)).thenReturn(List.of());
+        when(teamLookup.findTeamInfoByCategoryId(categoryId)).thenReturn(List.of());
+
+        assertThat(service.findByCategoryId(categoryId)).isEmpty();
+    }
+
+    private StandingEntity standing(UUID teamId, int wins, int draws, int losses,
+                                    int goalsFor, int goalsAgainst) {
+        StandingEntity entity = new StandingEntity();
+        entity.setTeamId(teamId);
+        entity.setPlayed(wins + draws + losses);
+        entity.setWins(wins);
+        entity.setDraws(draws);
+        entity.setLosses(losses);
+        entity.setGoalsFor(goalsFor);
+        entity.setGoalsAgainst(goalsAgainst);
+        entity.setPoints(wins * 3 + draws);
+        return entity;
     }
 
     private StandingEntity findByTeam(List<StandingEntity> rows, UUID teamId) {
