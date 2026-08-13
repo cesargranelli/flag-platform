@@ -1,6 +1,7 @@
 import 'package:flag_core/flag_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
@@ -35,10 +36,11 @@ class RefereeHomeScreen extends ConsumerWidget {
               'Bem-vindo, ${userName ?? 'mesa'}!',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Operação de partidas pela mesa',
-              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              icon: const Icon(Icons.play_circle_outline),
+              label: const Text('Operar partida'),
+              onPressed: () => context.push('/operation'),
             ),
           ],
         ),

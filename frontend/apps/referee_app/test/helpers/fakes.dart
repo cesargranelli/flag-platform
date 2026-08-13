@@ -94,3 +94,73 @@ LoginResponse testLoginResponse({User? user}) {
     user: u,
   );
 }
+
+class FakeCompetitionApi extends CompetitionApi {
+  FakeCompetitionApi() : super(ApiClient(session: SessionManager()));
+  List<Competition> competitions = [];
+  @override
+  Future<List<Competition>> listAll() async => competitions;
+}
+
+class FakeCategoryApi extends CategoryApi {
+  FakeCategoryApi() : super(ApiClient(session: SessionManager()));
+  List<Category> categories = [];
+  @override
+  Future<List<Category>> listByCompetition(String competitionId) async =>
+      categories.where((c) => c.competitionId == competitionId).toList();
+}
+
+class FakeRoundApi extends RoundApi {
+  FakeRoundApi() : super(ApiClient(session: SessionManager()));
+  List<Round> rounds = [];
+  @override
+  Future<List<Round>> listByCategory(String categoryId) async =>
+      rounds.where((r) => r.categoryId == categoryId).toList();
+}
+
+class FakeGameApi extends GameApi {
+  FakeGameApi() : super(ApiClient(session: SessionManager()));
+  List<Game> games = [];
+  GameStatus? lastStatus;
+  @override
+  Future<List<Game>> listByRound(String roundId) async =>
+      games.where((g) => g.roundId == roundId).toList();
+  @override
+  Future<Game> updateStatus(String id, GameStatus status) async {
+    lastStatus = status;
+    final index = games.indexWhere((g) => g.id == id);
+    final updated = Game(
+      id: id,
+      roundId: games[index].roundId,
+      homeTeamId: games[index].homeTeamId,
+      awayTeamId: games[index].awayTeamId,
+      scheduledAt: games[index].scheduledAt,
+      status: status,
+    );
+    games[index] = updated;
+    return updated;
+  }
+}
+
+Competition testCompetition({String id = 'c1', String name = 'Taça SP'}) =>
+    Competition(id: id, name: name, status: CompetitionStatus.published);
+
+Category testCategory({String id = 'cat1', String competitionId = 'c1', String name = 'Masculino'}) =>
+    Category(id: id, competitionId: competitionId, name: name);
+
+Round testRound({String id = 'r1', String categoryId = 'cat1', int number = 1, String name = 'Primeira'}) =>
+    Round(id: id, categoryId: categoryId, number: number, name: name, type: RoundType.regular);
+
+Game testGame({
+  String id = 'g1',
+  String roundId = 'r1',
+  GameStatus status = GameStatus.scheduled,
+}) =>
+    Game(
+      id: id,
+      roundId: roundId,
+      homeTeamId: 't1',
+      awayTeamId: 't2',
+      scheduledAt: DateTime(2026, 2, 1, 19),
+      status: status,
+    );

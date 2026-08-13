@@ -57,6 +57,13 @@ class GameApi {
     Game.fromJson,
   );
 
+  Future<Game> updateStatus(String id, GameStatus status) =>
+      _client.patch(
+        '/api/v1/games/$id/status',
+        {'status': status.toJson()},
+        Game.fromJson,
+      );
+
   Map<String, dynamic> _body({
     required String roundId,
     required String homeTeamId,
