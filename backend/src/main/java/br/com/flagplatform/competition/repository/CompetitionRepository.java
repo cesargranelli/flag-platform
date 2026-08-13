@@ -12,6 +12,8 @@ public interface CompetitionRepository extends JpaRepository<CompetitionEntity, 
 
     List<CompetitionEntity> findAllByOrganizationIdOrderByNameAsc(UUID organizationId);
 
+    List<CompetitionEntity> findAllByOrderByNameAsc();
+
     boolean existsByOrganizationIdAndNameIgnoreCase(UUID organizationId, String name);
 
     boolean existsByOrganizationIdAndNameIgnoreCaseAndIdNot(UUID organizationId, String name, UUID id);

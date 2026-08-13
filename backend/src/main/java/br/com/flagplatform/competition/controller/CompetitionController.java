@@ -3,6 +3,7 @@ package br.com.flagplatform.competition.controller;
 import br.com.flagplatform.competition.dto.request.CreateCompetitionRequest;
 import br.com.flagplatform.competition.dto.request.UpdateCompetitionRequest;
 import br.com.flagplatform.competition.dto.response.CompetitionResponse;
+import br.com.flagplatform.competition.dto.response.CompetitionSummaryResponse;
 import br.com.flagplatform.competition.service.CompetitionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -36,6 +37,15 @@ public class CompetitionController {
     @ResponseStatus(HttpStatus.CREATED)
     public CompetitionResponse create(@Valid @RequestBody CreateCompetitionRequest request) {
         return service.create(request);
+    }
+
+    @Operation(
+            summary = "Listar campeonatos",
+            description = "Lista todos os campeonatos, com nome da organização. Acesso público."
+    )
+    @GetMapping("/api/v1/competitions")
+    public List<CompetitionSummaryResponse> listAll() {
+        return service.listAllPublic();
     }
 
     @Operation(

@@ -12,4 +12,6 @@ public interface OrganizationLookup {
 
     void assertExists(UUID id);
 
+    String findTradeNameById(UUID id);
+
 }
