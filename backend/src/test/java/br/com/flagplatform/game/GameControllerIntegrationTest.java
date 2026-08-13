@@ -199,6 +199,8 @@ class GameControllerIntegrationTest {
         assertThat(earlier.path("homeTeamName").asText()).isEqualTo("Time Extra COMP_GAMES");
         assertThat(earlier.path("awayTeamName").asText()).isEqualTo("Time Extra 2 COMP_GAMES");
         assertThat(earlier.path("venueName").isNull()).isTrue();
+        assertThat(earlier.path("venueAddress").isNull()).isTrue();
+        assertThat(earlier.path("venueMapsUrl").isNull()).isTrue();
         assertThat(earlier.path("scheduledAt").asText()).isEqualTo("2026-02-01T15:00:00");
         assertThat(earlier.path("status").asText()).isEqualTo("SCHEDULED");
 
@@ -207,6 +209,8 @@ class GameControllerIntegrationTest {
         assertThat(later.path("homeTeamName").asText()).isEqualTo("Tritões COMP_GAMES");
         assertThat(later.path("awayTeamName").asText()).isEqualTo("Águias COMP_GAMES");
         assertThat(later.path("venueName").asText()).isEqualTo("Arena COMP_GAMES");
+        assertThat(later.path("venueAddress").asText()).isEqualTo("Rua A, 1");
+        assertThat(later.path("venueMapsUrl").isNull()).isTrue();
         assertThat(later.path("scheduledAt").asText()).isEqualTo("2026-02-01T19:00:00");
         assertThat(later.path("status").asText()).isEqualTo("SCHEDULED");
     }
