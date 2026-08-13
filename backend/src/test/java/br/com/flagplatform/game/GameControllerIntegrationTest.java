@@ -163,6 +163,62 @@ class GameControllerIntegrationTest {
 
     @Test
     @WithMockUser
+    void listByCompetition_returnsGamesOrderedByScheduledAt_withTeamAndVenueNames_publicAccess()
+            throws Exception {
+        Chain chain = setupChain("COMP_GAMES");
+
+        String secondRoundId = createRound(
+                chain.categoryId, 2, "Segunda Rodada COMP_GAMES", "REGULAR");
+        String thirdTeamId = createTeam(
+                chain.categoryId, "Time Extra COMP_GAMES", "TEX", null);
+        String fourthTeamId = createTeam(
+                chain.categoryId, "Time Extra 2 COMP_GAMES", "TEX2", null);
+
+        String laterGameId = createGame(secondRoundId, chain.homeTeamId, chain.awayTeamId,
+                chain.venueId, "2026-02-01T19:00:00");
+        String earlierGameId = createGame(chain.roundId, thirdTeamId, fourthTeamId,
+                null, "2026-02-01T15:00:00");
+
+        MvcResult result = mockMvc.perform(
+                        get(COMPETITIONS_URL + "/" + chain.competitionId + "/games"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andReturn();
+
+        JsonNode array = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(array).hasSize(2);
+
+        int earlierIndex = indexOfId(array, earlierGameId);
+        int laterIndex = indexOfId(array, laterGameId);
+        assertThat(earlierIndex).isNotNegative();
+        assertThat(laterIndex).isNotNegative();
+        assertThat(earlierIndex).isLessThan(laterIndex);
+
+        JsonNode earlier = array.get(earlierIndex);
+        assertThat(earlier.path("roundNumber").asInt()).isEqualTo(1);
+        assertThat(earlier.path("homeTeamName").asText()).isEqualTo("Time Extra COMP_GAMES");
+        assertThat(earlier.path("awayTeamName").asText()).isEqualTo("Time Extra 2 COMP_GAMES");
+        assertThat(earlier.path("venueName").isNull()).isTrue();
+        assertThat(earlier.path("scheduledAt").asText()).isEqualTo("2026-02-01T15:00:00");
+        assertThat(earlier.path("status").asText()).isEqualTo("SCHEDULED");
+
+        JsonNode later = array.get(laterIndex);
+        assertThat(later.path("roundNumber").asInt()).isEqualTo(2);
+        assertThat(later.path("homeTeamName").asText()).isEqualTo("Tritões COMP_GAMES");
+        assertThat(later.path("awayTeamName").asText()).isEqualTo("Águias COMP_GAMES");
+        assertThat(later.path("venueName").asText()).isEqualTo("Arena COMP_GAMES");
+        assertThat(later.path("scheduledAt").asText()).isEqualTo("2026-02-01T19:00:00");
+        assertThat(later.path("status").asText()).isEqualTo("SCHEDULED");
+    }
+
+    @Test
+    void listByCompetition_unknownCompetition_returnsNotFound_publicAccess() throws Exception {
+        mockMvc.perform(get(COMPETITIONS_URL + "/" + UUID.randomUUID() + "/games"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
     void getById_returnsGame_publicAccess() throws Exception {
         Chain chain = setupChain("GET_BY_ID");
 
@@ -477,7 +533,7 @@ class GameControllerIntegrationTest {
         String awayTeamId = createTeam(categoryId, "Águias " + suffix, "AGU", null);
         String venueId = createVenue(organizationId, "Arena " + suffix, "Rua A, 1", null);
 
-        return new Chain(categoryId, roundId, homeTeamId, awayTeamId, venueId);
+        return new Chain(competitionId, categoryId, roundId, homeTeamId, awayTeamId, venueId);
     }
 
     private String createOrganization(String tradeName, String legalName) throws Exception {
@@ -708,8 +764,8 @@ class GameControllerIntegrationTest {
         return objectMapper.writeValueAsString(fields);
     }
 
-    private record Chain(String categoryId, String roundId, String homeTeamId,
-                         String awayTeamId, String venueId) {
+    private record Chain(String competitionId, String categoryId, String roundId,
+                         String homeTeamId, String awayTeamId, String venueId) {
     }
 
 }

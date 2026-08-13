@@ -12,4 +12,6 @@ public interface VenueLookup {
 
     void assertExists(UUID id);
 
+    String findNameById(UUID id);
+
 }

@@ -70,4 +70,9 @@ public class VenueService implements VenueLookup {
         findEntityById(id);
     }
 
+    @Override
+    public String findNameById(UUID id) {
+        return findEntityById(id).getName();
+    }
+
 }

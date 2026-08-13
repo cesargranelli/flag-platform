@@ -17,4 +17,6 @@ public interface RoundLookup {
 
     List<UUID> findRoundIdsByCategoryId(UUID categoryId);
 
+    List<RoundInfo> findRoundInfoByCategoryIds(List<UUID> categoryIds);
+
 }

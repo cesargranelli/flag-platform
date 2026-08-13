@@ -14,6 +14,8 @@ public interface RoundRepository extends JpaRepository<RoundEntity, UUID> {
 
     List<RoundEntity> findAllByCategoryId(UUID categoryId);
 
+    List<RoundEntity> findAllByCategoryIdIn(List<UUID> categoryIds);
+
     boolean existsByCategoryIdAndNumber(UUID categoryId, Integer number);
 
     boolean existsByCategoryIdAndNumberAndIdNot(UUID categoryId, Integer number, UUID id);

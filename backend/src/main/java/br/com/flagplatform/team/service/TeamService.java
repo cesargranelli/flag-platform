@@ -85,4 +85,10 @@ public class TeamService implements TeamLookup {
                 .toList();
     }
 
+    @Override
+    public TeamInfo findTeamInfoById(UUID id) {
+        TeamEntity entity = findEntityById(id);
+        return new TeamInfo(entity.getId(), entity.getName());
+    }
+
 }

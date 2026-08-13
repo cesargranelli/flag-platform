@@ -1,6 +1,8 @@
 package br.com.flagplatform.game.service;
 
+import br.com.flagplatform.category.CategoryLookup;
 import br.com.flagplatform.common.enums.GameStatus;
+import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.game.FinishedGame;
 import br.com.flagplatform.game.GameLookup;
 import br.com.flagplatform.game.GameResultRegisteredEvent;
@@ -8,6 +10,7 @@ import br.com.flagplatform.game.dto.request.CreateGameRequest;
 import br.com.flagplatform.game.dto.request.RegisterGameResultRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
+import br.com.flagplatform.game.dto.response.GameSummaryResponse;
 import br.com.flagplatform.game.entity.GameEntity;
 import br.com.flagplatform.game.exception.GameNotFoundException;
 import br.com.flagplatform.game.exception.GameNotInProgressException;
@@ -15,6 +18,7 @@ import br.com.flagplatform.game.exception.InvalidGameStatusTransitionException;
 import br.com.flagplatform.game.exception.SameTeamGameException;
 import br.com.flagplatform.game.mapper.GameMapper;
 import br.com.flagplatform.game.repository.GameRepository;
+import br.com.flagplatform.round.RoundInfo;
 import br.com.flagplatform.round.RoundLookup;
 import br.com.flagplatform.team.TeamLookup;
 import br.com.flagplatform.venue.VenueLookup;
@@ -23,8 +27,11 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -33,6 +40,8 @@ public class GameService implements GameLookup {
 
     private final GameMapper mapper;
     private final GameRepository repository;
+    private final CompetitionLookup competitionLookup;
+    private final CategoryLookup categoryLookup;
     private final RoundLookup roundLookup;
     private final VenueLookup venueLookup;
     private final TeamLookup teamLookup;
@@ -56,6 +65,38 @@ public class GameService implements GameLookup {
 
     public GameResponse findById(UUID id) {
         return mapper.toResponse(findEntityById(id));
+    }
+
+    public List<GameSummaryResponse> findByCompetitionId(UUID competitionId) {
+        competitionLookup.assertExists(competitionId);
+        List<UUID> categoryIds = categoryLookup.findCategoryIdsByCompetitionId(competitionId);
+        if (categoryIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<RoundInfo> rounds = roundLookup.findRoundInfoByCategoryIds(categoryIds);
+        if (rounds.isEmpty()) {
+            return List.of();
+        }
+
+        Map<UUID, Integer> roundNumbers = rounds.stream().collect(
+                Collectors.toMap(RoundInfo::id, RoundInfo::number));
+        List<UUID> roundIds = new ArrayList<>(roundNumbers.keySet());
+
+        return repository.findAllByRoundIdInOrderByScheduledAtAsc(roundIds).stream()
+                .map(game -> new GameSummaryResponse(
+                        game.getId(),
+                        game.getRoundId(),
+                        roundNumbers.get(game.getRoundId()),
+                        teamLookup.findTeamInfoById(game.getHomeTeamId()).name(),
+                        teamLookup.findTeamInfoById(game.getAwayTeamId()).name(),
+                        game.getVenueId(),
+                        game.getVenueId() != null ? venueLookup.findNameById(game.getVenueId()) : null,
+                        game.getScheduledAt(),
+                        game.getStatus(),
+                        game.getHomeScore(),
+                        game.getAwayScore()))
+                .toList();
     }
 
     @Transactional

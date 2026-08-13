@@ -66,6 +66,13 @@ public class CategoryService implements CategoryLookup {
         findEntityById(id);
     }
 
+    @Override
+    public List<UUID> findCategoryIdsByCompetitionId(UUID competitionId) {
+        return repository.findAllByCompetitionIdOrderByNameAsc(competitionId).stream()
+                .map(CategoryEntity::getId)
+                .toList();
+    }
+
     private CategoryEntity findEntityById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new CategoryNotFoundException(id));

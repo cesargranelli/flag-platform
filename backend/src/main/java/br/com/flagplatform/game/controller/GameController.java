@@ -5,6 +5,7 @@ import br.com.flagplatform.game.dto.request.RegisterGameResultRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameStatusRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
+import br.com.flagplatform.game.dto.response.GameSummaryResponse;
 import br.com.flagplatform.game.service.GameService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -49,6 +50,16 @@ public class GameController {
     public List<GameResponse> findByRoundId(
             @Parameter(description = "Id da rodada") @PathVariable UUID roundId) {
         return service.findByRoundId(roundId);
+    }
+
+    @Operation(
+            summary = "Listar jogos por competição",
+            description = "Lista os jogos de uma competição (todas as categorias), ordenados por data, com nomes de times e campo. Acesso público."
+    )
+    @GetMapping("/api/v1/competitions/{competitionId}/games")
+    public List<GameSummaryResponse> findByCompetitionId(
+            @Parameter(description = "Id da competição") @PathVariable UUID competitionId) {
+        return service.findByCompetitionId(competitionId);
     }
 
     @Operation(

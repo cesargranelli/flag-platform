@@ -1,11 +1,15 @@
 package br.com.flagplatform.game.service;
 
+import br.com.flagplatform.category.CategoryLookup;
 import br.com.flagplatform.common.enums.GameStatus;
+import br.com.flagplatform.competition.CompetitionLookup;
+import br.com.flagplatform.competition.exception.CompetitionNotFoundException;
 import br.com.flagplatform.game.GameResultRegisteredEvent;
 import br.com.flagplatform.game.dto.request.CreateGameRequest;
 import br.com.flagplatform.game.dto.request.RegisterGameResultRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
+import br.com.flagplatform.game.dto.response.GameSummaryResponse;
 import br.com.flagplatform.game.entity.GameEntity;
 import br.com.flagplatform.game.exception.GameNotFoundException;
 import br.com.flagplatform.game.exception.GameNotInProgressException;
@@ -13,8 +17,10 @@ import br.com.flagplatform.game.exception.InvalidGameStatusTransitionException;
 import br.com.flagplatform.game.exception.SameTeamGameException;
 import br.com.flagplatform.game.mapper.GameMapper;
 import br.com.flagplatform.game.repository.GameRepository;
+import br.com.flagplatform.round.RoundInfo;
 import br.com.flagplatform.round.RoundLookup;
 import br.com.flagplatform.round.exception.RoundNotFoundException;
+import br.com.flagplatform.team.TeamInfo;
 import br.com.flagplatform.team.TeamLookup;
 import br.com.flagplatform.team.exception.TeamNotFoundException;
 import br.com.flagplatform.venue.VenueLookup;
@@ -35,6 +41,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -50,6 +57,12 @@ class GameServiceTest {
 
     @Mock
     private GameRepository repository;
+
+    @Mock
+    private CompetitionLookup competitionLookup;
+
+    @Mock
+    private CategoryLookup categoryLookup;
 
     @Mock
     private RoundLookup roundLookup;
@@ -211,6 +224,105 @@ class GameServiceTest {
 
         assertThatThrownBy(() -> service.findById(id))
                 .isInstanceOf(GameNotFoundException.class);
+    }
+
+    @Test
+    void findByCompetitionId_throwsWhenCompetitionDoesNotExist() {
+        UUID competitionId = UUID.randomUUID();
+
+        doThrow(new CompetitionNotFoundException(competitionId))
+                .when(competitionLookup).assertExists(competitionId);
+
+        assertThatThrownBy(() -> service.findByCompetitionId(competitionId))
+                .isInstanceOf(CompetitionNotFoundException.class);
+
+        verify(categoryLookup, never()).findCategoryIdsByCompetitionId(any());
+        verify(repository, never()).findAllByRoundIdInOrderByScheduledAtAsc(any());
+    }
+
+    @Test
+    void findByCompetitionId_withoutCategories_returnsEmptyList() {
+        UUID competitionId = UUID.randomUUID();
+
+        when(categoryLookup.findCategoryIdsByCompetitionId(competitionId)).thenReturn(List.of());
+
+        List<GameSummaryResponse> result = service.findByCompetitionId(competitionId);
+
+        assertThat(result).isEmpty();
+        verify(roundLookup, never()).findRoundInfoByCategoryIds(any());
+        verify(repository, never()).findAllByRoundIdInOrderByScheduledAtAsc(any());
+    }
+
+    @Test
+    void findByCompetitionId_withoutRounds_returnsEmptyList() {
+        UUID competitionId = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+
+        when(categoryLookup.findCategoryIdsByCompetitionId(competitionId))
+                .thenReturn(List.of(categoryId));
+        when(roundLookup.findRoundInfoByCategoryIds(List.of(categoryId))).thenReturn(List.of());
+
+        List<GameSummaryResponse> result = service.findByCompetitionId(competitionId);
+
+        assertThat(result).isEmpty();
+        verify(repository, never()).findAllByRoundIdInOrderByScheduledAtAsc(any());
+    }
+
+    @Test
+    void findByCompetitionId_returnsGamesOrderedByScheduledAt_withTeamAndVenueNames() {
+        UUID competitionId = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        UUID roundId1 = UUID.randomUUID();
+        UUID roundId2 = UUID.randomUUID();
+        UUID homeTeamId = UUID.randomUUID();
+        UUID awayTeamId = UUID.randomUUID();
+        UUID otherHomeTeamId = UUID.randomUUID();
+        UUID otherAwayTeamId = UUID.randomUUID();
+        UUID venueId = UUID.randomUUID();
+
+        when(categoryLookup.findCategoryIdsByCompetitionId(competitionId))
+                .thenReturn(List.of(categoryId));
+        when(roundLookup.findRoundInfoByCategoryIds(List.of(categoryId)))
+                .thenReturn(List.of(new RoundInfo(roundId1, 1), new RoundInfo(roundId2, 2)));
+        when(teamLookup.findTeamInfoById(homeTeamId)).thenReturn(new TeamInfo(homeTeamId, "Tritões"));
+        when(teamLookup.findTeamInfoById(awayTeamId)).thenReturn(new TeamInfo(awayTeamId, "Águias"));
+        when(teamLookup.findTeamInfoById(otherHomeTeamId))
+                .thenReturn(new TeamInfo(otherHomeTeamId, "Furacão"));
+        when(teamLookup.findTeamInfoById(otherAwayTeamId))
+                .thenReturn(new TeamInfo(otherAwayTeamId, "Trovões"));
+        when(venueLookup.findNameById(venueId)).thenReturn("Arena Central");
+
+        GameEntity later = entity(roundId2, homeTeamId, awayTeamId, venueId,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.SCHEDULED);
+        GameEntity earlier = entity(roundId1, otherHomeTeamId, otherAwayTeamId, null,
+                LocalDateTime.of(2026, 2, 1, 15, 0), GameStatus.SCHEDULED);
+
+        when(repository.findAllByRoundIdInOrderByScheduledAtAsc(anyList()))
+                .thenReturn(List.of(earlier, later));
+
+        List<GameSummaryResponse> result = service.findByCompetitionId(competitionId);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.getFirst().roundNumber()).isEqualTo(1);
+        assertThat(result.getFirst().homeTeamName()).isEqualTo("Furacão");
+        assertThat(result.getFirst().awayTeamName()).isEqualTo("Trovões");
+        assertThat(result.getFirst().venueId()).isNull();
+        assertThat(result.getFirst().venueName()).isNull();
+        assertThat(result.getFirst().scheduledAt())
+                .isEqualTo(LocalDateTime.of(2026, 2, 1, 15, 0));
+        assertThat(result.getFirst().status()).isEqualTo(GameStatus.SCHEDULED);
+
+        assertThat(result.getLast().roundNumber()).isEqualTo(2);
+        assertThat(result.getLast().homeTeamName()).isEqualTo("Tritões");
+        assertThat(result.getLast().awayTeamName()).isEqualTo("Águias");
+        assertThat(result.getLast().venueId()).isEqualTo(venueId);
+        assertThat(result.getLast().venueName()).isEqualTo("Arena Central");
+        assertThat(result.getLast().scheduledAt())
+                .isEqualTo(LocalDateTime.of(2026, 2, 1, 19, 0));
+        assertThat(result.getLast().status()).isEqualTo(GameStatus.SCHEDULED);
+
+        verify(competitionLookup).assertExists(competitionId);
+        verify(repository).findAllByRoundIdInOrderByScheduledAtAsc(anyList());
     }
 
     @Test

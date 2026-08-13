@@ -13,6 +13,8 @@ public interface GameRepository extends JpaRepository<GameEntity, UUID> {
 
     List<GameEntity> findAllByRoundIdOrderByScheduledAtAsc(UUID roundId);
 
+    List<GameEntity> findAllByRoundIdInOrderByScheduledAtAsc(List<UUID> roundIds);
+
     List<GameEntity> findAllByRoundIdInAndStatus(List<UUID> roundIds, GameStatus status);
 
 }
