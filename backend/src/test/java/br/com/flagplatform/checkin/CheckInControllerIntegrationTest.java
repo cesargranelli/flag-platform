@@ -20,6 +20,7 @@ import java.util.UUID;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -143,6 +144,79 @@ class CheckInControllerIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @WithMockUser(username = "mesa-validate@exemplo.com", roles = {"ORGANIZER", "MESA"})
+    void validate_duringInProgress_returnsPresent() throws Exception {
+        Chain chain = setupChain("VAL_OK");
+        registerUser("mesa-validate@exemplo.com");
+
+        String homeAthlete = createAthlete("João Silva", "João", "QB", 7, null);
+        addToRoster(chain.teamAId, homeAthlete);
+        String gameId = createGame(chain.roundId, chain.teamAId, chain.teamBId);
+        patchGameStatus(gameId, "IN_PROGRESS");
+
+        mockMvc.perform(post(CHECKIN_URL.formatted(gameId) + "/" + homeAthlete + "/validate"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PRESENT"))
+                .andExpect(jsonPath("$.teamId").value(chain.teamAId))
+                .andExpect(jsonPath("$.validatedBy").isNotEmpty())
+                .andExpect(jsonPath("$.validatedAt").isNotEmpty());
+    }
+
+    @Test
+    @WithMockUser(username = "mesa-notreg@exemplo.com", roles = {"ORGANIZER", "MESA"})
+    void validate_athleteNotInRoster_returnsNotRegistered() throws Exception {
+        Chain chain = setupChain("VAL_NR");
+        registerUser("mesa-notreg@exemplo.com");
+
+        String outsider = createAthlete("Zeca Silva", "Zeca", "WR", null, null);
+        String gameId = createGame(chain.roundId, chain.teamAId, chain.teamBId);
+        patchGameStatus(gameId, "IN_PROGRESS");
+
+        mockMvc.perform(post(CHECKIN_URL.formatted(gameId) + "/" + outsider + "/validate"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("NOT_REGISTERED"))
+                .andExpect(jsonPath("$.teamId").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(username = "mesa-sched@exemplo.com", roles = {"ORGANIZER", "MESA"})
+    void validate_whenGameScheduled_returnsConflict() throws Exception {
+        Chain chain = setupChain("VAL_SCHED");
+        registerUser("mesa-sched@exemplo.com");
+
+        String homeAthlete = createAthlete("João Silva", "João", "QB", 7, null);
+        addToRoster(chain.teamAId, homeAthlete);
+        String gameId = createGame(chain.roundId, chain.teamAId, chain.teamBId);
+
+        mockMvc.perform(post(CHECKIN_URL.formatted(gameId) + "/" + homeAthlete + "/validate"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @WithMockUser(username = "mesa-val@exemplo.com", roles = {"ORGANIZER", "MESA"})
+    void getValidations_returnsRosterWithValidationStatus() throws Exception {
+        Chain chain = setupChain("VAL_LIST");
+        registerUser("mesa-val@exemplo.com");
+
+        String homeAthlete = createAthlete("João Silva", "João", "QB", 7, null);
+        addToRoster(chain.teamAId, homeAthlete);
+        String gameId = createGame(chain.roundId, chain.teamAId, chain.teamBId);
+        patchGameStatus(gameId, "IN_PROGRESS");
+        validateAthlete(gameId, homeAthlete);
+
+        mockMvc.perform(get("/api/v1/games/" + gameId + "/validations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].status").value("PRESENT"));
+    }
+
+    @Test
+    void getValidations_anonymous_isPublic() throws Exception {
+        mockMvc.perform(get("/api/v1/games/" + UUID.randomUUID() + "/validations"))
+                .andExpect(status().isNotFound());
+    }
+
     private void registerUser(String email) throws Exception {
         mockMvc.perform(post(AUTH_URL + "/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -237,6 +311,18 @@ class CheckInControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(rosterBody(athleteId)))
                 .andExpect(status().isCreated());
+    }
+
+    private void patchGameStatus(String gameId, String status) throws Exception {
+        mockMvc.perform(patch(GAMES_URL + "/" + gameId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(checkInBody(status)))
+                .andExpect(status().isOk());
+    }
+
+    private void validateAthlete(String gameId, String athleteId) throws Exception {
+        mockMvc.perform(post(CHECKIN_URL.formatted(gameId) + "/" + athleteId + "/validate"))
+                .andExpect(status().isOk());
     }
 
     private String createGame(String roundId, String homeTeamId, String awayTeamId) throws Exception {

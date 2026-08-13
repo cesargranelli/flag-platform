@@ -2,6 +2,7 @@ package br.com.flagplatform.checkin.controller;
 
 import br.com.flagplatform.checkin.dto.request.CheckInStatusRequest;
 import br.com.flagplatform.checkin.dto.response.CheckInResponse;
+import br.com.flagplatform.checkin.dto.response.ValidationResponse;
 import br.com.flagplatform.checkin.service.CheckInService;
 import br.com.flagplatform.common.security.SecurityExpressions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,6 +53,31 @@ public class CheckInController {
             @Valid @RequestBody CheckInStatusRequest request,
             @AuthenticationPrincipal UserDetails principal) {
         return service.checkin(gameId, athleteId, request, principal.getUsername());
+    }
+
+    @Operation(
+            summary = "Validar atleta durante a partida",
+            description = "Valida a entrada de um atleta durante a partida (IN_PROGRESS). "
+                    + "Retorna NOT_REGISTERED se o atleta não estiver no roster dos times."
+    )
+    @PostMapping("/api/v1/games/{gameId}/checkin/{athleteId}/validate")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_MESA)
+    public ValidationResponse validate(
+            @Parameter(description = "Id do jogo") @PathVariable UUID gameId,
+            @Parameter(description = "Id do atleta") @PathVariable UUID athleteId,
+            @AuthenticationPrincipal UserDetails principal) {
+        return service.validate(gameId, athleteId, principal.getUsername());
+    }
+
+    @Operation(
+            summary = "Consultar validações do jogo",
+            description = "Retorna o roster dos dois times com o status de validação de cada atleta. "
+                    + "Acesso público."
+    )
+    @GetMapping("/api/v1/games/{gameId}/validations")
+    public List<CheckInResponse> getValidations(
+            @Parameter(description = "Id do jogo") @PathVariable UUID gameId) {
+        return service.getCheckinList(gameId);
     }
 
 }

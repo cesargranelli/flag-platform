@@ -167,7 +167,7 @@ public class GameService implements GameLookup {
     @Override
     public GameInfo findGameInfoById(UUID id) {
         GameEntity game = findEntityById(id);
-        return new GameInfo(game.getId(), game.getHomeTeamId(), game.getAwayTeamId());
+        return new GameInfo(game.getId(), game.getHomeTeamId(), game.getAwayTeamId(), game.getStatus());
     }
 
     private boolean isValidTransition(GameStatus current, GameStatus requested) {

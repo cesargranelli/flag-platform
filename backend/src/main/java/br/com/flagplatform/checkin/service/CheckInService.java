@@ -4,10 +4,13 @@ import br.com.flagplatform.athlete.AthleteInfo;
 import br.com.flagplatform.athlete.AthleteLookup;
 import br.com.flagplatform.checkin.dto.request.CheckInStatusRequest;
 import br.com.flagplatform.checkin.dto.response.CheckInResponse;
+import br.com.flagplatform.checkin.dto.response.ValidationResponse;
 import br.com.flagplatform.checkin.entity.CheckInEntity;
 import br.com.flagplatform.checkin.exception.AthleteNotInGameException;
+import br.com.flagplatform.checkin.exception.GameNotInProgressException;
 import br.com.flagplatform.checkin.repository.CheckInRepository;
 import br.com.flagplatform.common.enums.CheckInStatus;
+import br.com.flagplatform.common.enums.GameStatus;
 import br.com.flagplatform.game.GameInfo;
 import br.com.flagplatform.game.GameLookup;
 import br.com.flagplatform.roster.RosterLookup;
@@ -113,6 +116,64 @@ public class CheckInService {
                 checkIn != null ? checkIn.getStatus() : null,
                 checkIn != null ? checkIn.getValidatedBy() : null,
                 checkIn != null ? checkIn.getValidatedAt() : null);
+    }
+
+    @Transactional
+    public ValidationResponse validate(UUID gameId, UUID athleteId, String validatedByEmail) {
+        GameInfo game = gameLookup.findGameInfoById(gameId);
+        if (game.status() != GameStatus.IN_PROGRESS) {
+            throw new GameNotInProgressException(gameId);
+        }
+
+        AthleteInfo athlete = athleteLookup.findAthleteInfoById(athleteId);
+
+        UUID teamId = findTeamOf(game, athleteId);
+        if (teamId == null) {
+            return new ValidationResponse(
+                    gameId,
+                    null,
+                    athleteId,
+                    athlete.name(),
+                    CheckInStatus.NOT_REGISTERED,
+                    null,
+                    null);
+        }
+
+        UUID validatedBy = userLookup.findUserIdByEmail(validatedByEmail);
+
+        CheckInEntity entity = repository.findByGameIdAndAthleteId(gameId, athleteId)
+                .orElseGet(() -> {
+                    CheckInEntity created = new CheckInEntity();
+                    created.setGameId(gameId);
+                    created.setTeamId(teamId);
+                    created.setAthleteId(athleteId);
+                    return created;
+                });
+
+        entity.setStatus(CheckInStatus.PRESENT);
+        entity.setValidatedBy(validatedBy);
+        entity.setValidatedAt(LocalDateTime.now());
+
+        CheckInEntity saved = repository.save(entity);
+
+        return new ValidationResponse(
+                gameId,
+                saved.getTeamId(),
+                athleteId,
+                athlete.name(),
+                saved.getStatus(),
+                saved.getValidatedBy(),
+                saved.getValidatedAt());
+    }
+
+    private UUID findTeamOf(GameInfo game, UUID athleteId) {
+        if (rosterLookup.findAthleteIdsByTeamId(game.homeTeamId()).contains(athleteId)) {
+            return game.homeTeamId();
+        }
+        if (rosterLookup.findAthleteIdsByTeamId(game.awayTeamId()).contains(athleteId)) {
+            return game.awayTeamId();
+        }
+        return null;
     }
 
 }
