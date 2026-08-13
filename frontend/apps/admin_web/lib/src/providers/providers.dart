@@ -55,3 +55,18 @@ final organizationsProvider = FutureProvider<List<Organization>>(
 final organizationProvider = FutureProvider.family<Organization, String>(
   (ref, id) => ref.watch(organizationApiProvider).getById(id),
 );
+
+/// Serviço de campeonatos.
+final competitionApiProvider = Provider<CompetitionApi>(
+  (ref) => CompetitionApi(ref.watch(apiClientProvider)),
+);
+
+/// Lista de campeonatos da tela de gestão.
+final competitionsProvider = FutureProvider<List<Competition>>(
+  (ref) => ref.watch(competitionApiProvider).listAll(),
+);
+
+/// Detalhe de um campeonato por id.
+final competitionProvider = FutureProvider.family<Competition, String>(
+  (ref, id) => ref.watch(competitionApiProvider).getById(id),
+);

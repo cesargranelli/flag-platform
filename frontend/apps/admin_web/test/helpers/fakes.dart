@@ -129,6 +129,95 @@ LoginResponse testLoginResponse({User? user}) {
   );
 }
 
+/// [CompetitionApi] com dados controlados para testes.
+class FakeCompetitionApi extends CompetitionApi {
+  FakeCompetitionApi() : super(ApiClient(session: SessionManager()));
+
+  List<Competition> competitions = [];
+  int createCalls = 0;
+  int updateCalls = 0;
+  Map<String, dynamic>? lastBody;
+
+  @override
+  Future<List<Competition>> listAll() async => competitions;
+
+  @override
+  Future<Competition> getById(String id) async =>
+      competitions.firstWhere((c) => c.id == id);
+
+  @override
+  Future<Competition> create({
+    required String organizationId,
+    required String name,
+    String? description,
+    String? startDate,
+    String? endDate,
+    CompetitionStatus? status,
+  }) async {
+    createCalls++;
+    lastBody = {
+      'organizationId': organizationId,
+      'name': name,
+      'description': description,
+      'startDate': startDate,
+      'endDate': endDate,
+      'status': status?.toJson(),
+    };
+    final competition = Competition(
+      id: 'comp-nova',
+      name: name,
+      status: status ?? CompetitionStatus.draft,
+      organizationId: organizationId,
+      description: description,
+    );
+    competitions = [...competitions, competition];
+    return competition;
+  }
+
+  @override
+  Future<Competition> update(
+    String id, {
+    required String organizationId,
+    required String name,
+    String? description,
+    String? startDate,
+    String? endDate,
+    CompetitionStatus? status,
+  }) async {
+    updateCalls++;
+    lastBody = {
+      'organizationId': organizationId,
+      'name': name,
+      'description': description,
+      'startDate': startDate,
+      'endDate': endDate,
+      'status': status?.toJson(),
+    };
+    return Competition(
+      id: id,
+      name: name,
+      status: status ?? CompetitionStatus.draft,
+      organizationId: organizationId,
+      description: description,
+    );
+  }
+}
+
+/// Campeonato de exemplo para testes.
+Competition testCompetition({
+  String id = '11111111-1111-1111-1111-111111111111',
+  String name = 'Taça SP',
+  String organizationId = '11111111-1111-1111-1111-111111111111',
+  CompetitionStatus status = CompetitionStatus.draft,
+}) {
+  return Competition(
+    id: id,
+    name: name,
+    status: status,
+    organizationId: organizationId,
+  );
+}
+
 /// Organização de exemplo para testes.
 Organization testOrganization({
   String id = '11111111-1111-1111-1111-111111111111',
