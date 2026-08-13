@@ -1,29 +1,63 @@
 import '../enums/competition_status.dart';
 
+/// Campeonato do Flag Platform.
+///
+/// Aceita os dois shapes retornados pela API:
+/// - resumo (`GET /api/v1/competitions`): id, name, organizationName, status;
+/// - completo (`GET /api/v1/competitions/{id}`): id, organizationId, name,
+///   description, startDate, endDate, status, createdAt, updatedAt.
 class Competition {
-  final int id;
+  /// Identificador UUID do campeonato.
+  final String id;
+
   final String name;
-  final int organizationId;
+
   final CompetitionStatus status;
+
+  final String? organizationId;
+
+  /// Presente no shape de resumo (`GET /api/v1/competitions`).
+  final String? organizationName;
+
+  final String? description;
+
+  final DateTime? startDate;
+
+  final DateTime? endDate;
 
   const Competition({
     required this.id,
     required this.name,
-    required this.organizationId,
     required this.status,
+    this.organizationId,
+    this.organizationName,
+    this.description,
+    this.startDate,
+    this.endDate,
   });
 
   factory Competition.fromJson(Map<String, dynamic> json) => Competition(
-        id: json['id'] as int,
+        id: json['id'] as String,
         name: json['name'] as String,
-        organizationId: json['organizationId'] as int,
         status: CompetitionStatus.fromJson(json['status'] as String),
+        organizationId: json['organizationId'] as String?,
+        organizationName: json['organizationName'] as String?,
+        description: json['description'] as String?,
+        startDate: _tryParseDate(json['startDate']),
+        endDate: _tryParseDate(json['endDate']),
       );
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
-        'organizationId': organizationId,
         'status': status.toJson(),
+        if (organizationId != null) 'organizationId': organizationId,
+        if (organizationName != null) 'organizationName': organizationName,
+        if (description != null) 'description': description,
+        if (startDate != null) 'startDate': startDate!.toIso8601String(),
+        if (endDate != null) 'endDate': endDate!.toIso8601String(),
       };
 }
+
+DateTime? _tryParseDate(Object? value) =>
+    value is String ? DateTime.tryParse(value) : null;

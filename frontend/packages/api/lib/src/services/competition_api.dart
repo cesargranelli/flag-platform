@@ -8,13 +8,17 @@ class CompetitionApi {
 
   CompetitionApi(this._client);
 
-  Future<List<Competition>> listByOrganization(int organizationId) =>
+  /// Lista todos os campeonatos (endpoint público, ordenado por nome).
+  Future<List<Competition>> listAll() =>
+      _client.getList('/api/v1/competitions', Competition.fromJson);
+
+  Future<List<Competition>> listByOrganization(String organizationId) =>
       _client.getList(
         '/api/v1/organizations/$organizationId/competitions',
         Competition.fromJson,
       );
 
-  Future<Competition> getById(int id) =>
+  Future<Competition> getById(String id) =>
       _client.getOne('/api/v1/competitions/$id', Competition.fromJson);
 
   Future<Competition> create({
