@@ -245,6 +245,72 @@ class FakeCategoryApi extends CategoryApi {
   }
 }
 
+/// [VenueApi] com dados controlados para testes.
+class FakeVenueApi extends VenueApi {
+  FakeVenueApi() : super(ApiClient(session: SessionManager()));
+
+  List<Venue> venues = [];
+  int createCalls = 0;
+  Map<String, dynamic>? lastBody;
+
+  @override
+  Future<List<Venue>> list() async => venues;
+
+  @override
+  Future<Venue> getById(String id) async =>
+      venues.firstWhere((v) => v.id == id);
+
+  @override
+  Future<Venue> create({
+    required String organizationId,
+    required String name,
+    String? address,
+    String? mapsUrl,
+  }) async {
+    createCalls++;
+    lastBody = {
+      'organizationId': organizationId,
+      'name': name,
+      'address': address,
+      'mapsUrl': mapsUrl,
+    };
+    final venue = Venue(
+      id: 'venue-nova',
+      organizationId: organizationId,
+      name: name,
+      address: address,
+    );
+    venues = [...venues, venue];
+    return venue;
+  }
+
+  @override
+  Future<Venue> update(
+    String id, {
+    required String organizationId,
+    required String name,
+    String? address,
+    String? mapsUrl,
+  }) async {
+    lastBody = {
+      'organizationId': organizationId,
+      'name': name,
+      'address': address,
+      'mapsUrl': mapsUrl,
+    };
+    return Venue(id: id, organizationId: organizationId, name: name, address: address);
+  }
+}
+
+/// Campo de exemplo para testes.
+Venue testVenue({
+  String id = '11111111-1111-1111-1111-111111111111',
+  String name = 'Arena Paulista',
+  String organizationId = '11111111-1111-1111-1111-111111111111',
+}) {
+  return Venue(id: id, organizationId: organizationId, name: name);
+}
+
 /// Categoria de exemplo para testes.
 Category testCategory({
   String id = '11111111-1111-1111-1111-111111111111',

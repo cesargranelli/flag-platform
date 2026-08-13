@@ -10,6 +10,8 @@ import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/organization_form_screen.dart';
 import '../screens/organizations_screen.dart';
+import '../screens/venue_form_screen.dart';
+import '../screens/venues_screen.dart';
 
 /// Rotas do Admin Web com proteção de autenticação.
 class AppRouter {
@@ -108,6 +110,27 @@ class AppRouter {
               return CategoryFormScreen(
                 categoryId: state.pathParameters['id'],
                 category: category,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/venues',
+            name: 'venues',
+            builder: (context, state) => const VenuesScreen(),
+          ),
+          GoRoute(
+            path: '/venues/new',
+            name: 'venueNew',
+            builder: (context, state) => const VenueFormScreen(),
+          ),
+          GoRoute(
+            path: '/venues/:id',
+            name: 'venueEdit',
+            builder: (context, state) {
+              final venue = state.extra is Venue ? state.extra as Venue : null;
+              return VenueFormScreen(
+                venueId: state.pathParameters['id'],
+                venue: venue,
               );
             },
           ),
