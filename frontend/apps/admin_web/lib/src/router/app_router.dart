@@ -18,6 +18,9 @@ import '../screens/round_form_screen.dart';
 import '../screens/rounds_screen.dart';
 import '../screens/game_form_screen.dart';
 import '../screens/games_screen.dart';
+import '../screens/athlete_form_screen.dart';
+import '../screens/athletes_screen.dart';
+import '../screens/rosters_screen.dart';
 
 /// Rotas do Admin Web com proteção de autenticação.
 class AppRouter {
@@ -204,6 +207,34 @@ class AppRouter {
             builder: (context, state) => GameFormScreen(
               args: state.extra is GameFormArgs ? state.extra as GameFormArgs : null,
             ),
+          ),
+          GoRoute(
+            path: '/athletes',
+            name: 'athletes',
+            builder: (context, state) => const AthletesScreen(),
+          ),
+          GoRoute(
+            path: '/athletes/new',
+            name: 'athleteNew',
+            builder: (context, state) => const AthleteFormScreen(),
+          ),
+          GoRoute(
+            path: '/athletes/:id',
+            name: 'athleteEdit',
+            builder: (context, state) {
+              final athlete = state.extra is Athlete
+                  ? state.extra as Athlete
+                  : null;
+              return AthleteFormScreen(
+                athleteId: state.pathParameters['id'],
+                athlete: athlete,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/rosters',
+            name: 'rosters',
+            builder: (context, state) => const RostersScreen(),
           ),
         ],
       );
