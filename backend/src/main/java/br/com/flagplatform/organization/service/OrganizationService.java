@@ -68,6 +68,11 @@ public class OrganizationService implements OrganizationLookup {
         findEntityById(id);
     }
 
+    @Override
+    public String findTradeNameById(UUID id) {
+        return findEntityById(id).getTradeName();
+    }
+
     private OrganizationEntity findEntityById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new OrganizationNotFoundException(id));

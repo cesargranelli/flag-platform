@@ -5,6 +5,7 @@ import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.competition.dto.request.CreateCompetitionRequest;
 import br.com.flagplatform.competition.dto.request.UpdateCompetitionRequest;
 import br.com.flagplatform.competition.dto.response.CompetitionResponse;
+import br.com.flagplatform.competition.dto.response.CompetitionSummaryResponse;
 import br.com.flagplatform.competition.entity.CompetitionEntity;
 import br.com.flagplatform.competition.exception.CompetitionNotFoundException;
 import br.com.flagplatform.competition.exception.DuplicateCompetitionNameException;
@@ -49,6 +50,16 @@ public class CompetitionService implements CompetitionLookup {
 
     public List<CompetitionResponse> findByOrganizationId(UUID organizationId) {
         return mapper.toResponseList(repository.findAllByOrganizationIdOrderByNameAsc(organizationId));
+    }
+
+    public List<CompetitionSummaryResponse> listAllPublic() {
+        return repository.findAllByOrderByNameAsc().stream()
+                .map(entity -> new CompetitionSummaryResponse(
+                        entity.getId(),
+                        entity.getName(),
+                        organizationLookup.findTradeNameById(entity.getOrganizationId()),
+                        entity.getStatus()))
+                .toList();
     }
 
     @Transactional

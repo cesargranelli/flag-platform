@@ -126,6 +126,48 @@ class CompetitionControllerIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @WithMockUser
+    void listAll_returnsCompetitionsOrderedByNameWithOrganizationName() throws Exception {
+        String firstOrgId = createOrganization("COMP_SUM_APFA", "Associação Paulista de Futebol Americano");
+        String secondOrgId = createOrganization("COMP_SUM_FLAGSP", "Flag SP");
+
+        String tacaId = createCompetition(firstOrgId, "Taça SP");
+        String copaId = createCompetition(secondOrgId, "Copa Paulista");
+
+        MvcResult result = mockMvc.perform(get(COMPETITIONS_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andReturn();
+
+        JsonNode array = objectMapper.readTree(result.getResponse().getContentAsString());
+        int copaIndex = indexOfId(array, copaId);
+        int tacaIndex = indexOfId(array, tacaId);
+
+        assertThat(copaIndex).isNotNegative();
+        assertThat(tacaIndex).isNotNegative();
+        assertThat(copaIndex).isLessThan(tacaIndex);
+
+        assertThat(array.get(copaIndex).path("id").asText()).isEqualTo(copaId);
+        assertThat(array.get(copaIndex).path("name").asText()).isEqualTo("Copa Paulista");
+        assertThat(array.get(copaIndex).path("organizationName").asText()).isEqualTo("COMP_SUM_FLAGSP");
+        assertThat(array.get(copaIndex).path("status").asText()).isEqualTo("DRAFT");
+
+        assertThat(array.get(tacaIndex).path("id").asText()).isEqualTo(tacaId);
+        assertThat(array.get(tacaIndex).path("name").asText()).isEqualTo("Taça SP");
+        assertThat(array.get(tacaIndex).path("organizationName").asText()).isEqualTo("COMP_SUM_APFA");
+        assertThat(array.get(tacaIndex).path("status").asText()).isEqualTo("DRAFT");
+    }
+
+    private int indexOfId(JsonNode array, String id) {
+        for (int i = 0; i < array.size(); i++) {
+            if (id.equals(array.get(i).path("id").asText())) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     private String createOrganization(String tradeName, String legalName) throws Exception {
         MvcResult result = mockMvc.perform(post(ORGANIZATIONS_URL)
                         .contentType(MediaType.APPLICATION_JSON)
