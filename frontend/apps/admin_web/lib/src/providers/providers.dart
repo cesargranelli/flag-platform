@@ -145,3 +145,26 @@ final gamesByRoundProvider = FutureProvider.family<List<Game>, String>(
 final gameProvider = FutureProvider.family<Game, String>(
   (ref, id) => ref.watch(gameApiProvider).getById(id),
 );
+
+/// Serviço de atletas.
+final athleteApiProvider = Provider<AthleteApi>(
+  (ref) => AthleteApi(ref.watch(apiClientProvider)),
+);
+
+/// Lista de atletas.
+final athletesProvider = FutureProvider<List<Athlete>>(
+  (ref) => ref.watch(athleteApiProvider).list(),
+);
+
+/// Serviço de elencos.
+final rosterApiProvider = Provider<RosterApi>(
+  (ref) => RosterApi(ref.watch(apiClientProvider)),
+);
+
+/// Time selecionado na tela de elencos.
+final selectedTeamProvider = StateProvider<String?>((ref) => null);
+
+/// Elenco de um time.
+final rosterProvider = FutureProvider.family<List<RosterEntry>, String>(
+  (ref, teamId) => ref.watch(rosterApiProvider).listByTeam(teamId),
+);

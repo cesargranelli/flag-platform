@@ -85,6 +85,20 @@ class AdminHomeScreen extends ConsumerWidget {
             subtitle: 'Criar e editar jogos',
             onTap: () => context.push('/games'),
           ),
+          _menuItem(
+            context,
+            icon: Icons.person_outline,
+            title: 'Atletas',
+            subtitle: 'Criar e editar atletas',
+            onTap: () => context.push('/athletes'),
+          ),
+          _menuItem(
+            context,
+            icon: Icons.groups_outlined,
+            title: 'Elenco',
+            subtitle: 'Inscrever e remover atletas dos times',
+            onTap: () => context.push('/rosters'),
+          ),
         ],
       ),
     );

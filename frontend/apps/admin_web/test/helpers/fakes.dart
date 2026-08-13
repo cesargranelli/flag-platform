@@ -450,6 +450,83 @@ class FakeGameApi extends GameApi {
   }
 }
 
+/// [AthleteApi] com dados controlados para testes.
+class FakeAthleteApi extends AthleteApi {
+  FakeAthleteApi() : super(ApiClient(session: SessionManager()));
+
+  List<Athlete> athletes = [];
+  int createCalls = 0;
+  Map<String, dynamic>? lastBody;
+
+  @override
+  Future<List<Athlete>> list() async => athletes;
+
+  @override
+  Future<Athlete> getById(String id) async =>
+      athletes.firstWhere((a) => a.id == id);
+
+  @override
+  Future<Athlete> create(Map<String, dynamic> body) async {
+    createCalls++;
+    lastBody = body;
+    final athlete = Athlete.fromJson({...body, 'id': 'atleta-novo'});
+    athletes = [...athletes, athlete];
+    return athlete;
+  }
+
+  @override
+  Future<Athlete> update(String id, Map<String, dynamic> body) async {
+    lastBody = body;
+    return Athlete.fromJson({...body, 'id': id});
+  }
+}
+
+/// [RosterApi] com dados controlados para testes.
+class FakeRosterApi extends RosterApi {
+  FakeRosterApi() : super(ApiClient(session: SessionManager()));
+
+  List<RosterEntry> entries = [];
+  int addCalls = 0;
+  int removeCalls = 0;
+
+  @override
+  Future<List<RosterEntry>> listByTeam(String teamId) async =>
+      entries.where((e) => e.teamId == teamId).toList();
+
+  @override
+  Future<void> add({required String teamId, required String athleteId}) async {
+    addCalls++;
+    entries = [
+      ...entries,
+      RosterEntry(
+        id: 'entry-novo',
+        teamId: teamId,
+        athleteId: athleteId,
+        athleteName: 'Atleta $athleteId',
+        status: 'ACTIVE',
+      ),
+    ];
+  }
+
+  @override
+  Future<void> remove({required String teamId, required String athleteId}) async {
+    removeCalls++;
+    entries = entries
+        .where((e) => !(e.teamId == teamId && e.athleteId == athleteId))
+        .toList();
+  }
+}
+
+/// Atleta de exemplo para testes.
+Athlete testAthlete({
+  String id = '11111111-1111-1111-1111-111111111111',
+  String name = 'João Silva',
+  AthletePosition position = AthletePosition.qb,
+  int? number = 7,
+}) {
+  return Athlete(id: id, name: name, position: position, number: number);
+}
+
 /// Jogo de exemplo para testes.
 Game testGame({
   String id = '11111111-1111-1111-1111-111111111111',
