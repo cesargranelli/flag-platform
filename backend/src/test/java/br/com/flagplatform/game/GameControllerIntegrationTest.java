@@ -21,6 +21,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -254,6 +255,76 @@ class GameControllerIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @WithMockUser
+    void updateStatus_scheduledToInProgress_returnsUpdatedGame() throws Exception {
+        Chain chain = setupChain("STATUS_IP");
+
+        String gameId = createGame(chain.roundId, chain.homeTeamId, chain.awayTeamId,
+                null, "2026-02-01T19:00:00");
+
+        mockMvc.perform(patch(GAMES_URL + "/" + gameId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statusBody("IN_PROGRESS")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(gameId))
+                .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+    }
+
+    @Test
+    @WithMockUser
+    void updateStatus_invalidTransition_returnsConflict() throws Exception {
+        Chain chain = setupChain("STATUS_CONFLICT");
+
+        String gameId = createGame(chain.roundId, chain.homeTeamId, chain.awayTeamId,
+                null, "2026-02-01T19:00:00");
+
+        patchGameStatus(gameId, "IN_PROGRESS");
+
+        mockMvc.perform(patch(GAMES_URL + "/" + gameId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statusBody("CANCELLED")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.message")
+                        .value("Cannot transition game status from 'IN_PROGRESS' to 'CANCELLED'."));
+    }
+
+    @Test
+    @WithMockUser
+    void updateStatus_unknownId_returnsNotFound() throws Exception {
+        mockMvc.perform(patch(GAMES_URL + "/" + UUID.randomUUID() + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statusBody("IN_PROGRESS")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
+    void updateStatus_nullStatus_returnsBadRequest() throws Exception {
+        Chain chain = setupChain("STATUS_NULL");
+
+        String gameId = createGame(chain.roundId, chain.homeTeamId, chain.awayTeamId,
+                null, "2026-02-01T19:00:00");
+
+        Map<String, Object> invalid = new HashMap<>();
+        invalid.put("status", null);
+
+        mockMvc.perform(patch(GAMES_URL + "/" + gameId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fields[?(@.field == 'status')]").exists());
+    }
+
+    @Test
+    void updateStatus_requiresAuthentication() throws Exception {
+        mockMvc.perform(patch(GAMES_URL + "/" + UUID.randomUUID() + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statusBody("IN_PROGRESS")))
+                .andExpect(status().isForbidden());
+    }
+
     private int indexOfId(JsonNode array, String id) {
         for (int i = 0; i < array.size(); i++) {
             if (id.equals(array.get(i).path("id").asText())) {
@@ -474,6 +545,20 @@ class GameControllerIntegrationTest {
             fields.put("venueId", venueId);
         }
         fields.put("scheduledAt", scheduledAt);
+        return objectMapper.writeValueAsString(fields);
+    }
+
+    private void patchGameStatus(String gameId, String status) throws Exception {
+        mockMvc.perform(patch(GAMES_URL + "/" + gameId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(statusBody(status)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(status));
+    }
+
+    private String statusBody(String status) throws Exception {
+        Map<String, Object> fields = new HashMap<>();
+        fields.put("status", status);
         return objectMapper.writeValueAsString(fields);
     }
 

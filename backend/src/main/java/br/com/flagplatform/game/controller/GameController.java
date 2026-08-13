@@ -2,6 +2,7 @@ package br.com.flagplatform.game.controller;
 
 import br.com.flagplatform.game.dto.request.CreateGameRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameRequest;
+import br.com.flagplatform.game.dto.request.UpdateGameStatusRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
 import br.com.flagplatform.game.service.GameService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -67,6 +69,17 @@ public class GameController {
             @Parameter(description = "Id do jogo") @PathVariable UUID id,
             @Valid @RequestBody UpdateGameRequest request) {
         return service.update(id, request);
+    }
+
+    @Operation(
+            summary = "Atualizar status do jogo",
+            description = "Atualiza o status de um jogo conforme as transições válidas (SCHEDULED->IN_PROGRESS, IN_PROGRESS->FINISHED, SCHEDULED->CANCELLED). Requer autenticação."
+    )
+    @PatchMapping("/api/v1/games/{id}/status")
+    public GameResponse updateStatus(
+            @Parameter(description = "Id do jogo") @PathVariable UUID id,
+            @Valid @RequestBody UpdateGameStatusRequest request) {
+        return service.updateStatus(id, request.status());
     }
 
 }

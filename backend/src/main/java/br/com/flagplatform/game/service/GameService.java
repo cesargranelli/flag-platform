@@ -6,6 +6,7 @@ import br.com.flagplatform.game.dto.request.UpdateGameRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
 import br.com.flagplatform.game.entity.GameEntity;
 import br.com.flagplatform.game.exception.GameNotFoundException;
+import br.com.flagplatform.game.exception.InvalidGameStatusTransitionException;
 import br.com.flagplatform.game.exception.SameTeamGameException;
 import br.com.flagplatform.game.mapper.GameMapper;
 import br.com.flagplatform.game.repository.GameRepository;
@@ -58,6 +59,26 @@ public class GameService {
         mapper.updateEntity(entity, request);
 
         return mapper.toResponse(repository.save(entity));
+    }
+
+    @Transactional
+    public GameResponse updateStatus(UUID id, GameStatus newStatus) {
+        GameEntity entity = findEntityById(id);
+        if (!isValidTransition(entity.getStatus(), newStatus)) {
+            throw new InvalidGameStatusTransitionException(entity.getStatus(), newStatus);
+        }
+
+        entity.setStatus(newStatus);
+        return mapper.toResponse(repository.save(entity));
+    }
+
+    private boolean isValidTransition(GameStatus current, GameStatus requested) {
+        return switch (current) {
+            case SCHEDULED ->
+                    requested == GameStatus.IN_PROGRESS || requested == GameStatus.CANCELLED;
+            case IN_PROGRESS -> requested == GameStatus.FINISHED;
+            case FINISHED, CANCELLED -> false;
+        };
     }
 
     private void validateReferences(UUID roundId, UUID homeTeamId, UUID awayTeamId, UUID venueId) {

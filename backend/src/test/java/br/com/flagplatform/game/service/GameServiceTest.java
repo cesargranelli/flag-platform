@@ -6,6 +6,7 @@ import br.com.flagplatform.game.dto.request.UpdateGameRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
 import br.com.flagplatform.game.entity.GameEntity;
 import br.com.flagplatform.game.exception.GameNotFoundException;
+import br.com.flagplatform.game.exception.InvalidGameStatusTransitionException;
 import br.com.flagplatform.game.exception.SameTeamGameException;
 import br.com.flagplatform.game.mapper.GameMapper;
 import br.com.flagplatform.game.repository.GameRepository;
@@ -263,6 +264,121 @@ class GameServiceTest {
 
         verify(repository, never()).save(any());
         verify(mapper, never()).updateEntity(eq(entity), any(UpdateGameRequest.class));
+    }
+
+    @Test
+    void updateStatus_scheduledToInProgress_updatesStatus() {
+        UUID id = UUID.randomUUID();
+        GameEntity entity = entity(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.SCHEDULED);
+        GameResponse expected = response(entity);
+
+        when(repository.findById(id)).thenReturn(Optional.of(entity));
+        when(repository.save(entity)).thenReturn(entity);
+        when(mapper.toResponse(entity)).thenReturn(expected);
+
+        GameResponse result = service.updateStatus(id, GameStatus.IN_PROGRESS);
+
+        assertThat(result).isSameAs(expected);
+        assertThat(entity.getStatus()).isEqualTo(GameStatus.IN_PROGRESS);
+        verify(repository).save(entity);
+    }
+
+    @Test
+    void updateStatus_scheduledToCancelled_updatesStatus() {
+        UUID id = UUID.randomUUID();
+        GameEntity entity = entity(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.SCHEDULED);
+        GameResponse expected = response(entity);
+
+        when(repository.findById(id)).thenReturn(Optional.of(entity));
+        when(repository.save(entity)).thenReturn(entity);
+        when(mapper.toResponse(entity)).thenReturn(expected);
+
+        GameResponse result = service.updateStatus(id, GameStatus.CANCELLED);
+
+        assertThat(result).isSameAs(expected);
+        assertThat(entity.getStatus()).isEqualTo(GameStatus.CANCELLED);
+        verify(repository).save(entity);
+    }
+
+    @Test
+    void updateStatus_inProgressToFinished_updatesStatus() {
+        UUID id = UUID.randomUUID();
+        GameEntity entity = entity(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.IN_PROGRESS);
+        GameResponse expected = response(entity);
+
+        when(repository.findById(id)).thenReturn(Optional.of(entity));
+        when(repository.save(entity)).thenReturn(entity);
+        when(mapper.toResponse(entity)).thenReturn(expected);
+
+        GameResponse result = service.updateStatus(id, GameStatus.FINISHED);
+
+        assertThat(result).isSameAs(expected);
+        assertThat(entity.getStatus()).isEqualTo(GameStatus.FINISHED);
+        verify(repository).save(entity);
+    }
+
+    @Test
+    void updateStatus_inProgressToCancelled_throwsInvalidTransition() {
+        UUID id = UUID.randomUUID();
+        GameEntity entity = entity(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.IN_PROGRESS);
+
+        when(repository.findById(id)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.updateStatus(id, GameStatus.CANCELLED))
+                .isInstanceOf(InvalidGameStatusTransitionException.class);
+
+        assertThat(entity.getStatus()).isEqualTo(GameStatus.IN_PROGRESS);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void updateStatus_scheduledToScheduled_throwsInvalidTransition() {
+        UUID id = UUID.randomUUID();
+        GameEntity entity = entity(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.SCHEDULED);
+
+        when(repository.findById(id)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.updateStatus(id, GameStatus.SCHEDULED))
+                .isInstanceOf(InvalidGameStatusTransitionException.class);
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void updateStatus_finishedToScheduled_throwsInvalidTransition() {
+        UUID id = UUID.randomUUID();
+        GameEntity entity = entity(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
+                LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.FINISHED);
+
+        when(repository.findById(id)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.updateStatus(id, GameStatus.SCHEDULED))
+                .isInstanceOf(InvalidGameStatusTransitionException.class);
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void updateStatus_gameNotFound_throws() {
+        UUID id = UUID.randomUUID();
+
+        when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateStatus(id, GameStatus.IN_PROGRESS))
+                .isInstanceOf(GameNotFoundException.class);
+
+        verify(repository, never()).save(any());
     }
 
     private CreateGameRequest createRequest(UUID roundId, UUID homeTeamId, UUID awayTeamId,
