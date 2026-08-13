@@ -22,17 +22,63 @@ class CompetitionApi {
       _client.getOne('/api/v1/competitions/$id', Competition.fromJson);
 
   Future<Competition> create({
+    required String organizationId,
     required String name,
-    required int organizationId,
-    required CompetitionStatus status,
+    String? description,
+    String? startDate,
+    String? endDate,
+    CompetitionStatus? status,
   }) =>
       _client.post(
         '/api/v1/competitions',
-        {
-          'name': name,
-          'organizationId': organizationId,
-          'status': status.toJson(),
-        },
+        _body(
+          organizationId: organizationId,
+          name: name,
+          description: description,
+          startDate: startDate,
+          endDate: endDate,
+          status: status,
+        ),
         Competition.fromJson,
       );
+
+  Future<Competition> update(
+    String id, {
+    required String organizationId,
+    required String name,
+    String? description,
+    String? startDate,
+    String? endDate,
+    CompetitionStatus? status,
+  }) =>
+      _client.put(
+        '/api/v1/competitions/$id',
+        _body(
+          organizationId: organizationId,
+          name: name,
+          description: description,
+          startDate: startDate,
+          endDate: endDate,
+          status: status,
+        ),
+        Competition.fromJson,
+      );
+
+  Map<String, dynamic> _body({
+    required String organizationId,
+    required String name,
+    String? description,
+    String? startDate,
+    String? endDate,
+    CompetitionStatus? status,
+  }) =>
+      {
+        'organizationId': organizationId,
+        'name': name,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+        if (startDate != null) 'startDate': startDate,
+        if (endDate != null) 'endDate': endDate,
+        if (status != null) 'status': status.toJson(),
+      };
 }
