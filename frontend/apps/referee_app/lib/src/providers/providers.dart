@@ -1,5 +1,6 @@
 import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
+import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -31,3 +32,36 @@ final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.read(authControllerProvider);
   return AppRouter.build(auth);
 });
+
+final competitionApiProvider = Provider<CompetitionApi>(
+  (ref) => CompetitionApi(ref.watch(apiClientProvider)),
+);
+
+final competitionsProvider = FutureProvider<List<Competition>>(
+  (ref) => ref.watch(competitionApiProvider).listAll(),
+);
+
+final categoryApiProvider = Provider<CategoryApi>(
+  (ref) => CategoryApi(ref.watch(apiClientProvider)),
+);
+
+final categoriesProvider = FutureProvider.family<List<Category>, String>(
+  (ref, competitionId) =>
+      ref.watch(categoryApiProvider).listByCompetition(competitionId),
+);
+
+final roundApiProvider = Provider<RoundApi>(
+  (ref) => RoundApi(ref.watch(apiClientProvider)),
+);
+
+final roundsProvider = FutureProvider.family<List<Round>, String>(
+  (ref, categoryId) => ref.watch(roundApiProvider).listByCategory(categoryId),
+);
+
+final gameApiProvider = Provider<GameApi>(
+  (ref) => GameApi(ref.watch(apiClientProvider)),
+);
+
+final gamesByRoundProvider = FutureProvider.family<List<Game>, String>(
+  (ref, roundId) => ref.watch(gameApiProvider).listByRound(roundId),
+);

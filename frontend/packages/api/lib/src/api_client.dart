@@ -96,6 +96,23 @@ class ApiClient {
     }
   }
 
+  Future<T> patch<T>(
+    String path,
+    Map<String, dynamic> body,
+    T Function(Map<String, dynamic>) fromJson,
+  ) async {
+    try {
+      final response = await dio.patch<Map<String, dynamic>>(
+        path,
+        data: body,
+        options: Options(headers: await _headers()),
+      );
+      return fromJson(response.data!);
+    } on DioException catch (e) {
+      throw RepositoryException.fromDio(e);
+    }
+  }
+
   Future<void> delete(String path) async {
     try {
       await dio.delete<void>(path, options: Options(headers: await _headers()));
