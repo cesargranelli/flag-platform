@@ -1,5 +1,6 @@
 package br.com.flagplatform.category.service;
 
+import br.com.flagplatform.category.CategoryLookup;
 import br.com.flagplatform.category.dto.request.CreateCategoryRequest;
 import br.com.flagplatform.category.dto.request.UpdateCategoryRequest;
 import br.com.flagplatform.category.dto.response.CategoryResponse;
@@ -19,7 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Service
-public class CategoryService {
+public class CategoryService implements CategoryLookup {
 
     private final CategoryMapper mapper;
     private final CategoryRepository repository;
@@ -58,6 +59,11 @@ public class CategoryService {
     @Transactional
     public void delete(UUID id) {
         repository.delete(findEntityById(id));
+    }
+
+    @Override
+    public void assertExists(UUID id) {
+        findEntityById(id);
     }
 
     private CategoryEntity findEntityById(UUID id) {
