@@ -355,6 +355,67 @@ class FakeTeamApi extends TeamApi {
   }
 }
 
+/// [RoundApi] com dados controlados para testes.
+class FakeRoundApi extends RoundApi {
+  FakeRoundApi() : super(ApiClient(session: SessionManager()));
+
+  List<Round> rounds = [];
+  int createCalls = 0;
+  Map<String, dynamic>? lastBody;
+
+  @override
+  Future<List<Round>> listByCategory(String categoryId) async =>
+      rounds.where((r) => r.categoryId == categoryId).toList();
+
+  @override
+  Future<Round> create({
+    required String categoryId,
+    required int number,
+    required String name,
+    required RoundType type,
+  }) async {
+    createCalls++;
+    lastBody = {
+      'categoryId': categoryId,
+      'number': number,
+      'name': name,
+      'type': type.toJson(),
+    };
+    final round = Round(
+        id: 'round-nova', categoryId: categoryId, number: number, name: name, type: type);
+    rounds = [...rounds, round];
+    return round;
+  }
+
+  @override
+  Future<Round> update(
+    String id, {
+    required String categoryId,
+    required int number,
+    required String name,
+    required RoundType type,
+  }) async {
+    lastBody = {
+      'categoryId': categoryId,
+      'number': number,
+      'name': name,
+      'type': type.toJson(),
+    };
+    return Round(id: id, categoryId: categoryId, number: number, name: name, type: type);
+  }
+}
+
+/// Rodada de exemplo para testes.
+Round testRound({
+  String id = '11111111-1111-1111-1111-111111111111',
+  String categoryId = '11111111-1111-1111-1111-111111111111',
+  int number = 1,
+  String name = 'Primeira Rodada',
+  RoundType type = RoundType.regular,
+}) {
+  return Round(id: id, categoryId: categoryId, number: number, name: name, type: type);
+}
+
 /// Time de exemplo para testes.
 Team testTeam({
   String id = '11111111-1111-1111-1111-111111111111',

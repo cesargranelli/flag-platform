@@ -71,6 +71,13 @@ class AdminHomeScreen extends ConsumerWidget {
             subtitle: 'Criar e editar times',
             onTap: () => context.push('/teams'),
           ),
+          _menuItem(
+            context,
+            icon: Icons.format_list_numbered,
+            title: 'Rodadas',
+            subtitle: 'Criar e editar rodadas',
+            onTap: () => context.push('/rounds'),
+          ),
         ],
       ),
     );

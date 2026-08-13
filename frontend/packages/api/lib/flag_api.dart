@@ -8,3 +8,4 @@ export 'src/services/standing_api.dart';
 export 'src/services/auth_api.dart';
 export 'src/services/venue_api.dart';
 export 'src/services/team_api.dart';
+export 'src/services/round_api.dart';

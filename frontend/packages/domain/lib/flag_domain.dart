@@ -16,3 +16,4 @@ export 'src/enums/competition_status.dart';
 export 'src/enums/check_in_status.dart';
 export 'src/enums/organization_status.dart';
 export 'src/enums/organization_type.dart';
+export 'src/enums/round_type.dart';
