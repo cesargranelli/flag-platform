@@ -4,11 +4,14 @@ import br.com.flagplatform.athlete.AthleteInfo;
 import br.com.flagplatform.athlete.AthleteLookup;
 import br.com.flagplatform.checkin.dto.request.CheckInStatusRequest;
 import br.com.flagplatform.checkin.dto.response.CheckInResponse;
+import br.com.flagplatform.checkin.dto.response.ValidationResponse;
 import br.com.flagplatform.checkin.entity.CheckInEntity;
 import br.com.flagplatform.checkin.exception.AthleteNotInGameException;
+import br.com.flagplatform.checkin.exception.GameNotInProgressException;
 import br.com.flagplatform.checkin.repository.CheckInRepository;
 import br.com.flagplatform.common.enums.AthletePosition;
 import br.com.flagplatform.common.enums.CheckInStatus;
+import br.com.flagplatform.common.enums.GameStatus;
 import br.com.flagplatform.game.GameInfo;
 import br.com.flagplatform.game.GameLookup;
 import br.com.flagplatform.roster.RosterLookup;
@@ -67,7 +70,7 @@ class CheckInServiceTest {
         UUID awayAthlete = UUID.randomUUID();
 
         when(gameLookup.findGameInfoById(gameId))
-                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId));
+                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId, GameStatus.SCHEDULED));
         when(repository.findAllByGameId(gameId)).thenReturn(List.of());
         when(teamLookup.findTeamInfoById(homeTeamId))
                 .thenReturn(new TeamInfo(homeTeamId, "Tritões"));
@@ -99,7 +102,7 @@ class CheckInServiceTest {
         CheckInEntity checkIn = checkIn(gameId, homeTeamId, athleteId, CheckInStatus.PRESENT);
 
         when(gameLookup.findGameInfoById(gameId))
-                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId));
+                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId, GameStatus.SCHEDULED));
         when(repository.findAllByGameId(gameId)).thenReturn(List.of(checkIn));
         when(teamLookup.findTeamInfoById(homeTeamId))
                 .thenReturn(new TeamInfo(homeTeamId, "Tritões"));
@@ -142,7 +145,7 @@ class CheckInServiceTest {
         CheckInStatusRequest request = new CheckInStatusRequest(CheckInStatus.PRESENT);
 
         when(gameLookup.findGameInfoById(gameId))
-                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId));
+                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId, GameStatus.SCHEDULED));
         when(rosterLookup.findAthleteIdsByTeamId(homeTeamId)).thenReturn(List.of(athleteId));
         when(userLookup.findUserIdByEmail("mesa@exemplo.com")).thenReturn(userId);
         when(repository.findByGameIdAndAthleteId(gameId, athleteId)).thenReturn(Optional.empty());
@@ -173,7 +176,7 @@ class CheckInServiceTest {
         CheckInEntity saved = checkIn(gameId, homeTeamId, athleteId, CheckInStatus.NO_SHOW);
 
         when(gameLookup.findGameInfoById(gameId))
-                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId));
+                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId, GameStatus.SCHEDULED));
         when(rosterLookup.findAthleteIdsByTeamId(homeTeamId)).thenReturn(List.of(athleteId));
         when(userLookup.findUserIdByEmail("mesa@exemplo.com")).thenReturn(userId);
         when(repository.findByGameIdAndAthleteId(gameId, athleteId)).thenReturn(Optional.of(existing));
@@ -199,12 +202,76 @@ class CheckInServiceTest {
         CheckInStatusRequest request = new CheckInStatusRequest(CheckInStatus.PRESENT);
 
         when(gameLookup.findGameInfoById(gameId))
-                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId));
+                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId, GameStatus.SCHEDULED));
         when(rosterLookup.findAthleteIdsByTeamId(homeTeamId)).thenReturn(List.of());
         when(rosterLookup.findAthleteIdsByTeamId(awayTeamId)).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.checkin(gameId, athleteId, request, "mesa@exemplo.com"))
                 .isInstanceOf(AthleteNotInGameException.class);
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void validate_marksPresent_duringInProgress() {
+        UUID gameId = UUID.randomUUID();
+        UUID homeTeamId = UUID.randomUUID();
+        UUID awayTeamId = UUID.randomUUID();
+        UUID athleteId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        when(gameLookup.findGameInfoById(gameId))
+                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId, GameStatus.IN_PROGRESS));
+        when(athleteLookup.findAthleteInfoById(athleteId))
+                .thenReturn(new AthleteInfo(athleteId, "João Silva", "João", AthletePosition.QB, 7, null));
+        when(rosterLookup.findAthleteIdsByTeamId(homeTeamId)).thenReturn(List.of(athleteId));
+        when(userLookup.findUserIdByEmail("mesa@exemplo.com")).thenReturn(userId);
+        when(repository.findByGameIdAndAthleteId(gameId, athleteId)).thenReturn(Optional.empty());
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ValidationResponse response = service.validate(gameId, athleteId, "mesa@exemplo.com");
+
+        assertThat(response.status()).isEqualTo(CheckInStatus.PRESENT);
+        assertThat(response.teamId()).isEqualTo(homeTeamId);
+        assertThat(response.validatedBy()).isEqualTo(userId);
+        assertThat(response.validatedAt()).isNotNull();
+        verify(repository).save(any());
+    }
+
+    @Test
+    void validate_returnsNotRegistered_whenAthleteNotInRosters() {
+        UUID gameId = UUID.randomUUID();
+        UUID homeTeamId = UUID.randomUUID();
+        UUID awayTeamId = UUID.randomUUID();
+        UUID athleteId = UUID.randomUUID();
+
+        when(gameLookup.findGameInfoById(gameId))
+                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId, GameStatus.IN_PROGRESS));
+        when(athleteLookup.findAthleteInfoById(athleteId))
+                .thenReturn(new AthleteInfo(athleteId, "Zeca Silva", null, null, null, null));
+        when(rosterLookup.findAthleteIdsByTeamId(homeTeamId)).thenReturn(List.of());
+        when(rosterLookup.findAthleteIdsByTeamId(awayTeamId)).thenReturn(List.of());
+
+        ValidationResponse response = service.validate(gameId, athleteId, "mesa@exemplo.com");
+
+        assertThat(response.status()).isEqualTo(CheckInStatus.NOT_REGISTERED);
+        assertThat(response.teamId()).isNull();
+        assertThat(response.validatedBy()).isNull();
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void validate_throwsWhenGameNotInProgress() {
+        UUID gameId = UUID.randomUUID();
+        UUID homeTeamId = UUID.randomUUID();
+        UUID awayTeamId = UUID.randomUUID();
+        UUID athleteId = UUID.randomUUID();
+
+        when(gameLookup.findGameInfoById(gameId))
+                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId, GameStatus.SCHEDULED));
+
+        assertThatThrownBy(() -> service.validate(gameId, athleteId, "mesa@exemplo.com"))
+                .isInstanceOf(GameNotInProgressException.class);
 
         verify(repository, never()).save(any());
     }

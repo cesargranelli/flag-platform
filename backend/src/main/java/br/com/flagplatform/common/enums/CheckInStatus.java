@@ -6,7 +6,8 @@ import lombok.Getter;
 public enum CheckInStatus implements PersistableEnum {
 
     PRESENT("PRESENT", "Presente"),
-    NO_SHOW("NO_SHOW", "Não compareceu");
+    NO_SHOW("NO_SHOW", "Não compareceu"),
+    NOT_REGISTERED("NOT_REGISTERED", "Não registrado no roster");
 
     private final String code;
     private final String description;
