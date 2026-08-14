@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -125,6 +126,41 @@ class AuthControllerIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createUser_withAdminRole_returnsCreated() throws Exception {
+        mockMvc.perform(post(BASE_URL + "/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createUserBody("Mesa Central", "mesa@exemplo.com", "segredo123", "MESA")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.email").value("mesa@exemplo.com"))
+                .andExpect(jsonPath("$.role").value("MESA"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void listUsers_withAdminRole_returnsList() throws Exception {
+        mockMvc.perform(post(BASE_URL + "/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerBody("Beta Lima", "beta@exemplo.com", "segredo123")))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get(BASE_URL + "/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[?(@.email == 'beta@exemplo.com')]").exists());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void createUser_withoutAdminRole_returnsForbidden() throws Exception {
+        mockMvc.perform(post(BASE_URL + "/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createUserBody("Mesa", "mesa@exemplo.com", "segredo123", "MESA")))
+                .andExpect(status().isForbidden());
+    }
+
     private void register(String name, String email, String password) throws Exception {
         mockMvc.perform(post(BASE_URL + "/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -143,6 +179,14 @@ class AuthControllerIntegrationTest {
         return objectMapper.writeValueAsString(Map.of(
                 "email", email,
                 "password", password));
+    }
+
+    private String createUserBody(String name, String email, String password, String role) throws Exception {
+        return objectMapper.writeValueAsString(Map.of(
+                "name", name,
+                "email", email,
+                "password", password,
+                "role", role));
     }
 
 }
