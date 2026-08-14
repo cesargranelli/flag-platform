@@ -9,11 +9,14 @@ import br.com.flagplatform.athlete.entity.AthleteEntity;
 import br.com.flagplatform.athlete.exception.AthleteNotFoundException;
 import br.com.flagplatform.athlete.mapper.AthleteMapper;
 import br.com.flagplatform.athlete.repository.AthleteRepository;
+import br.com.flagplatform.common.pagination.PagedResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -29,8 +32,12 @@ public class AthleteService implements AthleteLookup {
         return mapper.toResponse(repository.save(mapper.toEntity(request)));
     }
 
-    public List<AthleteResponse> findAll() {
-        return mapper.toResponseList(repository.findAllByOrderByNameAsc());
+    public PagedResponse<AthleteResponse> findAll(int page, int size) {
+        Page<AthleteEntity> result = repository.findAll(
+                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name")));
+        return new PagedResponse<>(
+                mapper.toResponseList(result.getContent()),
+                result.getTotalElements());
     }
 
     public AthleteResponse findById(UUID id) {

@@ -16,6 +16,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -170,21 +172,22 @@ class CompetitionServiceTest {
         CompetitionEntity tacaSp = entity(firstOrgId, "Taça SP", CompetitionStatus.PUBLISHED);
         List<CompetitionEntity> entities = List.of(copaPaulista, tacaSp);
 
-        when(repository.findAllByOrderByNameAsc()).thenReturn(entities);
+        when(repository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(entities));
         when(organizationLookup.findTradeNameById(firstOrgId)).thenReturn("APFA");
         when(organizationLookup.findTradeNameById(secondOrgId)).thenReturn("Flag SP");
 
-        List<CompetitionSummaryResponse> response = service.listAllPublic();
+        var response = service.listAllPublic(0, 10);
 
-        assertThat(response).hasSize(2);
-        assertThat(response.get(0).id()).isEqualTo(copaPaulista.getId());
-        assertThat(response.get(0).name()).isEqualTo("Copa Paulista");
-        assertThat(response.get(0).organizationName()).isEqualTo("Flag SP");
-        assertThat(response.get(0).status()).isEqualTo(CompetitionStatus.DRAFT);
-        assertThat(response.get(1).id()).isEqualTo(tacaSp.getId());
-        assertThat(response.get(1).name()).isEqualTo("Taça SP");
-        assertThat(response.get(1).organizationName()).isEqualTo("APFA");
-        assertThat(response.get(1).status()).isEqualTo(CompetitionStatus.PUBLISHED);
+        assertThat(response.items()).hasSize(2);
+        assertThat(response.items().get(0).id()).isEqualTo(copaPaulista.getId());
+        assertThat(response.items().get(0).name()).isEqualTo("Copa Paulista");
+        assertThat(response.items().get(0).organizationName()).isEqualTo("Flag SP");
+        assertThat(response.items().get(0).status()).isEqualTo(CompetitionStatus.DRAFT);
+        assertThat(response.items().get(1).id()).isEqualTo(tacaSp.getId());
+        assertThat(response.items().get(1).name()).isEqualTo("Taça SP");
+        assertThat(response.items().get(1).organizationName()).isEqualTo("APFA");
+        assertThat(response.items().get(1).status()).isEqualTo(CompetitionStatus.PUBLISHED);
+        assertThat(response.total()).isEqualTo(2);
         verify(organizationLookup).findTradeNameById(firstOrgId);
         verify(organizationLookup).findTradeNameById(secondOrgId);
     }

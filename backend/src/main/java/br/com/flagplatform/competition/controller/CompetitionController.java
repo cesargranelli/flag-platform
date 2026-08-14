@@ -9,6 +9,7 @@ import br.com.flagplatform.competition.service.CompetitionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -47,8 +49,13 @@ public class CompetitionController {
             description = "Lista todos os campeonatos, com nome da organização. Acesso público."
     )
     @GetMapping("/api/v1/competitions")
-    public List<CompetitionSummaryResponse> listAll() {
-        return service.listAllPublic();
+    public List<CompetitionSummaryResponse> listAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size,
+            HttpServletResponse response) {
+        var result = service.listAllPublic(page, size);
+        response.setHeader("X-Total-Count", String.valueOf(result.total()));
+        return result.items();
     }
 
     @Operation(

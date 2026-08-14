@@ -15,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -103,12 +105,13 @@ class VenueServiceTest {
                 .map(this::response)
                 .toList();
 
-        when(repository.findAllByOrderByNameAsc()).thenReturn(entities);
+        when(repository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(entities));
         when(mapper.toResponseList(entities)).thenReturn(expected);
 
-        List<VenueResponse> response = service.findAll();
+        var response = service.findAll(0, 10);
 
-        assertThat(response).hasSize(2).isSameAs(expected);
+        assertThat(response.items()).hasSize(2).isSameAs(expected);
+        assertThat(response.total()).isEqualTo(2);
     }
 
     @Test

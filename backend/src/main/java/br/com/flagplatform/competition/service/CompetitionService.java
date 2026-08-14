@@ -2,6 +2,7 @@ package br.com.flagplatform.competition.service;
 
 import br.com.flagplatform.common.enums.CompetitionStatus;
 import br.com.flagplatform.competition.CompetitionLookup;
+import br.com.flagplatform.common.pagination.PagedResponse;
 import br.com.flagplatform.competition.dto.request.CreateCompetitionRequest;
 import br.com.flagplatform.competition.dto.request.UpdateCompetitionRequest;
 import br.com.flagplatform.competition.dto.response.CompetitionResponse;
@@ -13,6 +14,9 @@ import br.com.flagplatform.competition.mapper.CompetitionMapper;
 import br.com.flagplatform.competition.repository.CompetitionRepository;
 import br.com.flagplatform.organization.OrganizationLookup;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,14 +56,18 @@ public class CompetitionService implements CompetitionLookup {
         return mapper.toResponseList(repository.findAllByOrganizationIdOrderByNameAsc(organizationId));
     }
 
-    public List<CompetitionSummaryResponse> listAllPublic() {
-        return repository.findAllByOrderByNameAsc().stream()
-                .map(entity -> new CompetitionSummaryResponse(
-                        entity.getId(),
-                        entity.getName(),
-                        organizationLookup.findTradeNameById(entity.getOrganizationId()),
-                        entity.getStatus()))
-                .toList();
+    public PagedResponse<CompetitionSummaryResponse> listAllPublic(int page, int size) {
+        Page<CompetitionEntity> result = repository.findAll(
+                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name")));
+        return new PagedResponse<>(
+                result.getContent().stream()
+                        .map(entity -> new CompetitionSummaryResponse(
+                                entity.getId(),
+                                entity.getName(),
+                                organizationLookup.findTradeNameById(entity.getOrganizationId()),
+                                entity.getStatus()))
+                        .toList(),
+                result.getTotalElements());
     }
 
     @Transactional
