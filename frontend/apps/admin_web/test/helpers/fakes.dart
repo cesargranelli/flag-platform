@@ -128,7 +128,11 @@ class FakeOrganizationApi extends OrganizationApi {
   Future<Organization> update(String id, Map<String, dynamic> body) async {
     updateCalls++;
     lastBody = body;
-    return Organization.fromJson({...body, 'id': id});
+    final updated = Organization.fromJson({...body, 'id': id});
+    organizations = organizations
+        .map((o) => o.id == id ? updated : o)
+        .toList();
+    return updated;
   }
 }
 

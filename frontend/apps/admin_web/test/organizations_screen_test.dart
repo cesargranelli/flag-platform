@@ -73,7 +73,10 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Copa Interior');
     await tester.enterText(find.byType(TextFormField).at(1), 'Liga do Interior');
-    await tester.ensureVisible(find.text('Salvar'));
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Salvar'));
     await tester.pumpAndSettle();
 
@@ -101,11 +104,16 @@ void main() {
     );
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Flag Brasil 2026');
-    await tester.ensureVisible(find.text('Salvar'));
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Salvar'));
     await tester.pumpAndSettle();
 
     expect(api.updateCalls, 1);
     expect(api.lastBody?['tradeName'], 'Flag Brasil 2026');
+    expect(find.text('Flag Brasil 2026'), findsOneWidget);
   });
 }
+
