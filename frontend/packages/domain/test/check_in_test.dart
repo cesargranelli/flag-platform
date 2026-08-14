@@ -5,33 +5,40 @@ void main() {
   group('CheckIn.fromJson/toJson', () {
     test('converte JSON completo de forma ida e volta', () {
       final json = {
-        'gameId': 1,
-        'teamId': 2,
-        'athleteId': 3,
-        'status': 'VALIDATED',
-        'validatedBy': 'mesa',
+        'gameId': 'game-1',
+        'teamId': 'team-1',
+        'teamName': 'Tritões',
+        'athleteId': 'athlete-1',
+        'athleteName': 'João Silva',
+        'number': 7,
+        'status': 'PRESENT',
+        'validatedBy': 'user-1',
         'validatedAt': '2026-08-10T10:00:00.000',
       };
 
       final checkIn = CheckIn.fromJson(json);
 
-      expect(checkIn.gameId, 1);
-      expect(checkIn.teamId, 2);
-      expect(checkIn.athleteId, 3);
-      expect(checkIn.status, CheckInStatus.validated);
-      expect(checkIn.validatedBy, 'mesa');
-      expect(checkIn.toJson()['status'], 'VALIDATED');
+      expect(checkIn.gameId, 'game-1');
+      expect(checkIn.teamId, 'team-1');
+      expect(checkIn.teamName, 'Tritões');
+      expect(checkIn.athleteId, 'athlete-1');
+      expect(checkIn.athleteName, 'João Silva');
+      expect(checkIn.number, 7);
+      expect(checkIn.status, CheckInStatus.present);
+      expect(checkIn.validatedBy, 'user-1');
+      expect(checkIn.toJson()['status'], 'PRESENT');
     });
 
     test('aceita campos opcionais ausentes', () {
       final checkIn = CheckIn.fromJson({
-        'gameId': 1,
-        'teamId': 2,
-        'athleteId': 3,
-        'status': 'PENDING',
+        'gameId': 'game-1',
+        'teamId': 'team-1',
+        'athleteId': 'athlete-1',
+        'athleteName': 'João Silva',
       });
 
-      expect(checkIn.status, CheckInStatus.pending);
+      expect(checkIn.status, isNull);
+      expect(checkIn.teamName, isNull);
       expect(checkIn.validatedBy, isNull);
       expect(checkIn.validatedAt, isNull);
     });
@@ -39,9 +46,10 @@ void main() {
     test('rejeita status desconhecido', () {
       expect(
         () => CheckIn.fromJson({
-          'gameId': 1,
-          'teamId': 2,
-          'athleteId': 3,
+          'gameId': 'game-1',
+          'teamId': 'team-1',
+          'athleteId': 'athlete-1',
+          'athleteName': 'João Silva',
           'status': 'UNKNOWN',
         }),
         throwsFormatException,
