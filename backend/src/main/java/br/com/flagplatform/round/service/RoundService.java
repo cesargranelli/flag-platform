@@ -86,4 +86,10 @@ public class RoundService implements RoundLookup {
                 .toList();
     }
 
+    @Override
+    public RoundInfo findRoundInfoById(UUID roundId) {
+        RoundEntity round = findEntityById(roundId);
+        return new RoundInfo(round.getId(), round.getNumber());
+    }
+
 }

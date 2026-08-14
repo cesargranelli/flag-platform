@@ -189,23 +189,33 @@ class GameServiceTest {
     }
 
     @Test
-    void findByRoundId_returnsGamesOrderedByScheduledAt() {
+    void findByRoundId_returnsEnrichedGamesOrderedByScheduledAt() {
         UUID roundId = UUID.randomUUID();
+        UUID homeTeamId = UUID.randomUUID();
+        UUID awayTeamId = UUID.randomUUID();
+        UUID venueId = UUID.randomUUID();
         List<GameEntity> entities = List.of(
-                entity(roundId, UUID.randomUUID(), UUID.randomUUID(), null,
-                        LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.SCHEDULED),
-                entity(roundId, UUID.randomUUID(), UUID.randomUUID(), null,
-                        LocalDateTime.of(2026, 2, 1, 15, 0), GameStatus.SCHEDULED));
-        List<GameResponse> expected = entities.stream()
-                .map(this::response)
-                .toList();
+                entity(roundId, homeTeamId, awayTeamId, venueId,
+                        LocalDateTime.of(2026, 2, 1, 15, 0), GameStatus.SCHEDULED),
+                entity(roundId, homeTeamId, awayTeamId, venueId,
+                        LocalDateTime.of(2026, 2, 1, 19, 0), GameStatus.SCHEDULED));
 
+        when(roundLookup.findRoundInfoById(roundId)).thenReturn(new RoundInfo(roundId, 1));
         when(repository.findAllByRoundIdOrderByScheduledAtAsc(roundId)).thenReturn(entities);
-        when(mapper.toResponseList(entities)).thenReturn(expected);
+        when(teamLookup.findTeamInfoById(homeTeamId)).thenReturn(new TeamInfo(homeTeamId, "Tritões"));
+        when(teamLookup.findTeamInfoById(awayTeamId)).thenReturn(new TeamInfo(awayTeamId, "Águias"));
+        when(venueLookup.findVenueInfoById(venueId))
+                .thenReturn(new VenueInfo(venueId, "Arena", "Rua A, 1", null));
 
-        List<GameResponse> result = service.findByRoundId(roundId);
+        List<GameSummaryResponse> result = service.findByRoundId(roundId);
 
-        assertThat(result).hasSize(2).isSameAs(expected);
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).homeTeamName()).isEqualTo("Tritões");
+        assertThat(result.get(0).awayTeamName()).isEqualTo("Águias");
+        assertThat(result.get(0).venueName()).isEqualTo("Arena");
+        assertThat(result.get(0).roundNumber()).isEqualTo(1);
+        assertThat(result.get(0).scheduledAt())
+                .isEqualTo(LocalDateTime.of(2026, 2, 1, 15, 0));
     }
 
     @Test

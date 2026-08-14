@@ -50,10 +50,10 @@ public class GameController {
 
     @Operation(
             summary = "Listar jogos por rodada",
-            description = "Lista os jogos de uma rodada, ordenados por horário. Acesso público."
+            description = "Lista os jogos de uma rodada, ordenados por horário, com nomes de times e campo. Acesso público."
     )
     @GetMapping("/api/v1/rounds/{roundId}/games")
-    public List<GameResponse> findByRoundId(
+    public List<GameSummaryResponse> findByRoundId(
             @Parameter(description = "Id da rodada") @PathVariable UUID roundId) {
         return service.findByRoundId(roundId);
     }
