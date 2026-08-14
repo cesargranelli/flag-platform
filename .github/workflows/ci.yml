@@ -26,3 +26,31 @@ jobs:
 
       - name: Build e testes (inclui Testcontainers)
         run: ./mvnw --batch-mode test
+
+  frontend:
+    name: Frontend (analyze + testes)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Ativar melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap
+        run: melos bootstrap
+
+      - name: Analyze
+        run: melos analyze
+
+      - name: Test
+        run: melos test
