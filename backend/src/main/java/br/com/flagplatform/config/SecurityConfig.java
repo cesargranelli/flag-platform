@@ -60,6 +60,8 @@ public class SecurityConfig {
                         .requestMatchers(SWAGGER_PATTERNS).permitAll()
                         // Health check público
                         .requestMatchers("/actuator/health").permitAll()
+                        // Métricas Prometheus (scraping)
+                        .requestMatchers("/actuator/prometheus").permitAll()
                         // Cadastro e login públicos
                         .requestMatchers(HttpMethod.POST, PUBLIC_AUTH_PATTERNS).permitAll()
                         // Check-in de atletas exige role MESA/ADMIN (não é leitura pública)
