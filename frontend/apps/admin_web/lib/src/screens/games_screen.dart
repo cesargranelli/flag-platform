@@ -151,10 +151,10 @@ class GamesScreen extends ConsumerWidget {
                                 margin: const EdgeInsets.only(bottom: 12),
                                 child: ListTile(
                                   title: Text(
-                                    '${_formatDateTime(game.scheduledAt)} · ${game.status.name}',
+                                    '${game.homeTeamName ?? 'Casa'} x ${game.awayTeamName ?? 'Fora'}',
                                   ),
                                   subtitle: Text(
-                                    'Casa ${game.homeTeamId ?? '-'} x Fora ${game.awayTeamId ?? '-'}',
+                                    '${_formatDateTime(game.scheduledAt)} · ${game.status.name}',
                                   ),
                                   trailing: const Icon(Icons.chevron_right),
                                   onTap: () => context.push(

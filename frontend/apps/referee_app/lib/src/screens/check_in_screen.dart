@@ -138,6 +138,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                         .map((g) => DropdownMenuItem(
                               value: g.id,
                               child: Text(
+                                '${g.homeTeamName ?? 'Casa'} x ${g.awayTeamName ?? 'Fora'} · '
                                 '${_formatDateTime(g.scheduledAt)} · ${g.status.name}',
                               ),
                             ))
