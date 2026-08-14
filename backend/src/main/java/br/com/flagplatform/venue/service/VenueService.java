@@ -1,5 +1,6 @@
 package br.com.flagplatform.venue.service;
 
+import br.com.flagplatform.common.pagination.PagedResponse;
 import br.com.flagplatform.organization.OrganizationLookup;
 import br.com.flagplatform.venue.VenueInfo;
 import br.com.flagplatform.venue.VenueLookup;
@@ -12,6 +13,9 @@ import br.com.flagplatform.venue.exception.VenueNotFoundException;
 import br.com.flagplatform.venue.mapper.VenueMapper;
 import br.com.flagplatform.venue.repository.VenueRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,8 +42,12 @@ public class VenueService implements VenueLookup {
         return mapper.toResponse(repository.save(mapper.toEntity(request)));
     }
 
-    public List<VenueResponse> findAll() {
-        return mapper.toResponseList(repository.findAllByOrderByNameAsc());
+    public PagedResponse<VenueResponse> findAll(int page, int size) {
+        Page<VenueEntity> result = repository.findAll(
+                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name")));
+        return new PagedResponse<>(
+                mapper.toResponseList(result.getContent()),
+                result.getTotalElements());
     }
 
     public VenueResponse findById(UUID id) {

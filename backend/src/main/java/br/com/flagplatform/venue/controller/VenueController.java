@@ -8,6 +8,7 @@ import br.com.flagplatform.venue.service.VenueService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,8 +48,13 @@ public class VenueController {
             description = "Lista todos os campos de jogo, ordenados por nome. Acesso público."
     )
     @GetMapping("/api/v1/venues")
-    public List<VenueResponse> findAll() {
-        return service.findAll();
+    public List<VenueResponse> findAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size,
+            HttpServletResponse response) {
+        var result = service.findAll(page, size);
+        response.setHeader("X-Total-Count", String.valueOf(result.total()));
+        return result.items();
     }
 
     @Operation(

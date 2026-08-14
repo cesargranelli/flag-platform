@@ -1,6 +1,7 @@
 package br.com.flagplatform.organization.service;
 
 import br.com.flagplatform.common.enums.OrganizationStatus;
+import br.com.flagplatform.common.pagination.PagedResponse;
 import br.com.flagplatform.organization.OrganizationLookup;
 import br.com.flagplatform.organization.dto.request.CreateOrganizationRequest;
 import br.com.flagplatform.organization.dto.request.UpdateOrganizationRequest;
@@ -12,6 +13,9 @@ import br.com.flagplatform.organization.exception.OrganizationNotFoundException;
 import br.com.flagplatform.organization.mapper.OrganizationMapper;
 import br.com.flagplatform.organization.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,8 +45,12 @@ public class OrganizationService implements OrganizationLookup {
         return mapper.toResponse(saved);
     }
 
-    public List<OrganizationResponse> findAll() {
-        return mapper.toDetailResponseList(repository.findAllByOrderByTradeNameAsc());
+    public PagedResponse<OrganizationResponse> findAll(int page, int size) {
+        Page<OrganizationEntity> result = repository.findAll(
+                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "tradeName")));
+        return new PagedResponse<>(
+                mapper.toDetailResponseList(result.getContent()),
+                result.getTotalElements());
     }
 
     public OrganizationResponse findById(UUID id) {
