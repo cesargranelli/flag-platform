@@ -1,6 +1,7 @@
 export 'src/config/app_config.dart';
 export 'src/theme/app_colors.dart';
 export 'src/theme/app_theme.dart';
+export 'src/l10n/app_strings.dart';
 export 'src/widgets/app_loading.dart';
 export 'src/widgets/app_empty_state.dart';
 export 'src/widgets/app_error_state.dart';

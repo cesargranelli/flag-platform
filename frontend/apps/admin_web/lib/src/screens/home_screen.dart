@@ -20,15 +20,15 @@ class AdminHomeScreen extends ConsumerWidget {
 
     final items = <_MenuItem>[
       _MenuItem(Icons.business, 'Organizações', '/organizations'),
-      _MenuItem(Icons.emoji_events_outlined, 'Campeonatos', '/competitions'),
-      _MenuItem(Icons.category_outlined, 'Categorias', '/categories'),
-      _MenuItem(Icons.sports_soccer, 'Campos', '/venues'),
-      _MenuItem(Icons.groups_outlined, 'Times', '/teams'),
-      _MenuItem(Icons.format_list_numbered, 'Rodadas', '/rounds'),
-      _MenuItem(Icons.sports, 'Jogos', '/games'),
-      _MenuItem(Icons.person_outline, 'Atletas', '/athletes'),
-      _MenuItem(Icons.groups_outlined, 'Elenco', '/rosters'),
-      if (isAdmin) _MenuItem(Icons.admin_panel_settings, 'Usuários', '/users'),
+      _MenuItem(Icons.emoji_events_outlined, AppStrings.competitions, '/competitions'),
+      _MenuItem(Icons.category_outlined, AppStrings.categories, '/categories'),
+      _MenuItem(Icons.sports_soccer, AppStrings.venues, '/venues'),
+      _MenuItem(Icons.groups_outlined, AppStrings.teams, '/teams'),
+      _MenuItem(Icons.format_list_numbered, AppStrings.rounds, '/rounds'),
+      _MenuItem(Icons.sports, AppStrings.games, '/games'),
+      _MenuItem(Icons.person_outline, AppStrings.athletes, '/athletes'),
+      _MenuItem(Icons.groups_outlined, AppStrings.rosters, '/rosters'),
+      if (isAdmin) _MenuItem(Icons.admin_panel_settings, AppStrings.users, '/users'),
     ];
 
     return LayoutBuilder(
@@ -36,7 +36,7 @@ class AdminHomeScreen extends ConsumerWidget {
         final wide = constraints.maxWidth >= 960;
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Admin Web'),
+            title: const Text(AppStrings.appBarTitle),
             actions: [
               if (wide)
                 Padding(
@@ -44,7 +44,7 @@ class AdminHomeScreen extends ConsumerWidget {
                   child: Center(child: Text(userName ?? 'organizador')),
                 ),
               IconButton(
-                tooltip: 'Sair',
+                tooltip: AppStrings.logout,
                 icon: const Icon(Icons.logout),
                 onPressed: () =>
                     ref.read(authControllerProvider.notifier).logout(),
@@ -77,13 +77,13 @@ class AdminHomeScreen extends ConsumerWidget {
                                 size: 64, color: AppColors.primary),
                             const SizedBox(height: 16),
                             Text(
-                              'Bem-vindo, ${userName ?? 'organizador'}!',
+                              '${AppStrings.welcome}, ${userName ?? 'organizador'}!',
                               style: const TextStyle(
                                   fontSize: 24, fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 8),
                             const Text(
-                              'Selecione uma opção no menu lateral para gerenciar os cadastros.',
+                              AppStrings.homeHint,
                               style: TextStyle(
                                   fontSize: 16, color: AppColors.textSecondary),
                             ),
@@ -99,7 +99,7 @@ class AdminHomeScreen extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: Text(
-                        'Bem-vindo, ${userName ?? 'organizador'}!',
+                        '${AppStrings.welcome}, ${userName ?? 'organizador'}!',
                         style: const TextStyle(
                             fontSize: 20, fontWeight: FontWeight.bold),
                       ),
@@ -143,3 +143,4 @@ class _MenuItem {
 
   const _MenuItem(this.icon, this.title, this.route);
 }
+

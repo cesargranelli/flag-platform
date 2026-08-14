@@ -45,7 +45,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (_) {
-      setState(() => _errorMessage = 'Não foi possível conectar ao servidor.');
+      setState(() => _errorMessage = AppStrings.loginConnectionError);
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -70,13 +70,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Icon(Icons.sports, size: 64, color: AppColors.primary),
                   const SizedBox(height: 16),
                   const Text(
-                    'Flag Admin Web',
+                    AppStrings.loginTitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Acesso do organizador',
+                    AppStrings.loginSubtitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
@@ -85,16 +85,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
-                      labelText: 'E-mail',
+                      labelText: AppStrings.loginEmail,
                       prefixIcon: Icon(Icons.mail_outline),
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Informe o e-mail';
+                        return AppStrings.loginRequiredEmail;
                       }
                       if (!value.contains('@')) {
-                        return 'E-mail inválido';
+                        return AppStrings.loginInvalidEmail;
                       }
                       return null;
                     },
@@ -104,12 +104,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     controller: _passwordController,
                     obscureText: true,
                     decoration: const InputDecoration(
-                      labelText: 'Senha',
+                      labelText: AppStrings.loginPassword,
                       prefixIcon: Icon(Icons.lock_outline),
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) =>
-                        (value == null || value.isEmpty) ? 'Informe a senha' : null,
+                        (value == null || value.isEmpty) ? AppStrings.loginRequiredPassword : null,
                     onFieldSubmitted: (_) => _submit(),
                   ),
                   if (_errorMessage != null) ...[
@@ -130,7 +130,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Entrar'),
+                        : const Text(AppStrings.loginSubmit),
                   ),
                 ],
               ),
