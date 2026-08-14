@@ -31,3 +31,7 @@ app:
   jwt:
     secret: test-secret-with-at-least-32-bytes-0000000
     expiration-seconds: 3600
+  security:
+    rate-limit:
+      max-attempts: 100000
+      window-seconds: 3600
