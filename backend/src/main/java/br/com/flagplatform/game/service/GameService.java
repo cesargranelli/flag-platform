@@ -69,8 +69,30 @@ public class GameService implements GameLookup {
         return mapper.toResponse(repository.save(entity));
     }
 
-    public List<GameResponse> findByRoundId(UUID roundId) {
-        return mapper.toResponseList(repository.findAllByRoundIdOrderByScheduledAtAsc(roundId));
+    public List<GameSummaryResponse> findByRoundId(UUID roundId) {
+        int roundNumber = roundLookup.findRoundInfoById(roundId).number();
+
+        return repository.findAllByRoundIdOrderByScheduledAtAsc(roundId).stream()
+                .map(game -> {
+                    VenueInfo venue = game.getVenueId() != null
+                            ? venueLookup.findVenueInfoById(game.getVenueId())
+                            : null;
+                    return new GameSummaryResponse(
+                            game.getId(),
+                            game.getRoundId(),
+                            roundNumber,
+                            teamLookup.findTeamInfoById(game.getHomeTeamId()).name(),
+                            teamLookup.findTeamInfoById(game.getAwayTeamId()).name(),
+                            game.getVenueId(),
+                            venue != null ? venue.name() : null,
+                            venue != null ? venue.address() : null,
+                            venue != null ? venue.mapsUrl() : null,
+                            game.getScheduledAt(),
+                            game.getStatus(),
+                            game.getHomeScore(),
+                            game.getAwayScore());
+                })
+                .toList();
     }
 
     public GameResponse findById(UUID id) {

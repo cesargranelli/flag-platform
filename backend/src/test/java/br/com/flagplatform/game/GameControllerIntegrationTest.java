@@ -154,11 +154,9 @@ class GameControllerIntegrationTest {
     }
 
     @Test
-    void listByRound_unknownRound_returnsEmptyList_publicAccess() throws Exception {
+    void listByRound_unknownRound_returnsNotFound() throws Exception {
         mockMvc.perform(get(ROUNDS_URL + "/" + UUID.randomUUID() + "/games"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(status().isNotFound());
     }
 
     @Test
