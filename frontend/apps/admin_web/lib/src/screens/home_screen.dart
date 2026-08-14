@@ -6,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 
 /// Tela inicial do Admin Web: menu de gestão do organizador.
+///
+/// Em telas largas (>= 960px) exibe um NavigationRail lateral (padrão
+/// desktop); em telas estreitas, o menu em lista vertical (padrão mobile).
 class AdminHomeScreen extends ConsumerWidget {
   const AdminHomeScreen({super.key});
 
@@ -13,102 +16,105 @@ class AdminHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
     final userName = auth.state.user?.name;
+    final isAdmin = auth.state.user?.role == 'ADMIN';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Web'),
-        actions: [
-          IconButton(
-            tooltip: 'Sair',
-            icon: const Icon(Icons.logout),
-            onPressed: () =>
-                ref.read(authControllerProvider.notifier).logout(),
+    final items = <_MenuItem>[
+      _MenuItem(Icons.business, 'Organizações', '/organizations'),
+      _MenuItem(Icons.emoji_events_outlined, 'Campeonatos', '/competitions'),
+      _MenuItem(Icons.category_outlined, 'Categorias', '/categories'),
+      _MenuItem(Icons.sports_soccer, 'Campos', '/venues'),
+      _MenuItem(Icons.groups_outlined, 'Times', '/teams'),
+      _MenuItem(Icons.format_list_numbered, 'Rodadas', '/rounds'),
+      _MenuItem(Icons.sports, 'Jogos', '/games'),
+      _MenuItem(Icons.person_outline, 'Atletas', '/athletes'),
+      _MenuItem(Icons.groups_outlined, 'Elenco', '/rosters'),
+      if (isAdmin) _MenuItem(Icons.admin_panel_settings, 'Usuários', '/users'),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 960;
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Admin Web'),
+            actions: [
+              if (wide)
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: Center(child: Text(userName ?? 'organizador')),
+                ),
+              IconButton(
+                tooltip: 'Sair',
+                icon: const Icon(Icons.logout),
+                onPressed: () =>
+                    ref.read(authControllerProvider.notifier).logout(),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Text(
-              'Bem-vindo, ${userName ?? 'organizador'}!',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ),
-          _menuItem(
-            context,
-            icon: Icons.business,
-            title: 'Organizações',
-            subtitle: 'Criar e editar organizações',
-            onTap: () => context.push('/organizations'),
-          ),
-          _menuItem(
-            context,
-            icon: Icons.emoji_events_outlined,
-            title: 'Campeonatos',
-            subtitle: 'Criar e editar campeonatos',
-            onTap: () => context.push('/competitions'),
-          ),
-          _menuItem(
-            context,
-            icon: Icons.category_outlined,
-            title: 'Categorias',
-            subtitle: 'Criar e editar categorias',
-            onTap: () => context.push('/categories'),
-          ),
-          _menuItem(
-            context,
-            icon: Icons.sports_soccer,
-            title: 'Campos',
-            subtitle: 'Criar e editar campos de jogo',
-            onTap: () => context.push('/venues'),
-          ),
-          _menuItem(
-            context,
-            icon: Icons.groups_outlined,
-            title: 'Times',
-            subtitle: 'Criar e editar times',
-            onTap: () => context.push('/teams'),
-          ),
-          _menuItem(
-            context,
-            icon: Icons.format_list_numbered,
-            title: 'Rodadas',
-            subtitle: 'Criar e editar rodadas',
-            onTap: () => context.push('/rounds'),
-          ),
-          _menuItem(
-            context,
-            icon: Icons.sports,
-            title: 'Jogos',
-            subtitle: 'Criar e editar jogos',
-            onTap: () => context.push('/games'),
-          ),
-          _menuItem(
-            context,
-            icon: Icons.person_outline,
-            title: 'Atletas',
-            subtitle: 'Criar e editar atletas',
-            onTap: () => context.push('/athletes'),
-          ),
-          _menuItem(
-            context,
-            icon: Icons.groups_outlined,
-            title: 'Elenco',
-            subtitle: 'Inscrever e remover atletas dos times',
-            onTap: () => context.push('/rosters'),
-          ),
-          if (auth.state.user?.role == 'ADMIN')
-            _menuItem(
-              context,
-              icon: Icons.admin_panel_settings,
-              title: 'Usuários',
-              subtitle: 'Criar usuários e papéis',
-              onTap: () => context.push('/users'),
-            ),
-        ],
-      ),
+          body: wide
+              ? Row(
+                  children: [
+                    NavigationRail(
+                      selectedIndex: 0,
+                      onDestinationSelected: (index) =>
+                          context.push(items[index].route),
+                      labelType: NavigationRailLabelType.all,
+                      destinations: [
+                        for (final item in items)
+                          NavigationRailDestination(
+                            icon: Icon(item.icon),
+                            label: Text(item.title),
+                          ),
+                      ],
+                    ),
+                    const VerticalDivider(width: 1),
+                    Expanded(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.dashboard,
+                                size: 64, color: AppColors.primary),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Bem-vindo, ${userName ?? 'organizador'}!',
+                              style: const TextStyle(
+                                  fontSize: 24, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Selecione uma opção no menu lateral para gerenciar os cadastros.',
+                              style: TextStyle(
+                                  fontSize: 16, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        'Bem-vindo, ${userName ?? 'organizador'}!',
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    for (final item in items)
+                      _menuItem(
+                        context,
+                        icon: item.icon,
+                        title: item.title,
+                        onTap: () => context.push(item.route),
+                      ),
+                  ],
+                ),
+        );
+      },
     );
   }
 
@@ -116,7 +122,6 @@ class AdminHomeScreen extends ConsumerWidget {
     BuildContext context, {
     required IconData icon,
     required String title,
-    required String subtitle,
     required VoidCallback onTap,
   }) {
     return Card(
@@ -124,10 +129,17 @@ class AdminHomeScreen extends ConsumerWidget {
       child: ListTile(
         leading: Icon(icon, color: AppColors.primary),
         title: Text(title),
-        subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
       ),
     );
   }
+}
+
+class _MenuItem {
+  final IconData icon;
+  final String title;
+  final String route;
+
+  const _MenuItem(this.icon, this.title, this.route);
 }
