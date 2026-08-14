@@ -19,6 +19,11 @@ public final class SecurityExpressions {
      */
     public static final String ADMIN_OR_MESA = "hasAnyRole('ADMIN', 'MESA')";
 
+    /**
+     * Ações exclusivas de administrador (ex: gestão de usuários).
+     */
+    public static final String ADMIN = "hasRole('ADMIN')";
+
     private SecurityExpressions() {
     }
 }

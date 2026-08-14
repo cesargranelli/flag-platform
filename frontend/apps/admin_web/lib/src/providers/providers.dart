@@ -168,3 +168,8 @@ final selectedTeamProvider = StateProvider<String?>((ref) => null);
 final rosterProvider = FutureProvider.family<List<RosterEntry>, String>(
   (ref, teamId) => ref.watch(rosterApiProvider).listByTeam(teamId),
 );
+
+/// Lista de usuários (somente ADMIN).
+final usersProvider = FutureProvider<List<User>>(
+  (ref) => ref.watch(authApiProvider).listUsers(),
+);

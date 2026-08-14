@@ -2,6 +2,7 @@ package br.com.flagplatform.user.service;
 
 import br.com.flagplatform.common.enums.UserRole;
 import br.com.flagplatform.user.TokenProvider;
+import br.com.flagplatform.user.dto.request.CreateUserRequest;
 import br.com.flagplatform.user.dto.request.LoginRequest;
 import br.com.flagplatform.user.dto.request.RegisterRequest;
 import br.com.flagplatform.user.dto.response.LoginResponse;
@@ -13,12 +14,14 @@ import br.com.flagplatform.user.mapper.UserMapper;
 import br.com.flagplatform.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -145,6 +148,53 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> service.me("ana@exemplo.com"))
                 .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void createUser_savesUserWithGivenRole() {
+        CreateUserRequest request =
+                new CreateUserRequest("Mesa Central", "mesa@exemplo.com", "segredo123", UserRole.MESA);
+        UserEntity entity = entity("mesa@exemplo.com", "encoded");
+        UserResponse expected = response(entity);
+
+        when(userRepository.existsByEmailIgnoreCase("mesa@exemplo.com")).thenReturn(false);
+        when(passwordEncoder.encode("segredo123")).thenReturn("encoded");
+        when(userRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(mapper.toResponse(any())).thenReturn(expected);
+
+        UserResponse result = service.createUser(request);
+
+        ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getRole()).isEqualTo(UserRole.MESA);
+        assertThat(captor.getValue().getEmail()).isEqualTo("mesa@exemplo.com");
+        assertThat(result).isSameAs(expected);
+    }
+
+    @Test
+    void createUser_throwsWhenEmailExists() {
+        CreateUserRequest request =
+                new CreateUserRequest("Mesa Central", "mesa@exemplo.com", "segredo123", UserRole.MESA);
+
+        when(userRepository.existsByEmailIgnoreCase("mesa@exemplo.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.createUser(request))
+                .isInstanceOf(EmailAlreadyExistsException.class);
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void findAll_returnsUsersOrderedByName() {
+        List<UserEntity> entities = List.of(entity("b@exemplo.com", "x"), entity("a@exemplo.com", "x"));
+        List<UserResponse> expected = entities.stream().map(this::response).toList();
+
+        when(userRepository.findAllByOrderByNameAsc()).thenReturn(entities);
+        when(mapper.toResponseList(entities)).thenReturn(expected);
+
+        List<UserResponse> result = service.findAll();
+
+        assertThat(result).hasSize(2).isSameAs(expected);
     }
 
     private UserEntity entity(String email, String passwordHash) {

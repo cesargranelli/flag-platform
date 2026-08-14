@@ -6,6 +6,8 @@ import br.com.flagplatform.user.entity.UserEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
@@ -13,5 +15,7 @@ public interface UserMapper {
     UserEntity toEntity(RegisterRequest request);
 
     UserResponse toResponse(UserEntity entity);
+
+    List<UserResponse> toResponseList(List<UserEntity> entities);
 
 }

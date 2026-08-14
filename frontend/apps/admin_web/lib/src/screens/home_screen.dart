@@ -99,6 +99,14 @@ class AdminHomeScreen extends ConsumerWidget {
             subtitle: 'Inscrever e remover atletas dos times',
             onTap: () => context.push('/rosters'),
           ),
+          if (auth.state.user?.role == 'ADMIN')
+            _menuItem(
+              context,
+              icon: Icons.admin_panel_settings,
+              title: 'Usuários',
+              subtitle: 'Criar usuários e papéis',
+              onTap: () => context.push('/users'),
+            ),
         ],
       ),
     );

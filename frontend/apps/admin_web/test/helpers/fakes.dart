@@ -73,6 +73,30 @@ class FakeAuthApi extends AuthApi {
     }
     throw const RepositoryException('Sem sessão');
   }
+
+  List<User> users = [];
+  int createUserCalls = 0;
+
+  @override
+  Future<List<User>> listUsers() async => users;
+
+  @override
+  Future<User> createUser({
+    required String name,
+    required String email,
+    required String password,
+    required String role,
+  }) async {
+    createUserCalls++;
+    final user = User(
+      id: 'user-novo',
+      name: name,
+      email: email,
+      role: role,
+    );
+    users = [...users, user];
+    return user;
+  }
 }
 
 /// [OrganizationApi] com dados controlados para testes.
