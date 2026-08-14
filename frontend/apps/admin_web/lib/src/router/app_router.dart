@@ -21,6 +21,8 @@ import '../screens/games_screen.dart';
 import '../screens/athlete_form_screen.dart';
 import '../screens/athletes_screen.dart';
 import '../screens/rosters_screen.dart';
+import '../screens/user_form_screen.dart';
+import '../screens/users_screen.dart';
 
 /// Rotas do Admin Web com proteção de autenticação.
 class AppRouter {
@@ -235,6 +237,16 @@ class AppRouter {
             path: '/rosters',
             name: 'rosters',
             builder: (context, state) => const RostersScreen(),
+          ),
+          GoRoute(
+            path: '/users',
+            name: 'users',
+            builder: (context, state) => const UsersScreen(),
+          ),
+          GoRoute(
+            path: '/users/new',
+            name: 'userNew',
+            builder: (context, state) => const UserFormScreen(),
           ),
         ],
       );
