@@ -13,6 +13,9 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.background,
+      // DM Sans é a tipografia da marca; o bundle da fonte será adicionado em
+      // tarefa futura (Google Fonts). Até lá, o Flutter usa a fonte padrão.
+      fontFamily: 'DM Sans',
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,

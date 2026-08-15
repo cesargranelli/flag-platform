@@ -4,25 +4,31 @@ Fonte da verdade visual para os apps (Flutter). Reflete `frontend/packages/core/
 
 ## Cores
 
+Marca única adotada (2026-08-14): paleta do UI Kit **Shifty** (primário laranja, fundo claro), harmonizada com cores semânticas dos kits esportivos (live/fim).
+
 | Token | Valor | Uso |
 |---|---|---|
-| `color.primary` | `#1B3A6B` | Marca, AppBar, botões principais, destaque |
-| `color.secondary` | `#2E5EA8` | Elementos secundários, links |
-| `color.accent` | `#E8A33D` | Destaques/CTA pontuais |
-| `color.success` | `#2E7D32` | Sucesso, status positivos, pontos |
-| `color.danger` | `#C62828` | Erro, cancelamento, perigo |
-| `color.background` | `#F5F6FA` | Fundo de telas |
+| `color.primary` | `#FD6B22` | Marca, AppBar, botões principais, destaque |
+| `color.secondary` | `#F15223` | Elementos secundários, hover de primário |
+| `color.accent` | `#FF6628` | Alertas/destaques pontuais |
+| `color.success` | `#4FBF67` | Sucesso, status positivos, pontos |
+| `color.danger` | `#F04C4C` | Erro, cancelamento, fim de partida |
+| `color.background` | `#FAFAFA` | Fundo de telas |
 | `color.surface` | `#FFFFFF` | Cards, inputs, superfícies elevadas |
-| `color.text.primary` | `#1C1C1E` | Texto principal |
-| `color.text.secondary` | `#6E6E73` | Legendas, metadados, placeholders |
+| `color.text.primary` | `#1B1D21` | Texto principal |
+| `color.text.secondary` | `#737373` | Legendas, metadados, placeholders |
+
+### Semântica esportiva
+- **Ao vivo / sucesso**: verde (`#4FBF67` / `#24D173`)
+- **Fim de partida / negativo**: vermelho (`#F04C4C`)
 
 ## Tipografia
 
-Família: padrão do Material 3 (Roboto). Escala:
+Família da marca: **DM Sans** (bundle via Google Fonts será adicionado em tarefa futura; até lá, fallback da fonte padrão). Escala:
 
 | Token | Tamanho | Peso | Uso |
 |---|---|---|---|
-| `type.display` | 28 | bold | Telas de destaque |
+| `type.display` | 36 | bold | Telas de destaque |
 | `type.title.lg` | 24 | bold | Títulos de tela |
 | `type.title.md` | 20 | bold | Títulos de seção |
 | `type.title.sm` | 16 | w600 | Subtítulos / cartões |
