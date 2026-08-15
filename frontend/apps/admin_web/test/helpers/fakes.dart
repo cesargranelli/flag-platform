@@ -123,6 +123,24 @@ class FakeAuthApi extends AuthApi {
     users = [...users, user];
     return user;
   }
+
+  String forgotToken = 'reset-token';
+  int forgotCalls = 0;
+  int resetCalls = 0;
+
+  @override
+  Future<String> forgotPassword(String email) async {
+    forgotCalls++;
+    return forgotToken;
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    resetCalls++;
+  }
 }
 
 /// [OrganizationApi] com dados controlados para testes.

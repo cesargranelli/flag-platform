@@ -2,15 +2,16 @@ import 'package:flag_domain/flag_domain.dart';
 import 'package:go_router/go_router.dart';
 
 import '../auth/auth_controller.dart';
-import '../screens/auth_placeholder_screen.dart';
 import '../screens/categories_screen.dart';
 import '../screens/category_form_screen.dart';
 import '../screens/competition_form_screen.dart';
 import '../screens/competitions_screen.dart';
+import '../screens/forgot_password_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/organization_form_screen.dart';
 import '../screens/organizations_screen.dart';
+import '../screens/reset_password_screen.dart';
 import '../screens/venue_form_screen.dart';
 import '../screens/venues_screen.dart';
 import '../screens/team_form_screen.dart';
@@ -64,9 +65,13 @@ class AppRouter {
           GoRoute(
             path: '/forgot-password',
             name: 'forgotPassword',
-            builder: (context, state) => const AuthPlaceholderScreen(
-              title: 'Esqueci a senha',
-              message: 'Recuperação de senha em breve.',
+            builder: (context, state) => const ForgotPasswordScreen(),
+          ),
+          GoRoute(
+            path: '/reset-password',
+            name: 'resetPassword',
+            builder: (context, state) => ResetPasswordScreen(
+              token: state.uri.queryParameters['token'] ?? '',
             ),
           ),
           GoRoute(
