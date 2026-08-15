@@ -36,6 +36,9 @@ void main() {
   }
 
   Future<void> openRounds(WidgetTester tester) async {
+    await tester.scrollUntilVisible(find.text('Rodadas'), 120);
+    await tester.ensureVisible(find.text('Rodadas'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Rodadas'));
     await tester.pumpAndSettle();
   }

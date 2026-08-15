@@ -37,6 +37,9 @@ void main() {
   }
 
   Future<void> openTeams(WidgetTester tester) async {
+    await tester.scrollUntilVisible(find.text('Times'), 120);
+    await tester.ensureVisible(find.text('Times'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Times'));
     await tester.pumpAndSettle();
   }

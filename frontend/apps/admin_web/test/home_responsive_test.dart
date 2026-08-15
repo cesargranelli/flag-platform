@@ -24,18 +24,22 @@ void main() {
     );
   }
 
-  testWidgets('tela larga exibe NavigationRail', (WidgetTester tester) async {
+  testWidgets('tela larga exibe cards de acesso em grid',
+      (WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(1280, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await pumpApp(tester);
     await tester.pumpAndSettle();
 
-    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationRail), findsNothing);
     expect(find.text('Usuários'), findsOneWidget);
+    expect(find.text('Organizações'), findsOneWidget);
+    expect(find.byType(SliverGrid), findsOneWidget);
   });
 
-  testWidgets('tela estreita exibe menu em lista', (WidgetTester tester) async {
+  testWidgets('tela estreita exibe cards de acesso adaptados',
+      (WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(400, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -44,5 +48,6 @@ void main() {
 
     expect(find.byType(NavigationRail), findsNothing);
     expect(find.text('Organizações'), findsOneWidget);
+    expect(find.byType(SliverGrid), findsOneWidget);
   });
 }
