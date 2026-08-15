@@ -85,7 +85,7 @@ void main() {
     expect(find.text('Copa Interior'), findsOneWidget);
   });
 
-  testWidgets('edita uma organização existente',
+  testWidgets('clica em uma organização e vê a tela de detalhe',
       (WidgetTester tester) async {
     final api = FakeOrganizationApi()
       ..organizations = [testOrganization()];
@@ -95,6 +95,26 @@ void main() {
     await openOrganizations(tester);
 
     await tester.tap(find.text('Flag Brasil'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.byType(TextFormField), findsNothing);
+  });
+
+  testWidgets('edita uma organização a partir do detalhe',
+      (WidgetTester tester) async {
+    final api = FakeOrganizationApi()
+      ..organizations = [testOrganization()];
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+    await openOrganizations(tester);
+
+    await tester.tap(find.text('Flag Brasil'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar dados'), findsOneWidget);
+    await tester.tap(find.text('Editar dados'));
     await tester.pumpAndSettle();
 
     expect(find.text('Editar organização'), findsOneWidget);
@@ -113,7 +133,8 @@ void main() {
 
     expect(api.updateCalls, 1);
     expect(api.lastBody?['tradeName'], 'Flag Brasil 2026');
-    expect(find.text('Flag Brasil 2026'), findsOneWidget);
+    expect(find.text('Flag Brasil 2026'), findsWidgets);
+    expect(find.text('Editar dados'), findsOneWidget);
   });
 }
 

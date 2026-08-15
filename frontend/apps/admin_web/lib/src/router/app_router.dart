@@ -11,6 +11,7 @@ import '../screens/forgot_password_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/organization_form_screen.dart';
+import '../screens/organization_detail_screen.dart';
 import '../screens/organizations_screen.dart';
 import '../screens/reset_password_screen.dart';
 import '../screens/venue_form_screen.dart';
@@ -92,6 +93,19 @@ class AppRouter {
           ),
           GoRoute(
             path: '/organizations/:id',
+            name: 'organizationDetail',
+            builder: (context, state) {
+              final org = state.extra is Organization
+                  ? state.extra as Organization
+                  : null;
+              return OrganizationDetailScreen(
+                organizationId: state.pathParameters['id'],
+                organization: org,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/organizations/:id/edit',
             name: 'organizationEdit',
             builder: (context, state) {
               final org = state.extra is Organization
