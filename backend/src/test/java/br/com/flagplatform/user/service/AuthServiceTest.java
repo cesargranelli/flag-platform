@@ -3,17 +3,24 @@ package br.com.flagplatform.user.service;
 import br.com.flagplatform.common.enums.UserRole;
 import br.com.flagplatform.common.enums.UserStatus;
 import br.com.flagplatform.user.TokenProvider;
+import br.com.flagplatform.user.UserLookup;
 import br.com.flagplatform.user.dto.request.CreateUserRequest;
+import br.com.flagplatform.user.dto.request.ForgotPasswordRequest;
 import br.com.flagplatform.user.dto.request.LoginRequest;
 import br.com.flagplatform.user.dto.request.RegisterRequest;
+import br.com.flagplatform.user.dto.request.ResetPasswordRequest;
 import br.com.flagplatform.user.dto.response.LoginResponse;
 import br.com.flagplatform.user.dto.response.UserResponse;
 import br.com.flagplatform.user.entity.UserEntity;
+import br.com.flagplatform.user.entity.PasswordResetTokenEntity;
 import br.com.flagplatform.user.exception.AccountPendingApprovalException;
 import br.com.flagplatform.user.exception.EmailAlreadyExistsException;
 import br.com.flagplatform.user.exception.InvalidCredentialsException;
+import br.com.flagplatform.user.exception.InvalidResetTokenException;
 import br.com.flagplatform.user.mapper.UserMapper;
+import br.com.flagplatform.user.repository.PasswordResetTokenRepository;
 import br.com.flagplatform.user.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -21,6 +28,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -49,8 +57,17 @@ class AuthServiceTest {
     @Mock
     private TokenProvider tokenProvider;
 
+    @Mock
+    private PasswordResetTokenRepository resetTokenRepository;
+
     @InjectMocks
     private AuthService service;
+
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(service, "resetExpirationMinutes", 60L);
+        ReflectionTestUtils.setField(service, "mailEnabled", false);
+    }
 
     @Test
     void register_createsOrganizerWithPendingStatusAndHashedPassword() {
@@ -263,6 +280,75 @@ class AuthServiceTest {
 
         assertThat(result).isSameAs(expected);
         assertThat(user.getStatus()).isEqualTo(UserStatus.REJECTED);
+    }
+
+    @Test
+    void requestPasswordReset_generatesToken_whenUserExists() {
+        UserEntity user = entity("ana@exemplo.com", "encoded");
+        when(userRepository.findByEmailIgnoreCase("ana@exemplo.com")).thenReturn(Optional.of(user));
+        when(resetTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = service.requestPasswordReset(
+                new ForgotPasswordRequest("Ana@Exemplo.com"));
+
+        assertThat(response.resetToken()).isNotBlank();
+        verify(resetTokenRepository).save(any());
+    }
+
+    @Test
+    void requestPasswordReset_returnsGeneric_whenUserNotFound() {
+        when(userRepository.findByEmailIgnoreCase("nao-existe@exemplo.com")).thenReturn(Optional.empty());
+
+        var response = service.requestPasswordReset(
+                new ForgotPasswordRequest("nao-existe@exemplo.com"));
+
+        assertThat(response.resetToken()).isNull();
+        verify(resetTokenRepository, never()).save(any());
+    }
+
+    @Test
+    void resetPassword_updatesPasswordAndMarksTokenUsed() {
+        UUID userId = UUID.randomUUID();
+        UserEntity user = entity("ana@exemplo.com", "old");
+        PasswordResetTokenEntity token = new PasswordResetTokenEntity();
+        token.setUserId(userId);
+        token.setTokenHash("hash");
+        token.setExpiresAt(LocalDateTime.now().plusMinutes(30));
+
+        when(resetTokenRepository.findByTokenHashAndUsedAtIsNull(any())).thenReturn(Optional.of(token));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("nova-senha")).thenReturn("encoded-new");
+        when(userRepository.save(user)).thenReturn(user);
+
+        service.resetPassword(new ResetPasswordRequest("raw-token", "nova-senha"));
+
+        assertThat(user.getPasswordHash()).isEqualTo("encoded-new");
+        assertThat(token.getUsedAt()).isNotNull();
+        verify(resetTokenRepository).save(token);
+    }
+
+    @Test
+    void resetPassword_throwsWhenTokenInvalid() {
+        when(resetTokenRepository.findByTokenHashAndUsedAtIsNull(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest("bad", "nova-senha")))
+                .isInstanceOf(InvalidResetTokenException.class);
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void resetPassword_throwsWhenTokenExpired() {
+        PasswordResetTokenEntity token = new PasswordResetTokenEntity();
+        token.setUserId(UUID.randomUUID());
+        token.setExpiresAt(LocalDateTime.now().minusMinutes(1));
+
+        when(resetTokenRepository.findByTokenHashAndUsedAtIsNull(any())).thenReturn(Optional.of(token));
+
+        assertThatThrownBy(() -> service.resetPassword(new ResetPasswordRequest("expired", "nova-senha")))
+                .isInstanceOf(InvalidResetTokenException.class);
+
+        verify(userRepository, never()).save(any());
     }
 
     private UserEntity entity(String email, String passwordHash) {

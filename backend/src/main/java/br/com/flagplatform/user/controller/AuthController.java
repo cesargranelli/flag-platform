@@ -2,8 +2,11 @@ package br.com.flagplatform.user.controller;
 
 import br.com.flagplatform.common.security.SecurityExpressions;
 import br.com.flagplatform.user.dto.request.CreateUserRequest;
+import br.com.flagplatform.user.dto.request.ForgotPasswordRequest;
 import br.com.flagplatform.user.dto.request.LoginRequest;
 import br.com.flagplatform.user.dto.request.RegisterRequest;
+import br.com.flagplatform.user.dto.request.ResetPasswordRequest;
+import br.com.flagplatform.user.dto.response.ForgotPasswordResponse;
 import br.com.flagplatform.user.dto.response.LoginResponse;
 import br.com.flagplatform.user.dto.response.UserResponse;
 import br.com.flagplatform.user.service.AuthService;
@@ -51,6 +54,25 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         return service.login(request);
+    }
+
+    @Operation(
+            summary = "Solicitar redefinição de senha",
+            description = "Gera um token de redefinição e o envia por e-mail. Acesso público. "
+                    + "Em dev (sem SMTP), o token é retornado na resposta."
+    )
+    @PostMapping("/forgot-password")
+    public ForgotPasswordResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return service.requestPasswordReset(request);
+    }
+
+    @Operation(
+            summary = "Redefinir senha",
+            description = "Define nova senha usando o token recebido por e-mail. Acesso público."
+    )
+    @PostMapping("/reset-password")
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        service.resetPassword(request);
     }
 
     @Operation(
