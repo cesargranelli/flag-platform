@@ -58,7 +58,7 @@ class AdminHomeScreen extends ConsumerWidget {
                     NavigationRail(
                       selectedIndex: 0,
                       onDestinationSelected: (index) =>
-                          context.push(items[index].route),
+                          context.go(items[index].route),
                       labelType: NavigationRailLabelType.all,
                       destinations: [
                         for (final item in items)
@@ -110,7 +110,7 @@ class AdminHomeScreen extends ConsumerWidget {
                         context,
                         icon: item.icon,
                         title: item.title,
-                        onTap: () => context.push(item.route),
+                        onTap: () => context.go(item.route),
                       ),
                   ],
                 ),
@@ -144,4 +144,5 @@ class _MenuItem {
 
   const _MenuItem(this.icon, this.title, this.route);
 }
+
 
