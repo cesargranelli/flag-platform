@@ -121,7 +121,14 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         await api.update(id, body);
       }
       ref.invalidate(organizationsProvider);
-      if (mounted) context.pop();
+      if (mounted) {
+        if (id != null) {
+          // Volta para o detalhe recarregado (busca fresca via provider).
+          context.go('/organizations/$id');
+        } else {
+          context.pop();
+        }
+      }
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (_) {

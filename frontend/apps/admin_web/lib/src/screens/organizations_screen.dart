@@ -1,11 +1,15 @@
 import 'package:flag_core/flag_core.dart';
+import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
-/// Gestão de organizações: lista e acesso ao formulário de criação/edição.
+/// Gestão de organizações: cards de acesso e navegação para o detalhe.
+///
+/// Listagem em grid de cards (padrão web); clicar navega para a tela de
+/// detalhe da organização.
 class OrganizationsScreen extends ConsumerWidget {
   const OrganizationsScreen({super.key});
 
@@ -36,26 +40,84 @@ class OrganizationsScreen extends ConsumerWidget {
               icon: Icons.business,
             );
           }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final organization = items[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  title: Text(organization.tradeName),
-                  subtitle: Text(organization.legalName),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push(
-                    '/organizations/${organization.id}',
-                    extra: organization,
-                  ),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 960;
+              return GridView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: items.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: wide ? 3 : 1,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: wide ? 2.2 : 3.2,
                 ),
+                itemBuilder: (context, index) {
+                  final organization = items[index];
+                  return _organizationCard(context, organization);
+                },
               );
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _organizationCard(BuildContext context, Organization organization) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push(
+          '/organizations/${organization.id}',
+          extra: organization,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.business,
+                        color: AppColors.primary, size: 28),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          organization.tradeName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          organization.legalName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 13, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
