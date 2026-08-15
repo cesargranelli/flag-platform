@@ -40,24 +40,26 @@ class OrganizationsScreen extends ConsumerWidget {
               icon: Icons.business,
             );
           }
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final wide = constraints.maxWidth >= 960;
-              return GridView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: items.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: wide ? 3 : 1,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: wide ? 2.2 : 3.2,
-                ),
-                itemBuilder: (context, index) {
-                  final organization = items[index];
-                  return _organizationCard(context, organization);
-                },
-              );
-            },
+          return AppLayout.content(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 600 ? 2 : 1;
+                return GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: items.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    mainAxisExtent: 96,
+                  ),
+                  itemBuilder: (context, index) {
+                    final organization = items[index];
+                    return _organizationCard(context, organization);
+                  },
+                );
+              },
+            ),
           );
         },
       ),
