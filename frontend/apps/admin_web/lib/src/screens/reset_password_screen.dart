@@ -59,20 +59,14 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: AppTheme.dark,
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: AppColors.darkBackground,
-          leading: BackButton(onPressed: () => context.go('/login')),
-        ),
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: _done ? _buildDone() : _buildForm(),
-            ),
+    return Scaffold(
+      appBar: AppBar(leading: BackButton(onPressed: () => context.go('/login'))),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: _done ? _buildDone() : _buildForm(),
           ),
         ),
       ),
@@ -86,13 +80,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.password, size: 56, color: AppColors.darkBrand),
+          const Icon(Icons.password, size: 56, color: AppColors.primary),
           const SizedBox(height: 16),
           const Text(
             'Definir nova senha',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               fontSize: 24,
               fontWeight: FontWeight.w800,
             ),
@@ -160,13 +154,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Icon(Icons.check_circle, size: 56, color: AppColors.darkBrand),
+        const Icon(Icons.check_circle, size: 56, color: AppColors.success),
         const SizedBox(height: 16),
         const Text(
           'Senha redefinida!',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w800,
           ),

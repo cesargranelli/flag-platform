@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
-/// Tela de cadastro do organizador (dark, split), com estado de pendência.
+/// Tela de cadastro do organizador (tema claro Shifty, split), com pendência.
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
@@ -63,27 +63,24 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: AppTheme.dark,
-      child: Scaffold(
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 960;
-            return Row(
-              children: [
+    return Scaffold(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 960;
+          return Row(
+            children: [
+              Expanded(
+                flex: wide ? 5 : 1,
+                child: _created ? _buildSuccess(context) : _buildForm(context, wide),
+              ),
+              if (wide)
                 Expanded(
-                  flex: wide ? 5 : 1,
-                  child: _created ? _buildSuccess(context) : _buildForm(context, wide),
+                  flex: 5,
+                  child: _buildArt(context),
                 ),
-                if (wide)
-                  Expanded(
-                    flex: 5,
-                    child: _buildArt(context),
-                  ),
-              ],
-            );
-          },
-        ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -98,13 +95,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.check_circle, size: 64, color: AppColors.darkBrand),
+              const Icon(Icons.check_circle, size: 64, color: AppColors.success),
               const SizedBox(height: 16),
               const Text(
                 'Conta criada!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
@@ -113,7 +110,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               const Text(
                 'Acesso liberado após aprovação de um administrador.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.darkTextMuted, fontSize: 15),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
               ),
               const SizedBox(height: 24),
               FilledButton(
@@ -141,13 +138,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.sports, color: AppColors.darkBrand),
+                  Icon(Icons.sports, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       AppStrings.loginTitle,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
@@ -160,7 +157,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 'Criar conta',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
                 ),
@@ -169,7 +166,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               const Text(
                 'Solicite acesso como organizador.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.darkTextMuted, fontSize: 14),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
               ),
               const SizedBox(height: 32),
               TextFormField(
@@ -257,7 +254,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 children: [
                   const Text(
                     'Já tem conta?',
-                    style: TextStyle(color: AppColors.darkTextMuted),
+                    style: TextStyle(color: AppColors.textSecondary),
                   ),
                   TextButton(
                     onPressed: () => context.go('/login'),
@@ -278,7 +275,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1F2924), AppColors.darkBackground],
+          colors: [Color(0xFFFFF3EB), AppColors.background],
         ),
       ),
       child: Stack(
@@ -287,7 +284,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             child: Icon(
               Icons.sports_soccer,
               size: 320,
-              color: Colors.white.withValues(alpha: 0.06),
+              color: AppColors.primary.withValues(alpha: 0.08),
             ),
           ),
           Center(
@@ -300,13 +297,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     width: 96,
                     height: 96,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(28),
                     ),
                     child: const Icon(
                       Icons.emoji_events,
                       size: 56,
-                      color: AppColors.darkBrand,
+                      color: AppColors.primary,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -314,7 +311,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     'O melhor lugar para acompanhar um campeonato de flag',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
                       height: 1.3,

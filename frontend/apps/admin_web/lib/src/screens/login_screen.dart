@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
-/// Tela de login do Admin Web (layout split: formulário à esquerda, arte à direita).
+/// Tela de login do Admin Web (tema claro Shifty, layout split).
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -58,27 +58,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: AppTheme.dark,
-      child: Scaffold(
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 960;
-            return Row(
-              children: [
+    return Scaffold(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 960;
+          return Row(
+            children: [
+              Expanded(
+                flex: wide ? 5 : 1,
+                child: _buildForm(context, wide),
+              ),
+              if (wide)
                 Expanded(
-                  flex: wide ? 5 : 1,
-                  child: _buildForm(context, wide),
+                  flex: 5,
+                  child: _buildArt(context),
                 ),
-                if (wide)
-                  Expanded(
-                    flex: 5,
-                    child: _buildArt(context),
-                  ),
-              ],
-            );
-          },
-        ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -97,13 +94,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.sports, color: AppColors.darkBrand),
+                  Icon(Icons.sports, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       AppStrings.loginTitle,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
@@ -116,7 +113,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 'Acesse sua conta',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
                 ),
@@ -126,7 +123,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 AppStrings.loginSubtitle,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                    color: AppColors.darkTextMuted, fontSize: 14),
+                    color: AppColors.textSecondary, fontSize: 14),
               ),
               const SizedBox(height: 32),
               TextFormField(
@@ -184,7 +181,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const Text(
                         'Manter conectado',
-                        style: TextStyle(color: Colors.white, fontSize: 14),
+                        style:
+                            TextStyle(color: AppColors.textPrimary, fontSize: 14),
                       ),
                     ],
                   ),
@@ -221,7 +219,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   const Text(
                     'Não tem conta?',
-                    style: TextStyle(color: AppColors.darkTextMuted),
+                    style: TextStyle(color: AppColors.textSecondary),
                   ),
                   TextButton(
                     onPressed: () => context.go('/signup'),
@@ -242,7 +240,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1F2924), AppColors.darkBackground],
+          colors: [Color(0xFFFFF3EB), AppColors.background],
         ),
       ),
       child: Stack(
@@ -251,7 +249,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Icon(
               Icons.sports_soccer,
               size: 320,
-              color: Colors.white.withValues(alpha: 0.06),
+              color: AppColors.primary.withValues(alpha: 0.08),
             ),
           ),
           Center(
@@ -264,13 +262,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     width: 96,
                     height: 96,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(28),
                     ),
                     child: const Icon(
                       Icons.emoji_events,
                       size: 56,
-                      color: AppColors.darkBrand,
+                      color: AppColors.primary,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -278,7 +276,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'O melhor lugar para acompanhar um campeonato de flag',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
                       height: 1.3,
@@ -288,7 +286,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const Text(
                     'Organize, acompanhe e viva o jogo.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.darkTextMuted),
+                    style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ],
               ),

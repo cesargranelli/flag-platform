@@ -15,13 +15,5 @@ class AppColors {
   static const Color textPrimary = Color(0xFF1B1D21);
   static const Color textSecondary = Color(0xFF737373);
 
-  // Tema escuro (telas de autenticação — referência Social Sports UI Kit).
-  static const Color darkBackground = Color(0xFF102219);
-  static const Color darkSurface = Color(0xFF1A2621);
-  static const Color darkSurfaceAlt = Color(0xFF1F2924);
-  static const Color darkBrand = Color(0xFF13EC80);
-  static const Color darkTextMuted = Color(0xFF5B6F68);
-  static const Color darkInputFill = Color(0x0DFFFFFF);
-
   const AppColors._();
 }
