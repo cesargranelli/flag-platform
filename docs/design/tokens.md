@@ -76,6 +76,18 @@ Escala: `4, 8, 12, 16, 24, 32`. Uso típico: padding de tela `16`, espaçamento 
 | `< 960px` | Layout estreito (mobile): menus em lista, cards empilhados |
 | `>= 960px` | Layout largo (desktop): `NavigationRail`, painéis em colunas |
 
+### Larguras máximas (padrão web)
+
+Em telas largas, o conteúdo é centralizado com largura máxima para preservar legibilidade (45–75 caracteres por linha) e hierarquia. Refletido em `frontend/packages/core/lib/src/layout/app_layout.dart` (widget `AppLayout`).
+
+| Token | Valor | Uso |
+|---|---|---|
+| `layout.maxForm` | 600 | Formulários (wizard e CRUD) |
+| `layout.maxDetail` | 720 | Telas de detalhe/leitura |
+| `layout.maxContent` | 1200 | Listagens e conteúdo |
+
+Wrappers: `AppLayout.form(child)`, `AppLayout.detail(child)`, `AppLayout.content(child)`.
+
 ## Acessibilidade (mínimo)
 
 - Contraste de texto ≥ 4.5:1 (texto secundário sobre `surface` validado)

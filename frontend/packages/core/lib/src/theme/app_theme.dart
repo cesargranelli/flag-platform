@@ -42,6 +42,7 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         border: _inputBorder(AppColors.textSecondary),
         enabledBorder: _inputBorder(AppColors.textSecondary.withValues(alpha: 0.5)),
+        focusedBorder: _inputBorder(AppColors.primary),
         disabledBorder: _inputBorder(AppColors.disabled),
         errorBorder: _inputBorder(AppColors.danger),
         focusedErrorBorder: _inputBorder(AppColors.danger),

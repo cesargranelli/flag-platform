@@ -182,43 +182,55 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       key: _formKey,
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                for (var i = 0; i < _titles.length; i++)
-                  Expanded(
-                    child: _stepIndicator(i),
-                  ),
-              ],
-            ),
-          ),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _stepContent(context, _step),
+            child: AppLayout.form(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < _titles.length; i++)
+                          Expanded(
+                            child: _stepIndicator(i),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _stepContent(context, _step),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed: _step > 0 ? () => setState(() => _step -= 1) : null,
-                  child: const Text('Voltar'),
-                ),
-                FilledButton(
-                  onPressed: _submitting ? null : _next,
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(_step == 2 ? 'Salvar' : 'Continuar'),
-                ),
-              ],
+            child: AppLayout.form(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: _submitting || _step == 0
+                        ? null
+                        : () => setState(() => _step -= 1),
+                    child: const Text('Voltar'),
+                  ),
+                  FilledButton(
+                    onPressed: _submitting ? null : _next,
+                    child: _submitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(_step == 2 ? 'Salvar' : 'Continuar'),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -229,28 +241,39 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   Widget _stepIndicator(int index) {
     final selected = index == _step;
     final done = index < _step;
+    final CircleAvatar circle;
+    if (done) {
+      circle = const CircleAvatar(
+        radius: 14,
+        backgroundColor: AppColors.success,
+        child: Icon(Icons.check, size: 20, color: AppColors.black),
+      );
+    } else if (selected) {
+      circle = const CircleAvatar(
+        radius: 14,
+        backgroundColor: AppColors.primary,
+        child: Icon(Icons.circle, size: 8, color: AppColors.black),
+      );
+    } else {
+      circle = CircleAvatar(
+        radius: 14,
+        backgroundColor: AppColors.grayFill,
+        child: Text(
+          '${index + 1}',
+          style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+        ),
+      );
+    }
     return Column(
       children: [
-        CircleAvatar(
-          radius: 14,
-          backgroundColor: selected
-              ? Theme.of(context).colorScheme.primary
-              : done
-                  ? AppColors.success
-                  : AppColors.textSecondary.withValues(alpha: 0.3),
-          child: done
-              ? const Icon(Icons.check, size: 16, color: Colors.white)
-              : Text(
-                  '${index + 1}',
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                ),
-        ),
+        circle,
         const SizedBox(height: 4),
         Text(
           _titles[index],
           style: TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+            color: selected ? AppColors.textPrimary : AppColors.textSecondary,
           ),
         ),
       ],

@@ -44,8 +44,9 @@ class OrganizationDetailScreen extends ConsumerWidget {
   Widget _buildDetail(BuildContext context, Organization org) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: AppLayout.detail(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Card(
             child: Padding(
@@ -150,6 +151,7 @@ class OrganizationDetailScreen extends ConsumerWidget {
                   fontSize: 12, color: AppColors.textSecondary),
             ),
         ],
+        ),
       ),
     );
   }
