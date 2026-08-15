@@ -14,7 +14,10 @@ class CompetitionsScreen extends ConsumerWidget {
     final competitions = ref.watch(competitionsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Campeonatos')),
+      appBar: AppBar(
+        title: const Text('Campeonatos'),
+        leading: BackButton(onPressed: () => context.go('/')),
+      ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Novo campeonato',
         onPressed: () => context.push('/competitions/new'),

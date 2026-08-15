@@ -15,7 +15,10 @@ class CategoriesScreen extends ConsumerWidget {
     final selected = ref.watch(selectedCompetitionProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Categorias')),
+      appBar: AppBar(
+        title: const Text('Categorias'),
+        leading: BackButton(onPressed: () => context.go('/')),
+      ),
       floatingActionButton: competitions.valueOrNull?.isNotEmpty == true
           ? FloatingActionButton(
               tooltip: 'Nova categoria',

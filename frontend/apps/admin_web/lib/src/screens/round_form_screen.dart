@@ -96,7 +96,10 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
         : ref.watch(categoriesProvider(effectiveComp));
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Editar rodada' : 'Nova rodada')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Editar rodada' : 'Nova rodada'),
+        leading: const BackButton(),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(

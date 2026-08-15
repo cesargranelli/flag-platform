@@ -116,7 +116,10 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
     final venues = ref.watch(venuesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Editar jogo' : 'Novo jogo')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Editar jogo' : 'Novo jogo'),
+        leading: const BackButton(),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(

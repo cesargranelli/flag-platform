@@ -51,6 +51,20 @@ void main() {
     expect(find.text('Copa Paulista'), findsOneWidget);
   });
 
+  testWidgets('botão de voltar retorna para a home', (WidgetTester tester) async {
+    await pumpApp(tester, competitionApi: FakeCompetitionApi());
+    await tester.pumpAndSettle();
+
+    await openCompetitions(tester);
+    expect(find.text('Campeonatos'), findsOneWidget);
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bem-vindo, Ana Lima!'), findsOneWidget);
+    expect(find.text('Nenhum campeonato cadastrado'), findsNothing);
+  });
+
   testWidgets('mostra estado vazio quando não há campeonatos',
       (WidgetTester tester) async {
     await pumpApp(tester, competitionApi: FakeCompetitionApi());

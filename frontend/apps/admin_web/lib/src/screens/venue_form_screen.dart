@@ -90,7 +90,10 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
     final organizations = ref.watch(organizationsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Editar campo' : 'Novo campo')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Editar campo' : 'Novo campo'),
+        leading: const BackButton(),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(

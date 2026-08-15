@@ -119,6 +119,7 @@ class _CategoryFormScreenState extends ConsumerState<CategoryFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar categoria' : 'Nova categoria'),
+        leading: const BackButton(),
         actions: [
           if (_isEditing)
             IconButton(

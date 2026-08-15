@@ -33,7 +33,10 @@ class GamesScreen extends ConsumerWidget {
         selectedRound ?? (roundItems.isNotEmpty ? roundItems.first.id : null);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Jogos')),
+      appBar: AppBar(
+        title: const Text('Jogos'),
+        leading: BackButton(onPressed: () => context.go('/')),
+      ),
       floatingActionButton: effectiveRound == null
           ? null
           : FloatingActionButton(

@@ -125,6 +125,7 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar campeonato' : 'Novo campeonato'),
+        leading: const BackButton(),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

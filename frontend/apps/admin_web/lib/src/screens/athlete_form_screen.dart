@@ -88,7 +88,10 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Editar atleta' : 'Novo atleta')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Editar atleta' : 'Novo atleta'),
+        leading: const BackButton(),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
