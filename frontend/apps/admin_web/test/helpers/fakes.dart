@@ -83,6 +83,25 @@ class FakeAuthApi extends AuthApi {
 
   List<User> users = [];
   int createUserCalls = 0;
+  int registerCalls = 0;
+
+  @override
+  Future<User> register({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    registerCalls++;
+    final user = User(
+      id: 'user-registrado',
+      name: name,
+      email: email,
+      role: 'ORGANIZER',
+      status: 'PENDING',
+    );
+    users = [...users, user];
+    return user;
+  }
 
   @override
   Future<List<User>> listUsers() async => users;

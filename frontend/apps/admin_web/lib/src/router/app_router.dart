@@ -22,6 +22,7 @@ import '../screens/games_screen.dart';
 import '../screens/athlete_form_screen.dart';
 import '../screens/athletes_screen.dart';
 import '../screens/rosters_screen.dart';
+import '../screens/signup_screen.dart';
 import '../screens/user_form_screen.dart';
 import '../screens/users_screen.dart';
 
@@ -36,12 +37,16 @@ class AppRouter {
         refreshListenable: auth,
         redirect: (context, state) {
           final authenticated = auth.state.authenticated;
-          final onLogin = state.matchedLocation == '/login';
+          final location = state.matchedLocation;
+          final isPublicAuth = location == '/login' ||
+              location == '/signup' ||
+              location == '/forgot-password' ||
+              location == '/reset-password';
 
-          // Não autenticado só acessa a tela de login.
-          if (!authenticated && !onLogin) return '/login';
-          // Autenticado não precisa ver o login novamente.
-          if (authenticated && onLogin) return '/';
+          // Não autenticado só acessa telas públicas de autenticação.
+          if (!authenticated && !isPublicAuth) return '/login';
+          // Autenticado não precisa ver telas de autenticação.
+          if (authenticated && isPublicAuth) return '/';
 
           return null;
         },
@@ -54,10 +59,7 @@ class AppRouter {
           GoRoute(
             path: '/signup',
             name: 'signup',
-            builder: (context, state) => const AuthPlaceholderScreen(
-              title: 'Criar conta',
-              message: 'Cadastro do organizador em breve.',
-            ),
+            builder: (context, state) => const SignupScreen(),
           ),
           GoRoute(
             path: '/forgot-password',

@@ -18,6 +18,17 @@ class AuthApi {
         LoginResponse.fromJson,
       );
 
+  Future<User> register({
+    required String name,
+    required String email,
+    required String password,
+  }) =>
+      _client.post(
+        '/api/v1/auth/register',
+        {'name': name, 'email': email, 'password': password},
+        User.fromJson,
+      );
+
   Future<User> me() =>
       _client.getOne('/api/v1/auth/me', User.fromJson);
 
