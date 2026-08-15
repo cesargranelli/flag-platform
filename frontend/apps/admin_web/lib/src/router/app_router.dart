@@ -6,6 +6,7 @@ import '../screens/approvals_screen.dart';
 import '../screens/categories_screen.dart';
 import '../screens/category_form_screen.dart';
 import '../screens/competition_form_screen.dart';
+import '../screens/competition_detail_screen.dart';
 import '../screens/competitions_screen.dart';
 import '../screens/forgot_password_screen.dart';
 import '../screens/home_screen.dart';
@@ -129,6 +130,19 @@ class AppRouter {
           ),
           GoRoute(
             path: '/competitions/:id',
+            name: 'competitionDetail',
+            builder: (context, state) {
+              final competition = state.extra is Competition
+                  ? state.extra as Competition
+                  : null;
+              return CompetitionDetailScreen(
+                competitionId: state.pathParameters['id'],
+                competition: competition,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/competitions/:id/edit',
             name: 'competitionEdit',
             builder: (context, state) {
               final competition = state.extra is Competition

@@ -1,4 +1,5 @@
 import 'package:flag_api/flag_api.dart';
+import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -108,7 +109,14 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
         );
       }
       ref.invalidate(competitionsProvider);
-      if (mounted) context.pop();
+      if (mounted) {
+        if (id != null) {
+          // Volta para o detalhe recarregado (busca fresca via provider).
+          context.go('/competitions/$id');
+        } else {
+          context.pop();
+        }
+      }
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (_) {
@@ -129,10 +137,11 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: AppLayout.form(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               organizations.when(
                 loading: () => const LinearProgressIndicator(),
@@ -237,6 +246,7 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

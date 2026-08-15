@@ -103,7 +103,8 @@ void main() {
     expect(find.text('Taça SP 2026'), findsOneWidget);
   });
 
-  testWidgets('edita um campeonato existente', (WidgetTester tester) async {
+  testWidgets('clica em um campeonato e vê a tela de detalhe',
+      (WidgetTester tester) async {
     final api = FakeCompetitionApi()..competitions = [testCompetition()];
 
     await pumpApp(tester, competitionApi: api);
@@ -111,6 +112,25 @@ void main() {
     await openCompetitions(tester);
 
     await tester.tap(find.text('Taça SP'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.byType(TextFormField), findsNothing);
+  });
+
+  testWidgets('edita um campeonato a partir do detalhe',
+      (WidgetTester tester) async {
+    final api = FakeCompetitionApi()..competitions = [testCompetition()];
+
+    await pumpApp(tester, competitionApi: api);
+    await tester.pumpAndSettle();
+    await openCompetitions(tester);
+
+    await tester.tap(find.text('Taça SP'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar dados'), findsOneWidget);
+    await tester.tap(find.text('Editar dados'));
     await tester.pumpAndSettle();
 
     expect(find.text('Editar campeonato'), findsOneWidget);
@@ -123,5 +143,6 @@ void main() {
 
     expect(api.updateCalls, 1);
     expect(api.lastBody?['name'], 'Taça SP 2026');
+    expect(find.text('Editar dados'), findsOneWidget);
   });
 }
