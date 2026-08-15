@@ -7,6 +7,7 @@ class SessionManager {
   static const _tokenKey = 'auth_token';
   static const _rolesKey = 'auth_roles';
   static const _userNameKey = 'auth_user_name';
+  static const _keepConnectedKey = 'auth_keep_connected';
 
   final FlutterSecureStorage _storage;
 
@@ -37,9 +38,16 @@ class SessionManager {
 
   Future<bool> isAuthenticated() async => (await getToken()) != null;
 
+  Future<void> saveKeepConnected(bool value) =>
+      _storage.write(key: _keepConnectedKey, value: value.toString());
+
+  Future<bool> isKeepConnected() async =>
+      (await _storage.read(key: _keepConnectedKey)) == 'true';
+
   Future<void> clear() async {
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _rolesKey);
     await _storage.delete(key: _userNameKey);
+    await _storage.delete(key: _keepConnectedKey);
   }
 }

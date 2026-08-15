@@ -35,4 +35,38 @@ class AuthApi {
         {'name': name, 'email': email, 'password': password, 'role': role},
         User.fromJson,
       );
+
+  Future<List<User>> listPendingUsers() =>
+      _client.getList('/api/v1/auth/users/pending', User.fromJson);
+
+  Future<User> approveUser(String id) => _client.post(
+        '/api/v1/auth/users/$id/approve',
+        {},
+        User.fromJson,
+      );
+
+  Future<User> rejectUser(String id) => _client.post(
+        '/api/v1/auth/users/$id/reject',
+        {},
+        User.fromJson,
+      );
+
+  Future<String> forgotPassword(String email) async {
+    final result = await _client.post<String>(
+      '/api/v1/auth/forgot-password',
+      {'email': email},
+      (json) => json['resetToken'] as String? ?? '',
+    );
+    return result;
+  }
+
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) =>
+      _client.post(
+        '/api/v1/auth/reset-password',
+        {'token': token, 'newPassword': newPassword},
+        (json) => json,
+      );
 }
