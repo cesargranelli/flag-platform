@@ -53,20 +53,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: AppTheme.dark,
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: AppColors.darkBackground,
-          leading: BackButton(onPressed: () => context.go('/login')),
-        ),
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: _sent ? _buildSent() : _buildForm(),
-            ),
+    return Scaffold(
+      appBar: AppBar(leading: BackButton(onPressed: () => context.go('/login'))),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: _sent ? _buildSent() : _buildForm(),
           ),
         ),
       ),
@@ -80,13 +74,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.lock_reset, size: 56, color: AppColors.darkBrand),
+          const Icon(Icons.lock_reset, size: 56, color: AppColors.primary),
           const SizedBox(height: 16),
           const Text(
             'Esqueci a senha',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               fontSize: 24,
               fontWeight: FontWeight.w800,
             ),
@@ -95,7 +89,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           const Text(
             'Informe seu e-mail para receber o link de redefinição.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.darkTextMuted, fontSize: 14),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
           const SizedBox(height: 24),
           TextFormField(
@@ -146,13 +140,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Icon(Icons.mark_email_read_outlined,
-            size: 56, color: AppColors.darkBrand),
+            size: 56, color: AppColors.primary),
         const SizedBox(height: 16),
         const Text(
           'Enviamos um link para seu e-mail',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w800,
           ),
@@ -161,7 +155,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         const Text(
           'Use o link recebido para definir uma nova senha.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.darkTextMuted, fontSize: 14),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
         const SizedBox(height: 24),
         OutlinedButton(
