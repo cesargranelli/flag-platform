@@ -173,3 +173,8 @@ final rosterProvider = FutureProvider.family<List<RosterEntry>, String>(
 final usersProvider = FutureProvider<List<User>>(
   (ref) => ref.watch(authApiProvider).listUsers(),
 );
+
+/// Contas pendentes de aprovação (somente ADMIN).
+final pendingUsersProvider = FutureProvider<List<User>>(
+  (ref) => ref.watch(authApiProvider).listPendingUsers(),
+);

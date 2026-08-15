@@ -127,6 +127,8 @@ class FakeAuthApi extends AuthApi {
   String forgotToken = 'reset-token';
   int forgotCalls = 0;
   int resetCalls = 0;
+  int approveCalls = 0;
+  int rejectCalls = 0;
 
   @override
   Future<String> forgotPassword(String email) async {
@@ -140,6 +142,40 @@ class FakeAuthApi extends AuthApi {
     required String newPassword,
   }) async {
     resetCalls++;
+  }
+
+  List<User> pending = [];
+
+  @override
+  Future<List<User>> listPendingUsers() async => pending;
+
+  @override
+  Future<User> approveUser(String id) async {
+    approveCalls++;
+    final user = pending.firstWhere((u) => u.id == id);
+    final approved = User(
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: 'ACTIVE',
+    );
+    pending = pending.where((u) => u.id != id).toList();
+    return approved;
+  }
+
+  @override
+  Future<User> rejectUser(String id) async {
+    rejectCalls++;
+    final user = pending.firstWhere((u) => u.id == id);
+    pending = pending.where((u) => u.id != id).toList();
+    return User(
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: 'REJECTED',
+    );
   }
 }
 

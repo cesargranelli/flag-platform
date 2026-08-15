@@ -28,6 +28,7 @@ class AdminHomeScreen extends ConsumerWidget {
       _MenuItem(Icons.sports, AppStrings.games, '/games'),
       _MenuItem(Icons.person_outline, AppStrings.athletes, '/athletes'),
       _MenuItem(Icons.groups_outlined, AppStrings.rosters, '/rosters'),
+      if (isAdmin) _MenuItem(Icons.fact_check_outlined, 'Aprovações', '/approvals'),
       if (isAdmin) _MenuItem(Icons.admin_panel_settings, AppStrings.users, '/users'),
     ];
 
