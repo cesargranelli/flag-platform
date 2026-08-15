@@ -48,13 +48,18 @@ class AuthController extends ChangeNotifier {
   }
 
   /// Autentica com e-mail/senha e persiste o token JWT.
-  Future<void> login({required String email, required String password}) async {
+  Future<void> login({
+    required String email,
+    required String password,
+    bool keepConnected = false,
+  }) async {
     final response = await _api.login(email: email, password: password);
     await _session.saveSession(
       token: response.token,
       roles: [response.user.role],
       userName: response.user.name,
     );
+    await _session.saveKeepConnected(keepConnected);
     _set(AuthState(authenticated: true, user: response.user));
   }
 

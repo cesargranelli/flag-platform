@@ -41,6 +41,13 @@ class InMemorySessionManager extends SessionManager {
   Future<bool> isAuthenticated() async => data['auth_token'] != null;
 
   @override
+  Future<void> saveKeepConnected(bool value) async =>
+      data['auth_keep_connected'] = value.toString();
+
+  @override
+  Future<bool> isKeepConnected() async => data['auth_keep_connected'] == 'true';
+
+  @override
   Future<void> clear() async => data.clear();
 }
 

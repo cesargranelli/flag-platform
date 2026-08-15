@@ -2,6 +2,7 @@ import 'package:flag_domain/flag_domain.dart';
 import 'package:go_router/go_router.dart';
 
 import '../auth/auth_controller.dart';
+import '../screens/auth_placeholder_screen.dart';
 import '../screens/categories_screen.dart';
 import '../screens/category_form_screen.dart';
 import '../screens/competition_form_screen.dart';
@@ -49,6 +50,22 @@ class AppRouter {
             path: '/login',
             name: 'login',
             builder: (context, state) => const LoginScreen(),
+          ),
+          GoRoute(
+            path: '/signup',
+            name: 'signup',
+            builder: (context, state) => const AuthPlaceholderScreen(
+              title: 'Criar conta',
+              message: 'Cadastro do organizador em breve.',
+            ),
+          ),
+          GoRoute(
+            path: '/forgot-password',
+            name: 'forgotPassword',
+            builder: (context, state) => const AuthPlaceholderScreen(
+              title: 'Esqueci a senha',
+              message: 'Recuperação de senha em breve.',
+            ),
           ),
           GoRoute(
             path: '/',

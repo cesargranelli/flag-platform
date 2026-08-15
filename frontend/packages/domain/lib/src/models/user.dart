@@ -13,6 +13,9 @@ class User {
   /// Role do usuário (ex: ORGANIZER, MESA, ADMIN).
   final String role;
 
+  /// Status da conta (ex: PENDING, ACTIVE, REJECTED).
+  final String? status;
+
   final DateTime? createdAt;
 
   const User({
@@ -20,6 +23,7 @@ class User {
     required this.name,
     required this.email,
     required this.role,
+    this.status,
     this.createdAt,
   });
 
@@ -28,6 +32,7 @@ class User {
         name: json['name'] as String,
         email: json['email'] as String,
         role: json['role'] as String,
+        status: json['status'] as String?,
         createdAt: json['createdAt'] is String
             ? DateTime.tryParse(json['createdAt'] as String)
             : null,
@@ -38,6 +43,7 @@ class User {
         'name': name,
         'email': email,
         'role': role,
+        if (status != null) 'status': status,
         if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       };
 }
