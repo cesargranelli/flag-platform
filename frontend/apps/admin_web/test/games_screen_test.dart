@@ -42,6 +42,8 @@ void main() {
 
   Future<void> openGames(WidgetTester tester) async {
     await tester.scrollUntilVisible(find.text('Jogos'), 120);
+    await tester.ensureVisible(find.text('Jogos'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Jogos'));
     await tester.pumpAndSettle();
   }

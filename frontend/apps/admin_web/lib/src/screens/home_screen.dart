@@ -5,10 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
-/// Tela inicial do Admin Web: menu de gestão do organizador.
+/// Tela inicial do Admin Web: cards de acesso às áreas de gestão.
 ///
-/// Em telas largas (>= 960px) exibe um NavigationRail lateral (padrão
-/// desktop); em telas estreitas, o menu em lista vertical (padrão mobile).
+/// Substitui o antigo menu lateral (NavigationRail/lista) por cards na tela,
+/// mantendo os mesmos ícones e rótulos. Responsivo: grid de cards em telas
+/// largas, coluna adaptada em telas estreitas.
 class AdminHomeScreen extends ConsumerWidget {
   const AdminHomeScreen({super.key});
 
@@ -32,106 +33,94 @@ class AdminHomeScreen extends ConsumerWidget {
       if (isAdmin) _MenuItem(Icons.admin_panel_settings, AppStrings.users, '/users'),
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 960;
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text(AppStrings.appBarTitle),
-            actions: [
-              if (wide)
-                Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: Center(child: Text(userName ?? 'organizador')),
-                ),
-              IconButton(
-                tooltip: AppStrings.logout,
-                icon: const Icon(Icons.logout),
-                onPressed: () =>
-                    ref.read(authControllerProvider.notifier).logout(),
-              ),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(AppStrings.appBarTitle),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(child: Text(userName ?? 'organizador')),
           ),
-          body: wide
-              ? Row(
-                  children: [
-                    NavigationRail(
-                      selectedIndex: 0,
-                      onDestinationSelected: (index) =>
-                          context.go(items[index].route),
-                      labelType: NavigationRailLabelType.all,
-                      destinations: [
-                        for (final item in items)
-                          NavigationRailDestination(
-                            icon: Icon(item.icon),
-                            label: Text(item.title),
-                          ),
-                      ],
-                    ),
-                    const VerticalDivider(width: 1),
-                    Expanded(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.dashboard,
-                                size: 64, color: AppColors.primary),
-                            const SizedBox(height: 16),
-                            Text(
-                              '${AppStrings.welcome}, ${userName ?? 'organizador'}!',
-                              style: const TextStyle(
-                                  fontSize: 24, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              AppStrings.homeHint,
-                              style: TextStyle(
-                                  fontSize: 16, color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              : ListView(
+          IconButton(
+            tooltip: AppStrings.logout,
+            icon: const Icon(Icons.logout),
+            onPressed: () =>
+                ref.read(authControllerProvider.notifier).logout(),
+          ),
+        ],
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 960;
+          final columns = wide ? 4 : 2;
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
                   padding: const EdgeInsets.all(16),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text(
-                        '${AppStrings.welcome}, ${userName ?? 'organizador'}!',
-                        style: const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    for (final item in items)
-                      _menuItem(
+                  child: Text(
+                    '${AppStrings.welcome}, ${userName ?? 'organizador'}!',
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                sliver: SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: wide ? 1.4 : 1.5,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final item = items[index];
+                      return _menuCard(
                         context,
                         icon: item.icon,
                         title: item.title,
                         onTap: () => context.go(item.route),
-                      ),
-                  ],
+                      );
+                    },
+                    childCount: items.length,
+                  ),
                 ),
-        );
-      },
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
-  Widget _menuItem(
+  Widget _menuCard(
     BuildContext context, {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
   }) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: Icon(icon, color: AppColors.primary),
-        title: Text(title),
-        trailing: const Icon(Icons.chevron_right),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
         onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 40, color: AppColors.primary),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -144,5 +133,3 @@ class _MenuItem {
 
   const _MenuItem(this.icon, this.title, this.route);
 }
-
-
