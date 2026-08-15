@@ -2,6 +2,7 @@ import 'package:flag_domain/flag_domain.dart';
 import 'package:go_router/go_router.dart';
 
 import '../auth/auth_controller.dart';
+import '../screens/approvals_screen.dart';
 import '../screens/categories_screen.dart';
 import '../screens/category_form_screen.dart';
 import '../screens/competition_form_screen.dart';
@@ -271,6 +272,11 @@ class AppRouter {
             path: '/users/new',
             name: 'userNew',
             builder: (context, state) => const UserFormScreen(),
+          ),
+          GoRoute(
+            path: '/approvals',
+            name: 'approvals',
+            builder: (context, state) => const ApprovalsScreen(),
           ),
         ],
       );
