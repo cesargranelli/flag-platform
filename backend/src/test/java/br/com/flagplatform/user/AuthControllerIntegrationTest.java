@@ -232,6 +232,61 @@ class AuthControllerIntegrationTest {
                 "password", password));
     }
 
+    @Test
+    @WithMockUser(username = "reset@exemplo.com", roles = "ADMIN")
+    void forgotAndResetPassword_flow() throws Exception {
+        MvcResult register = mockMvc.perform(post(BASE_URL + "/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerBody("Reset User", "reset@exemplo.com", "segredo123")))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String userId = objectMapper.readTree(register.getResponse().getContentAsString())
+                .path("id").asText();
+
+        mockMvc.perform(post(BASE_URL + "/users/" + userId + "/approve"))
+                .andExpect(status().isOk());
+
+        MvcResult forgot = mockMvc.perform(post(BASE_URL + "/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(forgotBody("reset@exemplo.com")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resetToken").isNotEmpty())
+                .andReturn();
+
+        String token = objectMapper.readTree(forgot.getResponse().getContentAsString())
+                .path("resetToken").asText();
+
+        mockMvc.perform(post(BASE_URL + "/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(resetBody(token, "nova-segredo")))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post(BASE_URL + "/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody("reset@exemplo.com", "nova-segredo")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void resetPassword_invalidToken_returnsBadRequest() throws Exception {
+        mockMvc.perform(post(BASE_URL + "/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(resetBody("token-invalido", "nova-segredo")))
+                .andExpect(status().isBadRequest());
+    }
+
+    private String forgotBody(String email) throws Exception {
+        return objectMapper.writeValueAsString(Map.of("email", email));
+    }
+
+    private String resetBody(String token, String newPassword) throws Exception {
+        return objectMapper.writeValueAsString(Map.of(
+                "token", token,
+                "newPassword", newPassword));
+    }
+
     private String createUserBody(String name, String email, String password, String role) throws Exception {
         return objectMapper.writeValueAsString(Map.of(
                 "name", name,

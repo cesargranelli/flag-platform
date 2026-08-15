@@ -54,6 +54,14 @@ app:
       # Anti brute-force no login: máx. tentativas por IP na janela.
       max-attempts: ${LOGIN_MAX_ATTEMPTS:10}
       window-seconds: ${LOGIN_WINDOW_SECONDS:300}
+    password-reset:
+      # Validade do token de redefinição de senha.
+      expiration-minutes: ${PASSWORD_RESET_EXPIRATION_MINUTES:60}
+
+  mail:
+    # SMTP ainda não configurado. Quando true, o token de redefinição é enviado
+    # por e-mail; quando false (dev), o token é retornado na resposta.
+    enabled: ${MAIL_ENABLED:false}
 
 springdoc:
   api-docs:
