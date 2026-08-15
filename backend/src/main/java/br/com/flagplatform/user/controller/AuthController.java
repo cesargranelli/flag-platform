@@ -16,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 @Tag(name = "Auth", description = "Cadastro, autenticação e usuário atual")
 @RequestMapping("/api/v1/auth")
@@ -79,6 +81,36 @@ public class AuthController {
     @PreAuthorize(SecurityExpressions.ADMIN)
     public List<UserResponse> listUsers() {
         return service.findAll();
+    }
+
+    @Operation(
+            summary = "Listar usuários pendentes",
+            description = "Lista os usuários aguardando aprovação. Exclusivo de ADMIN."
+    )
+    @GetMapping("/users/pending")
+    @PreAuthorize(SecurityExpressions.ADMIN)
+    public List<UserResponse> listPending() {
+        return service.listPending();
+    }
+
+    @Operation(
+            summary = "Aprovar usuário",
+            description = "Ativa uma conta pendente de organizador. Exclusivo de ADMIN."
+    )
+    @PostMapping("/users/{id}/approve")
+    @PreAuthorize(SecurityExpressions.ADMIN)
+    public UserResponse approve(@PathVariable UUID id) {
+        return service.approve(id);
+    }
+
+    @Operation(
+            summary = "Rejeitar usuário",
+            description = "Rejeita uma conta pendente de organizador. Exclusivo de ADMIN."
+    )
+    @PostMapping("/users/{id}/reject")
+    @PreAuthorize(SecurityExpressions.ADMIN)
+    public UserResponse reject(@PathVariable UUID id) {
+        return service.reject(id);
     }
 
 }

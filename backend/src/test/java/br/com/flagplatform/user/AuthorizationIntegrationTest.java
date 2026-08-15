@@ -148,13 +148,22 @@ class AuthorizationIntegrationTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void registeredOrganizer_managesWithJwt() throws Exception {
         String email = "org-jwt@exemplo.com";
 
-        mockMvc.perform(post(AUTH_URL + "/register")
+        MvcResult register = mockMvc.perform(post(AUTH_URL + "/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(registerBody("Cesar JWT", email, "segredo123")))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String userId = objectMapper.readTree(register.getResponse().getContentAsString())
+                .path("id").asText();
+
+        // ADMIN aprova a conta pendente antes do login.
+        mockMvc.perform(post(AUTH_URL + "/users/" + userId + "/approve"))
+                .andExpect(status().isOk());
 
         MvcResult login = mockMvc.perform(post(AUTH_URL + "/login")
                         .contentType(MediaType.APPLICATION_JSON)

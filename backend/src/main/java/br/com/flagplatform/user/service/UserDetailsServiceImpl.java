@@ -1,5 +1,6 @@
 package br.com.flagplatform.user.service;
 
+import br.com.flagplatform.common.enums.UserStatus;
 import br.com.flagplatform.user.entity.UserEntity;
 import br.com.flagplatform.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         UserEntity user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "User with email '%s' not found".formatted(email)));
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new UsernameNotFoundException(
+                    "User with email '%s' is not active".formatted(email));
+        }
 
         return User.withUsername(user.getEmail())
                 .password(user.getPasswordHash())
