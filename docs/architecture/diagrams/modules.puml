@@ -1,0 +1,76 @@
+@startuml
+title <size:24>FlagPlatformApplication</size>
+
+set separator none
+top to bottom direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+System_Boundary("FlagPlatformApplication_boundary", "FlagPlatformApplication", $tags="") {
+  Container_Boundary("FlagPlatformApplication.FlagPlatformApplication_boundary", "FlagPlatformApplication", $tags="") {
+    Component(FlagPlatformApplication.FlagPlatformApplication.Category, "Category", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Config, "Config", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Round, "Round", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Team, "Team", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Game, "Game", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Roster, "Roster", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Checkin, "Checkin", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Standing, "Standing", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Common, "Common", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Athlete, "Athlete", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Organization, "Organization", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.User, "User", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Competition, "Competition", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Security, "Security", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Venue, "Venue", $techn="Module", $descr="", $tags="", $link="")
+  }
+
+}
+
+Rel(FlagPlatformApplication.FlagPlatformApplication.Organization, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Athlete, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Round, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Round, FlagPlatformApplication.FlagPlatformApplication.Category, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Team, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Team, FlagPlatformApplication.FlagPlatformApplication.Category, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Game, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Game, FlagPlatformApplication.FlagPlatformApplication.Competition, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Game, FlagPlatformApplication.FlagPlatformApplication.Category, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Game, FlagPlatformApplication.FlagPlatformApplication.Round, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Game, FlagPlatformApplication.FlagPlatformApplication.Venue, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Game, FlagPlatformApplication.FlagPlatformApplication.Team, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Checkin, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Checkin, FlagPlatformApplication.FlagPlatformApplication.Game, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Checkin, FlagPlatformApplication.FlagPlatformApplication.Roster, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Checkin, FlagPlatformApplication.FlagPlatformApplication.Athlete, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Checkin, FlagPlatformApplication.FlagPlatformApplication.Team, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Checkin, FlagPlatformApplication.FlagPlatformApplication.User, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Roster, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Roster, FlagPlatformApplication.FlagPlatformApplication.Team, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Roster, FlagPlatformApplication.FlagPlatformApplication.Athlete, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.User, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Standing, FlagPlatformApplication.FlagPlatformApplication.Game, "listens to", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Standing, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Standing, FlagPlatformApplication.FlagPlatformApplication.Team, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Standing, FlagPlatformApplication.FlagPlatformApplication.Game, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Competition, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Competition, FlagPlatformApplication.FlagPlatformApplication.Organization, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Category, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Category, FlagPlatformApplication.FlagPlatformApplication.Competition, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Config, FlagPlatformApplication.FlagPlatformApplication.Security, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Security, FlagPlatformApplication.FlagPlatformApplication.User, "depends on", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Venue, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Venue, FlagPlatformApplication.FlagPlatformApplication.Organization, "uses", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml
