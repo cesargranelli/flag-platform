@@ -1,6 +1,7 @@
 package br.com.flagplatform.user.service;
 
 import br.com.flagplatform.common.enums.UserRole;
+import br.com.flagplatform.common.enums.UserStatus;
 import br.com.flagplatform.user.TokenProvider;
 import br.com.flagplatform.user.dto.request.CreateUserRequest;
 import br.com.flagplatform.user.dto.request.LoginRequest;
@@ -8,6 +9,7 @@ import br.com.flagplatform.user.dto.request.RegisterRequest;
 import br.com.flagplatform.user.dto.response.LoginResponse;
 import br.com.flagplatform.user.dto.response.UserResponse;
 import br.com.flagplatform.user.entity.UserEntity;
+import br.com.flagplatform.user.exception.AccountPendingApprovalException;
 import br.com.flagplatform.user.exception.EmailAlreadyExistsException;
 import br.com.flagplatform.user.exception.InvalidCredentialsException;
 import br.com.flagplatform.user.mapper.UserMapper;
@@ -51,7 +53,7 @@ class AuthServiceTest {
     private AuthService service;
 
     @Test
-    void register_createsOrganizerWithHashedPasswordAndNormalizedEmail() {
+    void register_createsOrganizerWithPendingStatusAndHashedPassword() {
         RegisterRequest request = new RegisterRequest("Ana Lima", "  Ana@Exemplo.com ", "segredo123");
         UserEntity entity = entity("ana@exemplo.com", "encoded");
         UserResponse expected = response(entity);
@@ -68,6 +70,7 @@ class AuthServiceTest {
         assertThat(entity.getEmail()).isEqualTo("ana@exemplo.com");
         assertThat(entity.getPasswordHash()).isEqualTo("encoded");
         assertThat(entity.getRole()).isEqualTo(UserRole.ORGANIZER);
+        assertThat(entity.getStatus()).isEqualTo(UserStatus.PENDING);
         verify(userRepository).save(entity);
     }
 
@@ -168,6 +171,7 @@ class AuthServiceTest {
         verify(userRepository).save(captor.capture());
         assertThat(captor.getValue().getRole()).isEqualTo(UserRole.MESA);
         assertThat(captor.getValue().getEmail()).isEqualTo("mesa@exemplo.com");
+        assertThat(captor.getValue().getStatus()).isEqualTo(UserStatus.ACTIVE);
         assertThat(result).isSameAs(expected);
     }
 
@@ -197,6 +201,70 @@ class AuthServiceTest {
         assertThat(result).hasSize(2).isSameAs(expected);
     }
 
+    @Test
+    void login_throwsWhenAccountIsPending() {
+        LoginRequest request = new LoginRequest("ana@exemplo.com", "segredo123");
+        UserEntity user = entity("ana@exemplo.com", "encoded");
+        user.setStatus(UserStatus.PENDING);
+
+        when(userRepository.findByEmailIgnoreCase("ana@exemplo.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("segredo123", "encoded")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.login(request))
+                .isInstanceOf(AccountPendingApprovalException.class);
+
+        verify(tokenProvider, never()).generateToken(any());
+    }
+
+    @Test
+    void listPending_returnsOnlyPendingUsers() {
+        UserEntity pending = entity("ana@exemplo.com", "x");
+        pending.setStatus(UserStatus.PENDING);
+        List<UserEntity> entities = List.of(pending);
+        List<UserResponse> expected = entities.stream().map(this::response).toList();
+
+        when(userRepository.findAllByStatusOrderByCreatedAtAsc(UserStatus.PENDING)).thenReturn(entities);
+        when(mapper.toResponseList(entities)).thenReturn(expected);
+
+        List<UserResponse> result = service.listPending();
+
+        assertThat(result).hasSize(1).isSameAs(expected);
+    }
+
+    @Test
+    void approve_activatesPendingAccount() {
+        UUID id = UUID.randomUUID();
+        UserEntity user = entity("ana@exemplo.com", "x");
+        user.setStatus(UserStatus.PENDING);
+        UserResponse expected = response(user);
+
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(mapper.toResponse(user)).thenReturn(expected);
+
+        UserResponse result = service.approve(id);
+
+        assertThat(result).isSameAs(expected);
+        assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+    }
+
+    @Test
+    void reject_marksAccountAsRejected() {
+        UUID id = UUID.randomUUID();
+        UserEntity user = entity("ana@exemplo.com", "x");
+        user.setStatus(UserStatus.PENDING);
+        UserResponse expected = response(user);
+
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(mapper.toResponse(user)).thenReturn(expected);
+
+        UserResponse result = service.reject(id);
+
+        assertThat(result).isSameAs(expected);
+        assertThat(user.getStatus()).isEqualTo(UserStatus.REJECTED);
+    }
+
     private UserEntity entity(String email, String passwordHash) {
         UserEntity entity = new UserEntity();
         entity.setId(UUID.randomUUID());
@@ -204,6 +272,7 @@ class AuthServiceTest {
         entity.setEmail(email);
         entity.setPasswordHash(passwordHash);
         entity.setRole(UserRole.ORGANIZER);
+        entity.setStatus(UserStatus.ACTIVE);
         return entity;
     }
 
@@ -213,6 +282,7 @@ class AuthServiceTest {
                 entity.getName(),
                 entity.getEmail(),
                 entity.getRole(),
+                entity.getStatus(),
                 LocalDateTime.of(2026, 8, 13, 10, 0));
     }
 

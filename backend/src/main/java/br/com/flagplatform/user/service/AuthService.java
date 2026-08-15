@@ -1,6 +1,7 @@
 package br.com.flagplatform.user.service;
 
 import br.com.flagplatform.common.enums.UserRole;
+import br.com.flagplatform.common.enums.UserStatus;
 import br.com.flagplatform.user.TokenProvider;
 import br.com.flagplatform.user.UserLookup;
 import br.com.flagplatform.user.dto.request.CreateUserRequest;
@@ -9,8 +10,10 @@ import br.com.flagplatform.user.dto.request.RegisterRequest;
 import br.com.flagplatform.user.dto.response.LoginResponse;
 import br.com.flagplatform.user.dto.response.UserResponse;
 import br.com.flagplatform.user.entity.UserEntity;
+import br.com.flagplatform.user.exception.AccountPendingApprovalException;
 import br.com.flagplatform.user.exception.EmailAlreadyExistsException;
 import br.com.flagplatform.user.exception.InvalidCredentialsException;
+import br.com.flagplatform.user.exception.UserNotFoundException;
 import br.com.flagplatform.user.mapper.UserMapper;
 import br.com.flagplatform.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +46,7 @@ public class AuthService implements UserLookup {
         entity.setEmail(email);
         entity.setPasswordHash(passwordEncoder.encode(request.password()));
         entity.setRole(UserRole.ORGANIZER);
+        entity.setStatus(UserStatus.PENDING);
 
         return mapper.toResponse(userRepository.save(entity));
     }
@@ -54,6 +58,8 @@ public class AuthService implements UserLookup {
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
+
+        requireActive(user);
 
         String token = tokenProvider.generateToken(user.getEmail());
 
@@ -90,12 +96,44 @@ public class AuthService implements UserLookup {
         entity.setEmail(email);
         entity.setPasswordHash(passwordEncoder.encode(request.password()));
         entity.setRole(request.role());
+        entity.setStatus(UserStatus.ACTIVE);
 
         return mapper.toResponse(userRepository.save(entity));
     }
 
     public List<UserResponse> findAll() {
         return mapper.toResponseList(userRepository.findAllByOrderByNameAsc());
+    }
+
+    public List<UserResponse> listPending() {
+        return mapper.toResponseList(
+                userRepository.findAllByStatusOrderByCreatedAtAsc(UserStatus.PENDING));
+    }
+
+    @Transactional
+    public UserResponse approve(UUID id) {
+        UserEntity user = findEntityById(id);
+        user.setStatus(UserStatus.ACTIVE);
+        return mapper.toResponse(userRepository.save(user));
+    }
+
+    @Transactional
+    public UserResponse reject(UUID id) {
+        UserEntity user = findEntityById(id);
+        user.setStatus(UserStatus.REJECTED);
+        return mapper.toResponse(userRepository.save(user));
+    }
+
+    private UserEntity findEntityById(UUID id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+    }
+
+    private void requireActive(UserEntity user) {
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new AccountPendingApprovalException(
+                    "Account is not active (status: %s).".formatted(user.getStatus()));
+        }
     }
 
     private String normalize(String email) {

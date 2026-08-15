@@ -1,0 +1,2 @@
+ALTER TABLE platform.users
+    ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE';

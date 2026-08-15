@@ -45,9 +45,10 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    void register_loginAndMe_flow() throws Exception {
-        // Cadastro cria um usuário ORGANIZER sem expor a senha.
-        mockMvc.perform(post(BASE_URL + "/register")
+    @WithMockUser(username = "ana@exemplo.com", roles = "ADMIN")
+    void register_approve_loginAndMe_flow() throws Exception {
+        // Cadastro cria um usuário ORGANIZER PENDENTE, sem expor a senha.
+        MvcResult registerResult = mockMvc.perform(post(BASE_URL + "/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(registerBody("Ana Lima", "ana@exemplo.com", "segredo123")))
                 .andExpect(status().isCreated())
@@ -55,8 +56,24 @@ class AuthControllerIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Ana Lima"))
                 .andExpect(jsonPath("$.email").value("ana@exemplo.com"))
                 .andExpect(jsonPath("$.role").value("ORGANIZER"))
+                .andExpect(jsonPath("$.status").value("PENDING"))
                 .andExpect(jsonPath("$.password").doesNotExist())
-                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+                .andExpect(jsonPath("$.passwordHash").doesNotExist())
+                .andReturn();
+
+        String userId = objectMapper.readTree(registerResult.getResponse().getContentAsString())
+                .path("id").asText();
+
+        // Pendente não autentica.
+        mockMvc.perform(post(BASE_URL + "/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody("ana@exemplo.com", "segredo123")))
+                .andExpect(status().isForbidden());
+
+        // ADMIN aprova.
+        mockMvc.perform(post(BASE_URL + "/users/" + userId + "/approve"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
 
         // Login retorna o token JWT + usuário.
         MvcResult loginResult = mockMvc.perform(post(BASE_URL + "/login")
@@ -82,6 +99,40 @@ class AuthControllerIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Ana Lima"))
                 .andExpect(jsonPath("$.email").value("ana@exemplo.com"))
                 .andExpect(jsonPath("$.role").value("ORGANIZER"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void listPending_andReject_flow() throws Exception {
+        mockMvc.perform(post(BASE_URL + "/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerBody("Carla", "carla@exemplo.com", "segredo123")))
+                .andExpect(status().isCreated());
+
+        MvcResult pending = mockMvc.perform(get(BASE_URL + "/users/pending"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[?(@.email == 'carla@exemplo.com')]").exists())
+                .andReturn();
+
+        JsonNode array = objectMapper.readTree(pending.getResponse().getContentAsString());
+        JsonNode carla = null;
+        for (JsonNode node : array) {
+            if ("carla@exemplo.com".equals(node.path("email").asText())) {
+                carla = node;
+                break;
+            }
+        }
+        String carlaId = carla.path("id").asText();
+
+        mockMvc.perform(post(BASE_URL + "/users/" + carlaId + "/reject"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REJECTED"));
+
+        mockMvc.perform(post(BASE_URL + "/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody("carla@exemplo.com", "segredo123")))
+                .andExpect(status().isForbidden());
     }
 
     @Test
