@@ -36,13 +36,15 @@ O Flag Platform nasceu de uma dor real: o aplicativo e o site oficiais do Flag F
 `\n
 ## Documentacao
 
+- [Indice da Documentacao](docs/README.md)
+- [Arquitetura e Fluxos](docs/architecture/overview.md)
 - [Visao do Produto](docs/product/vision.md)
 - [Backlog](docs/product/backlog.md)
 - [ADR-001 - Filosofia do Projeto](docs/adr/ADR-001%20-%20Filosofia%20do%20Projeto.md)
 - [ADR-002 - Monorepo](docs/adr/ADR-002-monorepo.md)
 - [ADR-003 - Modular Monolith](docs/adr/ADR-003-modular-monolith.md)
 - [ADR-004 - API First](docs/adr/ADR-004-api-first.md)
-- [Contexto do Projeto (.ai)](. ai/project-context.md)
+- [Contexto do Projeto (.ai)](.ai/project-context.md)
 
 ## MVP
 
