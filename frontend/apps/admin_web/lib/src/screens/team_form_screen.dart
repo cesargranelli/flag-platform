@@ -102,7 +102,10 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
     final categoryValue = _categoryId ?? defaultCategoryId;
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Editar time' : 'Novo time')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Editar time' : 'Novo time'),
+        leading: const BackButton(),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(

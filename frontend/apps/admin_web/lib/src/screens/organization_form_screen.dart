@@ -155,7 +155,10 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         : null;
 
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Editar organização' : 'Nova organização')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Editar organização' : 'Nova organização'),
+        leading: const BackButton(),
+      ),
       body: orgFuture == null
           ? _buildWizard(context)
           : orgFuture.when(

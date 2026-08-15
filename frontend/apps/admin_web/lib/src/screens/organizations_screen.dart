@@ -14,7 +14,10 @@ class OrganizationsScreen extends ConsumerWidget {
     final organizations = ref.watch(organizationsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Organizações')),
+      appBar: AppBar(
+        title: const Text('Organizações'),
+        leading: BackButton(onPressed: () => context.go('/')),
+      ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Nova organização',
         onPressed: () => context.push('/organizations/new'),

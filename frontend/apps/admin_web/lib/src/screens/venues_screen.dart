@@ -14,7 +14,10 @@ class VenuesScreen extends ConsumerWidget {
     final venues = ref.watch(venuesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Campos')),
+      appBar: AppBar(
+        title: const Text('Campos'),
+        leading: BackButton(onPressed: () => context.go('/')),
+      ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Novo campo',
         onPressed: () => context.push('/venues/new'),

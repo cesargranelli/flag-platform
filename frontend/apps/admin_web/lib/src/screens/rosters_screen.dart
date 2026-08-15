@@ -1,6 +1,7 @@
 import 'package:flag_core/flag_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
@@ -32,7 +33,10 @@ class RostersScreen extends ConsumerWidget {
         selectedTeam ?? (teamItems.isNotEmpty ? teamItems.first.id : null);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Elenco')),
+      appBar: AppBar(
+        title: const Text('Elenco'),
+        leading: BackButton(onPressed: () => context.go('/')),
+      ),
       floatingActionButton: effectiveTeam == null
           ? null
           : FloatingActionButton(

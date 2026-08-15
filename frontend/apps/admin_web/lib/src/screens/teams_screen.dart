@@ -26,7 +26,10 @@ class TeamsScreen extends ConsumerWidget {
         selectedCategory ?? (catItems.isNotEmpty ? catItems.first.id : null);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Times')),
+      appBar: AppBar(
+        title: const Text('Times'),
+        leading: BackButton(onPressed: () => context.go('/')),
+      ),
       floatingActionButton: effectiveCat == null
           ? null
           : FloatingActionButton(

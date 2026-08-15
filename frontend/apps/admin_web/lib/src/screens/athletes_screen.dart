@@ -14,7 +14,10 @@ class AthletesScreen extends ConsumerWidget {
     final athletes = ref.watch(athletesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Atletas')),
+      appBar: AppBar(
+        title: const Text('Atletas'),
+        leading: BackButton(onPressed: () => context.go('/')),
+      ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Novo atleta',
         onPressed: () => context.push('/athletes/new'),

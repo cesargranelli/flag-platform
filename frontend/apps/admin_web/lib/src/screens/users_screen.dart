@@ -14,7 +14,10 @@ class UsersScreen extends ConsumerWidget {
     final users = ref.watch(usersProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Usuários')),
+      appBar: AppBar(
+        title: const Text('Usuários'),
+        leading: BackButton(onPressed: () => context.go('/')),
+      ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Novo usuário',
         onPressed: () => context.push('/users/new'),

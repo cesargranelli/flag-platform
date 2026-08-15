@@ -70,7 +70,10 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Novo usuário')),
+      appBar: AppBar(
+        title: const Text('Novo usuário'),
+        leading: const BackButton(),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(

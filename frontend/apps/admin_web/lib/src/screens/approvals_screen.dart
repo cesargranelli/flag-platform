@@ -2,6 +2,7 @@ import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
@@ -14,7 +15,10 @@ class ApprovalsScreen extends ConsumerWidget {
     final pending = ref.watch(pendingUsersProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Aprovações')),
+      appBar: AppBar(
+        title: const Text('Aprovações'),
+        leading: BackButton(onPressed: () => context.go('/')),
+      ),
       body: pending.when(
         loading: () => const AppLoading(message: 'Carregando pendências...'),
         error: (error, stackTrace) => AppErrorState(
