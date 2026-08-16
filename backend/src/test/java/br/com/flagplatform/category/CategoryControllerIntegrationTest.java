@@ -136,6 +136,55 @@ class CategoryControllerIntegrationTest {
     }
 
     @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void getById_returnsCategoryDetail() throws Exception {
+        String organizationId = createOrganization("CATORG_DET", "Org Detalhe Categoria");
+        String competitionId = createCompetition(organizationId, "COMP_CAT_DETALHE");
+        String categoryId = createCategory(competitionId, "CAT_Detalhe");
+
+        mockMvc.perform(get(CATEGORIES_URL + "/" + categoryId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(categoryId))
+                .andExpect(jsonPath("$.competitionId").value(competitionId))
+                .andExpect(jsonPath("$.name").value("CAT_Detalhe"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void delete_softDeletes_andHidesFromList_andGetByIdReturnsNotFound() throws Exception {
+        String organizationId = createOrganization("CATORG_SOFT", "Org Soft Delete");
+        String competitionId = createCompetition(organizationId, "COMP_CAT_SOFT");
+        String categoryId = createCategory(competitionId, "CAT_Soft Delete");
+
+        mockMvc.perform(delete(CATEGORIES_URL + "/" + categoryId))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get(COMPETITIONS_URL + "/" + competitionId + "/categories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+
+        mockMvc.perform(get(CATEGORIES_URL + "/" + categoryId))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void delete_softDeletedName_canBeReused() throws Exception {
+        String organizationId = createOrganization("CATORG_REUSE", "Org Reuso Nome");
+        String competitionId = createCompetition(organizationId, "COMP_CAT_REUSO");
+        String categoryId = createCategory(competitionId, "CAT_Reuso");
+
+        mockMvc.perform(delete(CATEGORIES_URL + "/" + categoryId))
+                .andExpect(status().isNoContent());
+
+        String newCategoryId = createCategory(competitionId, "CAT_Reuso");
+
+        mockMvc.perform(get(CATEGORIES_URL + "/" + newCategoryId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("CAT_Reuso"));
+    }
+
+    @Test
     void getByCompetition_unknownCompetition_returnsEmptyList() throws Exception {
         mockMvc.perform(get(COMPETITIONS_URL + "/" + UUID.randomUUID() + "/categories"))
                 .andExpect(status().isOk())

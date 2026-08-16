@@ -5,6 +5,7 @@ import '../auth/auth_controller.dart';
 import '../screens/approvals_screen.dart';
 import '../screens/categories_screen.dart';
 import '../screens/category_form_screen.dart';
+import '../screens/category_detail_screen.dart';
 import '../screens/competition_form_screen.dart';
 import '../screens/competition_detail_screen.dart';
 import '../screens/competitions_screen.dart';
@@ -166,6 +167,19 @@ class AppRouter {
           ),
           GoRoute(
             path: '/categories/:id',
+            name: 'categoryDetail',
+            builder: (context, state) {
+              final category = state.extra is Category
+                  ? state.extra as Category
+                  : null;
+              return CategoryDetailScreen(
+                categoryId: state.pathParameters['id'],
+                category: category,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/categories/:id/edit',
             name: 'categoryEdit',
             builder: (context, state) {
               final category = state.extra is Category

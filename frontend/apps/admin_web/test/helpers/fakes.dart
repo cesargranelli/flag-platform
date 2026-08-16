@@ -325,6 +325,10 @@ class FakeCategoryApi extends CategoryApi {
       categories.where((c) => c.competitionId == competitionId).toList();
 
   @override
+  Future<Category> getById(String id) async =>
+      categories.firstWhere((c) => c.id == id);
+
+  @override
   Future<Category> create({
     required String competitionId,
     required String name,
@@ -343,7 +347,11 @@ class FakeCategoryApi extends CategoryApi {
     required String name,
   }) async {
     lastBody = {'competitionId': competitionId, 'name': name};
-    return Category(id: id, competitionId: competitionId, name: name);
+    final updated = Category(id: id, competitionId: competitionId, name: name);
+    categories = categories
+        .map((c) => c.id == id ? updated : c)
+        .toList();
+    return updated;
   }
 
   @override

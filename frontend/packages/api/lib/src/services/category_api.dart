@@ -15,6 +15,10 @@ class CategoryApi {
         Category.fromJson,
       );
 
+  /// Detalhe de uma categoria (endpoint publico).
+  Future<Category> getById(String id) =>
+      _client.getOne('/api/v1/categories/$id', Category.fromJson);
+
   Future<Category> create({
     required String competitionId,
     required String name,

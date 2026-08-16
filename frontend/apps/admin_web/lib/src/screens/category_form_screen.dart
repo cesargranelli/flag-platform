@@ -1,4 +1,5 @@
 import 'package:flag_api/flag_api.dart';
+import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,30 +47,35 @@ class _CategoryFormScreenState extends ConsumerState<CategoryFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final competitionId = _competitionId;
+    if (competitionId == null) return;
+
     setState(() {
       _submitting = true;
       _errorMessage = null;
     });
 
+    final previousCompetitionId = widget.category?.competitionId;
     try {
       final api = ref.read(categoryApiProvider);
       final id = widget.categoryId ?? widget.category?.id;
       if (id == null) {
-        await api.create(
-          competitionId: _competitionId!,
-          name: _name.text.trim(),
-        );
+        await api.create(competitionId: competitionId, name: _name.text.trim());
       } else {
-        await api.update(
-          id,
-          competitionId: _competitionId!,
-          name: _name.text.trim(),
-        );
+        await api.update(id, competitionId: competitionId, name: _name.text.trim());
       }
-      if (_competitionId != null) {
-        ref.invalidate(categoriesProvider(_competitionId!));
+      ref.invalidate(categoriesProvider(competitionId));
+      if (previousCompetitionId != null && previousCompetitionId != competitionId) {
+        ref.invalidate(categoriesProvider(previousCompetitionId));
       }
-      if (mounted) context.pop();
+      if (mounted) {
+        if (id != null) {
+          // Volta para o detalhe recarregado (busca fresca via provider).
+          context.go('/categories/$id');
+        } else {
+          context.pop();
+        }
+      }
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (_) {
@@ -79,32 +85,25 @@ class _CategoryFormScreenState extends ConsumerState<CategoryFormScreen> {
     }
   }
 
-  Future<void> _delete() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Excluir categoria'),
-        content: const Text('Tem certeza que deseja excluir esta categoria?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true) return;
-
-    final id = widget.categoryId ?? widget.category!.id;
-    await ref.read(categoryApiProvider).delete(id);
-    if (_competitionId != null) {
-      ref.invalidate(categoriesProvider(_competitionId!));
+  String? _validateName(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Informe o nome';
     }
-    if (mounted) context.pop();
+    final competitionId = _competitionId;
+    if (competitionId == null) return null;
+    final items = ref.read(categoriesProvider(competitionId)).valueOrNull;
+    if (items != null) {
+      final editingId = widget.categoryId ?? widget.category?.id;
+      final exists = items.any(
+        (c) =>
+            c.id != editingId &&
+            c.name.trim().toLowerCase() == value.trim().toLowerCase(),
+      );
+      if (exists) {
+        return 'Já existe uma categoria com este nome neste campeonato';
+      }
+    }
+    return null;
   }
 
   @override
@@ -120,72 +119,66 @@ class _CategoryFormScreenState extends ConsumerState<CategoryFormScreen> {
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar categoria' : 'Nova categoria'),
         leading: const BackButton(),
-        actions: [
-          if (_isEditing)
-            IconButton(
-              tooltip: 'Excluir',
-              icon: const Icon(Icons.delete_outline),
-              onPressed: _delete,
-            ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              competitions.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (e, s) => const Text('Erro ao carregar campeonatos'),
-                data: (items) => DropdownButtonFormField<String>(
-                  initialValue: competitionValue,
+        child: AppLayout.form(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                competitions.when(
+                  loading: () => const LinearProgressIndicator(),
+                  error: (e, s) => const Text('Erro ao carregar campeonatos'),
+                  data: (items) => DropdownButtonFormField<String>(
+                    initialValue: competitionValue,
+                    decoration: const InputDecoration(
+                      labelText: 'Campeonato',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: items
+                        .map((c) => DropdownMenuItem(
+                              value: c.id,
+                              child: Text(c.name),
+                            ))
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => _competitionId = value),
+                    validator: (value) =>
+                        (value == null || value.isEmpty) ? 'Selecione o campeonato' : null,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _name,
+                  maxLength: 100,
                   decoration: const InputDecoration(
-                    labelText: 'Campeonato',
+                    labelText: 'Nome',
                     border: OutlineInputBorder(),
                   ),
-                  items: items
-                      .map((c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(c.name),
-                          ))
-                      .toList(),
-                  onChanged: (value) =>
-                      setState(() => _competitionId = value),
-                  validator: (value) =>
-                      (value == null || value.isEmpty) ? 'Selecione o campeonato' : null,
+                  validator: _validateName,
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _name,
-                decoration: const InputDecoration(
-                  labelText: 'Nome',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    (value == null || value.trim().isEmpty) ? 'Informe o nome' : null,
-              ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _errorMessage!,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: _submitting ? null : _save,
+                  child: _submitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Salvar'),
                 ),
               ],
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _submitting ? null : _save,
-                child: _submitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Salvar'),
-              ),
-            ],
+            ),
           ),
         ),
       ),
