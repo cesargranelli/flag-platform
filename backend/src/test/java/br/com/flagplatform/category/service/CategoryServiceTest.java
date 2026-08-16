@@ -51,7 +51,8 @@ class CategoryServiceTest {
         CategoryEntity entity = entity(competitionId, "Masculino 5x5");
         CategoryResponse expected = response(entity);
 
-        when(repository.existsByCompetitionIdAndNameIgnoreCase(competitionId, request.name()))
+        when(repository.existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNull(
+                        competitionId, request.name()))
                 .thenReturn(false);
         when(mapper.toEntity(request)).thenReturn(entity);
         when(repository.save(entity)).thenReturn(entity);
@@ -69,7 +70,8 @@ class CategoryServiceTest {
         UUID competitionId = UUID.randomUUID();
         CreateCategoryRequest request = createRequest(competitionId, "Masculino 5x5");
 
-        when(repository.existsByCompetitionIdAndNameIgnoreCase(competitionId, request.name()))
+        when(repository.existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNull(
+                        competitionId, request.name()))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> service.create(request))
@@ -90,7 +92,7 @@ class CategoryServiceTest {
         assertThatThrownBy(() -> service.create(request))
                 .isInstanceOf(CompetitionNotFoundException.class);
 
-        verify(repository, never()).existsByCompetitionIdAndNameIgnoreCase(any(), any());
+        verify(repository, never()).existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNull(any(), any());
         verify(repository, never()).save(any());
     }
 
@@ -104,7 +106,8 @@ class CategoryServiceTest {
                 .map(this::response)
                 .toList();
 
-        when(repository.findAllByCompetitionIdOrderByNameAsc(competitionId)).thenReturn(entities);
+        when(repository.findAllByCompetitionIdAndDeletedAtIsNullOrderByNameAsc(competitionId))
+                .thenReturn(entities);
         when(mapper.toResponseList(entities)).thenReturn(expected);
 
         List<CategoryResponse> response = service.findByCompetitionId(competitionId);
@@ -121,7 +124,7 @@ class CategoryServiceTest {
         CategoryResponse expected = response(entity);
 
         when(repository.findById(id)).thenReturn(Optional.of(entity));
-        when(repository.existsByCompetitionIdAndNameIgnoreCaseAndIdNot(
+        when(repository.existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNullAndIdNot(
                 competitionId, request.name(), id)).thenReturn(false);
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toResponse(entity)).thenReturn(expected);
@@ -155,7 +158,7 @@ class CategoryServiceTest {
         CategoryEntity entity = entity(competitionId, "Masculino 5x5");
 
         when(repository.findById(id)).thenReturn(Optional.of(entity));
-        when(repository.existsByCompetitionIdAndNameIgnoreCaseAndIdNot(
+        when(repository.existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNullAndIdNot(
                 competitionId, request.name(), id)).thenReturn(true);
 
         assertThatThrownBy(() -> service.update(id, request))
@@ -166,7 +169,7 @@ class CategoryServiceTest {
     }
 
     @Test
-    void delete_deletesExistingCategory() {
+    void delete_softDeletesCategory() {
         UUID id = UUID.randomUUID();
         CategoryEntity entity = entity(UUID.randomUUID(), "Masculino 5x5");
 
@@ -174,7 +177,9 @@ class CategoryServiceTest {
 
         service.delete(id);
 
-        verify(repository).delete(entity);
+        assertThat(entity.getDeletedAt()).isNotNull();
+        verify(repository).save(entity);
+        verify(repository, never()).delete(any());
     }
 
     @Test
@@ -187,6 +192,43 @@ class CategoryServiceTest {
                 .isInstanceOf(CategoryNotFoundException.class);
 
         verify(repository, never()).delete(any());
+    }
+
+    @Test
+    void findById_returnsCategory() {
+        UUID id = UUID.randomUUID();
+        UUID competitionId = UUID.randomUUID();
+        CategoryEntity entity = entity(competitionId, "Masculino 5x5");
+        CategoryResponse expected = response(entity);
+
+        when(repository.findById(id)).thenReturn(Optional.of(entity));
+        when(mapper.toResponse(entity)).thenReturn(expected);
+
+        CategoryResponse response = service.findById(id);
+
+        assertThat(response).isSameAs(expected);
+    }
+
+    @Test
+    void findById_throwsWhenCategoryNotFound() {
+        UUID id = UUID.randomUUID();
+
+        when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.findById(id))
+                .isInstanceOf(CategoryNotFoundException.class);
+    }
+
+    @Test
+    void findById_throwsWhenCategorySoftDeleted() {
+        UUID id = UUID.randomUUID();
+        CategoryEntity entity = entity(UUID.randomUUID(), "Masculino 5x5");
+        entity.setDeletedAt(java.time.LocalDateTime.now());
+
+        when(repository.findById(id)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> service.findById(id))
+                .isInstanceOf(CategoryNotFoundException.class);
     }
 
     private CreateCategoryRequest createRequest(UUID competitionId, String name) {

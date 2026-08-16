@@ -85,6 +85,11 @@ final categoriesProvider = FutureProvider.family<List<Category>, String>(
       ref.watch(categoryApiProvider).listByCompetition(competitionId),
 );
 
+/// Detalhe de uma categoria por id.
+final categoryProvider = FutureProvider.family<Category, String>(
+  (ref, id) => ref.watch(categoryApiProvider).getById(id),
+);
+
 /// Serviço de campos de jogo.
 final venueApiProvider = Provider<VenueApi>(
   (ref) => VenueApi(ref.watch(apiClientProvider)),

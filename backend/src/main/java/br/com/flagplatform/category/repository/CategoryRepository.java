@@ -10,10 +10,11 @@ import java.util.UUID;
 @Repository
 public interface CategoryRepository extends JpaRepository<CategoryEntity, UUID> {
 
-    List<CategoryEntity> findAllByCompetitionIdOrderByNameAsc(UUID competitionId);
+    List<CategoryEntity> findAllByCompetitionIdAndDeletedAtIsNullOrderByNameAsc(UUID competitionId);
 
-    boolean existsByCompetitionIdAndNameIgnoreCase(UUID competitionId, String name);
+    boolean existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNull(UUID competitionId, String name);
 
-    boolean existsByCompetitionIdAndNameIgnoreCaseAndIdNot(UUID competitionId, String name, UUID id);
+    boolean existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNullAndIdNot(
+            UUID competitionId, String name, UUID id);
 
 }

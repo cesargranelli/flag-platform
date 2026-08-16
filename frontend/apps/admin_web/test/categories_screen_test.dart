@@ -74,4 +74,70 @@ void main() {
     expect(api.lastBody?['name'], 'Sub-17');
     expect(find.text('Sub-17'), findsOneWidget);
   });
+
+  testWidgets('clica em uma categoria e vê a tela de detalhe',
+      (WidgetTester tester) async {
+    final api = FakeCategoryApi()
+      ..categories = [testCategory(name: 'Masculino 5x5')];
+
+    await pumpApp(tester, categoryApi: api);
+    await tester.pumpAndSettle();
+    await openCategories(tester);
+
+    await tester.tap(find.text('Masculino 5x5'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.text('Excluir'), findsOneWidget);
+    expect(find.byType(TextFormField), findsNothing);
+  });
+
+  testWidgets('edita uma categoria a partir do detalhe',
+      (WidgetTester tester) async {
+    final api = FakeCategoryApi()
+      ..categories = [testCategory(name: 'Masculino 5x5')];
+
+    await pumpApp(tester, categoryApi: api);
+    await tester.pumpAndSettle();
+    await openCategories(tester);
+
+    await tester.tap(find.text('Masculino 5x5'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Editar dados'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar categoria'), findsOneWidget);
+
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nome'), 'Masculino 6x6');
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.text('Masculino 6x6'), findsWidgets);
+  });
+
+  testWidgets('exclui uma categoria a partir do detalhe',
+      (WidgetTester tester) async {
+    final api = FakeCategoryApi()
+      ..categories = [testCategory(name: 'Masculino 5x5')];
+
+    await pumpApp(tester, categoryApi: api);
+    await tester.pumpAndSettle();
+    await openCategories(tester);
+
+    await tester.tap(find.text('Masculino 5x5'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Excluir'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('não pode ser desfeita'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Excluir').last);
+    await tester.pumpAndSettle();
+
+    expect(api.deleteCalls, 1);
+    expect(find.text('Masculino 5x5'), findsNothing);
+  });
 }

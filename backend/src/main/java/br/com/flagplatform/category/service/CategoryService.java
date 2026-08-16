@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,7 +31,8 @@ public class CategoryService implements CategoryLookup {
     public CategoryResponse create(CreateCategoryRequest request) {
         competitionLookup.assertExists(request.competitionId());
 
-        if (repository.existsByCompetitionIdAndNameIgnoreCase(request.competitionId(), request.name())) {
+        if (repository.existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNull(
+                request.competitionId(), request.name())) {
             throw new DuplicateCategoryNameException(request.name());
         }
 
@@ -38,7 +40,12 @@ public class CategoryService implements CategoryLookup {
     }
 
     public List<CategoryResponse> findByCompetitionId(UUID competitionId) {
-        return mapper.toResponseList(repository.findAllByCompetitionIdOrderByNameAsc(competitionId));
+        return mapper.toResponseList(
+                repository.findAllByCompetitionIdAndDeletedAtIsNullOrderByNameAsc(competitionId));
+    }
+
+    public CategoryResponse findById(UUID id) {
+        return mapper.toResponse(findEntityById(id));
     }
 
     @Transactional
@@ -46,7 +53,7 @@ public class CategoryService implements CategoryLookup {
         CategoryEntity entity = findEntityById(id);
         competitionLookup.assertExists(request.competitionId());
 
-        if (repository.existsByCompetitionIdAndNameIgnoreCaseAndIdNot(
+        if (repository.existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNullAndIdNot(
                 request.competitionId(), request.name(), id)) {
             throw new DuplicateCategoryNameException(request.name());
         }
@@ -58,7 +65,9 @@ public class CategoryService implements CategoryLookup {
 
     @Transactional
     public void delete(UUID id) {
-        repository.delete(findEntityById(id));
+        CategoryEntity entity = findEntityById(id);
+        entity.setDeletedAt(LocalDateTime.now());
+        repository.save(entity);
     }
 
     @Override
@@ -68,14 +77,18 @@ public class CategoryService implements CategoryLookup {
 
     @Override
     public List<UUID> findCategoryIdsByCompetitionId(UUID competitionId) {
-        return repository.findAllByCompetitionIdOrderByNameAsc(competitionId).stream()
+        return repository.findAllByCompetitionIdAndDeletedAtIsNullOrderByNameAsc(competitionId).stream()
                 .map(CategoryEntity::getId)
                 .toList();
     }
 
     private CategoryEntity findEntityById(UUID id) {
-        return repository.findById(id)
+        CategoryEntity entity = repository.findById(id)
                 .orElseThrow(() -> new CategoryNotFoundException(id));
+        if (!entity.isActive()) {
+            throw new CategoryNotFoundException(id);
+        }
+        return entity;
     }
 
 }

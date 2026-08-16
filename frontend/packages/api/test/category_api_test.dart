@@ -79,5 +79,40 @@ void main() {
       expect(categories.last.id, '22222222-2222-2222-2222-222222222222');
       expect(categories.last.createdAt, isNull);
     });
+
+    test('getById chama GET do detalhe e converte', () async {
+      late RequestOptions captured;
+      final dio = Dio();
+      dio.httpClientAdapter = _FakeHttpClientAdapter((options) async {
+        captured = options;
+        final body = jsonEncode({
+          'id': '11111111-1111-1111-1111-111111111111',
+          'competitionId': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+          'name': 'Masculino',
+          'createdAt': '2026-01-01T10:00:00.000Z',
+          'updatedAt': '2026-01-02T10:00:00.000Z',
+        });
+        return ResponseBody.fromString(
+          body,
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      });
+
+      final api = CategoryApi(
+        ApiClient(session: _FakeSessionManager(), dio: dio),
+      );
+
+      final category = await api.getById('11111111-1111-1111-1111-111111111111');
+
+      expect(captured.uri.path, '/api/v1/categories/11111111-1111-1111-1111-111111111111');
+      expect(captured.method, 'GET');
+      expect(category.id, '11111111-1111-1111-1111-111111111111');
+      expect(category.name, 'Masculino');
+      expect(category.competitionId, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+      expect(category.createdAt, isNotNull);
+    });
   });
 }

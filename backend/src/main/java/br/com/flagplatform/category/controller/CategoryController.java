@@ -53,6 +53,16 @@ public class CategoryController {
     }
 
     @Operation(
+            summary = "Obter categoria",
+            description = "Retorna o detalhe de uma categoria. Acesso público."
+    )
+    @GetMapping("/api/v1/categories/{id}")
+    public CategoryResponse findById(
+            @Parameter(description = "Id da categoria") @PathVariable UUID id) {
+        return service.findById(id);
+    }
+
+    @Operation(
             summary = "Atualizar categoria",
             description = "Atualiza uma categoria existente. Requer autenticação."
     )

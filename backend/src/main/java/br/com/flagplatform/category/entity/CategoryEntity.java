@@ -4,24 +4,16 @@ import br.com.flagplatform.common.persistence.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
 @Setter
 @Entity
-@Table(
-        name = "categories",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_categories_competition_name",
-                        columnNames = {"competition_id", "name"}
-                )
-        }
-)
+@Table(name = "categories")
 public class CategoryEntity extends BaseEntity {
 
     @Column(name = "competition_id", nullable = false)
@@ -29,4 +21,12 @@ public class CategoryEntity extends BaseEntity {
 
     @Column(nullable = false, length = 100)
     private String name;
+
+    /** Marca de exclusão lógica; itens excluídos ficam com valor preenchido. */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    public boolean isActive() {
+        return deletedAt == null;
+    }
 }
