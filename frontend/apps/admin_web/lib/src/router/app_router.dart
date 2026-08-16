@@ -17,6 +17,7 @@ import '../screens/organization_detail_screen.dart';
 import '../screens/organizations_screen.dart';
 import '../screens/reset_password_screen.dart';
 import '../screens/venue_form_screen.dart';
+import '../screens/venue_detail_screen.dart';
 import '../screens/venues_screen.dart';
 import '../screens/team_form_screen.dart';
 import '../screens/teams_screen.dart';
@@ -203,6 +204,17 @@ class AppRouter {
           ),
           GoRoute(
             path: '/venues/:id',
+            name: 'venueDetail',
+            builder: (context, state) {
+              final venue = state.extra is Venue ? state.extra as Venue : null;
+              return VenueDetailScreen(
+                venueId: state.pathParameters['id'],
+                venue: venue,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/venues/:id/edit',
             name: 'venueEdit',
             builder: (context, state) {
               final venue = state.extra is Venue ? state.extra as Venue : null;

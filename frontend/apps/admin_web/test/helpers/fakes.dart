@@ -367,6 +367,7 @@ class FakeVenueApi extends VenueApi {
 
   List<Venue> venues = [];
   int createCalls = 0;
+  int updateCalls = 0;
   Map<String, dynamic>? lastBody;
 
   @override
@@ -408,13 +409,17 @@ class FakeVenueApi extends VenueApi {
     String? address,
     String? mapsUrl,
   }) async {
+    updateCalls++;
     lastBody = {
       'organizationId': organizationId,
       'name': name,
       'address': address,
       'mapsUrl': mapsUrl,
     };
-    return Venue(id: id, organizationId: organizationId, name: name, address: address);
+    final updated =
+        Venue(id: id, organizationId: organizationId, name: name, address: address);
+    venues = venues.map((v) => v.id == id ? updated : v).toList();
+    return updated;
   }
 }
 
