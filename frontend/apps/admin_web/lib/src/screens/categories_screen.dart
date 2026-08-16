@@ -55,48 +55,21 @@ class CategoriesScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Campeonato',
-                        style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: 8),
-                      ChipTheme(
-                        data: const ChipThemeData(
-                          side: BorderSide.none,
-                          selectedColor: AppColors.primary,
-                          backgroundColor: AppColors.grayFill,
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(10)),
-                          ),
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
+                      DropdownButtonFormField<String>(
+                        initialValue: effectiveSelected,
+                        decoration: const InputDecoration(
+                          labelText: 'Campeonato',
+                          border: OutlineInputBorder(),
                         ),
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final comp in compItems)
-                              ChoiceChip(
-                                label: Text(
-                                  comp.name,
-                                  style: TextStyle(
-                                    color: comp.id == effectiveSelected
-                                        ? Colors.white
-                                        : AppColors.textPrimary,
-                                  ),
-                                ),
-                                selected: comp.id == effectiveSelected,
-                                showCheckmark: false,
-                                onSelected: (_) => ref
-                                    .read(selectedCompetitionProvider.notifier)
-                                    .state = comp.id,
-                              ),
-                          ],
-                        ),
+                        items: compItems
+                            .map((c) => DropdownMenuItem(
+                                  value: c.id,
+                                  child: Text(c.name),
+                                ))
+                            .toList(),
+                        onChanged: (value) => ref
+                            .read(selectedCompetitionProvider.notifier)
+                            .state = value,
                       ),
                       const SizedBox(height: 12),
                       categories.when(

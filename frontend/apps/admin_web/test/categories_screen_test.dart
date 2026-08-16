@@ -21,6 +21,8 @@ void main() {
         overrides: [
           sessionManagerProvider.overrideWithValue(session),
           authApiProvider.overrideWithValue(authApi),
+          organizationApiProvider.overrideWithValue(
+              FakeOrganizationApi()..organizations = [testOrganization()]),
           competitionApiProvider.overrideWithValue(
               competitionApi ?? FakeCompetitionApi()..competitions = [testCompetition()]),
           categoryApiProvider.overrideWithValue(categoryApi),
@@ -46,6 +48,58 @@ void main() {
 
     expect(find.text('Masculino 5x5'), findsOneWidget);
     expect(find.text('Feminino 5x5'), findsOneWidget);
+  });
+
+  testWidgets('troca o campeonato pelo dropdown e lista as categorias',
+      (WidgetTester tester) async {
+    final api = FakeCategoryApi()
+      ..categories = [
+        testCategory(name: 'Masculino 5x5'),
+        testCategory(
+            id: '22222222-2222-2222-2222-222222222222',
+            name: 'Feminino 5x5'),
+        testCategory(
+            id: '33333333-3333-3333-3333-333333333333',
+            competitionId: '22222222-2222-2222-2222-222222222222',
+            name: 'Sub-17'),
+      ];
+    final comps = FakeCompetitionApi()
+      ..competitions = [
+        testCompetition(),
+        testCompetition(
+            id: '22222222-2222-2222-2222-222222222222',
+            name: 'Copa Paulista'),
+      ];
+
+    final session = InMemorySessionManager()
+      ..seedToken('jwt', roles: ['ORGANIZER'], userName: 'Ana Lima');
+    final authApi = FakeAuthApi()..meUser = testUser();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sessionManagerProvider.overrideWithValue(session),
+          authApiProvider.overrideWithValue(authApi),
+          organizationApiProvider.overrideWithValue(
+              FakeOrganizationApi()..organizations = [testOrganization()]),
+          competitionApiProvider.overrideWithValue(comps),
+          categoryApiProvider.overrideWithValue(api),
+        ],
+        child: const FlagAdminWeb(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await openCategories(tester);
+
+    expect(find.text('Masculino 5x5'), findsOneWidget);
+    expect(find.text('Sub-17'), findsNothing);
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copa Paulista').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sub-17'), findsOneWidget);
+    expect(find.text('Masculino 5x5'), findsNothing);
   });
 
   testWidgets('cria uma categoria pelo formulário', (WidgetTester tester) async {
