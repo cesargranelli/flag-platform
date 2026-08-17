@@ -81,4 +81,47 @@ void main() {
     expect(api.lastBody?['number'], 3);
     expect(find.textContaining('Terceira Rodada'), findsOneWidget);
   });
+
+  testWidgets('clica em uma rodada e vê a tela de detalhe',
+      (WidgetTester tester) async {
+    final api = FakeRoundApi()..rounds = [testRound(name: 'Primeira Rodada')];
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+    await openRounds(tester);
+
+    await tester.tap(find.text('Primeira Rodada'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.byType(TextFormField), findsNothing);
+  });
+
+  testWidgets('edita uma rodada a partir do detalhe',
+      (WidgetTester tester) async {
+    final api = FakeRoundApi()..rounds = [testRound(name: 'Primeira Rodada')];
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+    await openRounds(tester);
+
+    await tester.tap(find.text('Primeira Rodada'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Editar dados'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar rodada'), findsOneWidget);
+
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nome'), 'Primeira Rodada 2026');
+    await tester.ensureVisible(find.text('Salvar'));
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+
+    expect(api.updateCalls, 1);
+    expect(api.lastBody?['name'], 'Primeira Rodada 2026');
+    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.text('Primeira Rodada 2026'), findsWidgets);
+  });
 }

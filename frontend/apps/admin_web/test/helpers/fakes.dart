@@ -486,11 +486,16 @@ class FakeRoundApi extends RoundApi {
 
   List<Round> rounds = [];
   int createCalls = 0;
+  int updateCalls = 0;
   Map<String, dynamic>? lastBody;
 
   @override
   Future<List<Round>> listByCategory(String categoryId) async =>
       rounds.where((r) => r.categoryId == categoryId).toList();
+
+  @override
+  Future<Round> getById(String id) async =>
+      rounds.firstWhere((r) => r.id == id);
 
   @override
   Future<Round> create({
@@ -520,13 +525,17 @@ class FakeRoundApi extends RoundApi {
     required String name,
     required RoundType type,
   }) async {
+    updateCalls++;
     lastBody = {
       'categoryId': categoryId,
       'number': number,
       'name': name,
       'type': type.toJson(),
     };
-    return Round(id: id, categoryId: categoryId, number: number, name: name, type: type);
+    final updated =
+        Round(id: id, categoryId: categoryId, number: number, name: name, type: type);
+    rounds = rounds.map((r) => r.id == id ? updated : r).toList();
+    return updated;
   }
 }
 

@@ -42,6 +42,10 @@ public class RoundService implements RoundLookup {
         return mapper.toResponseList(repository.findAllByCategoryIdOrderByNumberAsc(categoryId));
     }
 
+    public RoundResponse findById(UUID id) {
+        return mapper.toResponse(findEntityById(id));
+    }
+
     @Transactional
     public RoundResponse update(UUID id, UpdateRoundRequest request) {
         RoundEntity entity = findEntityById(id);

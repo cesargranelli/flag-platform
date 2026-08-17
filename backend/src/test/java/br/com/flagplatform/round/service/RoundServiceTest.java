@@ -114,6 +114,31 @@ class RoundServiceTest {
     }
 
     @Test
+    void findById_returnsRound() {
+        UUID id = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        RoundEntity entity = entity(categoryId, 1, "Primeira Rodada");
+        RoundResponse expected = response(entity);
+
+        when(repository.findById(id)).thenReturn(Optional.of(entity));
+        when(mapper.toResponse(entity)).thenReturn(expected);
+
+        RoundResponse response = service.findById(id);
+
+        assertThat(response).isSameAs(expected);
+    }
+
+    @Test
+    void findById_throwsWhenRoundNotFound() {
+        UUID id = UUID.randomUUID();
+
+        when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.findById(id))
+                .isInstanceOf(RoundNotFoundException.class);
+    }
+
+    @Test
     void update_updatesExistingRound() {
         UUID id = UUID.randomUUID();
         UUID categoryId = UUID.randomUUID();
