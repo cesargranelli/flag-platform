@@ -55,7 +55,7 @@ void main() {
 
     expect(find.text('Ana Lima'), findsOneWidget);
     expect(find.text('Mesa Central'), findsOneWidget);
-    expect(find.textContaining('ORGANIZER'), findsOneWidget);
+    expect(find.text('Organizador'), findsOneWidget);
   });
 
   testWidgets('cria um usuário pelo formulário', (WidgetTester tester) async {
@@ -75,7 +75,7 @@ void main() {
     await tester.enterText(find.widgetWithText(TextFormField, 'Senha'), 'segredo123');
     await tester.tap(find.byType(DropdownButtonFormField<String>).first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('MESA').last);
+    await tester.tap(find.text('Mesa').last);
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.text('Salvar'));
