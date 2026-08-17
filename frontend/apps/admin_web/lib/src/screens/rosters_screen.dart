@@ -394,6 +394,7 @@ class RostersScreen extends ConsumerWidget {
     );
 
     if (added is String && added.isNotEmpty) {
+      if (!context.mounted) return;
       final messenger = ScaffoldMessenger.of(context);
       try {
         await ref.read(rosterApiProvider).add(teamId: teamId, athleteId: added);
