@@ -1,5 +1,5 @@
 import 'package:flag_domain/flag_domain.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('RoundType', () {
