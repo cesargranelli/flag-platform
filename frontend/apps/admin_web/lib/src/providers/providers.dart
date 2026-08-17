@@ -166,6 +166,11 @@ final athletesProvider = FutureProvider<List<Athlete>>(
   (ref) => ref.watch(athleteApiProvider).list(),
 );
 
+/// Detalhe de um atleta por id.
+final athleteProvider = FutureProvider.family<Athlete, String>(
+  (ref, id) => ref.watch(athleteApiProvider).getById(id),
+);
+
 /// Serviço de elencos.
 final rosterApiProvider = Provider<RosterApi>(
   (ref) => RosterApi(ref.watch(apiClientProvider)),

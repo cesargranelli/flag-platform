@@ -29,6 +29,7 @@ import '../screens/game_form_screen.dart';
 import '../screens/game_detail_screen.dart';
 import '../screens/games_screen.dart';
 import '../screens/athlete_form_screen.dart';
+import '../screens/athlete_detail_screen.dart';
 import '../screens/athletes_screen.dart';
 import '../screens/rosters_screen.dart';
 import '../screens/signup_screen.dart';
@@ -340,6 +341,19 @@ class AppRouter {
           ),
           GoRoute(
             path: '/athletes/:id',
+            name: 'athleteDetail',
+            builder: (context, state) {
+              final athlete = state.extra is Athlete
+                  ? state.extra as Athlete
+                  : null;
+              return AthleteDetailScreen(
+                athleteId: state.pathParameters['id'],
+                athlete: athlete,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/athletes/:id/edit',
             name: 'athleteEdit',
             builder: (context, state) {
               final athlete = state.extra is Athlete

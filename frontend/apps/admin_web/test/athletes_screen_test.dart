@@ -75,4 +75,56 @@ void main() {
     expect(api.lastBody?['name'], 'Carlos');
     expect(find.text('Carlos'), findsOneWidget);
   });
+
+  testWidgets('clica em um atleta e vê a tela de detalhe',
+      (WidgetTester tester) async {
+    final api = FakeAthleteApi()..athletes = [testAthlete(name: 'João Silva')];
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Atletas'), 120);
+    await tester.ensureVisible(find.text('Atletas'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Atletas'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('João Silva'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.byType(TextFormField), findsNothing);
+  });
+
+  testWidgets('edita um atleta a partir do detalhe',
+      (WidgetTester tester) async {
+    final api = FakeAthleteApi()..athletes = [testAthlete(name: 'João Silva')];
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Atletas'), 120);
+    await tester.ensureVisible(find.text('Atletas'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Atletas'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('João Silva'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Editar dados'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar atleta'), findsOneWidget);
+
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nome'), 'João Silva Jr');
+    await tester.ensureVisible(find.text('Salvar'));
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+
+    expect(api.updateCalls, 1);
+    expect(api.lastBody?['name'], 'João Silva Jr');
+    expect(find.text('Editar dados'), findsOneWidget);
+  });
 }

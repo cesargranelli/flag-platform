@@ -1,4 +1,5 @@
 import 'package:flag_api/flag_api.dart';
+import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,6 +50,22 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
     super.dispose();
   }
 
+  String? _validateNumber(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    return int.tryParse(value.trim()) == null
+        ? 'Informe um número válido'
+        : null;
+  }
+
+  String? _validatePhotoUrl(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final uri = Uri.tryParse(value.trim());
+    final valid = uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+    return valid ? null : 'Informe uma URL válida (http/https)';
+  }
+
   Map<String, dynamic> _body() => {
         'name': _name.text.trim(),
         if (_nickname.text.trim().isNotEmpty) 'nickname': _nickname.text.trim(),
@@ -75,7 +92,15 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
         await api.update(id, _body());
       }
       ref.invalidate(athletesProvider);
-      if (mounted) context.pop();
+      if (mounted) {
+        if (id != null) {
+          // Volta para o detalhe recarregado (busca fresca via provider).
+          ref.invalidate(athleteProvider(id));
+          context.go('/athletes/$id');
+        } else {
+          context.pop();
+        }
+      }
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (_) {
@@ -94,80 +119,94 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _name,
-                decoration: const InputDecoration(
-                  labelText: 'Nome',
-                  border: OutlineInputBorder(),
+        child: AppLayout.form(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  controller: _name,
+                  maxLength: 100,
+                  decoration: const InputDecoration(
+                    labelText: 'Nome',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Informe o nome'
+                      : null,
                 ),
-                validator: (value) =>
-                    (value == null || value.trim().isEmpty) ? 'Informe o nome' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _nickname,
-                decoration: const InputDecoration(
-                  labelText: 'Apelido',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _nickname,
+                  maxLength: 100,
+                  decoration: const InputDecoration(
+                    labelText: 'Apelido',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<AthletePosition>(
-                initialValue: _position,
-                decoration: const InputDecoration(
-                  labelText: 'Posição',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<AthletePosition>(
+                  initialValue: _position,
+                  decoration: const InputDecoration(
+                    labelText: 'Posição',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    const DropdownMenuItem<AthletePosition>(
+                        value: null, child: Text('Sem posição')),
+                    ...AthletePosition.values.map((p) =>
+                        DropdownMenuItem<AthletePosition>(
+                          value: p,
+                          child: Text(p.label),
+                        )),
+                  ],
+                  onChanged: (value) => setState(() => _position = value),
                 ),
-                items: [
-                  const DropdownMenuItem<AthletePosition>(value: null, child: Text('Sem posição')),
-                  ...AthletePosition.values.map((p) => DropdownMenuItem<AthletePosition>(
-                        value: p,
-                        child: Text(p.name),
-                      )),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _number,
+                  keyboardType: TextInputType.number,
+                  maxLength: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Número da camisa',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: _validateNumber,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _photoUrl,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(
+                    labelText: 'URL da foto',
+                    helperText: 'Ex.: https://...',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: _validatePhotoUrl,
+                ),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _errorMessage!,
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontWeight: FontWeight.w600),
+                  ),
                 ],
-                onChanged: (value) => setState(() => _position = value),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _number,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Número da camisa',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _photoUrl,
-                decoration: const InputDecoration(
-                  labelText: 'URL da foto',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: _submitting ? null : _save,
+                  child: _submitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Salvar'),
                 ),
               ],
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _submitting ? null : _save,
-                child: _submitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Salvar'),
-              ),
-            ],
+            ),
           ),
         ),
       ),
