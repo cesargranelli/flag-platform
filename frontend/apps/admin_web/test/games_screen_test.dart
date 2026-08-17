@@ -55,7 +55,7 @@ void main() {
     await tester.pumpAndSettle();
     await openGames(tester);
 
-    expect(find.textContaining('scheduled'), findsOneWidget);
+    expect(find.text('Agendado'), findsOneWidget);
   });
 
   testWidgets('cria um jogo pelo formulário', (WidgetTester tester) async {
@@ -92,5 +92,26 @@ void main() {
     expect(api.createCalls, 1);
     expect(api.lastBody?['homeTeamId'], isNotEmpty);
     expect(api.lastBody?['awayTeamId'], isNotEmpty);
+  });
+
+  testWidgets('clica em um jogo e vê a tela de detalhe',
+      (WidgetTester tester) async {
+    final api = FakeGameApi()
+      ..games = [
+        testGame(
+          homeTeamName: 'Tritões',
+          awayTeamName: 'Águias',
+        ),
+      ];
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+    await openGames(tester);
+
+    await tester.tap(find.text('Tritões x Águias'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.byType(TextFormField), findsNothing);
   });
 }

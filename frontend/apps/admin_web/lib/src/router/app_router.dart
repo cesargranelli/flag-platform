@@ -26,6 +26,7 @@ import '../screens/round_form_screen.dart';
 import '../screens/round_detail_screen.dart';
 import '../screens/rounds_screen.dart';
 import '../screens/game_form_screen.dart';
+import '../screens/game_detail_screen.dart';
 import '../screens/games_screen.dart';
 import '../screens/athlete_form_screen.dart';
 import '../screens/athletes_screen.dart';
@@ -308,6 +309,20 @@ class AppRouter {
           ),
           GoRoute(
             path: '/games/:id',
+            name: 'gameDetail',
+            builder: (context, state) {
+              final args = state.extra is GameFormArgs
+                  ? state.extra as GameFormArgs
+                  : null;
+              return GameDetailScreen(
+                gameId: state.pathParameters['id'],
+                game: args?.game,
+                args: args,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/games/:id/edit',
             name: 'gameEdit',
             builder: (context, state) => GameFormScreen(
               args: state.extra is GameFormArgs ? state.extra as GameFormArgs : null,
