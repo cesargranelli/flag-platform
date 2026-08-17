@@ -90,4 +90,33 @@ void main() {
 
     expect(roster.addCalls, 1);
   });
+
+  testWidgets('remove um atleta do elenco com confirmação',
+      (WidgetTester tester) async {
+    final roster = FakeRosterApi()
+      ..entries = [
+        RosterEntry(
+          id: '11111111-1111-1111-1111-111111111111',
+          teamId: '11111111-1111-1111-1111-111111111111',
+          athleteId: '22222222-2222-2222-2222-222222222222',
+          athleteName: 'João Silva',
+          number: 7,
+          status: 'ACTIVE',
+        ),
+      ];
+
+    await pumpApp(tester, rosterApi: roster, athleteApi: FakeAthleteApi());
+    await tester.pumpAndSettle();
+    await openRosters(tester);
+
+    await tester.tap(find.byIcon(Icons.remove_circle_outline));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Remover João Silva'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Remover').last);
+    await tester.pumpAndSettle();
+
+    expect(roster.removeCalls, 1);
+    expect(find.text('João Silva'), findsNothing);
+  });
 }
