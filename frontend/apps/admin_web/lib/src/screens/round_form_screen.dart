@@ -163,7 +163,7 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
                   border: OutlineInputBorder(),
                 ),
                 items: RoundType.values
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+                    .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))
                     .toList(),
                 onChanged: (value) => setState(() => _type = value),
                 validator: (value) => value == null ? 'Selecione o tipo' : null,

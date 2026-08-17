@@ -6,7 +6,10 @@ import lombok.Getter;
 public enum RoundType implements PersistableEnum {
 
     REGULAR("REGULAR", "Regular"),
-    PLAYOFFS("PLAYOFFS", "Playoffs");
+    PLAYOFFS("PLAYOFFS", "Playoffs"),
+    WILDCARD("WILDCARD", "Wildcard"),
+    SEMIFINAL("SEMIFINAL", "Semifinal"),
+    FINAL("FINAL", "Final");
 
     private final String code;
     private final String description;
