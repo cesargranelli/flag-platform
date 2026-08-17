@@ -429,6 +429,7 @@ class FakeTeamApi extends TeamApi {
 
   List<Team> teams = [];
   int createCalls = 0;
+  int updateCalls = 0;
   Map<String, dynamic>? lastBody;
 
   @override
@@ -466,13 +467,16 @@ class FakeTeamApi extends TeamApi {
     String? shortName,
     String? logoUrl,
   }) async {
+    updateCalls++;
     lastBody = {
       'categoryId': categoryId,
       'name': name,
       'shortName': shortName,
       'logoUrl': logoUrl,
     };
-    return Team(id: id, categoryId: categoryId, name: name);
+    final updated = Team(id: id, categoryId: categoryId, name: name);
+    teams = teams.map((t) => t.id == id ? updated : t).toList();
+    return updated;
   }
 }
 

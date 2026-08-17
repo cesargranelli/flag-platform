@@ -20,6 +20,7 @@ import '../screens/venue_form_screen.dart';
 import '../screens/venue_detail_screen.dart';
 import '../screens/venues_screen.dart';
 import '../screens/team_form_screen.dart';
+import '../screens/team_detail_screen.dart';
 import '../screens/teams_screen.dart';
 import '../screens/round_form_screen.dart';
 import '../screens/rounds_screen.dart';
@@ -238,6 +239,17 @@ class AppRouter {
           ),
           GoRoute(
             path: '/teams/:id',
+            name: 'teamDetail',
+            builder: (context, state) {
+              final team = state.extra is Team ? state.extra as Team : null;
+              return TeamDetailScreen(
+                teamId: state.pathParameters['id'],
+                team: team,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/teams/:id/edit',
             name: 'teamEdit',
             builder: (context, state) {
               final team = state.extra is Team ? state.extra as Team : null;
