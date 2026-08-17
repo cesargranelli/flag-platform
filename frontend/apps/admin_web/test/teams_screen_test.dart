@@ -79,4 +79,47 @@ void main() {
     expect(api.lastBody?['name'], 'Cometas');
     expect(find.text('Cometas'), findsOneWidget);
   });
+
+  testWidgets('clica em um time e vê a tela de detalhe',
+      (WidgetTester tester) async {
+    final api = FakeTeamApi()..teams = [testTeam(name: 'Tritões')];
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+    await openTeams(tester);
+
+    await tester.tap(find.text('Tritões'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.byType(TextFormField), findsNothing);
+  });
+
+  testWidgets('edita um time a partir do detalhe',
+      (WidgetTester tester) async {
+    final api = FakeTeamApi()..teams = [testTeam(name: 'Tritões')];
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+    await openTeams(tester);
+
+    await tester.tap(find.text('Tritões'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Editar dados'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Editar time'), findsOneWidget);
+
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nome'), 'Tritões 2026');
+    await tester.ensureVisible(find.text('Salvar'));
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+
+    expect(api.updateCalls, 1);
+    expect(api.lastBody?['name'], 'Tritões 2026');
+    expect(find.text('Editar dados'), findsOneWidget);
+    expect(find.text('Tritões 2026'), findsWidgets);
+  });
 }
