@@ -13,6 +13,10 @@ class RoundApi {
         Round.fromJson,
       );
 
+  /// Detalhe de uma rodada (endpoint público).
+  Future<Round> getById(String id) =>
+      _client.getOne('/api/v1/rounds/$id', Round.fromJson);
+
   Future<Round> create({
     required String categoryId,
     required int number,

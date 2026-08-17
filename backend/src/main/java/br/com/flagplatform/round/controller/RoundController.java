@@ -52,6 +52,16 @@ public class RoundController {
     }
 
     @Operation(
+            summary = "Obter rodada",
+            description = "Retorna o detalhe de uma rodada. Acesso público."
+    )
+    @GetMapping("/api/v1/rounds/{id}")
+    public RoundResponse findById(
+            @Parameter(description = "Id da rodada") @PathVariable UUID id) {
+        return service.findById(id);
+    }
+
+    @Operation(
             summary = "Atualizar rodada",
             description = "Atualiza uma rodada existente. Requer autenticação."
     )

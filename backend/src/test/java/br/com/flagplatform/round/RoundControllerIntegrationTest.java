@@ -79,6 +79,14 @@ class RoundControllerIntegrationTest {
                 .andExpect(jsonPath("$.number").value(1))
                 .andExpect(jsonPath("$.name").value("Primeira Rodada (Atualizada)"))
                 .andExpect(jsonPath("$.type").value("PLAYOFFS"));
+
+        mockMvc.perform(get(ROUNDS_URL + "/" + firstRoundId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(firstRoundId))
+                .andExpect(jsonPath("$.categoryId").value(categoryId))
+                .andExpect(jsonPath("$.number").value(1))
+                .andExpect(jsonPath("$.name").value("Primeira Rodada (Atualizada)"))
+                .andExpect(jsonPath("$.type").value("PLAYOFFS"));
     }
 
     @Test

@@ -23,6 +23,7 @@ import '../screens/team_form_screen.dart';
 import '../screens/team_detail_screen.dart';
 import '../screens/teams_screen.dart';
 import '../screens/round_form_screen.dart';
+import '../screens/round_detail_screen.dart';
 import '../screens/rounds_screen.dart';
 import '../screens/game_form_screen.dart';
 import '../screens/games_screen.dart';
@@ -273,6 +274,17 @@ class AppRouter {
           ),
           GoRoute(
             path: '/rounds/:id',
+            name: 'roundDetail',
+            builder: (context, state) {
+              final round = state.extra is Round ? state.extra as Round : null;
+              return RoundDetailScreen(
+                roundId: state.pathParameters['id'],
+                round: round,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/rounds/:id/edit',
             name: 'roundEdit',
             builder: (context, state) {
               final round = state.extra is Round ? state.extra as Round : null;

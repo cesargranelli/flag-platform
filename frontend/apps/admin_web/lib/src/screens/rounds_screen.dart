@@ -1,11 +1,15 @@
 import 'package:flag_core/flag_core.dart';
+import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
-/// Gestão de rodadas: lista por categoria e acesso ao formulário.
+/// Gestão de rodadas: lista por campeonato/categoria e acesso ao detalhe.
+///
+/// A cascata campeonato → categoria define o contexto da listagem; clicar em
+/// uma rodada navega para o detalhe.
 class RoundsScreen extends ConsumerWidget {
   const RoundsScreen({super.key});
 
@@ -28,7 +32,7 @@ class RoundsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Rodadas'),
-        leading: BackButton(onPressed: () => context.go('/')),
+        leading: const BackButton(),
       ),
       floatingActionButton: effectiveCat == null
           ? null
@@ -51,49 +55,77 @@ class RoundsScreen extends ConsumerWidget {
             );
           }
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: DropdownButtonFormField<String>(
-                  initialValue: effectiveComp,
-                  decoration: const InputDecoration(
-                    labelText: 'Campeonato',
-                    border: OutlineInputBorder(),
+              AppLayout.content(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        key: ValueKey('comp-$effectiveComp'),
+                        initialValue: effectiveComp,
+                        decoration: const InputDecoration(
+                          labelText: 'Campeonato',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: compItems
+                            .map((c) => DropdownMenuItem(
+                                  value: c.id,
+                                  child: Text(c.name),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          ref
+                              .read(selectedCompetitionProvider.notifier)
+                              .state = value;
+                          ref.read(selectedCategoryProvider.notifier).state = null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      categories!.when(
+                        loading: () => const LinearProgressIndicator(),
+                        error: (e, s) => AppErrorState(
+                          message: 'Não foi possível carregar as categorias',
+                          onRetry: () =>
+                              ref.invalidate(categoriesProvider(effectiveComp!)),
+                        ),
+                        data: (items) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            DropdownButtonFormField<String>(
+                              key: ValueKey('cat-$effectiveCat'),
+                              initialValue: effectiveCat,
+                              decoration: const InputDecoration(
+                                labelText: 'Categoria',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: items
+                                  .map((c) => DropdownMenuItem(
+                                        value: c.id,
+                                        child: Text(c.name),
+                                      ))
+                                  .toList(),
+                              onChanged: (value) => ref
+                                  .read(selectedCategoryProvider.notifier)
+                                  .state = value,
+                            ),
+                            const SizedBox(height: 12),
+                            if (effectiveCat != null)
+                              Text(
+                                '${ref.watch(roundsProvider(effectiveCat)).valueOrNull?.length ?? 0} '
+                                '${ref.watch(roundsProvider(effectiveCat)).valueOrNull?.length == 1 ? 'rodada' : 'rodadas'}',
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.textSecondary),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  items: compItems
-                      .map((c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(c.name),
-                          ))
-                      .toList(),
-                  onChanged: (value) {
-                    ref.read(selectedCompetitionProvider.notifier).state = value;
-                    ref.read(selectedCategoryProvider.notifier).state = null;
-                  },
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: (categories?.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (e, s) => const Text('Erro ao carregar categorias'),
-                  data: (items) => DropdownButtonFormField<String>(
-                    initialValue: effectiveCat,
-                    decoration: const InputDecoration(
-                      labelText: 'Categoria',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: items
-                        .map((c) => DropdownMenuItem(
-                              value: c.id,
-                              child: Text(c.name),
-                            ))
-                        .toList(),
-                    onChanged: (value) =>
-                        ref.read(selectedCategoryProvider.notifier).state = value,
-                  ),
-                ) ??
-                const LinearProgressIndicator()),
               ),
               Expanded(
                 child: effectiveCat == null
@@ -105,7 +137,8 @@ class RoundsScreen extends ConsumerWidget {
                         loading: () => const AppLoading(message: 'Carregando rodadas...'),
                         error: (error, stackTrace) => AppErrorState(
                           message: 'Não foi possível carregar as rodadas',
-                          onRetry: () => ref.invalidate(roundsProvider(effectiveCat)),
+                          onRetry: () =>
+                              ref.invalidate(roundsProvider(effectiveCat)),
                         ),
                         data: (items) {
                           if (items.isEmpty) {
@@ -114,22 +147,28 @@ class RoundsScreen extends ConsumerWidget {
                               icon: Icons.format_list_numbered,
                             );
                           }
-                          return ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: items.length,
-                            itemBuilder: (context, index) {
-                              final round = items[index];
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                child: ListTile(
-                                  title: Text('Rodada ${round.number} - ${round.name}'),
-                                  subtitle: Text(round.type.name),
-                                  trailing: const Icon(Icons.chevron_right),
-                                  onTap: () =>
-                                      context.push('/rounds/${round.id}', extra: round),
-                                ),
-                              );
-                            },
+                          return AppLayout.content(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final columns =
+                                    constraints.maxWidth >= 600 ? 2 : 1;
+                                return GridView.builder(
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount: items.length,
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: columns,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    mainAxisExtent: 96,
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    final round = items[index];
+                                    return _roundCard(context, round);
+                                  },
+                                );
+                              },
+                            ),
                           );
                         },
                       ),
@@ -137,6 +176,61 @@ class RoundsScreen extends ConsumerWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _roundCard(BuildContext context, Round round) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/rounds/${round.id}', extra: round),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    '${round.number}',
+                    style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      round.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      round.type.label,
+                      style: const TextStyle(
+                          fontSize: 13, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
