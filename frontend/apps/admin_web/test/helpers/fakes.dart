@@ -621,6 +621,7 @@ class FakeAthleteApi extends AthleteApi {
 
   List<Athlete> athletes = [];
   int createCalls = 0;
+  int updateCalls = 0;
   Map<String, dynamic>? lastBody;
 
   @override
@@ -641,8 +642,11 @@ class FakeAthleteApi extends AthleteApi {
 
   @override
   Future<Athlete> update(String id, Map<String, dynamic> body) async {
+    updateCalls++;
     lastBody = body;
-    return Athlete.fromJson({...body, 'id': id});
+    final updated = Athlete.fromJson({...body, 'id': id});
+    athletes = athletes.map((a) => a.id == id ? updated : a).toList();
+    return updated;
   }
 }
 
