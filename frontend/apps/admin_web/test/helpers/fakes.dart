@@ -545,6 +545,7 @@ class FakeGameApi extends GameApi {
 
   List<Game> games = [];
   int createCalls = 0;
+  int updateCalls = 0;
   Map<String, dynamic>? lastBody;
 
   @override
@@ -581,6 +582,36 @@ class FakeGameApi extends GameApi {
     );
     games = [...games, game];
     return game;
+  }
+
+  @override
+  Future<Game> update(
+    String id, {
+    required String roundId,
+    required String homeTeamId,
+    required String awayTeamId,
+    String? venueId,
+    required DateTime scheduledAt,
+  }) async {
+    updateCalls++;
+    lastBody = {
+      'roundId': roundId,
+      'homeTeamId': homeTeamId,
+      'awayTeamId': awayTeamId,
+      'venueId': venueId,
+      'scheduledAt': scheduledAt,
+    };
+    final updated = Game(
+      id: id,
+      roundId: roundId,
+      homeTeamId: homeTeamId,
+      awayTeamId: awayTeamId,
+      venueId: venueId,
+      scheduledAt: scheduledAt,
+      status: GameStatus.scheduled,
+    );
+    games = games.map((g) => g.id == id ? updated : g).toList();
+    return updated;
   }
 }
 
@@ -667,12 +698,16 @@ Game testGame({
   String roundId = '11111111-1111-1111-1111-111111111111',
   String homeTeamId = '22222222-2222-2222-2222-222222222222',
   String awayTeamId = '33333333-3333-3333-3333-333333333333',
+  String? homeTeamName,
+  String? awayTeamName,
 }) {
   return Game(
     id: id,
     roundId: roundId,
     homeTeamId: homeTeamId,
     awayTeamId: awayTeamId,
+    homeTeamName: homeTeamName,
+    awayTeamName: awayTeamName,
     scheduledAt: DateTime(2026, 2, 1, 19, 0),
     status: GameStatus.scheduled,
   );

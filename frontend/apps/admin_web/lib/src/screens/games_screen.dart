@@ -1,11 +1,15 @@
 import 'package:flag_core/flag_core.dart';
+import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
-/// Gestão de jogos: lista por rodada e acesso ao formulário.
+/// Gestão de jogos: lista por rodada e acesso ao detalhe.
+///
+/// A cascata campeonato → categoria → rodada define o contexto da listagem;
+/// clicar num jogo navega para o detalhe.
 class GamesScreen extends ConsumerWidget {
   const GamesScreen({super.key});
 
@@ -35,7 +39,7 @@ class GamesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Jogos'),
-        leading: BackButton(onPressed: () => context.go('/')),
+        leading: const BackButton(),
       ),
       floatingActionButton: effectiveRound == null
           ? null
@@ -61,69 +65,83 @@ class GamesScreen extends ConsumerWidget {
             );
           }
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: DropdownButtonFormField<String>(
-                  initialValue: effectiveComp,
-                  decoration: const InputDecoration(
-                    labelText: 'Campeonato',
-                    border: OutlineInputBorder(),
+              AppLayout.content(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        key: ValueKey('comp-$effectiveComp'),
+                        initialValue: effectiveComp,
+                        decoration: const InputDecoration(
+                          labelText: 'Campeonato',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: compItems
+                            .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                            .toList(),
+                        onChanged: (value) {
+                          ref.read(selectedCompetitionProvider.notifier).state = value;
+                          ref.read(selectedCategoryProvider.notifier).state = null;
+                          ref.read(selectedRoundProvider.notifier).state = null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      categories!.when(
+                        loading: () => const LinearProgressIndicator(),
+                        error: (e, s) => AppErrorState(
+                          message: 'Não foi possível carregar as categorias',
+                          onRetry: () =>
+                              ref.invalidate(categoriesProvider(effectiveComp!)),
+                        ),
+                        data: (items) => DropdownButtonFormField<String>(
+                          key: ValueKey('cat-$effectiveCat'),
+                          initialValue: effectiveCat,
+                          decoration: const InputDecoration(
+                            labelText: 'Categoria',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: items
+                              .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                              .toList(),
+                          onChanged: (value) {
+                            ref.read(selectedCategoryProvider.notifier).state = value;
+                            ref.read(selectedRoundProvider.notifier).state = null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      (rounds?.when(
+                        loading: () => const LinearProgressIndicator(),
+                        error: (e, s) => AppErrorState(
+                          message: 'Não foi possível carregar as rodadas',
+                          onRetry: () =>
+                              ref.invalidate(roundsProvider(effectiveCat!)),
+                        ),
+                        data: (items) => DropdownButtonFormField<String>(
+                          key: ValueKey('round-$effectiveRound'),
+                          initialValue: effectiveRound,
+                          decoration: const InputDecoration(
+                            labelText: 'Rodada',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: items
+                              .map((r) => DropdownMenuItem(
+                                    value: r.id,
+                                    child: Text('Rodada ${r.number} - ${r.name}'),
+                                  ))
+                              .toList(),
+                          onChanged: (value) =>
+                              ref.read(selectedRoundProvider.notifier).state = value,
+                        ),
+                      ) ??
+                      const LinearProgressIndicator()),
+                    ],
                   ),
-                  items: compItems
-                      .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
-                      .toList(),
-                  onChanged: (value) {
-                    ref.read(selectedCompetitionProvider.notifier).state = value;
-                    ref.read(selectedCategoryProvider.notifier).state = null;
-                    ref.read(selectedRoundProvider.notifier).state = null;
-                  },
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: (categories?.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (e, s) => const Text('Erro ao carregar categorias'),
-                  data: (items) => DropdownButtonFormField<String>(
-                    initialValue: effectiveCat,
-                    decoration: const InputDecoration(
-                      labelText: 'Categoria',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: items
-                        .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
-                        .toList(),
-                    onChanged: (value) {
-                      ref.read(selectedCategoryProvider.notifier).state = value;
-                      ref.read(selectedRoundProvider.notifier).state = null;
-                    },
-                  ),
-                ) ??
-                const LinearProgressIndicator()),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: (rounds?.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (e, s) => const Text('Erro ao carregar rodadas'),
-                  data: (items) => DropdownButtonFormField<String>(
-                    initialValue: effectiveRound,
-                    decoration: const InputDecoration(
-                      labelText: 'Rodada',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: items
-                        .map((r) => DropdownMenuItem(
-                              value: r.id,
-                              child: Text('Rodada ${r.number} - ${r.name}'),
-                            ))
-                        .toList(),
-                    onChanged: (value) =>
-                        ref.read(selectedRoundProvider.notifier).state = value,
-                  ),
-                ) ??
-                const LinearProgressIndicator()),
               ),
               Expanded(
                 child: effectiveRound == null
@@ -145,32 +163,39 @@ class GamesScreen extends ConsumerWidget {
                               icon: Icons.sports,
                             );
                           }
-                          return ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: items.length,
-                            itemBuilder: (context, index) {
-                              final game = items[index];
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                child: ListTile(
-                                  title: Text(
-                                    '${game.homeTeamName ?? 'Casa'} x ${game.awayTeamName ?? 'Fora'}',
+                          return AppLayout.content(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final columns =
+                                    constraints.maxWidth >= 600 ? 2 : 1;
+                                return GridView.builder(
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount: items.length,
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: columns,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    mainAxisExtent: 104,
                                   ),
-                                  subtitle: Text(
-                                    '${_formatDateTime(game.scheduledAt)} · ${game.status.name}',
-                                  ),
-                                  trailing: const Icon(Icons.chevron_right),
-                                  onTap: () => context.push(
-                                    '/games/${game.id}',
-                                    extra: (
-                                      categoryId: effectiveCat,
-                                      roundId: game.roundId,
-                                      game: game,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
+                                  itemBuilder: (context, index) {
+                                    final game = items[index];
+                                    return _gameCard(
+                                      context,
+                                      game,
+                                      onTap: () => context.push(
+                                        '/games/${game.id}',
+                                        extra: (
+                                          categoryId: effectiveCat,
+                                          roundId: game.roundId,
+                                          game: game,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
                           );
                         },
                       ),
@@ -178,6 +203,75 @@ class GamesScreen extends ConsumerWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _gameCard(BuildContext context, Game game, {required VoidCallback onTap}) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${game.homeTeamName ?? 'Casa'} x ${game.awayTeamName ?? 'Fora'}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _statusChip(game.status),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${_formatDateTime(game.scheduledAt)}'
+                '${game.venueName != null ? ' · ${game.venueName}' : ''}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textSecondary),
+              ),
+              if (game.homeScore != null || game.awayScore != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Placar: ${game.homeScore ?? 0} x ${game.awayScore ?? 0}',
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _statusChip(GameStatus status) {
+    final (label, color) = switch (status) {
+      GameStatus.scheduled => ('Agendado', AppColors.textSecondary),
+      GameStatus.inProgress => ('Ao vivo', AppColors.success),
+      GameStatus.finished => ('Encerrado', AppColors.danger),
+      GameStatus.cancelled => ('Cancelado', AppColors.disabled),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 12, color: color),
       ),
     );
   }

@@ -18,4 +18,12 @@ enum GameStatus {
         GameStatus.finished => 'FINISHED',
         GameStatus.cancelled => 'CANCELLED',
       };
+
+  /// Rótulo amigável em pt-BR para exibição na interface.
+  String get label => switch (this) {
+        GameStatus.scheduled => 'Agendado',
+        GameStatus.inProgress => 'Ao vivo',
+        GameStatus.finished => 'Encerrado',
+        GameStatus.cancelled => 'Cancelado',
+      };
 }

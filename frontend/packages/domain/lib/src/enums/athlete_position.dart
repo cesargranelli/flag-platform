@@ -36,4 +36,18 @@ enum AthletePosition {
         AthletePosition.k => 'K',
         AthletePosition.p => 'P',
       };
+
+  /// Rótulo amigável em pt-BR para exibição na interface.
+  String get label => switch (this) {
+        AthletePosition.qb => 'Quarterback',
+        AthletePosition.rb => 'Running Back',
+        AthletePosition.wr => 'Wide Receiver',
+        AthletePosition.te => 'Tight End',
+        AthletePosition.c => 'Center',
+        AthletePosition.dl => 'Defensive Line',
+        AthletePosition.lb => 'Linebacker',
+        AthletePosition.db => 'Defensive Back',
+        AthletePosition.k => 'Kicker',
+        AthletePosition.p => 'Punter',
+      };
 }

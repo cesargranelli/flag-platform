@@ -1,4 +1,5 @@
 import 'package:flag_api/flag_api.dart';
+import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,7 +96,15 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
         );
       }
       if (_roundId != null) ref.invalidate(gamesByRoundProvider(_roundId!));
-      if (mounted) context.pop();
+      if (mounted) {
+        if (id != null) {
+          // Volta para o detalhe recarregado (busca fresca via provider).
+          ref.invalidate(gameProvider(id));
+          context.go('/games/$id');
+        } else {
+          context.pop();
+        }
+      }
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (_) {
@@ -122,11 +131,12 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        child: AppLayout.form(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               (rounds?.when(
                 loading: () => const LinearProgressIndicator(),
                 error: (e, s) => const Text('Erro ao carregar rodadas'),
@@ -181,8 +191,15 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                       .map((t) => DropdownMenuItem(value: t.id, child: Text(t.name)))
                       .toList(),
                   onChanged: (value) => setState(() => _awayTeamId = value),
-                  validator: (value) =>
-                      (value == null || value.isEmpty) ? 'Selecione o time visitante' : null,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Selecione o time visitante';
+                    }
+                    if (_homeTeamId != null && value == _homeTeamId) {
+                      return 'O time visitante deve ser diferente do time da casa';
+                    }
+                    return null;
+                  },
                 ),
               ) ??
               const LinearProgressIndicator()),
@@ -239,6 +256,7 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
