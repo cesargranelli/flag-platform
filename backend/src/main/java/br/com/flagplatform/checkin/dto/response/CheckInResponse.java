@@ -14,6 +14,8 @@ public record CheckInResponse(
         String athleteName,
         String athleteNickname,
         Integer number,
+        Integer athleteNumber,
+        Integer matchNumber,
         AthletePosition position,
         CheckInStatus status,
         UUID validatedBy,

@@ -22,6 +22,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -100,6 +101,79 @@ class CheckInControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].status").value("PRESENT"))
                 .andExpect(jsonPath("$[0].validatedBy").isNotEmpty());
+    }
+
+    @Test
+    @WithMockUser(username = "mesa-mn@exemplo.com", roles = {"ORGANIZER", "MESA"})
+    void setMatchNumber_definesOverride_withoutChangingOfficial() throws Exception {
+        Chain chain = setupChain("MN_DEFINE");
+        registerUser("mesa-mn@exemplo.com");
+
+        String homeAthlete = createAthlete("João Silva", "João", "QB", 7, null);
+        addToRoster(chain.teamAId, homeAthlete);
+        String gameId = createGame(chain.roundId, chain.teamAId, chain.teamBId);
+
+        mockMvc.perform(put(CHECKIN_URL.formatted(gameId) + "/" + homeAthlete + "/match-number")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(matchNumberBody(10)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.number").value(10))
+                .andExpect(jsonPath("$.athleteNumber").value(7))
+                .andExpect(jsonPath("$.matchNumber").value(10));
+
+        mockMvc.perform(get(CHECKIN_URL.formatted(gameId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].number").value(10))
+                .andExpect(jsonPath("$[0].athleteNumber").value(7))
+                .andExpect(jsonPath("$[0].matchNumber").value(10));
+    }
+
+    @Test
+    @WithMockUser(username = "mesa-mnclr@exemplo.com", roles = {"ORGANIZER", "MESA"})
+    void setMatchNumber_clearOverride_returnsOfficial() throws Exception {
+        Chain chain = setupChain("MN_CLEAR");
+        registerUser("mesa-mnclr@exemplo.com");
+
+        String homeAthlete = createAthlete("João Silva", "João", "QB", 7, null);
+        addToRoster(chain.teamAId, homeAthlete);
+        String gameId = createGame(chain.roundId, chain.teamAId, chain.teamBId);
+
+        mockMvc.perform(put(CHECKIN_URL.formatted(gameId) + "/" + homeAthlete + "/match-number")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(matchNumberBody(10)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.matchNumber").value(10));
+
+        mockMvc.perform(put(CHECKIN_URL.formatted(gameId) + "/" + homeAthlete + "/match-number")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(matchNumberBody(null)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.matchNumber").isEmpty())
+                .andExpect(jsonPath("$.number").value(7))
+                .andExpect(jsonPath("$.athleteNumber").value(7));
+    }
+
+    @Test
+    @WithMockUser(username = "mesa-mndup@exemplo.com", roles = {"ORGANIZER", "MESA"})
+    void setMatchNumber_duplicateInSameTeam_returnsConflict() throws Exception {
+        Chain chain = setupChain("MN_DUP");
+        registerUser("mesa-mndup@exemplo.com");
+
+        String athleteA = createAthlete("João Silva", "João", "QB", 7, null);
+        String athleteB = createAthlete("Pedro Souza", "Pedro", "RB", 21, null);
+        addToRoster(chain.teamAId, athleteA);
+        addToRoster(chain.teamAId, athleteB);
+        String gameId = createGame(chain.roundId, chain.teamAId, chain.teamBId);
+
+        mockMvc.perform(put(CHECKIN_URL.formatted(gameId) + "/" + athleteA + "/match-number")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(matchNumberBody(10)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put(CHECKIN_URL.formatted(gameId) + "/" + athleteB + "/match-number")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(matchNumberBody(10)))
+                .andExpect(status().isConflict());
     }
 
     @Test
@@ -464,6 +538,12 @@ class CheckInControllerIntegrationTest {
         fields.put("homeTeamId", homeTeamId);
         fields.put("awayTeamId", awayTeamId);
         fields.put("scheduledAt", "2026-02-01T19:00:00");
+        return objectMapper.writeValueAsString(fields);
+    }
+
+    private String matchNumberBody(Integer number) throws Exception {
+        Map<String, Object> fields = new HashMap<>();
+        fields.put("number", number);
         return objectMapper.writeValueAsString(fields);
     }
 

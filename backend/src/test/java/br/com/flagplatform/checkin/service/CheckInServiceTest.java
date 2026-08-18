@@ -3,10 +3,12 @@ package br.com.flagplatform.checkin.service;
 import br.com.flagplatform.athlete.AthleteInfo;
 import br.com.flagplatform.athlete.AthleteLookup;
 import br.com.flagplatform.checkin.dto.request.CheckInStatusRequest;
+import br.com.flagplatform.checkin.dto.request.MatchNumberRequest;
 import br.com.flagplatform.checkin.dto.response.CheckInResponse;
 import br.com.flagplatform.checkin.dto.response.ValidationResponse;
 import br.com.flagplatform.checkin.entity.CheckInEntity;
 import br.com.flagplatform.checkin.exception.AthleteNotInGameException;
+import br.com.flagplatform.checkin.exception.DuplicateMatchNumberException;
 import br.com.flagplatform.checkin.exception.GameNotInProgressException;
 import br.com.flagplatform.checkin.repository.CheckInRepository;
 import br.com.flagplatform.common.enums.AthletePosition;
@@ -272,6 +274,83 @@ class CheckInServiceTest {
 
         assertThatThrownBy(() -> service.validate(gameId, athleteId, "mesa@exemplo.com"))
                 .isInstanceOf(GameNotInProgressException.class);
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void setMatchNumber_definesOverride() {
+        UUID gameId = UUID.randomUUID();
+        UUID homeTeamId = UUID.randomUUID();
+        UUID awayTeamId = UUID.randomUUID();
+        UUID athleteId = UUID.randomUUID();
+
+        CheckInEntity existing = checkIn(gameId, homeTeamId, athleteId, CheckInStatus.PRESENT);
+
+        when(gameLookup.findGameInfoById(gameId))
+                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId, GameStatus.SCHEDULED));
+        when(rosterLookup.findAthleteIdsByTeamId(homeTeamId)).thenReturn(List.of(athleteId));
+        when(repository.findByGameIdAndAthleteId(gameId, athleteId)).thenReturn(Optional.of(existing));
+        when(repository.existsByGameIdAndTeamIdAndMatchNumberAndAthleteIdNot(
+                gameId, homeTeamId, 10, athleteId)).thenReturn(false);
+        when(repository.save(existing)).thenReturn(existing);
+        when(teamLookup.findTeamInfoById(homeTeamId))
+                .thenReturn(new TeamInfo(homeTeamId, "Tritões"));
+        when(athleteLookup.findAthleteInfoById(athleteId))
+                .thenReturn(new AthleteInfo(athleteId, "João Silva", "João", AthletePosition.QB, 7, null));
+
+        CheckInResponse response = service.setMatchNumber(gameId, athleteId, new MatchNumberRequest(10));
+
+        assertThat(response.matchNumber()).isEqualTo(10);
+        assertThat(response.athleteNumber()).isEqualTo(7);
+        assertThat(response.number()).isEqualTo(10);
+        assertThat(existing.getMatchNumber()).isEqualTo(10);
+        verify(repository).save(existing);
+    }
+
+    @Test
+    void setMatchNumber_clearOverride_returnsOfficial() {
+        UUID gameId = UUID.randomUUID();
+        UUID homeTeamId = UUID.randomUUID();
+        UUID awayTeamId = UUID.randomUUID();
+        UUID athleteId = UUID.randomUUID();
+
+        CheckInEntity existing = checkIn(gameId, homeTeamId, athleteId, CheckInStatus.PRESENT);
+        existing.setMatchNumber(10);
+
+        when(gameLookup.findGameInfoById(gameId))
+                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId, GameStatus.SCHEDULED));
+        when(rosterLookup.findAthleteIdsByTeamId(homeTeamId)).thenReturn(List.of(athleteId));
+        when(repository.findByGameIdAndAthleteId(gameId, athleteId)).thenReturn(Optional.of(existing));
+        when(repository.save(existing)).thenReturn(existing);
+        when(teamLookup.findTeamInfoById(homeTeamId))
+                .thenReturn(new TeamInfo(homeTeamId, "Tritões"));
+        when(athleteLookup.findAthleteInfoById(athleteId))
+                .thenReturn(new AthleteInfo(athleteId, "João Silva", "João", AthletePosition.QB, 7, null));
+
+        CheckInResponse response = service.setMatchNumber(gameId, athleteId, new MatchNumberRequest(null));
+
+        assertThat(response.matchNumber()).isNull();
+        assertThat(response.number()).isEqualTo(7);
+        assertThat(existing.getMatchNumber()).isNull();
+    }
+
+    @Test
+    void setMatchNumber_duplicateInSameTeam_throwsConflict() {
+        UUID gameId = UUID.randomUUID();
+        UUID homeTeamId = UUID.randomUUID();
+        UUID awayTeamId = UUID.randomUUID();
+        UUID athleteId = UUID.randomUUID();
+
+        when(gameLookup.findGameInfoById(gameId))
+                .thenReturn(new GameInfo(gameId, homeTeamId, awayTeamId, GameStatus.SCHEDULED));
+        when(rosterLookup.findAthleteIdsByTeamId(homeTeamId)).thenReturn(List.of(athleteId));
+        when(repository.existsByGameIdAndTeamIdAndMatchNumberAndAthleteIdNot(
+                gameId, homeTeamId, 10, athleteId)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.setMatchNumber(
+                gameId, athleteId, new MatchNumberRequest(10)))
+                .isInstanceOf(DuplicateMatchNumberException.class);
 
         verify(repository, never()).save(any());
     }
