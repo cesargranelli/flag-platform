@@ -116,10 +116,10 @@ class AthleteControllerIntegrationTest {
 
         String body = objectMapper.writeValueAsString(
                 List.of(
-                        Map.of("name", "Atleta A"),
-                        Map.of("name", "Dup Nome"),
+                        Map.of("name", "Atleta A", "cpf", cpf("Atleta A")),
+                        Map.of("name", "Dup Nome", "cpf", cpf("Dup Nome")),
                         Map.of("name", "  "),
-                        Map.of("name", "Atleta B", "position", "QB", "number", 10)
+                        Map.of("name", "Atleta B", "cpf", cpf("Atleta B"), "position", "QB", "number", 10)
                 ));
 
         mockMvc.perform(post(ATHLETES_URL + "/batch")
@@ -140,7 +140,7 @@ class AthleteControllerIntegrationTest {
     void batch_dryRun_validatesWithoutCreating() throws Exception {
         String body = objectMapper.writeValueAsString(
                 List.of(
-                        Map.of("name", "Novo Atleta Dry"),
+                        Map.of("name", "Novo Atleta Dry", "cpf", cpf("Novo Atleta Dry")),
                         Map.of("name", "")
                 ));
 
@@ -163,7 +163,7 @@ class AthleteControllerIntegrationTest {
         createAthlete("Nome Unico", null, null, null, null);
 
         String body = objectMapper.writeValueAsString(
-                List.of(Map.of("name", "nome unico")));
+                List.of(Map.of("name", "nome unico", "cpf", cpf("nome unico"))));
 
         mockMvc.perform(post(ATHLETES_URL + "/batch")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -231,6 +231,7 @@ class AthleteControllerIntegrationTest {
                                Integer number, String photoUrl) throws Exception {
         Map<String, Object> fields = new HashMap<>();
         fields.put("name", name);
+        fields.put("cpf", cpf(name));
         if (nickname != null) {
             fields.put("nickname", nickname);
         }
@@ -244,6 +245,34 @@ class AthleteControllerIntegrationTest {
             fields.put("photoUrl", photoUrl);
         }
         return objectMapper.writeValueAsString(fields);
+    }
+
+    /**
+     * Gera um CPF valido e unico a partir de um seed.
+     */
+    private String cpf(String seed) {
+        String base = String.format("%09d",
+                Math.abs((seed + "-" + System.nanoTime()).hashCode()) % 1000000000L);
+        int[] digits = base.chars().map(c -> c - '0').toArray();
+        int d1 = cpfDv(digits, 10);
+        int d2 = cpfDv(concat(digits, d1), 11);
+        return base + d1 + d2;
+    }
+
+    private int cpfDv(int[] digits, int start) {
+        int sum = 0;
+        for (int i = 0; i < digits.length; i++) {
+            sum += digits[i] * (start - i);
+        }
+        int rest = (sum * 10) % 11;
+        return rest == 10 ? 0 : rest;
+    }
+
+    private int[] concat(int[] a, int b) {
+        int[] r = new int[a.length + 1];
+        System.arraycopy(a, 0, r, 0, a.length);
+        r[a.length] = b;
+        return r;
     }
 
 }

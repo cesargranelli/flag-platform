@@ -1,5 +1,6 @@
 package br.com.flagplatform.team.dto.request;
 
+import br.com.flagplatform.common.enums.DocumentType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -16,6 +17,11 @@ public record UpdateTeamRequest(
 
         @Size(max = 20)
         String shortName,
+
+        @Size(max = 20)
+        String document,
+
+        DocumentType documentType,
 
         @Size(max = 500)
         String logoUrl

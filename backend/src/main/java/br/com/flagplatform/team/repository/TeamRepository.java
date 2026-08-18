@@ -16,4 +16,8 @@ public interface TeamRepository extends JpaRepository<TeamEntity, UUID> {
 
     boolean existsByCategoryIdAndNameIgnoreCaseAndIdNot(UUID categoryId, String name, UUID id);
 
+    boolean existsByDocument(String document);
+
+    boolean existsByDocumentAndIdNot(String document, UUID id);
+
 }

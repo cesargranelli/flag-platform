@@ -1,6 +1,10 @@
 package br.com.flagplatform.team.service;
 
 import br.com.flagplatform.category.CategoryLookup;
+import br.com.flagplatform.common.enums.DocumentType;
+import br.com.flagplatform.common.exception.DuplicateDocumentException;
+import br.com.flagplatform.common.exception.InvalidDocumentException;
+import br.com.flagplatform.common.validation.DocumentValidator;
 import br.com.flagplatform.team.TeamInfo;
 import br.com.flagplatform.team.TeamLookup;
 import br.com.flagplatform.team.dto.request.CreateTeamRequest;
@@ -35,6 +39,8 @@ public class TeamService implements TeamLookup {
             throw new DuplicateTeamNameException(request.name());
         }
 
+        validateDocument(request.document(), request.documentType(), null);
+
         return mapper.toResponse(repository.save(mapper.toEntity(request)));
     }
 
@@ -56,9 +62,34 @@ public class TeamService implements TeamLookup {
             throw new DuplicateTeamNameException(request.name());
         }
 
+        validateDocument(request.document(), request.documentType(), id);
+
         mapper.updateEntity(entity, request);
 
         return mapper.toResponse(repository.save(entity));
+    }
+
+    /**
+     * Valida o documento do time: obrigatorio CNPJ do time ou CPF do
+     * representante; formato valido; documento unico.
+     */
+    private void validateDocument(String document, DocumentType type, UUID currentId) {
+        if (document == null || document.isBlank()) {
+            throw new InvalidDocumentException("Informe o CNPJ do time ou o CPF do representante.");
+        }
+        if (type == null) {
+            throw new InvalidDocumentException("Informe o tipo do documento (CNPJ ou CPF).");
+        }
+        if (!DocumentValidator.isValid(document, type)) {
+            throw new InvalidDocumentException("Documento inválido: " + type.getCode());
+        }
+        String normalized = document.replaceAll("\\D", "");
+        boolean duplicate = currentId == null
+                ? repository.existsByDocument(normalized)
+                : repository.existsByDocumentAndIdNot(normalized, currentId);
+        if (duplicate) {
+            throw new DuplicateDocumentException(normalized);
+        }
     }
 
     private TeamEntity findEntityById(UUID id) {

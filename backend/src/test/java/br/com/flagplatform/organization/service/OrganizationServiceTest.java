@@ -1,5 +1,6 @@
 package br.com.flagplatform.organization.service;
 
+import br.com.flagplatform.common.enums.DocumentType;
 import br.com.flagplatform.common.enums.OrganizationStatus;
 import br.com.flagplatform.common.enums.OrganizationType;
 import br.com.flagplatform.organization.dto.request.CreateOrganizationRequest;
@@ -51,6 +52,7 @@ class OrganizationServiceTest {
                 entity.getId(), entity.getTradeName(), "Organization created successfully");
 
         when(repository.existsByTradeNameIgnoreCase(request.tradeName())).thenReturn(false);
+        when(repository.existsByDocument("11222333000181")).thenReturn(false);
         when(mapper.toEntity(request)).thenReturn(entity);
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toResponse(entity)).thenReturn(expected);
@@ -123,6 +125,7 @@ class OrganizationServiceTest {
 
         when(repository.findById(id)).thenReturn(Optional.of(entity));
         when(repository.existsByTradeNameIgnoreCaseAndIdNot(request.tradeName(), id)).thenReturn(false);
+        when(repository.existsByDocumentAndIdNot("11222333000181", id)).thenReturn(false);
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toDetailResponse(entity)).thenReturn(expected);
 
@@ -168,6 +171,8 @@ class OrganizationServiceTest {
                 "APFA",
                 "APFA",
                 OrganizationType.ASSOCIATION,
+                "11.222.333/0001-81",
+                DocumentType.CNPJ,
                 "contato@apfa.com.br",
                 "11999999999",
                 "https://apfa.com.br",
@@ -189,6 +194,8 @@ class OrganizationServiceTest {
                 "APFA 2026",
                 "APFA",
                 OrganizationType.ASSOCIATION,
+                "11.222.333/0001-81",
+                DocumentType.CNPJ,
                 "contato@apfa.com.br",
                 "11999999999",
                 "https://apfa.com.br",
@@ -210,6 +217,8 @@ class OrganizationServiceTest {
         entity.setLegalName(legalName);
         entity.setTradeName(tradeName);
         entity.setOrganizationType(OrganizationType.ASSOCIATION);
+        entity.setDocument("11222333000181");
+        entity.setDocumentType(DocumentType.CNPJ);
         entity.setCountry("BR");
         entity.setTimezone("America/Sao_Paulo");
         entity.setLocale("pt-BR");
@@ -224,6 +233,8 @@ class OrganizationServiceTest {
                 entity.getTradeName(),
                 entity.getAbbreviation(),
                 entity.getOrganizationType(),
+                entity.getDocument(),
+                entity.getDocumentType(),
                 entity.getEmail(),
                 entity.getPhone(),
                 entity.getWebsite(),

@@ -13,7 +13,11 @@ import br.com.flagplatform.athlete.entity.AthleteEntity;
 import br.com.flagplatform.athlete.exception.AthleteNotFoundException;
 import br.com.flagplatform.athlete.mapper.AthleteMapper;
 import br.com.flagplatform.athlete.repository.AthleteRepository;
+import br.com.flagplatform.common.enums.DocumentType;
+import br.com.flagplatform.common.exception.DuplicateDocumentException;
+import br.com.flagplatform.common.exception.InvalidDocumentException;
 import br.com.flagplatform.common.pagination.PagedResponse;
+import br.com.flagplatform.common.validation.DocumentValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +39,7 @@ public class AthleteService implements AthleteLookup {
 
     @Transactional
     public AthleteResponse create(CreateAthleteRequest request) {
+        validateCpf(request.cpf(), null);
         return mapper.toResponse(repository.save(mapper.toEntity(request)));
     }
 
@@ -51,6 +56,10 @@ public class AthleteService implements AthleteLookup {
             int line = i + 2; // linha 1 = cabecalho
             if (item.name() == null || item.name().isBlank()) {
                 lines.add(new AthleteBatchLineResult(line, "INVALID", "Informe o nome", item));
+            } else if (item.cpf() == null || !DocumentValidator.isValid(item.cpf(), DocumentType.CPF)) {
+                lines.add(new AthleteBatchLineResult(line, "INVALID", "CPF inválido", item));
+            } else if (repository.existsByCpf(item.cpf().replaceAll("\\D", ""))) {
+                lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "CPF já cadastrado", item));
             } else if (repository.existsByNameIgnoreCase(item.name().trim())) {
                 lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "Atleta já existe", item));
             } else {
@@ -74,11 +83,16 @@ public class AthleteService implements AthleteLookup {
             int line = i + 2;
             if (item.name() == null || item.name().isBlank()) {
                 lines.add(new AthleteBatchLineResult(line, "INVALID", "Informe o nome", item));
+            } else if (item.cpf() == null || !DocumentValidator.isValid(item.cpf(), DocumentType.CPF)) {
+                lines.add(new AthleteBatchLineResult(line, "INVALID", "CPF inválido", item));
+            } else if (repository.existsByCpf(item.cpf().replaceAll("\\D", ""))) {
+                lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "CPF já cadastrado", item));
             } else if (repository.existsByNameIgnoreCase(item.name().trim())) {
                 lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "Atleta já existe", item));
             } else {
                 CreateAthleteRequest createRequest = new CreateAthleteRequest(
-                        item.name().trim(), item.nickname(), item.position(), item.number(), item.photoUrl());
+                        item.name().trim(), item.cpf().replaceAll("\\D", ""),
+                        item.nickname(), item.position(), item.number(), item.photoUrl());
                 repository.save(mapper.toEntity(createRequest));
                 imported++;
                 lines.add(new AthleteBatchLineResult(line, "IMPORTED", null, item));
@@ -103,6 +117,7 @@ public class AthleteService implements AthleteLookup {
     @Transactional
     public AthleteResponse update(UUID id, UpdateAthleteRequest request) {
         AthleteEntity entity = findEntityById(id);
+        validateCpf(request.cpf(), id);
         mapper.updateEntity(entity, request);
 
         return mapper.toResponse(repository.save(entity));
@@ -133,6 +148,25 @@ public class AthleteService implements AthleteLookup {
                 entity.getPosition(),
                 entity.getNumber(),
                 entity.getPhotoUrl());
+    }
+
+    /**
+     * Valida o CPF do atleta: obrigatorio, digitos verificadores validos e unico.
+     */
+    private void validateCpf(String cpf, UUID currentId) {
+        if (cpf == null || cpf.isBlank()) {
+            throw new InvalidDocumentException("Informe o CPF do atleta.");
+        }
+        if (!DocumentValidator.isValid(cpf, DocumentType.CPF)) {
+            throw new InvalidDocumentException("CPF inválido.");
+        }
+        String normalized = cpf.replaceAll("\\D", "");
+        boolean duplicate = currentId == null
+                ? repository.existsByCpf(normalized)
+                : repository.existsByCpfAndIdNot(normalized, currentId);
+        if (duplicate) {
+            throw new DuplicateDocumentException(normalized);
+        }
     }
 
 }

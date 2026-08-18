@@ -10,6 +10,10 @@ public record UpdateAthleteRequest(
         @Size(max = 150)
         String name,
 
+        @NotBlank
+        @Size(max = 14)
+        String cpf,
+
         @Size(max = 100)
         String nickname,
 

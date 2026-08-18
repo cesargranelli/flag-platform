@@ -14,4 +14,8 @@ public interface AthleteRepository extends JpaRepository<AthleteEntity, UUID> {
 
     List<AthleteEntity> findByNameIgnoreCase(String name);
 
+    boolean existsByCpf(String cpf);
+
+    boolean existsByCpfAndIdNot(String cpf, UUID id);
+
 }

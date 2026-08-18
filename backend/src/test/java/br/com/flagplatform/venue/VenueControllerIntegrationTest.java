@@ -222,6 +222,8 @@ class VenueControllerIntegrationTest {
         fields.put("tradeName", tradeName);
         fields.put("abbreviation", "VEN");
         fields.put("organizationType", "ASSOCIATION");
+        fields.put("document", cnpj("org-" + tradeName));
+        fields.put("documentType", "CNPJ");
         fields.put("email", "contato@ven.com.br");
         fields.put("phone", "11999999999");
         fields.put("website", "https://ven.com.br");
@@ -249,6 +251,36 @@ class VenueControllerIntegrationTest {
             fields.put("mapsUrl", mapsUrl);
         }
         return objectMapper.writeValueAsString(fields);
+    }
+
+    /**
+     * Gera um CNPJ valido e unico a partir de um seed.
+     */
+    private String cnpj(String seed) {
+        String base = String.format("%012d",
+                Math.abs((seed + "-" + System.nanoTime()).hashCode()) % 1000000000000L);
+        int[] w1 = {5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2};
+        int[] w2 = {6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2};
+        int[] digits = base.chars().map(c -> c - '0').toArray();
+        int d1 = dv(digits, w1, 12);
+        int d2 = dv(concat(digits, d1), w2, 13);
+        return base + d1 + d2;
+    }
+
+    private int dv(int[] digits, int[] weights, int length) {
+        int sum = 0;
+        for (int i = 0; i < length; i++) {
+            sum += digits[i] * weights[i];
+        }
+        int rest = sum % 11;
+        return rest < 2 ? 0 : 11 - rest;
+    }
+
+    private int[] concat(int[] a, int b) {
+        int[] r = new int[a.length + 1];
+        System.arraycopy(a, 0, r, 0, a.length);
+        r[a.length] = b;
+        return r;
     }
 
 }

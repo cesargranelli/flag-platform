@@ -1,5 +1,6 @@
 package br.com.flagplatform.organization.dto.request;
 
+import br.com.flagplatform.common.enums.DocumentType;
 import br.com.flagplatform.common.enums.OrganizationType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -18,6 +19,11 @@ public record CreateOrganizationRequest(
         String abbreviation,
 
         OrganizationType organizationType,
+
+        @Size(max = 20)
+        String document,
+
+        DocumentType documentType,
 
         @Email
         @Size(max = 150)

@@ -1,5 +1,6 @@
 package br.com.flagplatform.organization.dto.response;
 
+import br.com.flagplatform.common.enums.DocumentType;
 import br.com.flagplatform.common.enums.OrganizationStatus;
 import br.com.flagplatform.common.enums.OrganizationType;
 
@@ -12,6 +13,8 @@ public record OrganizationResponse(
         String tradeName,
         String abbreviation,
         OrganizationType organizationType,
+        String document,
+        DocumentType documentType,
         String email,
         String phone,
         String website,
