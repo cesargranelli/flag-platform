@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
 
 /// Detalhe de um campeonato: apresenta os dados e oferece a edição.
 ///
@@ -25,7 +26,7 @@ class CompetitionDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(competition?.name ?? 'Campeonato'),
-        leading: const BackButton(),
+        leading: AppBackButton(fallbackRoute: '/competitions'),
       ),
       body: compFuture == null
           ? _buildDetail(context, competition!)

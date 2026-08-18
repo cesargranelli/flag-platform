@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
 
 /// Formulário de criação/edição de campeonato.
 class CompetitionFormScreen extends ConsumerStatefulWidget {
@@ -133,7 +134,7 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar campeonato' : 'Novo campeonato'),
-        leading: const BackButton(),
+        leading: AppBackButton(fallbackRoute: '/competitions'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

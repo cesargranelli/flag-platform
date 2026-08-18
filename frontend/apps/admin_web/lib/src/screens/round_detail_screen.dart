@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
 
 /// Detalhe de uma rodada: apresenta os dados e oferece a edição.
 ///
@@ -23,7 +24,7 @@ class RoundDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(round?.name ?? 'Rodada'),
-        leading: const BackButton(),
+        leading: AppBackButton(fallbackRoute: '/rounds'),
       ),
       body: roundFuture == null
           ? _buildDetail(context, ref, round!)

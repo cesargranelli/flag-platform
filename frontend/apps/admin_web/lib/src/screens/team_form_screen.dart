@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
 
 /// Formulário de criação/edição de time.
 class TeamFormScreen extends ConsumerStatefulWidget {
@@ -138,7 +139,7 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar time' : 'Novo time'),
-        leading: const BackButton(),
+        leading: AppBackButton(fallbackRoute: '/teams'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

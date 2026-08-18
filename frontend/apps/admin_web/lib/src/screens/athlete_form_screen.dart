@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
 
 /// Formulário de criação/edição de atleta.
 class AthleteFormScreen extends ConsumerStatefulWidget {
@@ -115,7 +116,7 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar atleta' : 'Novo atleta'),
-        leading: const BackButton(),
+        leading: AppBackButton(fallbackRoute: '/athletes'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
