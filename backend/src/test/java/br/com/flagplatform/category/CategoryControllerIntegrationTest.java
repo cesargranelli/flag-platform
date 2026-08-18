@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -34,6 +33,7 @@ class CategoryControllerIntegrationTest {
     private static final String ORGANIZATIONS_URL = "/api/v1/organizations";
     private static final String COMPETITIONS_URL = "/api/v1/competitions";
     private static final String CATEGORIES_URL = "/api/v1/categories";
+    private static final String MODALITIES_URL = "/api/v1/modalities";
 
     @Autowired
     private WebApplicationContext context;
@@ -52,12 +52,37 @@ class CategoryControllerIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ORGANIZER")
-    void create_listByCompetition_update_andDelete_flow() throws Exception {
+    void create_derivesName_whenNotInformed() throws Exception {
         String organizationId = createOrganization("CATORG_FLOW", "Org Fluxo Categoria");
         String competitionId = createCompetition(organizationId, "COMP_CAT_TAÇA SP");
+        String modalityId = firstModalityId();
 
-        String firstCategoryId = createCategory(competitionId, "CAT_A Masculino");
-        String secondCategoryId = createCategory(competitionId, "CAT_B Feminino");
+        Map<String, Object> fields = categoryFields(competitionId, modalityId, "MALE", "ADULT");
+        fields.put("name", null);
+
+        mockMvc.perform(post(CATEGORIES_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(fields)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.competitionId").value(competitionId))
+                .andExpect(jsonPath("$.modalityId").value(modalityId))
+                .andExpect(jsonPath("$.modalityName").isNotEmpty())
+                .andExpect(jsonPath("$.modalityFormat").isNotEmpty())
+                .andExpect(jsonPath("$.gender").value("MALE"))
+                .andExpect(jsonPath("$.ageGroup").value("ADULT"))
+                .andExpect(jsonPath("$.name").isNotEmpty());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void create_listByCompetition_update_andDelete_flow() throws Exception {
+        String organizationId = createOrganization("CATORG_FLOW2", "Org Fluxo Categoria 2");
+        String competitionId = createCompetition(organizationId, "COMP_CAT_TAÇA SP");
+        String modalityId = firstModalityId();
+
+        String firstCategoryId = createCategory(competitionId, modalityId, "MALE", "ADULT", "CAT_A Masculino");
+        String secondCategoryId = createCategory(competitionId, modalityId, "FEMALE", "ADULT", "CAT_B Feminino");
 
         mockMvc.perform(get(COMPETITIONS_URL + "/" + competitionId + "/categories"))
                 .andExpect(status().isOk())
@@ -69,10 +94,11 @@ class CategoryControllerIntegrationTest {
 
         mockMvc.perform(put(CATEGORIES_URL + "/" + secondCategoryId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(categoryBody(competitionId, "CAT_B Feminino 7x7")))
+                        .content(categoryBody(competitionId, modalityId, "FEMALE", "SUB11", "CAT_B Feminino 7x7")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(secondCategoryId))
                 .andExpect(jsonPath("$.competitionId").value(competitionId))
+                .andExpect(jsonPath("$.ageGroup").value("SUB11"))
                 .andExpect(jsonPath("$.name").value("CAT_B Feminino 7x7"));
 
         mockMvc.perform(delete(CATEGORIES_URL + "/" + firstCategoryId))
@@ -87,16 +113,40 @@ class CategoryControllerIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ORGANIZER")
-    void create_duplicateName_returnsConflict() throws Exception {
+    void create_duplicateCombination_returnsConflict() throws Exception {
         String organizationId = createOrganization("CATORG_DUP", "Org Duplicada Categoria");
         String competitionId = createCompetition(organizationId, "COMP_CAT_DUPLICADO");
+        String modalityId = firstModalityId();
 
-        createCategory(competitionId, "CAT_Masculino 5x5");
+        createCategory(competitionId, modalityId, "MALE", "ADULT", "CAT_Masculino 5x5");
 
         mockMvc.perform(post(CATEGORIES_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(categoryBody(competitionId, "CAT_Masculino 5x5")))
+                        .content(categoryBody(competitionId, modalityId, "MALE", "ADULT", "CAT_Outro Rótulo")))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void create_sameCombinationDifferentGender_isAllowed() throws Exception {
+        String organizationId = createOrganization("CATORG_GEN", "Org Generos");
+        String competitionId = createCompetition(organizationId, "COMP_CAT_GENEROS");
+        String modalityId = firstModalityId();
+
+        createCategory(competitionId, modalityId, "MALE", "ADULT", null);
+        createCategory(competitionId, modalityId, "FEMALE", "ADULT", null);
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void create_withUnknownModality_returnsNotFound() throws Exception {
+        String organizationId = createOrganization("CATORG_MODNF", "Org Modalidade NF");
+        String competitionId = createCompetition(organizationId, "COMP_CAT_MODNF");
+
+        mockMvc.perform(post(CATEGORIES_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(categoryBody(competitionId, UUID.randomUUID().toString(), "MALE", "ADULT", null)))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -109,7 +159,9 @@ class CategoryControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalid)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.fields[?(@.field == 'name')]").exists())
+                .andExpect(jsonPath("$.fields[?(@.field == 'modalityId')]").exists())
+                .andExpect(jsonPath("$.fields[?(@.field == 'gender')]").exists())
+                .andExpect(jsonPath("$.fields[?(@.field == 'ageGroup')]").exists())
                 .andExpect(jsonPath("$.fields[?(@.field == 'competitionId')]").exists());
     }
 
@@ -117,7 +169,7 @@ class CategoryControllerIntegrationTest {
     void create_requiresAuthentication() throws Exception {
         mockMvc.perform(post(CATEGORIES_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(categoryBody(UUID.randomUUID().toString(), "CAT_Sem Auth")))
+                        .content(categoryBody(UUID.randomUUID().toString(), UUID.randomUUID().toString(), "MALE", "ADULT", "CAT_Sem Auth")))
                 .andExpect(status().isForbidden());
     }
 
@@ -125,7 +177,7 @@ class CategoryControllerIntegrationTest {
     void update_requiresAuthentication() throws Exception {
         mockMvc.perform(put(CATEGORIES_URL + "/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(categoryBody(UUID.randomUUID().toString(), "CAT_Sem Auth")))
+                        .content(categoryBody(UUID.randomUUID().toString(), UUID.randomUUID().toString(), "MALE", "ADULT", "CAT_Sem Auth")))
                 .andExpect(status().isForbidden());
     }
 
@@ -140,12 +192,16 @@ class CategoryControllerIntegrationTest {
     void getById_returnsCategoryDetail() throws Exception {
         String organizationId = createOrganization("CATORG_DET", "Org Detalhe Categoria");
         String competitionId = createCompetition(organizationId, "COMP_CAT_DETALHE");
-        String categoryId = createCategory(competitionId, "CAT_Detalhe");
+        String modalityId = firstModalityId();
+        String categoryId = createCategory(competitionId, modalityId, "MALE", "SUB14", "CAT_Detalhe");
 
         mockMvc.perform(get(CATEGORIES_URL + "/" + categoryId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(categoryId))
                 .andExpect(jsonPath("$.competitionId").value(competitionId))
+                .andExpect(jsonPath("$.modalityId").value(modalityId))
+                .andExpect(jsonPath("$.gender").value("MALE"))
+                .andExpect(jsonPath("$.ageGroup").value("SUB14"))
                 .andExpect(jsonPath("$.name").value("CAT_Detalhe"));
     }
 
@@ -154,7 +210,8 @@ class CategoryControllerIntegrationTest {
     void delete_softDeletes_andHidesFromList_andGetByIdReturnsNotFound() throws Exception {
         String organizationId = createOrganization("CATORG_SOFT", "Org Soft Delete");
         String competitionId = createCompetition(organizationId, "COMP_CAT_SOFT");
-        String categoryId = createCategory(competitionId, "CAT_Soft Delete");
+        String modalityId = firstModalityId();
+        String categoryId = createCategory(competitionId, modalityId, "MALE", "ADULT", "CAT_Soft Delete");
 
         mockMvc.perform(delete(CATEGORIES_URL + "/" + categoryId))
                 .andExpect(status().isNoContent());
@@ -169,15 +226,16 @@ class CategoryControllerIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ORGANIZER")
-    void delete_softDeletedName_canBeReused() throws Exception {
-        String organizationId = createOrganization("CATORG_REUSE", "Org Reuso Nome");
+    void delete_softDeletedCombination_canBeReused() throws Exception {
+        String organizationId = createOrganization("CATORG_REUSE", "Org Reuso Combinação");
         String competitionId = createCompetition(organizationId, "COMP_CAT_REUSO");
-        String categoryId = createCategory(competitionId, "CAT_Reuso");
+        String modalityId = firstModalityId();
+        String categoryId = createCategory(competitionId, modalityId, "MALE", "ADULT", "CAT_Reuso");
 
         mockMvc.perform(delete(CATEGORIES_URL + "/" + categoryId))
                 .andExpect(status().isNoContent());
 
-        String newCategoryId = createCategory(competitionId, "CAT_Reuso");
+        String newCategoryId = createCategory(competitionId, modalityId, "MALE", "ADULT", "CAT_Reuso");
 
         mockMvc.perform(get(CATEGORIES_URL + "/" + newCategoryId))
                 .andExpect(status().isOk())
@@ -220,14 +278,27 @@ class CategoryControllerIntegrationTest {
         return body.path("id").asText();
     }
 
-    private String createCategory(String competitionId, String name) throws Exception {
+    private String firstModalityId() throws Exception {
+        MvcResult result = mockMvc.perform(get(MODALITIES_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").isNotEmpty())
+                .andReturn();
+
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
+        return body.get(0).path("id").asText();
+    }
+
+    private String createCategory(String competitionId, String modalityId, String gender, String ageGroup, String name)
+            throws Exception {
         MvcResult result = mockMvc.perform(post(CATEGORIES_URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(categoryBody(competitionId, name)))
+                        .content(categoryBody(competitionId, modalityId, gender, ageGroup, name)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.competitionId").value(competitionId))
-                .andExpect(jsonPath("$.name").value(name))
+                .andExpect(jsonPath("$.modalityId").value(modalityId))
+                .andExpect(jsonPath("$.gender").value(gender))
+                .andExpect(jsonPath("$.ageGroup").value(ageGroup))
                 .andReturn();
 
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
@@ -269,9 +340,18 @@ class CategoryControllerIntegrationTest {
         return objectMapper.writeValueAsString(fields);
     }
 
-    private String categoryBody(String competitionId, String name) throws Exception {
+    private Map<String, Object> categoryFields(String competitionId, String modalityId, String gender, String ageGroup) {
         Map<String, Object> fields = new HashMap<>();
         fields.put("competitionId", competitionId);
+        fields.put("modalityId", modalityId);
+        fields.put("gender", gender);
+        fields.put("ageGroup", ageGroup);
+        return fields;
+    }
+
+    private String categoryBody(String competitionId, String modalityId, String gender, String ageGroup, String name)
+            throws Exception {
+        Map<String, Object> fields = categoryFields(competitionId, modalityId, gender, ageGroup);
         fields.put("name", name);
         return objectMapper.writeValueAsString(fields);
     }

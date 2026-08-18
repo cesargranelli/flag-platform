@@ -33,6 +33,7 @@ class RoundControllerIntegrationTest {
     private static final String ORGANIZATIONS_URL = "/api/v1/organizations";
     private static final String COMPETITIONS_URL = "/api/v1/competitions";
     private static final String CATEGORIES_URL = "/api/v1/categories";
+    private static final String MODALITIES_URL = "/api/v1/modalities";
     private static final String ROUNDS_URL = "/api/v1/rounds";
 
     @Autowired
@@ -313,8 +314,20 @@ class RoundControllerIntegrationTest {
     private String categoryBody(String competitionId, String name) throws Exception {
         Map<String, Object> fields = new HashMap<>();
         fields.put("competitionId", competitionId);
+        fields.put("modalityId", firstModalityId());
+        fields.put("gender", "MALE");
+        fields.put("ageGroup", "ADULT");
         fields.put("name", name);
         return objectMapper.writeValueAsString(fields);
+    }
+
+    private String firstModalityId() throws Exception {
+        MvcResult result = mockMvc.perform(get(MODALITIES_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").isNotEmpty())
+                .andReturn();
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
+        return body.get(0).path("id").asText();
     }
 
     private String roundBody(String categoryId, int number, String name,
