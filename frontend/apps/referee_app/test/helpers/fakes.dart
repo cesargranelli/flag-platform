@@ -129,9 +129,13 @@ class FakeGameApi extends GameApi {
   FakeGameApi() : super(ApiClient(session: SessionManager()));
   List<Game> games = [];
   GameStatus? lastStatus;
+  List<ScoreEvent> scoreEvents = [];
   @override
   Future<List<Game>> listByRound(String roundId) async =>
       games.where((g) => g.roundId == roundId).toList();
+  @override
+  Future<List<ScoreEvent>> listScoreEvents(String gameId) async =>
+      scoreEvents;
   @override
   Future<Game> updateStatus(String id, GameStatus status) async {
     lastStatus = status;

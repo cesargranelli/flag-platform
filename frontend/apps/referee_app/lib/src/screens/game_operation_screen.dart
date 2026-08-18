@@ -214,6 +214,8 @@ class GameOperationScreen extends ConsumerWidget {
         if (game.status == GameStatus.inProgress) ...[
           _buildScoreControls(context, ref, game),
           const SizedBox(height: 16),
+          _ScoreTimelineCard(game: game),
+          const SizedBox(height: 16),
           FilledButton.icon(
             icon: const Icon(Icons.stop),
             label: const Text('Finalizar partida'),
@@ -416,6 +418,47 @@ class GameOperationScreen extends ConsumerWidget {
         GameStatus.finished => 'Encerrado',
         GameStatus.cancelled => 'Cancelado',
       };
+}
+
+/// Card de timeline de pontos de uma partida (consome os score events).
+class _ScoreTimelineCard extends ConsumerWidget {
+  const _ScoreTimelineCard({required this.game});
+
+  final Game game;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final events = ref.watch(gameScoreEventsProvider(game.id));
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Sequência de pontos',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            events.when(
+              loading: () => const AppLoading(message: 'Carregando pontos...'),
+              error: (e, s) => const Text(
+                'Não foi possível carregar os pontos',
+                style: TextStyle(fontSize: 13, color: AppColors.danger),
+              ),
+              data: (items) => items.isEmpty
+                  ? const Text(
+                      'Nenhum ponto registrado ainda',
+                      style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                    )
+                  : ScoreTimeline(game: game, events: items),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 String _formatDateTime(DateTime value) =>

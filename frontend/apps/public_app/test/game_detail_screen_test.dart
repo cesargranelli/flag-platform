@@ -41,11 +41,16 @@ Game game({
 
 void main() {
   /// Renderiza a tela de detalhe com o jogo já carregado (via `extra`).
-  Future<void> pumpDetail(WidgetTester tester, Game game) async {
+  Future<void> pumpDetail(
+    WidgetTester tester,
+    Game game, {
+    List<ScoreEvent> events = const [],
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           gameDetailProvider.overrideWith((ref, id) async => game),
+          gameScoreEventsProvider.overrideWith((ref, id) async => events),
         ],
         child: MaterialApp(
           home: GameDetailScreen(gameId: game.id, game: game),
@@ -188,6 +193,42 @@ void main() {
       expect(find.text('Campo do Parque'), findsOneWidget);
       expect(find.text('Liga Nacional'), findsOneWidget);
       expect(find.text('Abrir no mapa'), findsNothing);
+    });
+
+    testWidgets('mostra a timeline de pontos quando há eventos', (
+      WidgetTester tester,
+    ) async {
+      final gameWithIds = Game(
+        id: 'game-6',
+        roundId: roundId,
+        homeTeamId: 'home-1',
+        awayTeamId: 'away-1',
+        homeTeamName: 'Flames',
+        awayTeamName: 'Titans',
+        scheduledAt: DateTime(2026, 8, 10, 19, 0),
+        status: GameStatus.inProgress,
+        homeScore: 2,
+        awayScore: 1,
+      );
+      final events = [
+        ScoreEvent(
+          id: 'e1',
+          gameId: 'game-6',
+          teamId: 'home-1',
+          createdAt: DateTime(2026, 8, 10, 19, 5),
+        ),
+        ScoreEvent(
+          id: 'e2',
+          gameId: 'game-6',
+          teamId: 'away-1',
+          createdAt: DateTime(2026, 8, 10, 19, 12),
+        ),
+      ];
+
+      await pumpDetail(tester, gameWithIds, events: events);
+
+      expect(find.text('Sequência de pontos'), findsOneWidget);
+      expect(find.textContaining('Ponto'), findsNWidgets(2));
     });
   });
 }

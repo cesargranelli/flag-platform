@@ -83,4 +83,25 @@ void main() {
 
     expect(api.lastStatus, GameStatus.finished);
   });
+
+  testWidgets('mostra a timeline de pontos durante a partida',
+      (WidgetTester tester) async {
+    final api = FakeGameApi()
+      ..games = [testGame(status: GameStatus.inProgress)]
+      ..scoreEvents = [
+        ScoreEvent(
+          id: 'e1',
+          gameId: 'g1',
+          teamId: 't1',
+          createdAt: DateTime(2026, 8, 10, 19, 5),
+        ),
+      ];
+
+    await pumpApp(tester, gameApi: api);
+    await tester.pumpAndSettle();
+    await openOperation(tester);
+
+    expect(find.text('Sequência de pontos'), findsOneWidget);
+    expect(find.textContaining('Ponto'), findsOneWidget);
+  });
 }

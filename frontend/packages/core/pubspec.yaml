@@ -11,6 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flag_domain:
+    path: ../domain
   flutter_riverpod: ^2.5.1
   go_router: ^14.2.0
   shared_preferences: ^2.3.1

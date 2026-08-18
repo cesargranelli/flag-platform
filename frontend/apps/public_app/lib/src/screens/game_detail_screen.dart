@@ -52,7 +52,10 @@ class _GameDetailScreenState extends ConsumerState<GameDetailScreen> {
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (mounted) ref.invalidate(gameDetailProvider(widget.gameId));
+      if (mounted) {
+        ref.invalidate(gameDetailProvider(widget.gameId));
+        ref.invalidate(gameScoreEventsProvider(widget.gameId));
+      }
     });
   }
 
@@ -65,6 +68,7 @@ class _GameDetailScreenState extends ConsumerState<GameDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final gameAsync = ref.watch(gameDetailProvider(widget.gameId));
+    final eventsAsync = ref.watch(gameScoreEventsProvider(widget.gameId));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Jogo')),
@@ -78,6 +82,7 @@ class _GameDetailScreenState extends ConsumerState<GameDetailScreen> {
           game: game,
           namesFrom: widget.game,
           competitionName: widget.competitionName,
+          events: eventsAsync.valueOrNull ?? const [],
         ),
       ),
     );
@@ -89,11 +94,13 @@ class _GameDetailContent extends StatelessWidget {
   final Game game;
   final Game? namesFrom;
   final String competitionName;
+  final List<ScoreEvent> events;
 
   const _GameDetailContent({
     required this.game,
     required this.namesFrom,
     required this.competitionName,
+    required this.events,
   });
 
   @override
@@ -192,6 +199,14 @@ class _GameDetailContent extends StatelessWidget {
                 color: AppColors.success,
               ),
             ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (events.isNotEmpty) ...[
+          _InfoCard(
+            icon: Icons.timeline,
+            title: 'Sequência de pontos',
+            child: ScoreTimeline(game: game, events: events),
           ),
           const SizedBox(height: 12),
         ],
