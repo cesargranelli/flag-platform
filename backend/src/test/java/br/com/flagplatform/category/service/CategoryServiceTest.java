@@ -8,14 +8,19 @@ import br.com.flagplatform.category.exception.CategoryNotFoundException;
 import br.com.flagplatform.category.exception.DuplicateCategoryNameException;
 import br.com.flagplatform.category.mapper.CategoryMapper;
 import br.com.flagplatform.category.repository.CategoryRepository;
+import br.com.flagplatform.common.enums.AgeGroup;
+import br.com.flagplatform.common.enums.Gender;
 import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.competition.exception.CompetitionNotFoundException;
+import br.com.flagplatform.modality.ModalityInfo;
+import br.com.flagplatform.modality.ModalityLookup;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +37,11 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CategoryServiceTest {
 
+    private static final UUID MODALITY_ID = UUID.randomUUID();
+    private static final Gender GENDER = Gender.MALE;
+    private static final AgeGroup AGE_GROUP = AgeGroup.ADULT;
+    private static final ModalityInfo MODALITY = new ModalityInfo(MODALITY_ID, "Flag Football", "5x5");
+
     @Mock
     private CategoryMapper mapper;
 
@@ -40,6 +50,9 @@ class CategoryServiceTest {
 
     @Mock
     private CompetitionLookup competitionLookup;
+
+    @Mock
+    private ModalityLookup modalityLookup;
 
     @InjectMocks
     private CategoryService service;
@@ -51,12 +64,13 @@ class CategoryServiceTest {
         CategoryEntity entity = entity(competitionId, "Masculino 5x5");
         CategoryResponse expected = response(entity);
 
-        when(repository.existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNull(
-                        competitionId, request.name()))
+        when(modalityLookup.findModalityInfoById(MODALITY_ID)).thenReturn(MODALITY);
+        when(repository.existsByCompetitionIdAndModalityIdAndGenderAndAgeGroupAndDeletedAtIsNull(
+                        competitionId, MODALITY_ID, GENDER, AGE_GROUP))
                 .thenReturn(false);
         when(mapper.toEntity(request)).thenReturn(entity);
         when(repository.save(entity)).thenReturn(entity);
-        when(mapper.toResponse(entity)).thenReturn(expected);
+        when(mapper.toResponse(entity, MODALITY)).thenReturn(expected);
 
         CategoryResponse response = service.create(request);
 
@@ -66,12 +80,35 @@ class CategoryServiceTest {
     }
 
     @Test
-    void create_throwsWhenNameAlreadyExistsForCompetition() {
+    void create_derivesNameWhenBlank() {
+        UUID competitionId = UUID.randomUUID();
+        CreateCategoryRequest request = createRequest(competitionId, null);
+        CategoryEntity entity = entity(competitionId, null);
+
+        when(modalityLookup.findModalityInfoById(MODALITY_ID)).thenReturn(MODALITY);
+        when(repository.existsByCompetitionIdAndModalityIdAndGenderAndAgeGroupAndDeletedAtIsNull(
+                        competitionId, MODALITY_ID, GENDER, AGE_GROUP))
+                .thenReturn(false);
+        when(mapper.toEntity(request)).thenReturn(entity);
+        when(mapper.deriveName(MODALITY, GENDER, AGE_GROUP))
+                .thenReturn("Flag Football 5x5 · Masculino · Adulto");
+        when(repository.save(entity)).thenReturn(entity);
+        when(mapper.toResponse(entity, MODALITY)).thenReturn(response(entity));
+
+        service.create(request);
+
+        assertThat(entity.getName()).isEqualTo("Flag Football 5x5 · Masculino · Adulto");
+        verify(mapper).deriveName(MODALITY, GENDER, AGE_GROUP);
+    }
+
+    @Test
+    void create_throwsWhenCombinationAlreadyExistsForCompetition() {
         UUID competitionId = UUID.randomUUID();
         CreateCategoryRequest request = createRequest(competitionId, "Masculino 5x5");
 
-        when(repository.existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNull(
-                        competitionId, request.name()))
+        when(modalityLookup.findModalityInfoById(MODALITY_ID)).thenReturn(MODALITY);
+        when(repository.existsByCompetitionIdAndModalityIdAndGenderAndAgeGroupAndDeletedAtIsNull(
+                        competitionId, MODALITY_ID, GENDER, AGE_GROUP))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> service.create(request))
@@ -92,7 +129,6 @@ class CategoryServiceTest {
         assertThatThrownBy(() -> service.create(request))
                 .isInstanceOf(CompetitionNotFoundException.class);
 
-        verify(repository, never()).existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNull(any(), any());
         verify(repository, never()).save(any());
     }
 
@@ -102,17 +138,18 @@ class CategoryServiceTest {
         List<CategoryEntity> entities = List.of(
                 entity(competitionId, "Feminino"),
                 entity(competitionId, "Masculino 5x5"));
-        List<CategoryResponse> expected = entities.stream()
-                .map(this::response)
-                .toList();
 
         when(repository.findAllByCompetitionIdAndDeletedAtIsNullOrderByNameAsc(competitionId))
                 .thenReturn(entities);
-        when(mapper.toResponseList(entities)).thenReturn(expected);
+        when(modalityLookup.listModalityInfo()).thenReturn(List.of(MODALITY));
+        when(mapper.toResponse(entities.get(0), MODALITY)).thenReturn(response(entities.get(0)));
+        when(mapper.toResponse(entities.get(1), MODALITY)).thenReturn(response(entities.get(1)));
 
         List<CategoryResponse> response = service.findByCompetitionId(competitionId);
 
-        assertThat(response).hasSize(2).isSameAs(expected);
+        assertThat(response).hasSize(2)
+                .extracting(CategoryResponse::name)
+                .containsExactly("Feminino", "Masculino 5x5");
     }
 
     @Test
@@ -124,10 +161,11 @@ class CategoryServiceTest {
         CategoryResponse expected = response(entity);
 
         when(repository.findById(id)).thenReturn(Optional.of(entity));
-        when(repository.existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNullAndIdNot(
-                competitionId, request.name(), id)).thenReturn(false);
+        when(modalityLookup.findModalityInfoById(MODALITY_ID)).thenReturn(MODALITY);
+        when(repository.existsByCompetitionIdAndModalityIdAndGenderAndAgeGroupAndDeletedAtIsNullAndIdNot(
+                        competitionId, MODALITY_ID, GENDER, AGE_GROUP, id)).thenReturn(false);
         when(repository.save(entity)).thenReturn(entity);
-        when(mapper.toResponse(entity)).thenReturn(expected);
+        when(mapper.toResponse(entity, MODALITY)).thenReturn(expected);
 
         CategoryResponse response = service.update(id, request);
 
@@ -151,15 +189,16 @@ class CategoryServiceTest {
     }
 
     @Test
-    void update_throwsWhenNameUsedByAnotherCategory() {
+    void update_throwsWhenCombinationUsedByAnotherCategory() {
         UUID id = UUID.randomUUID();
         UUID competitionId = UUID.randomUUID();
         UpdateCategoryRequest request = updateRequest(competitionId, "Feminino");
         CategoryEntity entity = entity(competitionId, "Masculino 5x5");
 
         when(repository.findById(id)).thenReturn(Optional.of(entity));
-        when(repository.existsByCompetitionIdAndNameIgnoreCaseAndDeletedAtIsNullAndIdNot(
-                competitionId, request.name(), id)).thenReturn(true);
+        when(modalityLookup.findModalityInfoById(MODALITY_ID)).thenReturn(MODALITY);
+        when(repository.existsByCompetitionIdAndModalityIdAndGenderAndAgeGroupAndDeletedAtIsNullAndIdNot(
+                        competitionId, MODALITY_ID, GENDER, AGE_GROUP, id)).thenReturn(true);
 
         assertThatThrownBy(() -> service.update(id, request))
                 .isInstanceOf(DuplicateCategoryNameException.class);
@@ -202,7 +241,8 @@ class CategoryServiceTest {
         CategoryResponse expected = response(entity);
 
         when(repository.findById(id)).thenReturn(Optional.of(entity));
-        when(mapper.toResponse(entity)).thenReturn(expected);
+        when(modalityLookup.findModalityInfoById(MODALITY_ID)).thenReturn(MODALITY);
+        when(mapper.toResponse(entity, MODALITY)).thenReturn(expected);
 
         CategoryResponse response = service.findById(id);
 
@@ -223,7 +263,7 @@ class CategoryServiceTest {
     void findById_throwsWhenCategorySoftDeleted() {
         UUID id = UUID.randomUUID();
         CategoryEntity entity = entity(UUID.randomUUID(), "Masculino 5x5");
-        entity.setDeletedAt(java.time.LocalDateTime.now());
+        entity.setDeletedAt(LocalDateTime.now());
 
         when(repository.findById(id)).thenReturn(Optional.of(entity));
 
@@ -232,17 +272,20 @@ class CategoryServiceTest {
     }
 
     private CreateCategoryRequest createRequest(UUID competitionId, String name) {
-        return new CreateCategoryRequest(competitionId, name);
+        return new CreateCategoryRequest(competitionId, MODALITY_ID, GENDER, AGE_GROUP, name);
     }
 
     private UpdateCategoryRequest updateRequest(UUID competitionId, String name) {
-        return new UpdateCategoryRequest(competitionId, name);
+        return new UpdateCategoryRequest(competitionId, MODALITY_ID, GENDER, AGE_GROUP, name);
     }
 
     private CategoryEntity entity(UUID competitionId, String name) {
         CategoryEntity entity = new CategoryEntity();
         entity.setId(UUID.randomUUID());
         entity.setCompetitionId(competitionId);
+        entity.setModalityId(MODALITY_ID);
+        entity.setGender(GENDER);
+        entity.setAgeGroup(AGE_GROUP);
         entity.setName(name);
         return entity;
     }
@@ -251,6 +294,11 @@ class CategoryServiceTest {
         return new CategoryResponse(
                 entity.getId(),
                 entity.getCompetitionId(),
+                MODALITY_ID,
+                MODALITY.name(),
+                MODALITY.format(),
+                entity.getGender(),
+                entity.getAgeGroup(),
                 entity.getName(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

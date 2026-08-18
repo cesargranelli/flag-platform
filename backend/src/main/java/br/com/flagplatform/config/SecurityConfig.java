@@ -28,6 +28,7 @@ public class SecurityConfig {
             "/api/v1/organizations/**",
             "/api/v1/competitions/**",
             "/api/v1/categories/**",
+            "/api/v1/modalities/**",
             "/api/v1/venues/**",
             "/api/v1/teams/**",
             "/api/v1/rounds/**",

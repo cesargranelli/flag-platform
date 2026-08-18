@@ -1,6 +1,7 @@
 package br.com.flagplatform.category.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
+import br.com.flagplatform.common.enums.AgeGroup;
+import br.com.flagplatform.common.enums.Gender;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -10,7 +11,15 @@ public record CreateCategoryRequest(
         @NotNull
         UUID competitionId,
 
-        @NotBlank
+        @NotNull
+        UUID modalityId,
+
+        @NotNull
+        Gender gender,
+
+        @NotNull
+        AgeGroup ageGroup,
+
         @Size(max = 100)
         String name
 ) {
