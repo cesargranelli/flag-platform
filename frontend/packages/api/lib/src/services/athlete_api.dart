@@ -25,4 +25,20 @@ class AthleteApi {
 
   Future<Athlete> update(String id, Map<String, dynamic> body) =>
       _client.put('/api/v1/athletes/$id', body, Athlete.fromJson);
+
+  /// Valida uma carga em lote de atletas sem gravar (dry-run).
+  Future<AthleteBatchResult> validateBatch(List<Map<String, dynamic>> athletes) =>
+      _client.post(
+        '/api/v1/athletes/batch/dry-run',
+        {'athletes': athletes},
+        AthleteBatchResult.fromJson,
+      );
+
+  /// Importa uma carga em lote de atletas.
+  Future<AthleteBatchResult> createBatch(List<Map<String, dynamic>> athletes) =>
+      _client.post(
+        '/api/v1/athletes/batch',
+        {'athletes': athletes},
+        AthleteBatchResult.fromJson,
+      );
 }

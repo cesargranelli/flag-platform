@@ -1,0 +1,384 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flag_api/flag_api.dart';
+import 'package:flag_core/flag_core.dart';
+import 'package:flag_domain/flag_domain.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
+
+/// Importação em lote de atletas a partir de um arquivo CSV/TXT.
+///
+/// Fluxo: selecionar arquivo -> validar (dry-run) -> confirmar -> resultado.
+class AthleteImportScreen extends ConsumerStatefulWidget {
+  const AthleteImportScreen({super.key});
+
+  @override
+  ConsumerState<AthleteImportScreen> createState() =>
+      _AthleteImportScreenState();
+}
+
+class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
+  static const _maxLines = 500;
+
+  List<Map<String, dynamic>>? _parsed;
+  AthleteBatchResult? _validation;
+  AthleteBatchResult? _result;
+  bool _validating = false;
+  bool _importing = false;
+  String? _errorMessage;
+
+  void _downloadTemplate() {
+    // Mostra o formato num dialog para o usuário copiar.
+    showDialog(      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Modelo CSV'),
+        content: const Text(
+          'Use o formato abaixo (ponto-e-vírgula, UTF-8):\n\n'
+          'nome;apelido;posicao;numero;foto\n'
+          'Maria Silva;Ma;WR;10;https://...\n\n'
+          'Colunas: nome (obrigatório), apelido, posicao, numero, foto.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickFile() async {
+    setState(() {
+      _parsed = null;
+      _validation = null;
+      _result = null;
+      _errorMessage = null;
+    });
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv', 'txt'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.single;
+    final bytes = file.bytes;
+    if (bytes == null) {
+      setState(() => _errorMessage = 'Não foi possível ler o arquivo.');
+      return;
+    }
+    final content = utf8.decode(bytes, allowMalformed: true);
+    try {
+      final parsed = _parseCsv(content);
+      if (parsed.isEmpty) {
+        setState(() => _errorMessage = 'Nenhuma linha válida encontrada.');
+        return;
+      }
+      if (parsed.length > _maxLines) {
+        setState(() =>
+            _errorMessage = 'Máximo de $_maxLines linhas por arquivo.');
+        return;
+      }
+      setState(() => _parsed = parsed);
+    } catch (_) {
+      setState(() => _errorMessage = 'Arquivo inválido. Verifique o formato.');
+    }
+  }
+
+  /// Faz o parse do CSV, auto-detectando separador (; , ou tab) e cabeçalho.
+  List<Map<String, dynamic>> _parseCsv(String content) {
+    final lines = content
+        .split(RegExp(r'\r?\n'))
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+    if (lines.isEmpty) return const [];
+
+    final delimiter = _detectDelimiter(lines.first);
+    final headers = _splitLineWith(lines.first, delimiter);
+
+    final result = <Map<String, dynamic>>[];
+    for (var i = 1; i < lines.length; i++) {
+      final values = _splitLineWith(lines[i], delimiter);
+      if (values.isEmpty || values.every((v) => v.isEmpty)) continue;
+      final map = <String, dynamic>{};
+      for (var c = 0; c < headers.length; c++) {
+        final value = c < values.length ? values[c].trim() : '';
+        if (value.isEmpty) continue;
+        map[headers[c]] = value;
+      }
+      result.add(map);
+    }
+    return result;
+  }
+
+  String _detectDelimiter(String line) {
+    if (line.contains(';')) return ';';
+    if (line.contains(',')) return ',';
+    return '\t';
+  }
+
+  List<String> _splitLineWith(String line, String delimiter) {
+    return line.split(delimiter).map((s) => s.trim()).toList();
+  }
+
+  Future<void> _validate() async {
+    final parsed = _parsed;
+    if (parsed == null) return;
+    setState(() {
+      _validating = true;
+      _errorMessage = null;
+    });
+    try {
+      final result = await ref
+          .read(athleteApiProvider)
+          .validateBatch(_toBatchItems(parsed));
+      if (mounted) setState(() => _validation = result);
+    } on RepositoryException catch (e) {
+      if (mounted) setState(() => _errorMessage = e.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _errorMessage = 'Não foi possível validar o arquivo.');
+      }
+    } finally {
+      if (mounted) setState(() => _validating = false);
+    }
+  }
+
+  List<Map<String, dynamic>> _toBatchItems(List<Map<String, dynamic>> rows) {
+    return rows.map((r) {
+      return {
+        if (r['nome'] != null) 'name': r['nome'],
+        if (r['apelido'] != null) 'nickname': r['apelido'],
+        if (r['posicao'] != null) 'position': _positionCode(r['posicao']),
+        if (r['numero'] != null && int.tryParse(r['numero']) != null)
+          'number': int.parse(r['numero']),
+        if (r['foto'] != null) 'photoUrl': r['foto'],
+      };
+    }).toList();
+  }
+
+  String? _positionCode(String? label) {
+    if (label == null || label.isEmpty) return null;
+    for (final p in AthletePosition.values) {
+      if (p.label.toLowerCase() == label.toLowerCase() ||
+          p.name == label.toLowerCase()) {
+        return p.toJson();
+      }
+    }
+    return null;
+  }
+
+  Future<void> _import() async {
+    final parsed = _parsed;
+    if (parsed == null) return;
+    setState(() {
+      _importing = true;
+      _errorMessage = null;
+    });
+    try {
+      final result =
+          await ref.read(athleteApiProvider).createBatch(_toBatchItems(parsed));
+      ref.invalidate(athletesProvider);
+      if (mounted) setState(() => _result = result);
+    } on RepositoryException catch (e) {
+      if (mounted) setState(() => _errorMessage = e.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _errorMessage = 'Não foi possível importar os atletas.');
+      }
+    } finally {
+      if (mounted) setState(() => _importing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final result = _result;
+    final validation = _validation;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Importar atletas'),
+        leading: const AppBackButton(fallbackRoute: '/athletes'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: AppLayout.form(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (result == null) ...[
+                Text(
+                  'Importe vários atletas de uma vez a partir de um arquivo CSV/TXT.',
+                  style: const TextStyle(
+                      fontSize: 14, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: _downloadTemplate,
+                  icon: const Icon(Icons.download_outlined),
+                  label: const Text('Ver modelo CSV'),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: _pickFile,
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('Selecionar arquivo'),
+                ),
+                const SizedBox(height: 16),
+                if (_parsed != null) ...[
+                  Text(
+                    '${_parsed!.length} ${_parsed!.length == 1 ? 'linha' : 'linhas'} lidas. Clique em validar para pré-visualizar.',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                  if (_validating)
+                    const Center(child: CircularProgressIndicator())
+                  else if (validation == null)
+                    FilledButton(
+                      onPressed: _validate,
+                      child: const Text('Validar e pré-visualizar'),
+                    ),
+                ],
+                if (validation != null) ...[
+                  const SizedBox(height: 12),
+                  _validationSummary(validation),
+                  const SizedBox(height: 16),
+                  _validationTable(validation),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: validation.valid == 0
+                        ? null
+                        : (_importing ? null : _import),
+                    child: _importing
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            'Importar ${validation.valid} '
+                            '${validation.valid == 1 ? 'atleta' : 'atletas'}'),
+                  ),
+                ],
+              ] else ...[
+                _resultSummary(result),
+                const SizedBox(height: 16),
+                _resultTable(result),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () => context.go('/athletes'),
+                  icon: const Icon(Icons.check),
+                  label: const Text('Concluir'),
+                ),
+              ],
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: AppColors.danger),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _validationSummary(AthleteBatchResult validation) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _chip('${validation.valid} válidos', AppColors.success),
+        _chip('${validation.invalid} inválidos', AppColors.danger),
+        _chip('${validation.duplicates} duplicados', AppColors.warning),
+      ],
+    );
+  }
+
+  Widget _resultSummary(AthleteBatchResult result) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _chip('${result.imported} importados', AppColors.success),
+        _chip('${result.skipped} ignorados', AppColors.warning),
+      ],
+    );
+  }
+
+  Widget _chip(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 13, color: color),
+      ),
+    );
+  }
+
+  Widget _validationTable(AthleteBatchResult validation) {
+    final validLines =
+        validation.lines.where((l) => l.status == 'VALID').toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Pré-visualização (linhas válidas)',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        if (validLines.isEmpty)
+          const Text('Nenhuma linha válida',
+              style: TextStyle(color: AppColors.textSecondary))
+        else
+          for (final line in validLines.take(15))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                'Linha ${line.line}: ${line.reason ?? ''}',
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+      ],
+    );
+  }
+
+  Widget _resultTable(AthleteBatchResult result) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Resultado por linha',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        for (final line in result.lines)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              'Linha ${line.line}: ${_statusLabel(line.status)}'
+              '${line.reason != null ? ' — ${line.reason}' : ''}',
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+      ],
+    );
+  }
+
+  String _statusLabel(String status) => switch (status) {
+        'IMPORTED' => 'Importado',
+        'VALID' => 'Válido',
+        'INVALID' => 'Inválido',
+        'DUPLICATE' => 'Duplicado',
+        _ => status,
+      };
+}

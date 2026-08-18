@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -106,6 +107,70 @@ class AthleteControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(athleteBody("João Silva", null, null, null, null)))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void batch_importsValidSkipsDuplicateAndInvalid() throws Exception {
+        createAthlete("Dup Nome", null, null, null, null);
+
+        String body = objectMapper.writeValueAsString(
+                List.of(
+                        Map.of("name", "Atleta A"),
+                        Map.of("name", "Dup Nome"),
+                        Map.of("name", "  "),
+                        Map.of("name", "Atleta B", "position", "QB", "number", 10)
+                ));
+
+        mockMvc.perform(post(ATHLETES_URL + "/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"athletes\":" + body + "}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.total").value(4))
+                .andExpect(jsonPath("$.imported").value(2))
+                .andExpect(jsonPath("$.skipped").value(2))
+                .andExpect(jsonPath("$.lines[0].status").value("IMPORTED"))
+                .andExpect(jsonPath("$.lines[1].status").value("DUPLICATE"))
+                .andExpect(jsonPath("$.lines[2].status").value("INVALID"))
+                .andExpect(jsonPath("$.lines[3].status").value("IMPORTED"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void batch_dryRun_validatesWithoutCreating() throws Exception {
+        String body = objectMapper.writeValueAsString(
+                List.of(
+                        Map.of("name", "Novo Atleta Dry"),
+                        Map.of("name", "")
+                ));
+
+        mockMvc.perform(post(ATHLETES_URL + "/batch/dry-run")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"athletes\":" + body + "}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.lines[0].status").value("VALID"))
+                .andExpect(jsonPath("$.lines[1].status").value("INVALID"));
+
+        // Nada deve ter sido criado pelo dry-run.
+        mockMvc.perform(get(ATHLETES_URL + "?page=0&size=100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.name == 'Novo Atleta Dry')]").isEmpty());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void batch_duplicateName_marksAsDuplicate() throws Exception {
+        createAthlete("Nome Unico", null, null, null, null);
+
+        String body = objectMapper.writeValueAsString(
+                List.of(Map.of("name", "nome unico")));
+
+        mockMvc.perform(post(ATHLETES_URL + "/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"athletes\":" + body + "}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.imported").value(0))
+                .andExpect(jsonPath("$.lines[0].status").value("DUPLICATE"));
     }
 
     @Test

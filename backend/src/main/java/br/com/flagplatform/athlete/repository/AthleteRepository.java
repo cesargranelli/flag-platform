@@ -10,4 +10,8 @@ public interface AthleteRepository extends JpaRepository<AthleteEntity, UUID> {
 
     List<AthleteEntity> findAllByOrderByNameAsc();
 
+    boolean existsByNameIgnoreCase(String name);
+
+    List<AthleteEntity> findByNameIgnoreCase(String name);
+
 }

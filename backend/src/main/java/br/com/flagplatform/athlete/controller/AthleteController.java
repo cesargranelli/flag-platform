@@ -1,8 +1,10 @@
 package br.com.flagplatform.athlete.controller;
 
 import br.com.flagplatform.athlete.dto.request.CreateAthleteRequest;
+import br.com.flagplatform.athlete.dto.request.CreateAthleteBatchRequest;
 import br.com.flagplatform.athlete.dto.request.UpdateAthleteRequest;
 import br.com.flagplatform.athlete.dto.response.AthleteResponse;
+import br.com.flagplatform.athlete.dto.response.AthleteBatchResponse;
 import br.com.flagplatform.athlete.service.AthleteService;
 import br.com.flagplatform.common.security.SecurityExpressions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,6 +43,29 @@ public class AthleteController {
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public AthleteResponse create(@Valid @RequestBody CreateAthleteRequest request) {
         return service.create(request);
+    }
+
+    @Operation(
+            summary = "Validar carga em lote de atletas (dry-run)",
+            description = "Valida uma carga em lote sem gravar. Requer autenticação."
+    )
+    @PostMapping("/api/v1/athletes/batch/dry-run")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public AthleteBatchResponse validateBatch(
+            @Valid @RequestBody CreateAthleteBatchRequest request) {
+        return service.validateBatch(request);
+    }
+
+    @Operation(
+            summary = "Importar carga em lote de atletas",
+            description = "Cria varios atletas de uma vez. Linhas invalidas/duplicadas nao abortam as validas."
+    )
+    @PostMapping("/api/v1/athletes/batch")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public AthleteBatchResponse createBatch(
+            @Valid @RequestBody CreateAthleteBatchRequest request) {
+        return service.createBatch(request);
     }
 
     @Operation(

@@ -18,6 +18,13 @@ class AthletesScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Atletas'),
         leading: BackButton(onPressed: () => context.go('/')),
+        actions: [
+          IconButton(
+            tooltip: 'Importar CSV',
+            icon: const Icon(Icons.upload_file),
+            onPressed: () => context.push('/athletes/import'),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Novo atleta',
