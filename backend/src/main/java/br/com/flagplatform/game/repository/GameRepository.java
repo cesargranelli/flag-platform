@@ -17,4 +17,7 @@ public interface GameRepository extends JpaRepository<GameEntity, UUID> {
 
     List<GameEntity> findAllByRoundIdInAndStatus(List<UUID> roundIds, GameStatus status);
 
+    boolean existsByRoundIdAndHomeTeamIdAndAwayTeamId(
+            UUID roundId, UUID homeTeamId, UUID awayTeamId);
+
 }

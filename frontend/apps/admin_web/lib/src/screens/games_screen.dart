@@ -40,6 +40,17 @@ class GamesScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Jogos'),
         leading: BackButton(onPressed: () => context.go('/')),
+        actions: [
+          if (effectiveRound != null)
+            IconButton(
+              tooltip: 'Importar CSV',
+              icon: const Icon(Icons.upload_file),
+              onPressed: () => context.push(
+                '/games/import',
+                extra: (roundId: effectiveRound, categoryId: effectiveCat),
+              ),
+            ),
+        ],
       ),
       floatingActionButton: effectiveRound == null
           ? null

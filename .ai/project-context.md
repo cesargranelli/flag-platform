@@ -142,3 +142,27 @@ Se a resposta for não, fica fora do MVP.
 - **Mesa / Delegado (Referee App)**: login obrigatório (role MESA)
 - **Organizador (Admin Web)**: login obrigatório (role ORGANIZER/ADMIN)
 - **Atleta**: opcional (fase futura)
+
+---
+
+## Handoff — 2026-08-14 (sessão de melhorias concluída)
+
+> Este bloco foi adicionado para retomar o trabalho sem perder contexto. Resumo do estado atual do projeto.
+
+### Estado do produto
+- **Backend** (Spring Boot, modulith, `backend/`): 282 testes passando. Domínio completo (Organization → Competition → Category → Venue/Team/Round → Game → Standing; plus Athlete/Roster/CheckIn/ScoreEvents/User). Migrações Flyway até `V14`. Auth JWT com roles ADMIN/ORGANIZER/MESA; rate limit no login; paginação (page/size + `X-Total-Count`) em organizations, athletes, venues, competitions; `/actuator/prometheus` + health probes.
+- **Frontend** (Flutter workspace em `frontend/`): 3 apps (public_app, referee_app, admin_web) + packages (api, core, domain). CI agora roda backend **e** frontend (melos analyze + test). Todos os épicos do backlog concluídos e issues fechadas.
+- **Repositório**: `main` sincronizada. Nenhuma issue/epico aberto.
+
+### Trabalho mais recente
+- Criadas e implementadas as 9 issues de melhoria (#91–#99): gestão de usuários (ADMIN/MESA), frontend no CI, rótulos visíveis + nomes de times, layout responsivo (NavigationRail), paginação, rate limit, wizard de organização, i18n (AppStrings + flutter_localizations), observabilidade.
+- Criação de **agente `ux-designer`** em `~/.config/opencode/agent/ux-designer.md` (config global do opencode). **Requer reiniciar o opencode para ficar disponível.**
+
+### Próximos passos sugeridos (decisões pendentes do usuário)
+- Iterar no agente `ux-designer` (tools de design/MCP, tokens do design system do Flag, skill de revisão de usabilidade, mode all).
+- Evolução da fundação de i18n para todas as telas.
+- Melhorias contínuas de UX (layout desktop nas telas de listagem, etc.).
+
+### Como retomar a sessão
+- `opencode --continue` (ou selecionar a sessão no TUI) para voltar exatamente a esta conversa.
+- Se a sessão for perdida: este arquivo + `docs/product/backlog.md` + ADRs são o ponto de partida.

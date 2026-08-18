@@ -3,11 +3,13 @@ package br.com.flagplatform.game.controller;
 import br.com.flagplatform.common.security.SecurityExpressions;
 import br.com.flagplatform.game.dto.request.AddScoreEventRequest;
 import br.com.flagplatform.game.dto.request.CreateGameRequest;
+import br.com.flagplatform.game.dto.request.GameBatchRequest;
 import br.com.flagplatform.game.dto.request.RegisterGameResultRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameStatusRequest;
 import br.com.flagplatform.game.dto.request.UpdateScoreRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
+import br.com.flagplatform.game.dto.response.GameBatchResponse;
 import br.com.flagplatform.game.dto.response.GameSummaryResponse;
 import br.com.flagplatform.game.dto.response.ScoreEventResponse;
 import br.com.flagplatform.game.service.GameService;
@@ -46,6 +48,19 @@ public class GameController {
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public GameResponse create(@Valid @RequestBody CreateGameRequest request) {
         return service.create(request);
+    }
+
+    @Operation(
+            summary = "Importar jogos em lote",
+            description = "Cria varios jogos de uma rodada de uma vez. Linhas invalidas/duplicadas nao abortam as validas."
+    )
+    @PostMapping("/api/v1/rounds/{roundId}/games/batch")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public GameBatchResponse createBatch(
+            @Parameter(description = "Id da rodada") @PathVariable UUID roundId,
+            @Valid @RequestBody GameBatchRequest request) {
+        return service.createBatch(roundId, request);
     }
 
     @Operation(

@@ -803,13 +803,64 @@ class GameControllerIntegrationTest {
                 .andExpect(jsonPath("$.status").value("FINISHED"));
     }
 
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void batch_importsGamesSkipsDuplicate() throws Exception {
+        Chain chain = setupChain("BATCH_G");
+        String thirdTeamId = createTeam(chain.categoryId, "Time B G3", "TBG3", null);
+        // Cria um jogo com a mesma combinacao casa/fora do batch para testar o skip.
+        createGame(chain.roundId, chain.homeTeamId, chain.awayTeamId,
+                chain.venueId, "2026-03-01T19:00:00");
+
+        String body = "{\"games\":[" +
+                "{\"homeTeamId\":\"" + chain.homeTeamId + "\"," +
+                "\"awayTeamId\":\"" + chain.awayTeamId + "\"," +
+                "\"venueId\":\"" + chain.venueId + "\"," +
+                "\"scheduledAt\":\"2026-03-01T19:00:00\"}," +
+                "{\"homeTeamId\":\"" + chain.homeTeamId + "\"," +
+                "\"awayTeamId\":\"" + thirdTeamId + "\"," +
+                "\"venueId\":\"" + chain.venueId + "\"," +
+                "\"scheduledAt\":\"2026-03-02T19:00:00\"}" +
+                "]}";
+
+        mockMvc.perform(post(ROUNDS_URL + "/" + chain.roundId + "/games/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.total").value(2))
+                .andExpect(jsonPath("$.imported").value(1))
+                .andExpect(jsonPath("$.skipped").value(1))
+                .andExpect(jsonPath("$.lines[0].status").value("SKIPPED"))
+                .andExpect(jsonPath("$.lines[0].reason").value("Jogo já existe nesta rodada"))
+                .andExpect(jsonPath("$.lines[1].status").value("IMPORTED"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void batch_sameTeam_reportsInvalid() throws Exception {
+        Chain chain = setupChain("BATCH_SAME");
+
+        String body = "{\"games\":[" +
+                "{\"homeTeamId\":\"" + chain.homeTeamId + "\"," +
+                "\"awayTeamId\":\"" + chain.homeTeamId + "\"," +
+                "\"scheduledAt\":\"2026-03-01T19:00:00\"}" +
+                "]}";
+
+        mockMvc.perform(post(ROUNDS_URL + "/" + chain.roundId + "/games/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.imported").value(0))
+                .andExpect(jsonPath("$.lines[0].status").value("INVALID"))
+                .andExpect(jsonPath("$.lines[0].reason")
+                        .value("Time da casa deve ser diferente do visitante"));
+    }
+
     private String statusBody(String status) throws Exception {
         Map<String, Object> fields = new HashMap<>();
         fields.put("status", status);
         return objectMapper.writeValueAsString(fields);
-    }
-
-    private String resultBody(int homeScore, int awayScore) throws Exception {
+    }    private String resultBody(int homeScore, int awayScore) throws Exception {
         Map<String, Object> fields = new HashMap<>();
         fields.put("homeScore", homeScore);
         fields.put("awayScore", awayScore);

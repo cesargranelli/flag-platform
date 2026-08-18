@@ -80,6 +80,11 @@ public class VenueService implements VenueLookup {
     }
 
     @Override
+    public boolean existsById(UUID id) {
+        return repository.existsById(id);
+    }
+
+    @Override
     public VenueInfo findVenueInfoById(UUID id) {
         VenueEntity entity = findEntityById(id);
         return new VenueInfo(entity.getId(), entity.getName(), entity.getAddress(), entity.getMapsUrl());

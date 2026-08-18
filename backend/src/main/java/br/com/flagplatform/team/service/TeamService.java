@@ -72,6 +72,11 @@ public class TeamService implements TeamLookup {
     }
 
     @Override
+    public boolean existsById(UUID id) {
+        return repository.existsById(id);
+    }
+
+    @Override
     public List<UUID> findTeamIdsByCategoryId(UUID categoryId) {
         return repository.findAllByCategoryIdOrderByNameAsc(categoryId).stream()
                 .map(TeamEntity::getId)

@@ -27,6 +27,7 @@ import '../screens/round_detail_screen.dart';
 import '../screens/rounds_screen.dart';
 import '../screens/game_form_screen.dart';
 import '../screens/game_detail_screen.dart';
+import '../screens/game_import_screen.dart';
 import '../screens/games_screen.dart';
 import '../screens/athlete_form_screen.dart';
 import '../screens/athlete_import_screen.dart';
@@ -309,6 +310,19 @@ class AppRouter {
             builder: (context, state) => GameFormScreen(
               args: state.extra is GameFormArgs ? state.extra as GameFormArgs : null,
             ),
+          ),
+          GoRoute(
+            path: '/games/import',
+            name: 'gameImport',
+            builder: (context, state) {
+              final extra = state.extra is GameImportArgs
+                  ? state.extra as GameImportArgs
+                  : null;
+              return GameImportScreen(
+                roundId: extra?.roundId ?? '',
+                categoryId: extra?.categoryId,
+              );
+            },
           ),
           GoRoute(
             path: '/games/:id',
