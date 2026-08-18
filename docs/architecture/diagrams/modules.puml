@@ -30,6 +30,7 @@ System_Boundary("FlagPlatformApplication_boundary", "FlagPlatformApplication", $
     Component(FlagPlatformApplication.FlagPlatformApplication.Organization, "Organization", $techn="Module", $descr="", $tags="", $link="")
     Component(FlagPlatformApplication.FlagPlatformApplication.User, "User", $techn="Module", $descr="", $tags="", $link="")
     Component(FlagPlatformApplication.FlagPlatformApplication.Competition, "Competition", $techn="Module", $descr="", $tags="", $link="")
+    Component(FlagPlatformApplication.FlagPlatformApplication.Modality, "Modality", $techn="Module", $descr="", $tags="", $link="")
     Component(FlagPlatformApplication.FlagPlatformApplication.Security, "Security", $techn="Module", $descr="", $tags="", $link="")
     Component(FlagPlatformApplication.FlagPlatformApplication.Venue, "Venue", $techn="Module", $descr="", $tags="", $link="")
   }
@@ -66,6 +67,8 @@ Rel(FlagPlatformApplication.FlagPlatformApplication.Competition, FlagPlatformApp
 Rel(FlagPlatformApplication.FlagPlatformApplication.Competition, FlagPlatformApplication.FlagPlatformApplication.Organization, "uses", $techn="", $tags="", $link="")
 Rel(FlagPlatformApplication.FlagPlatformApplication.Category, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
 Rel(FlagPlatformApplication.FlagPlatformApplication.Category, FlagPlatformApplication.FlagPlatformApplication.Competition, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Category, FlagPlatformApplication.FlagPlatformApplication.Modality, "uses", $techn="", $tags="", $link="")
+Rel(FlagPlatformApplication.FlagPlatformApplication.Modality, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
 Rel(FlagPlatformApplication.FlagPlatformApplication.Config, FlagPlatformApplication.FlagPlatformApplication.Security, "uses", $techn="", $tags="", $link="")
 Rel(FlagPlatformApplication.FlagPlatformApplication.Security, FlagPlatformApplication.FlagPlatformApplication.User, "depends on", $techn="", $tags="", $link="")
 Rel(FlagPlatformApplication.FlagPlatformApplication.Venue, FlagPlatformApplication.FlagPlatformApplication.Common, "depends on", $techn="", $tags="", $link="")
