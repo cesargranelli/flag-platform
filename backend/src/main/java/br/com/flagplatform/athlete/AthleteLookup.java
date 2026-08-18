@@ -12,6 +12,8 @@ public interface AthleteLookup {
 
     void assertExists(UUID id);
 
+    boolean existsById(UUID id);
+
     AthleteInfo findAthleteInfoById(UUID id);
 
 }

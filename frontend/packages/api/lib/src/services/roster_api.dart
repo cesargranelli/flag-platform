@@ -28,4 +28,15 @@ class RosterApi {
     required String athleteId,
   }) =>
       _client.delete('/api/v1/teams/$teamId/roster/$athleteId');
+
+  /// Importa uma carga em lote de atletas no time (idempotente).
+  Future<RosterBatchResult> createBatch(
+    String teamId,
+    List<Map<String, dynamic>> athletes,
+  ) =>
+      _client.post(
+        '/api/v1/teams/$teamId/roster/batch',
+        {'athletes': athletes},
+        RosterBatchResult.fromJson,
+      );
 }

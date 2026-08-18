@@ -37,6 +37,14 @@ class RostersScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Elenco'),
         leading: BackButton(onPressed: () => context.go('/')),
+        actions: [
+          if (effectiveTeam != null)
+            IconButton(
+              tooltip: 'Importar CSV',
+              icon: const Icon(Icons.upload_file),
+              onPressed: () => context.push('/rosters/import', extra: effectiveTeam),
+            ),
+        ],
       ),
       floatingActionButton: effectiveTeam == null
           ? null

@@ -2,7 +2,9 @@ package br.com.flagplatform.roster.controller;
 
 import br.com.flagplatform.common.security.SecurityExpressions;
 import br.com.flagplatform.roster.dto.request.AddRosterEntryRequest;
+import br.com.flagplatform.roster.dto.request.RosterBatchRequest;
 import br.com.flagplatform.roster.dto.response.RosterEntryResponse;
+import br.com.flagplatform.roster.dto.response.RosterBatchResponse;
 import br.com.flagplatform.roster.service.RosterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -40,6 +42,19 @@ public class RosterController {
             @Parameter(description = "Id do time") @PathVariable UUID teamId,
             @Valid @RequestBody AddRosterEntryRequest request) {
         return service.add(teamId, request);
+    }
+
+    @Operation(
+            summary = "Importar elenco em lote",
+            description = "Inscreve varios atletas em um time de uma vez. Atletas ja inscritos sao pulados."
+    )
+    @PostMapping("/api/v1/teams/{teamId}/roster/batch")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public RosterBatchResponse createBatch(
+            @Parameter(description = "Id do time") @PathVariable UUID teamId,
+            @Valid @RequestBody RosterBatchRequest request) {
+        return service.createBatch(teamId, request);
     }
 
     @Operation(

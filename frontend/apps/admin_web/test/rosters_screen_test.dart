@@ -119,4 +119,27 @@ void main() {
     expect(roster.removeCalls, 1);
     expect(find.text('João Silva'), findsNothing);
   });
+
+  testWidgets('abre a tela de importação de elenco e vê o modelo CSV',
+      (WidgetTester tester) async {
+    final roster = FakeRosterApi();
+    final athletes = FakeAthleteApi()..athletes = [testAthlete(name: 'João Silva')];
+
+    await pumpApp(tester, rosterApi: roster, athleteApi: athletes);
+    await tester.pumpAndSettle();
+    await openRosters(tester);
+
+    await tester.tap(find.byIcon(Icons.upload_file));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Importar elenco'), findsOneWidget);
+    expect(find.text('Ver modelo CSV'), findsOneWidget);
+    expect(find.text('Selecionar arquivo'), findsOneWidget);
+
+    await tester.tap(find.text('Ver modelo CSV'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Modelo CSV'), findsOneWidget);
+    expect(find.textContaining('atleta;status'), findsOneWidget);
+  });
 }
