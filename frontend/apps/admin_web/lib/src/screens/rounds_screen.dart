@@ -32,7 +32,7 @@ class RoundsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Rodadas'),
-        leading: const BackButton(),
+        leading: BackButton(onPressed: () => context.go('/')),
       ),
       floatingActionButton: effectiveCat == null
           ? null

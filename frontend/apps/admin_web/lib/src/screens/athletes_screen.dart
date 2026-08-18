@@ -17,7 +17,7 @@ class AthletesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Atletas'),
-        leading: const BackButton(),
+        leading: BackButton(onPressed: () => context.go('/')),
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Novo atleta',
