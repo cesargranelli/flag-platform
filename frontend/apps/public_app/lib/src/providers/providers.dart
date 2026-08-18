@@ -42,6 +42,11 @@ final gameDetailProvider = FutureProvider.family<Game, String>(
   (ref, gameId) => ref.watch(gameApiProvider).getById(gameId),
 );
 
+/// Eventos de pontuação (timeline) de um jogo.
+final gameScoreEventsProvider = FutureProvider.family<List<ScoreEvent>, String>(
+  (ref, gameId) => ref.watch(gameApiProvider).listScoreEvents(gameId),
+);
+
 /// Serviço de categorias.
 final categoryApiProvider = Provider<CategoryApi>(
   (ref) => CategoryApi(ref.watch(apiClientProvider)),
