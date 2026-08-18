@@ -1,8 +1,8 @@
+import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
@@ -17,7 +17,7 @@ class ApprovalsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Aprovações'),
-        leading: BackButton(onPressed: () => context.go('/')),
+        leading: const BackButton(),
       ),
       body: pending.when(
         loading: () => const AppLoading(message: 'Carregando pendências...'),
@@ -32,57 +32,135 @@ class ApprovalsScreen extends ConsumerWidget {
               icon: Icons.verified_outlined,
             );
           }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final user = items[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  title: Text(user.email),
-                  subtitle: Text(
-                    'Solicitado em ${_formatDateTime(user.createdAt)}',
+          return AppLayout.content(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 600 ? 2 : 1;
+                return GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: items.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    mainAxisExtent: 200,
                   ),
-                  isThreeLine: false,
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        tooltip: 'Rejeitar',
-                        icon: const Icon(Icons.cancel, color: AppColors.danger),
-                        onPressed: () =>
-                            _reject(context, ref, user),
-                      ),
-                      IconButton(
-                        tooltip: 'Aprovar',
-                        icon: const Icon(Icons.check_circle,
-                            color: AppColors.success),
-                        onPressed: () => _approve(context, ref, user),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+                  itemBuilder: (context, index) {
+                    final user = items[index];
+                    return _approvalCard(context, ref, user);
+                  },
+                );
+              },
+            ),
           );
         },
       ),
     );
   }
 
+  Widget _approvalCard(BuildContext context, WidgetRef ref, User user) {
+    final roleLabel = _roleLabel(user.role);
+    final dateText = _formatDateTime(user.createdAt);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.person_outline,
+                      color: AppColors.primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (user.name.isNotEmpty)
+                        Text(
+                          user.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      Text(
+                        user.email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 13, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${roleLabel.isNotEmpty ? '$roleLabel · ' : ''}Solicitado em $dateText',
+              style: const TextStyle(
+                  fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _reject(context, ref, user),
+                    icon: const Icon(Icons.close),
+                    label: const Text('Rejeitar'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.danger,
+                      side: const BorderSide(color: AppColors.danger),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => _approve(context, ref, user),
+                    icon: const Icon(Icons.check),
+                    label: const Text('Aprovar'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.success,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _approve(BuildContext context, WidgetRef ref, User user) async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(authApiProvider).approveUser(user.id);
       ref.invalidate(pendingUsersProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${user.email} aprovado!')),
+        messenger.showSnackBar(
+          SnackBar(content: Text('${user.name} aprovado!')),
         );
+      }
+    } on RepositoryException catch (e) {
+      if (context.mounted) {
+        messenger.showSnackBar(SnackBar(content: Text(e.message)));
       }
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Não foi possível aprovar.')),
         );
       }
@@ -90,23 +168,55 @@ class ApprovalsScreen extends ConsumerWidget {
   }
 
   Future<void> _reject(BuildContext context, WidgetRef ref, User user) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rejeitar conta'),
+        content: Text('Rejeitar ${user.email}?\nA conta será recusada.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            child: const Text('Rejeitar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(authApiProvider).rejectUser(user.id);
       ref.invalidate(pendingUsersProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${user.email} rejeitado.')),
+        messenger.showSnackBar(
+          SnackBar(content: Text('${user.name} rejeitado.')),
         );
+      }
+    } on RepositoryException catch (e) {
+      if (context.mounted) {
+        messenger.showSnackBar(SnackBar(content: Text(e.message)));
       }
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Não foi possível rejeitar.')),
         );
       }
     }
   }
 }
+
+String _roleLabel(String role) => switch (role) {
+      'ADMIN' => 'Administrador',
+      'MESA' => 'Mesa',
+      'ORGANIZER' => 'Organizador',
+      _ => role,
+    };
 
 String _formatDateTime(DateTime? value) {
   if (value == null) return 'agora';

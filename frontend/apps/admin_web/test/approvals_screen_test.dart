@@ -59,7 +59,7 @@ void main() {
 
     expect(find.text('org@exemplo.com'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.check_circle));
+    await tester.tap(find.text('Aprovar'));
     await tester.pumpAndSettle();
 
     expect(api.approveCalls, 1);
@@ -82,7 +82,11 @@ void main() {
     await tester.pumpAndSettle();
     await openApprovals(tester);
 
-    await tester.tap(find.byIcon(Icons.cancel));
+    await tester.tap(find.text('Rejeitar'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('A conta será recusada'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Rejeitar').last);
     await tester.pumpAndSettle();
 
     expect(api.rejectCalls, 1);
