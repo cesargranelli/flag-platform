@@ -37,6 +37,13 @@ final competitionApiProvider = Provider<CompetitionApi>(
   (ref) => CompetitionApi(ref.watch(apiClientProvider)),
 );
 
+/// Contexto de seleção compartilhado entre as telas de operação e check-in
+/// (padrão admin_web), para não re-selecionar a cascata a cada visita.
+final selectedCompetitionProvider = StateProvider<String?>((ref) => null);
+final selectedCategoryProvider = StateProvider<String?>((ref) => null);
+final selectedRoundProvider = StateProvider<String?>((ref) => null);
+final selectedGameProvider = StateProvider<String?>((ref) => null);
+
 final competitionsProvider = FutureProvider<List<Competition>>(
   (ref) => ref.watch(competitionApiProvider).listAll(),
 );

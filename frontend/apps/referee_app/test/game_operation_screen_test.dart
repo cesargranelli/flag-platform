@@ -38,7 +38,8 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('inicia a partida (IN_PROGRESS)', (WidgetTester tester) async {
+  testWidgets('inicia a partida com confirmação (IN_PROGRESS)',
+      (WidgetTester tester) async {
     final api = FakeGameApi()..games = [testGame()];
 
     await pumpApp(tester, gameApi: api);
@@ -48,6 +49,12 @@ void main() {
     expect(find.text('Iniciar partida'), findsOneWidget);
 
     await tester.tap(find.text('Iniciar partida'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Iniciar partida'), findsWidgets); // título do diálogo
+    expect(find.textContaining('agora?'), findsOneWidget);
+
+    await tester.tap(find.text('Iniciar').last);
     await tester.pumpAndSettle();
 
     expect(api.lastStatus, GameStatus.inProgress);
