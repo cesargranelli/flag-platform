@@ -119,6 +119,11 @@ public class AthleteService implements AthleteLookup {
     }
 
     @Override
+    public boolean existsById(UUID id) {
+        return repository.existsById(id);
+    }
+
+    @Override
     public AthleteInfo findAthleteInfoById(UUID id) {
         AthleteEntity entity = findEntityById(id);
         return new AthleteInfo(

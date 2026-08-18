@@ -33,6 +33,7 @@ import '../screens/athlete_import_screen.dart';
 import '../screens/athlete_detail_screen.dart';
 import '../screens/athletes_screen.dart';
 import '../screens/rosters_screen.dart';
+import '../screens/roster_import_screen.dart';
 import '../screens/signup_screen.dart';
 import '../screens/user_form_screen.dart';
 import '../screens/users_screen.dart';
@@ -375,6 +376,13 @@ class AppRouter {
             path: '/rosters',
             name: 'rosters',
             builder: (context, state) => const RostersScreen(),
+          ),
+          GoRoute(
+            path: '/rosters/import',
+            name: 'rosterImport',
+            builder: (context, state) => RosterImportScreen(
+              teamId: state.extra is String ? state.extra as String : '',
+            ),
           ),
           GoRoute(
             path: '/users',

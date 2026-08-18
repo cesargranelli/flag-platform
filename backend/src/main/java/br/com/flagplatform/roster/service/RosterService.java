@@ -5,7 +5,11 @@ import br.com.flagplatform.athlete.AthleteLookup;
 import br.com.flagplatform.common.enums.RosterStatus;
 import br.com.flagplatform.roster.RosterLookup;
 import br.com.flagplatform.roster.dto.request.AddRosterEntryRequest;
+import br.com.flagplatform.roster.dto.request.RosterBatchItem;
+import br.com.flagplatform.roster.dto.request.RosterBatchRequest;
 import br.com.flagplatform.roster.dto.response.RosterEntryResponse;
+import br.com.flagplatform.roster.dto.response.RosterBatchLineResult;
+import br.com.flagplatform.roster.dto.response.RosterBatchResponse;
 import br.com.flagplatform.roster.entity.RosterEntryEntity;
 import br.com.flagplatform.roster.exception.DuplicateRosterEntryException;
 import br.com.flagplatform.roster.exception.RosterEntryNotFoundException;
@@ -16,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -46,6 +51,42 @@ public class RosterService implements RosterLookup {
         }
 
         return toResponse(repository.save(entity));
+    }
+
+    /**
+     * Inscreve varios atletas em um time de uma vez. Processa por linha:
+     * atletas ja inscritos sao pulados (idempotente); atletas inexistentes sao
+     * reportados sem abortar as demais linhas.
+     */
+    @Transactional
+    public RosterBatchResponse createBatch(UUID teamId, RosterBatchRequest request) {
+        teamLookup.assertExists(teamId);
+
+        List<RosterBatchLineResult> lines = new ArrayList<>();
+        int imported = 0;
+        for (int i = 0; i < request.athletes().size(); i++) {
+            RosterBatchItem item = request.athletes().get(i);
+            int line = i + 2; // linha 1 = cabecalho
+            if (!athleteLookup.existsById(item.athleteId())) {
+                lines.add(new RosterBatchLineResult(
+                        line, "INVALID", "Atleta não encontrado", item));
+                continue;
+            }
+            if (repository.existsByTeamIdAndAthleteId(teamId, item.athleteId())) {
+                lines.add(new RosterBatchLineResult(
+                        line, "SKIPPED", "Atleta já inscrito", item));
+                continue;
+            }
+            RosterEntryEntity entity = new RosterEntryEntity();
+            entity.setTeamId(teamId);
+            entity.setAthleteId(item.athleteId());
+            entity.setStatus(item.status() == null ? RosterStatus.ACTIVE : item.status());
+            repository.save(entity);
+            imported++;
+            lines.add(new RosterBatchLineResult(line, "IMPORTED", null, item));
+        }
+        return new RosterBatchResponse(
+                request.athletes().size(), imported, request.athletes().size() - imported, lines);
     }
 
     public List<RosterEntryResponse> findRosterByTeam(UUID teamId) {

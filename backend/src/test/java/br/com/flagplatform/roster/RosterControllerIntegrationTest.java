@@ -156,6 +156,52 @@ class RosterControllerIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ORGANIZER")
+    void batch_importsValidSkipsAlreadyInscribed() throws Exception {
+        Chain chain = setupChain("BATCH");
+        String a1 = createAthlete("Atleta Um", "Um", "QB", 1, null);
+        String a2 = createAthlete("Atleta Dois", "Dois", "RB", 2, null);
+        String a3 = createAthlete("Atleta Tres", "Tres", "WR", 3, null);
+        addToRoster(chain.teamId, a1, "ACTIVE");
+
+        String body = "{\"athletes\":[" +
+                "{\"athleteId\":\"" + a1 + "\"}," +
+                "{\"athleteId\":\"" + a2 + "\"}," +
+                "{\"athleteId\":\"" + a3 + "\"}" +
+                "]}";
+
+        mockMvc.perform(post(ROSTER_URL.formatted(chain.teamId) + "/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.total").value(3))
+                .andExpect(jsonPath("$.imported").value(2))
+                .andExpect(jsonPath("$.skipped").value(1))
+                .andExpect(jsonPath("$.lines[0].status").value("SKIPPED"))
+                .andExpect(jsonPath("$.lines[0].reason").value("Atleta já inscrito"))
+                .andExpect(jsonPath("$.lines[1].status").value("IMPORTED"))
+                .andExpect(jsonPath("$.lines[2].status").value("IMPORTED"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void batch_unknownAthlete_reportsInvalid() throws Exception {
+        Chain chain = setupChain("BATCH_NF");
+
+        String body = "{\"athletes\":[" +
+                "{\"athleteId\":\"" + UUID.randomUUID() + "\"}" +
+                "]}";
+
+        mockMvc.perform(post(ROSTER_URL.formatted(chain.teamId) + "/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.imported").value(0))
+                .andExpect(jsonPath("$.lines[0].status").value("INVALID"))
+                .andExpect(jsonPath("$.lines[0].reason").value("Atleta não encontrado"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
     void remove_unknownEntry_returnsNotFound() throws Exception {
         Chain chain = setupChain("RM_NF");
 
