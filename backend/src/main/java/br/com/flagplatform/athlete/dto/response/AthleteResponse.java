@@ -8,6 +8,7 @@ import java.util.UUID;
 public record AthleteResponse(
         UUID id,
         String name,
+        String cpf,
         String nickname,
         AthletePosition position,
         Integer number,

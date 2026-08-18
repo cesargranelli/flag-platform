@@ -1,7 +1,11 @@
 package br.com.flagplatform.organization.service;
 
+import br.com.flagplatform.common.enums.DocumentType;
 import br.com.flagplatform.common.enums.OrganizationStatus;
+import br.com.flagplatform.common.exception.DuplicateDocumentException;
+import br.com.flagplatform.common.exception.InvalidDocumentException;
 import br.com.flagplatform.common.pagination.PagedResponse;
+import br.com.flagplatform.common.validation.DocumentValidator;
 import br.com.flagplatform.organization.OrganizationLookup;
 import br.com.flagplatform.organization.dto.request.CreateOrganizationRequest;
 import br.com.flagplatform.organization.dto.request.UpdateOrganizationRequest;
@@ -37,6 +41,8 @@ public class OrganizationService implements OrganizationLookup {
             throw new DuplicateTradeNameException(request.tradeName());
         }
 
+        validateDocument(request.document(), request.documentType(), null);
+
         OrganizationEntity entity = mapper.toEntity(request);
         entity.setStatus(OrganizationStatus.ACTIVE);
 
@@ -66,9 +72,34 @@ public class OrganizationService implements OrganizationLookup {
             throw new DuplicateTradeNameException(request.tradeName());
         }
 
+        validateDocument(request.document(), request.documentType(), id);
+
         mapper.updateEntity(entity, request);
 
         return mapper.toDetailResponse(repository.save(entity));
+    }
+
+    /**
+     * Valida o documento de uma organizacao: e obrigatorio informar CNPJ ou
+     * CPF (um dos dois); o formato deve ser valido; o documento deve ser unico.
+     */
+    private void validateDocument(String document, DocumentType type, UUID currentId) {
+        if (document == null || document.isBlank()) {
+            throw new InvalidDocumentException("Informe o CNPJ da organização ou o CPF do presidente.");
+        }
+        if (type == null) {
+            throw new InvalidDocumentException("Informe o tipo do documento (CNPJ ou CPF).");
+        }
+        if (!DocumentValidator.isValid(document, type)) {
+            throw new InvalidDocumentException("Documento inválido: " + type.getCode());
+        }
+        String normalized = document.replaceAll("\\D", "");
+        boolean duplicate = currentId == null
+                ? repository.existsByDocument(normalized)
+                : repository.existsByDocumentAndIdNot(normalized, currentId);
+        if (duplicate) {
+            throw new DuplicateDocumentException(normalized);
+        }
     }
 
     @Override

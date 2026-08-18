@@ -46,6 +46,7 @@ class AthleteServiceTest {
         AthleteEntity entity = entity("João Silva", AthletePosition.QB, 7);
         AthleteResponse expected = response(entity);
 
+        when(repository.existsByCpf("12345678909")).thenReturn(false);
         when(mapper.toEntity(request)).thenReturn(entity);
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toResponse(entity)).thenReturn(expected);
@@ -108,6 +109,7 @@ class AthleteServiceTest {
         AthleteResponse expected = response(entity);
 
         when(repository.findById(id)).thenReturn(Optional.of(entity));
+        when(repository.existsByCpfAndIdNot("12345678909", id)).thenReturn(false);
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toResponse(entity)).thenReturn(expected);
 
@@ -134,19 +136,20 @@ class AthleteServiceTest {
     private CreateAthleteRequest createRequest(String name, String nickname,
                                                AthletePosition position, Integer number,
                                                String photoUrl) {
-        return new CreateAthleteRequest(name, nickname, position, number, photoUrl);
+        return new CreateAthleteRequest(name, "12345678909", nickname, position, number, photoUrl);
     }
 
     private UpdateAthleteRequest updateRequest(String name, String nickname,
                                                AthletePosition position, Integer number,
                                                String photoUrl) {
-        return new UpdateAthleteRequest(name, nickname, position, number, photoUrl);
+        return new UpdateAthleteRequest(name, "12345678909", nickname, position, number, photoUrl);
     }
 
     private AthleteEntity entity(String name, AthletePosition position, Integer number) {
         AthleteEntity entity = new AthleteEntity();
         entity.setId(UUID.randomUUID());
         entity.setName(name);
+        entity.setCpf("12345678909");
         entity.setPosition(position);
         entity.setNumber(number);
         return entity;
@@ -156,6 +159,7 @@ class AthleteServiceTest {
         return new AthleteResponse(
                 entity.getId(),
                 entity.getName(),
+                entity.getCpf(),
                 entity.getNickname(),
                 entity.getPosition(),
                 entity.getNumber(),

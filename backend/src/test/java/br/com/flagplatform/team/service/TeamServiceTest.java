@@ -2,6 +2,7 @@ package br.com.flagplatform.team.service;
 
 import br.com.flagplatform.category.CategoryLookup;
 import br.com.flagplatform.category.exception.CategoryNotFoundException;
+import br.com.flagplatform.common.enums.DocumentType;
 import br.com.flagplatform.team.dto.request.CreateTeamRequest;
 import br.com.flagplatform.team.dto.request.UpdateTeamRequest;
 import br.com.flagplatform.team.dto.response.TeamResponse;
@@ -53,6 +54,7 @@ class TeamServiceTest {
 
         when(repository.existsByCategoryIdAndNameIgnoreCase(categoryId, request.name()))
                 .thenReturn(false);
+        when(repository.existsByDocument("11222333000181")).thenReturn(false);
         when(mapper.toEntity(request)).thenReturn(entity);
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toResponse(entity)).thenReturn(expected);
@@ -147,6 +149,7 @@ class TeamServiceTest {
         when(repository.findById(id)).thenReturn(Optional.of(entity));
         when(repository.existsByCategoryIdAndNameIgnoreCaseAndIdNot(
                 categoryId, request.name(), id)).thenReturn(false);
+        when(repository.existsByDocumentAndIdNot("11222333000181", id)).thenReturn(false);
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toResponse(entity)).thenReturn(expected);
 
@@ -190,11 +193,11 @@ class TeamServiceTest {
     }
 
     private CreateTeamRequest createRequest(UUID categoryId, String name) {
-        return new CreateTeamRequest(categoryId, name, "TRI", null);
+        return new CreateTeamRequest(categoryId, name, "TRI", "11.222.333/0001-81", DocumentType.CNPJ, null);
     }
 
     private UpdateTeamRequest updateRequest(UUID categoryId, String name) {
-        return new UpdateTeamRequest(categoryId, name, "TRI", null);
+        return new UpdateTeamRequest(categoryId, name, "TRI", "11.222.333/0001-81", DocumentType.CNPJ, null);
     }
 
     private TeamEntity entity(UUID categoryId, String name) {
@@ -203,6 +206,8 @@ class TeamServiceTest {
         entity.setCategoryId(categoryId);
         entity.setName(name);
         entity.setShortName("TRI");
+        entity.setDocument("11222333000181");
+        entity.setDocumentType(DocumentType.CNPJ);
         return entity;
     }
 
@@ -212,6 +217,8 @@ class TeamServiceTest {
                 entity.getCategoryId(),
                 entity.getName(),
                 entity.getShortName(),
+                entity.getDocument(),
+                entity.getDocumentType(),
                 entity.getLogoUrl(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

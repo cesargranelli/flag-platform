@@ -15,6 +15,10 @@ public interface OrganizationRepository extends JpaRepository<OrganizationEntity
 
     boolean existsByTradeNameIgnoreCaseAndIdNot(String tradeName, UUID id);
 
+    boolean existsByDocument(String document);
+
+    boolean existsByDocumentAndIdNot(String document, UUID id);
+
     Optional<OrganizationEntity> findByTradeNameIgnoreCase(String tradeName);
 
     List<OrganizationEntity> findAllByOrderByTradeNameAsc();

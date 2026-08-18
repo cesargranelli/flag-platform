@@ -17,6 +17,9 @@ public class AthleteEntity extends BaseEntity {
     @Column(nullable = false, length = 150)
     private String name;
 
+    @Column(nullable = false, length = 14)
+    private String cpf;
+
     @Column(length = 100)
     private String nickname;
 

@@ -1,5 +1,6 @@
 package br.com.flagplatform.organization.entity;
 
+import br.com.flagplatform.common.enums.DocumentType;
 import br.com.flagplatform.common.enums.OrganizationStatus;
 import br.com.flagplatform.common.enums.OrganizationType;
 import br.com.flagplatform.common.persistence.entity.BaseEntity;
@@ -26,6 +27,8 @@ public class OrganizationEntity extends BaseEntity {
     private String tradeName;
     private String abbreviation;
     private OrganizationType organizationType;
+    private String document;
+    private DocumentType documentType;
     private String email;
     private String phone;
     private String website;
