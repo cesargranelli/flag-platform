@@ -127,4 +127,31 @@ void main() {
     expect(api.lastBody?['name'], 'João Silva Jr');
     expect(find.text('Editar dados'), findsOneWidget);
   });
+
+  testWidgets('abre a tela de importação de atletas e vê o modelo CSV',
+      (WidgetTester tester) async {
+    final api = FakeAthleteApi();
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Atletas'), 120);
+    await tester.ensureVisible(find.text('Atletas'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Atletas'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.upload_file));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Importar atletas'), findsOneWidget);
+    expect(find.text('Ver modelo CSV'), findsOneWidget);
+    expect(find.text('Selecionar arquivo'), findsOneWidget);
+
+    await tester.tap(find.text('Ver modelo CSV'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Modelo CSV'), findsOneWidget);
+    expect(find.textContaining('nome;apelido;posicao;numero;foto'), findsOneWidget);
+  });
 }

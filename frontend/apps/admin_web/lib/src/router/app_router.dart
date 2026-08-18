@@ -29,6 +29,7 @@ import '../screens/game_form_screen.dart';
 import '../screens/game_detail_screen.dart';
 import '../screens/games_screen.dart';
 import '../screens/athlete_form_screen.dart';
+import '../screens/athlete_import_screen.dart';
 import '../screens/athlete_detail_screen.dart';
 import '../screens/athletes_screen.dart';
 import '../screens/rosters_screen.dart';
@@ -338,6 +339,11 @@ class AppRouter {
             path: '/athletes/new',
             name: 'athleteNew',
             builder: (context, state) => const AthleteFormScreen(),
+          ),
+          GoRoute(
+            path: '/athletes/import',
+            name: 'athleteImport',
+            builder: (context, state) => const AthleteImportScreen(),
           ),
           GoRoute(
             path: '/athletes/:id',

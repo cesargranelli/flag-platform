@@ -3,8 +3,12 @@ package br.com.flagplatform.athlete.service;
 import br.com.flagplatform.athlete.AthleteInfo;
 import br.com.flagplatform.athlete.AthleteLookup;
 import br.com.flagplatform.athlete.dto.request.CreateAthleteRequest;
+import br.com.flagplatform.athlete.dto.request.CreateAthleteBatchItem;
+import br.com.flagplatform.athlete.dto.request.CreateAthleteBatchRequest;
 import br.com.flagplatform.athlete.dto.request.UpdateAthleteRequest;
 import br.com.flagplatform.athlete.dto.response.AthleteResponse;
+import br.com.flagplatform.athlete.dto.response.AthleteBatchLineResult;
+import br.com.flagplatform.athlete.dto.response.AthleteBatchResponse;
 import br.com.flagplatform.athlete.entity.AthleteEntity;
 import br.com.flagplatform.athlete.exception.AthleteNotFoundException;
 import br.com.flagplatform.athlete.mapper.AthleteMapper;
@@ -17,6 +21,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -30,6 +36,56 @@ public class AthleteService implements AthleteLookup {
     @Transactional
     public AthleteResponse create(CreateAthleteRequest request) {
         return mapper.toResponse(repository.save(mapper.toEntity(request)));
+    }
+
+    /**
+     * Valida uma carga em lote sem gravar (dry-run). Retorna o resultado por
+     * linha: {@code VALID}, {@code DUPLICATE} (nome ja existe) ou {@code INVALID}
+     * (nome em branco). Linhas validas sao retornadas para pre-visualizacao.
+     */
+    public AthleteBatchResponse validateBatch(CreateAthleteBatchRequest request) {
+        List<AthleteBatchLineResult> lines = new ArrayList<>();
+        int valid = 0;
+        for (int i = 0; i < request.athletes().size(); i++) {
+            CreateAthleteBatchItem item = request.athletes().get(i);
+            int line = i + 2; // linha 1 = cabecalho
+            if (item.name() == null || item.name().isBlank()) {
+                lines.add(new AthleteBatchLineResult(line, "INVALID", "Informe o nome", item));
+            } else if (repository.existsByNameIgnoreCase(item.name().trim())) {
+                lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "Atleta já existe", item));
+            } else {
+                valid++;
+                lines.add(new AthleteBatchLineResult(line, "VALID", null, item));
+            }
+        }
+        return new AthleteBatchResponse(request.athletes().size(), 0, 0, lines);
+    }
+
+    /**
+     * Cria uma carga em lote. Processa linha a linha: linhas validas sao
+     * criadas; duplicadas e invalidas sao reportadas sem abortar as demais.
+     */
+    @Transactional
+    public AthleteBatchResponse createBatch(CreateAthleteBatchRequest request) {
+        List<AthleteBatchLineResult> lines = new ArrayList<>();
+        int imported = 0;
+        for (int i = 0; i < request.athletes().size(); i++) {
+            CreateAthleteBatchItem item = request.athletes().get(i);
+            int line = i + 2;
+            if (item.name() == null || item.name().isBlank()) {
+                lines.add(new AthleteBatchLineResult(line, "INVALID", "Informe o nome", item));
+            } else if (repository.existsByNameIgnoreCase(item.name().trim())) {
+                lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "Atleta já existe", item));
+            } else {
+                CreateAthleteRequest createRequest = new CreateAthleteRequest(
+                        item.name().trim(), item.nickname(), item.position(), item.number(), item.photoUrl());
+                repository.save(mapper.toEntity(createRequest));
+                imported++;
+                lines.add(new AthleteBatchLineResult(line, "IMPORTED", null, item));
+            }
+        }
+        return new AthleteBatchResponse(
+                request.athletes().size(), imported, request.athletes().size() - imported, lines);
     }
 
     public PagedResponse<AthleteResponse> findAll(int page, int size) {

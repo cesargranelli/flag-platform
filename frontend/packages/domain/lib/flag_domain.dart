@@ -7,6 +7,7 @@ export 'src/models/round.dart';
 export 'src/models/game.dart';
 export 'src/models/standing.dart';
 export 'src/models/athlete.dart';
+export 'src/models/athlete_batch.dart';
 export 'src/models/roster_entry.dart';
 export 'src/models/check_in.dart';
 export 'src/models/user.dart';
