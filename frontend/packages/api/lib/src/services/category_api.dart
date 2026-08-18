@@ -21,22 +21,40 @@ class CategoryApi {
 
   Future<Category> create({
     required String competitionId,
-    required String name,
+    required String modalityId,
+    required Gender gender,
+    required AgeGroup ageGroup,
+    String? name,
   }) =>
       _client.post(
         '/api/v1/categories',
-        {'competitionId': competitionId, 'name': name},
+        {
+          'competitionId': competitionId,
+          'modalityId': modalityId,
+          'gender': gender.toJson(),
+          'ageGroup': ageGroup.toJson(),
+          'name': ?name,
+        },
         Category.fromJson,
       );
 
   Future<Category> update(
     String id, {
     required String competitionId,
-    required String name,
+    required String modalityId,
+    required Gender gender,
+    required AgeGroup ageGroup,
+    String? name,
   }) =>
       _client.put(
         '/api/v1/categories/$id',
-        {'competitionId': competitionId, 'name': name},
+        {
+          'competitionId': competitionId,
+          'modalityId': modalityId,
+          'gender': gender.toJson(),
+          'ageGroup': ageGroup.toJson(),
+          'name': ?name,
+        },
         Category.fromJson,
       );
 

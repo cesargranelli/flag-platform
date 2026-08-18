@@ -152,8 +152,22 @@ class FakeGameApi extends GameApi {
 Competition testCompetition({String id = 'c1', String name = 'Taça SP'}) =>
     Competition(id: id, name: name, status: CompetitionStatus.published);
 
-Category testCategory({String id = 'cat1', String competitionId = 'c1', String name = 'Masculino'}) =>
-    Category(id: id, competitionId: competitionId, name: name);
+Category testCategory({
+  String id = 'cat1',
+  String competitionId = 'c1',
+  String modalityId = 'm1',
+  Gender gender = Gender.male,
+  AgeGroup ageGroup = AgeGroup.adult,
+  String name = 'Masculino',
+}) =>
+    Category(
+      id: id,
+      competitionId: competitionId,
+      modalityId: modalityId,
+      gender: gender,
+      ageGroup: ageGroup,
+      name: name,
+    );
 
 Round testRound({String id = 'r1', String categoryId = 'cat1', int number = 1, String name = 'Primeira'}) =>
     Round(id: id, categoryId: categoryId, number: number, name: name, type: RoundType.regular);

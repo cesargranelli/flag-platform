@@ -331,11 +331,27 @@ class FakeCategoryApi extends CategoryApi {
   @override
   Future<Category> create({
     required String competitionId,
-    required String name,
+    required String modalityId,
+    required Gender gender,
+    required AgeGroup ageGroup,
+    String? name,
   }) async {
     createCalls++;
-    lastBody = {'competitionId': competitionId, 'name': name};
-    final category = Category(id: 'cat-nova', competitionId: competitionId, name: name);
+    lastBody = {
+      'competitionId': competitionId,
+      'modalityId': modalityId,
+      'gender': gender.toJson(),
+      'ageGroup': ageGroup.toJson(),
+      'name': name,
+    };
+    final category = Category(
+      id: 'cat-nova',
+      competitionId: competitionId,
+      modalityId: modalityId,
+      gender: gender,
+      ageGroup: ageGroup,
+      name: name ?? 'Flag Football 5x5 · Masculino · Adulto',
+    );
     categories = [...categories, category];
     return category;
   }
@@ -344,10 +360,26 @@ class FakeCategoryApi extends CategoryApi {
   Future<Category> update(
     String id, {
     required String competitionId,
-    required String name,
+    required String modalityId,
+    required Gender gender,
+    required AgeGroup ageGroup,
+    String? name,
   }) async {
-    lastBody = {'competitionId': competitionId, 'name': name};
-    final updated = Category(id: id, competitionId: competitionId, name: name);
+    lastBody = {
+      'competitionId': competitionId,
+      'modalityId': modalityId,
+      'gender': gender.toJson(),
+      'ageGroup': ageGroup.toJson(),
+      'name': name,
+    };
+    final updated = Category(
+      id: id,
+      competitionId: competitionId,
+      modalityId: modalityId,
+      gender: gender,
+      ageGroup: ageGroup,
+      name: name ?? 'Flag Football 5x5 · Masculino · Adulto',
+    );
     categories = categories
         .map((c) => c.id == id ? updated : c)
         .toList();
@@ -359,6 +391,16 @@ class FakeCategoryApi extends CategoryApi {
     deleteCalls++;
     categories = categories.where((c) => c.id != id).toList();
   }
+}
+
+/// [ModalityApi] com dados controlados para testes.
+class FakeModalityApi extends ModalityApi {
+  FakeModalityApi() : super(ApiClient(session: SessionManager()));
+
+  List<Modality> modalities = [];
+
+  @override
+  Future<List<Modality>> list() async => modalities;
 }
 
 /// [VenueApi] com dados controlados para testes.
@@ -750,9 +792,40 @@ Venue testVenue({
 Category testCategory({
   String id = '11111111-1111-1111-1111-111111111111',
   String competitionId = '11111111-1111-1111-1111-111111111111',
+  String modalityId = '11111111-1111-1111-1111-111111111111',
+  Gender gender = Gender.male,
+  AgeGroup ageGroup = AgeGroup.adult,
   String name = 'Masculino 5x5',
+  String? modalityName = 'Flag Football',
+  String? modalityFormat = '5x5',
 }) {
-  return Category(id: id, competitionId: competitionId, name: name);
+  return Category(
+    id: id,
+    competitionId: competitionId,
+    modalityId: modalityId,
+    gender: gender,
+    ageGroup: ageGroup,
+    name: name,
+    modalityName: modalityName,
+    modalityFormat: modalityFormat,
+  );
+}
+
+/// Modalidade de exemplo para testes.
+Modality testModality({
+  String id = '11111111-1111-1111-1111-111111111111',
+  String name = 'Flag Football',
+  String format = '5x5',
+  String contactType = 'FLAG',
+  int playersPerTeam = 5,
+}) {
+  return Modality(
+    id: id,
+    name: name,
+    format: format,
+    contactType: contactType,
+    playersPerTeam: playersPerTeam,
+  );
 }
 
 /// Campeonato de exemplo para testes.

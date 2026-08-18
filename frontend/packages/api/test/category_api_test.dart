@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
+import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeHttpClientAdapter implements HttpClientAdapter {
@@ -40,6 +41,11 @@ void main() {
           {
             'id': '11111111-1111-1111-1111-111111111111',
             'competitionId': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'modalityId': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+            'modalityName': 'Flag Football',
+            'modalityFormat': '5x5',
+            'gender': 'MALE',
+            'ageGroup': 'ADULT',
             'name': 'Masculino',
             'createdAt': '2026-01-01T10:00:00.000Z',
             'updatedAt': null,
@@ -47,6 +53,9 @@ void main() {
           {
             'id': '22222222-2222-2222-2222-222222222222',
             'competitionId': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+            'modalityId': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+            'gender': 'FEMALE',
+            'ageGroup': 'SUB14',
             'name': 'Feminino',
           },
         ]);
@@ -76,7 +85,12 @@ void main() {
       expect(categories.first.id, '11111111-1111-1111-1111-111111111111');
       expect(categories.first.name, 'Masculino');
       expect(categories.first.competitionId, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+      expect(categories.first.modalityId, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+      expect(categories.first.gender, Gender.male);
+      expect(categories.first.ageGroup, AgeGroup.adult);
       expect(categories.last.id, '22222222-2222-2222-2222-222222222222');
+      expect(categories.last.gender, Gender.female);
+      expect(categories.last.ageGroup, AgeGroup.sub14);
       expect(categories.last.createdAt, isNull);
     });
 
@@ -88,6 +102,9 @@ void main() {
         final body = jsonEncode({
           'id': '11111111-1111-1111-1111-111111111111',
           'competitionId': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+          'modalityId': 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+          'gender': 'MALE',
+          'ageGroup': 'ADULT',
           'name': 'Masculino',
           'createdAt': '2026-01-01T10:00:00.000Z',
           'updatedAt': '2026-01-02T10:00:00.000Z',
