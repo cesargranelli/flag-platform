@@ -44,7 +44,7 @@ Antes de implementar qualquer coisa:
 - Login (JWT)
 - Criar organização
 - Criar campeonato
-- Criar categoria (ex: Flag 5x5 Masculino)
+- Criar categoria (combinação modalidade + gênero + faixa etária; ex: Flag 5x5 Masculino Adulto)
 - Cadastrar campos/venues
 - Cadastrar times
 - Cadastrar atletas e inscrever no roster dos times
@@ -75,7 +75,8 @@ Antes de implementar qualquer coisa:
 `
 Organization
   └── Competition
-        └── Category
+        └── Category (modalidade + gênero + faixa etária)
+              ├── Modality (catálogo: Flag 5x5, 8x8, 9x9, Full Pads 11x11)
               ├── Venue (campo)
               ├── Team
               │     └── TeamRoster ────── Athlete
@@ -84,6 +85,8 @@ Organization
                           ├── Standing (calculado)
                           └── CheckIn (validação de atleta por jogo)
 `
+
+> **Categoria estruturada**: desde as issues #177/#178, a categoria não é mais um nome livre. É a combinação **modalidade + gênero + faixa etária** — ex.: "Flag 5x5 Masculino Adulto". O nome é derivado automaticamente (override opcional). Enums: `Gender` (MALE/FEMALE/MIXED) e `AgeGroup` (SUB11/SUB13/SUB14/SUB15/SUB17/SUB20/ADULT/MASTER/OPEN).
 
 ## Stack
 
@@ -166,3 +169,21 @@ Se a resposta for não, fica fora do MVP.
 ### Como retomar a sessão
 - `opencode --continue` (ou selecionar a sessão no TUI) para voltar exatamente a esta conversa.
 - Se a sessão for perdida: este arquivo + `docs/product/backlog.md` + ADRs são o ponto de partida.
+
+---
+
+## Handoff — 2026-08-18 (épico #176: reestruturação de competições)
+
+### Estado atual
+- **Épico #176** "Reestruturar modelo de competições: modalidade, gênero e faixa etária" com 3 sub-tarefas: **#177 (backend) Done**, **#178 (frontend) Done**, **#179 (testes E2E + documentação) em andamento**.
+- **Backend**: 315 testes verdes. Novo módulo `modality` (catálogo) + categorias estruturadas (migrações Flyway até **V19**).
+- **Frontend**: admin_web 65, api 11, domain 26, core 4, public 30, referee 15 — todos verdes.
+
+### Decisão de escopo (registrada na #179)
+- **Manter o padrão atual de testes** (widget tests com Fakes + unit tests puros + testes de integração backend). A migração para **Playwright/Selenium** (E2E consolidado, mantendo só unitários de negócio nas apps) foi **estudada e adiada** — ideia futura, fora do escopo atual.
+
+### Modelo de competições (novo)
+- **Categoria** = combinação **modalidade + gênero + faixa etária** (não mais nome livre).
+- **Modalidade** = catálogo `modalities` (Flag 5x5/8x8/9x9, Full Pads 11x11), seed em runtime (`ModalityDataSeeder`), `GET /api/v1/modalities`.
+- **Enums**: `Gender` (MALE/FEMALE/MIXED), `AgeGroup` (SUB11..OPEN).
+- **Nome** derivado (ex.: "Flag Football 5x5 · Masculino · Adulto"), override opcional; unicidade por combinação.

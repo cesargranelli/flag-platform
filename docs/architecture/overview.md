@@ -17,7 +17,8 @@ O domínio cobre um campeonato completo, de organizações até a validação de
 ```
 Organization
   └── Competition
-        └── Category
+        └── Category (modalidade + gênero + faixa etária)
+              ├── Modality (catálogo: Flag 5x5, 8x8, 9x9, Full Pads 11x11)
               ├── Venue
               ├── Team
               │     └── TeamRoster ────── Athlete
@@ -74,7 +75,7 @@ flowchart LR
         F["flag_api<br/>cliente dio + serviços REST"]
     end
     subgraph "Backend Spring"
-        G["organization, competition, category,<br/>venue, team, round, game, standing,<br/>athlete, roster, checkin, user, common"]
+        G["organization, competition, modality, category,<br/>venue, team, round, game, standing,<br/>athlete, roster, checkin, user, common"]
         H["config + security<br/>JWT · rate limit · CORS · OpenAPI"]
     end
 
@@ -91,7 +92,7 @@ flowchart LR
 
 ## Como a solução flui de ponta a ponta
 
-1. **Organizador** cadastra organização e publica um campeonato (Admin Web) → cria categorias, campos, times, rodadas e agenda jogos.
+1. **Organizador** cadastra organização e publica um campeonato (Admin Web) → cria categorias (combinação modalidade + gênero + faixa etária), campos, times, rodadas e agenda jogos.
 2. O **público** acompanha tudo sem login (Public App): calendário, resultados, classificação e detalhes de jogo com placar ao vivo (atualização por polling a cada 10s).
 3. No dia, a **mesa** (Referee App) faz o check-in dos atletas no pré-jogo, inicia a partida, atualiza o placar ponto a ponto e finaliza.
 4. Ao finalizar, o backend **recalcula a classificação** automaticamente.

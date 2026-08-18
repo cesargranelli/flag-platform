@@ -38,7 +38,8 @@ flag-platform/
 |--------|------------------|----------------|
 | `organization` | Organizações (federações, ligas, clubes) | `OrganizationLookup` |
 | `competition` | Campeonatos por organização | `CompetitionLookup` |
-| `category` | Categorias por campeonato | `CategoryLookup` |
+| `modality` | Catálogo de modalidades (Flag 5x5/8x8/9x9, Full Pads 11x11) | `ModalityLookup` (`ModalityInfo`) |
+| `category` | Categorias por campeonato (combinação modalidade + gênero + faixa etária) | `CategoryLookup` |
 | `venue` | Campos de jogo | `VenueLookup` (`VenueInfo`) |
 | `team` | Times por categoria | `TeamLookup` (`TeamInfo`) |
 | `round` | Rodadas por categoria (REGULAR/PLAYOFFS) | `RoundLookup` (`RoundInfo`) |
@@ -59,6 +60,8 @@ flowchart LR
     Organization --> Common
     Competition --> Organization
     Category --> Competition
+    Category --> Modality
+    Modality --> Common
     Venue --> Organization
     Team --> Category
     Round --> Category
@@ -91,7 +94,7 @@ Regra de arquitetura: **dependências apenas via interfaces `{Lookup}`** (sem ac
 |--------|----------|
 | `config` | `SecurityConfig`, `CorsConfig`, `FlywayConfig`, `OpenApiConfig` |
 | `security` | `JwtTokenProvider`, `JwtAuthenticationFilter`, `LoginRateLimitFilter` |
-| `common.converter` | `PersistableEnumConverter` + 10 converters de enum |
+| `common.converter` | `PersistableEnumConverter` + 13 converters de enum |
 | `common.exception` | `ApiException` (RFC-7807 `ProblemDetail`), `GlobalExceptionHandler` |
 | `common.pagination` | `PagedResponse<T>` (com header `X-Total-Count`) |
 | `common.persistence.entity` | `BaseEntity` (id UUID + timestamps + auditoria) |
@@ -157,4 +160,14 @@ flowchart LR
 3. **Rate limit em memória**: janela por IP em `ConcurrentHashMap` — não sobrevive a restart/multi-instância.
 4. **`JWT_SECRET` com default em dev**: em produção deve ser injetado via variável de ambiente.
 5. **Deploy real é stub**: o job `deploy` hoje apenas valida o artefato (integração com destino é placeholder).
-6. **Discrepâncias de docs legadas**: README e `.ai/project-context.md` citam Java 21 / Flyway V14; o código usa Java 25 e Flyway até V16.
+6. **Discrepâncias de docs legadas**: README e `.ai/project-context.md` citam Java 21 / Flyway V14; o código usa Java 25 e Flyway até V19.
+
+### Categorias estruturadas (modalidade + gênero + faixa etária)
+
+Desde as issues #177/#178, a **categoria** deixou de ser um nome livre (`categories.name`) e passou a ser a combinação estruturada **modalidade + gênero + faixa etária**:
+
+- **Modalidade** = catálogo (`modalities`, módulo `modality`): Flag 5x5, Flag 8x8, Flag 9x9, Full Pads 11x11 — com `format`, `contact_type`, `players_per_team`; seed padrão em tempo de execução (`ModalityDataSeeder`); endpoint `GET /api/v1/modalities`.
+- **Gênero** = enum `Gender` (`MALE | FEMALE | MIXED`).
+- **Faixa etária** = enum `AgeGroup` (`SUB11 | SUB13 | SUB14 | SUB15 | SUB17 | SUB20 | ADULT | MASTER | OPEN`).
+- **Nome** da categoria é derivado da combinação (ex.: "Flag Football 5x5 · Masculino · Adulto"), com override opcional; a unicidade é `(competition_id, modality_id, gender, age_group)` entre ativos.
+- Migrações: `V18` (cria `modalities`) e `V19` (altera `categories`).
