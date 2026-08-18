@@ -114,4 +114,29 @@ void main() {
     expect(find.text('Editar dados'), findsOneWidget);
     expect(find.byType(TextFormField), findsNothing);
   });
+
+  testWidgets('abre a tela de importação de jogos e vê o modelo CSV',
+      (WidgetTester tester) async {
+    final api = FakeGameApi();
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+    await openGames(tester);
+
+    await tester.tap(find.byIcon(Icons.upload_file));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Importar jogos'), findsOneWidget);
+    expect(find.text('Ver modelo CSV'), findsOneWidget);
+    expect(find.text('Selecionar arquivo'), findsOneWidget);
+
+    await tester.tap(find.text('Ver modelo CSV'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Modelo CSV'), findsOneWidget);
+    expect(
+      find.textContaining('time_casa;time_fora;campo;data;hora'),
+      findsOneWidget,
+    );
+  });
 }

@@ -100,6 +100,17 @@ class GameApi {
         'venueId': ?venueId,
         'scheduledAt': _formatDateTime(scheduledAt),
       };
+
+  /// Importa uma carga em lote de jogos de uma rodada.
+  Future<GameBatchResult> createBatch(
+    String roundId,
+    List<Map<String, dynamic>> games,
+  ) =>
+      _client.post(
+        '/api/v1/rounds/$roundId/games/batch',
+        {'games': games},
+        GameBatchResult.fromJson,
+      );
 }
 
 String _formatDateTime(DateTime value) =>

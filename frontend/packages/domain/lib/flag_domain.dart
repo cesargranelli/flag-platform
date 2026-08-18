@@ -5,6 +5,7 @@ export 'src/models/venue.dart';
 export 'src/models/team.dart';
 export 'src/models/round.dart';
 export 'src/models/game.dart';
+export 'src/models/game_batch.dart';
 export 'src/models/standing.dart';
 export 'src/models/athlete.dart';
 export 'src/models/athlete_batch.dart';

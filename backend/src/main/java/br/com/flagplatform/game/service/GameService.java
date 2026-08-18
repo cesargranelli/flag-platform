@@ -9,11 +9,15 @@ import br.com.flagplatform.game.GameLookup;
 import br.com.flagplatform.game.GameResultRegisteredEvent;
 import br.com.flagplatform.game.dto.request.AddScoreEventRequest;
 import br.com.flagplatform.game.dto.request.CreateGameRequest;
+import br.com.flagplatform.game.dto.request.GameBatchItem;
+import br.com.flagplatform.game.dto.request.GameBatchRequest;
 import br.com.flagplatform.game.dto.request.RegisterGameResultRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameRequest;
 import br.com.flagplatform.game.dto.request.UpdateGameStatusRequest;
 import br.com.flagplatform.game.dto.request.UpdateScoreRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
+import br.com.flagplatform.game.dto.response.GameBatchLineResult;
+import br.com.flagplatform.game.dto.response.GameBatchResponse;
 import br.com.flagplatform.game.dto.response.GameSummaryResponse;
 import br.com.flagplatform.game.dto.response.ScoreEventResponse;
 import br.com.flagplatform.game.entity.GameEntity;
@@ -67,6 +71,62 @@ public class GameService implements GameLookup {
         }
 
         return mapper.toResponse(repository.save(entity));
+    }
+
+    /**
+     * Cria varios jogos de uma rodada de uma vez. Processa por linha: linhas
+     * com times inexistentes, time casa == fora ou duplicadas sao reportadas
+     * sem abortar as demais.
+     */
+    @Transactional
+    public GameBatchResponse createBatch(UUID roundId, GameBatchRequest request) {
+        roundLookup.assertExists(roundId);
+
+        List<GameBatchLineResult> lines = new ArrayList<>();
+        int imported = 0;
+        for (int i = 0; i < request.games().size(); i++) {
+            GameBatchItem item = request.games().get(i);
+            int line = i + 2; // linha 1 = cabecalho
+            String error = validateBatchItem(item);
+            if (error != null) {
+                lines.add(new GameBatchLineResult(line, "INVALID", error, item));
+                continue;
+            }
+            if (repository.existsByRoundIdAndHomeTeamIdAndAwayTeamId(
+                    roundId, item.homeTeamId(), item.awayTeamId())) {
+                lines.add(new GameBatchLineResult(
+                        line, "SKIPPED", "Jogo já existe nesta rodada", item));
+                continue;
+            }
+            GameEntity entity = new GameEntity();
+            entity.setRoundId(roundId);
+            entity.setHomeTeamId(item.homeTeamId());
+            entity.setAwayTeamId(item.awayTeamId());
+            entity.setVenueId(item.venueId());
+            entity.setScheduledAt(item.scheduledAt());
+            entity.setStatus(GameStatus.SCHEDULED);
+            repository.save(entity);
+            imported++;
+            lines.add(new GameBatchLineResult(line, "IMPORTED", null, item));
+        }
+        return new GameBatchResponse(
+                request.games().size(), imported, request.games().size() - imported, lines);
+    }
+
+    private String validateBatchItem(GameBatchItem item) {
+        if (!teamLookup.existsById(item.homeTeamId())) {
+            return "Time da casa não encontrado";
+        }
+        if (!teamLookup.existsById(item.awayTeamId())) {
+            return "Time visitante não encontrado";
+        }
+        if (item.venueId() != null && !venueLookup.existsById(item.venueId())) {
+            return "Campo não encontrado";
+        }
+        if (item.homeTeamId().equals(item.awayTeamId())) {
+            return "Time da casa deve ser diferente do visitante";
+        }
+        return null;
     }
 
     public List<GameSummaryResponse> findByRoundId(UUID roundId) {

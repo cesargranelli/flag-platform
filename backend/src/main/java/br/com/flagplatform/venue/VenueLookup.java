@@ -12,6 +12,8 @@ public interface VenueLookup {
 
     void assertExists(UUID id);
 
+    boolean existsById(UUID id);
+
     VenueInfo findVenueInfoById(UUID id);
 
 }
