@@ -7,148 +7,102 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
 
 /// Check-in e validação de atletas por jogo (mesa).
-class CheckInScreen extends ConsumerStatefulWidget {
+///
+/// Usa o mesmo contexto de jogo compartilhado da operação; lista agrupada por
+/// time com contadores e estado por linha.
+class CheckInScreen extends ConsumerWidget {
   const CheckInScreen({super.key});
 
   @override
-  ConsumerState<CheckInScreen> createState() => _CheckInScreenState();
-}
-
-class _CheckInScreenState extends ConsumerState<CheckInScreen> {
-  String? _competitionId;
-  String? _categoryId;
-  String? _roundId;
-  String? _gameId;
-  bool _submitting = false;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final competitions = ref.watch(competitionsProvider);
+    final selectedComp = ref.watch(selectedCompetitionProvider);
+    final selectedCat = ref.watch(selectedCategoryProvider);
+    final selectedRound = ref.watch(selectedRoundProvider);
+    final selectedGame = ref.watch(selectedGameProvider);
+
     final compData = competitions.valueOrNull ?? const [];
     final effectiveComp =
-        _competitionId ?? (compData.isNotEmpty ? compData.first.id : null);
+        selectedComp ?? (compData.isNotEmpty ? compData.first.id : null);
 
     final categories = effectiveComp == null
         ? null
         : ref.watch(categoriesProvider(effectiveComp));
     final catData = categories?.valueOrNull ?? const [];
     final effectiveCat =
-        _categoryId ?? (catData.isNotEmpty ? catData.first.id : null);
+        selectedCat ?? (catData.isNotEmpty ? catData.first.id : null);
 
     final rounds = effectiveCat == null
         ? null
         : ref.watch(roundsProvider(effectiveCat));
     final roundData = rounds?.valueOrNull ?? const [];
     final effectiveRound =
-        _roundId ?? (roundData.isNotEmpty ? roundData.first.id : null);
+        selectedRound ?? (roundData.isNotEmpty ? roundData.first.id : null);
 
     final games = effectiveRound == null
         ? null
         : ref.watch(gamesByRoundProvider(effectiveRound));
     final gamesData = games?.valueOrNull;
     final effectiveGameId =
-        _gameId ?? (gamesData?.isNotEmpty == true ? gamesData!.first.id : null);
-    Game? selectedGame;
+        selectedGame ?? (gamesData?.isNotEmpty == true ? gamesData!.first.id : null);
+    Game? selectedGameObj;
     if (effectiveGameId != null && gamesData != null) {
       final matches = gamesData.where((g) => g.id == effectiveGameId);
-      if (matches.isNotEmpty) selectedGame = matches.first;
+      if (matches.isNotEmpty) selectedGameObj = matches.first;
     }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Check-in de atletas')),
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
-        error: (e, s) => const Text('Erro ao carregar campeonatos'),
+        error: (e, s) => AppErrorState(
+          message: 'Não foi possível carregar os campeonatos',
+          onRetry: () => ref.invalidate(competitionsProvider),
+        ),
         data: (_) => SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              DropdownButtonFormField<String>(
-                initialValue: effectiveComp,
-                decoration: const InputDecoration(
-                  labelText: 'Campeonato',
-                  border: OutlineInputBorder(),
-                ),
-                items: compData
-                    .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
-                    .toList(),
-                onChanged: (value) => setState(() {
-                  _competitionId = value;
-                  _categoryId = null;
-                  _roundId = null;
-                  _gameId = null;
-                }),
-              ),
-              const SizedBox(height: 12),
-              if (categories != null)
-                categories.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (e, s) => const Text('Erro ao carregar categorias'),
-                  data: (_) => DropdownButtonFormField<String>(
-                    initialValue: effectiveCat,
-                    decoration: const InputDecoration(
-                      labelText: 'Categoria',
-                      border: OutlineInputBorder(),
+                _compDropdown(compData, effectiveComp, ref),
+                if (categories != null) ...[
+                  const SizedBox(height: 12),
+                  categories.when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (e, s) => AppErrorState(
+                      message: 'Erro ao carregar categorias',
+                      onRetry: () =>
+                          ref.invalidate(categoriesProvider(effectiveComp!)),
                     ),
-                    items: catData
-                        .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
-                        .toList(),
-                    onChanged: (value) => setState(() {
-                      _categoryId = value;
-                      _roundId = null;
-                      _gameId = null;
-                    }),
+                    data: (_) => _catDropdown(catData, effectiveCat, ref),
                   ),
-                ),
-              if (categories != null) const SizedBox(height: 12),
-              if (rounds != null)
-                rounds.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (e, s) => const Text('Erro ao carregar rodadas'),
-                  data: (_) => DropdownButtonFormField<String>(
-                    initialValue: effectiveRound,
-                    decoration: const InputDecoration(
-                      labelText: 'Rodada',
-                      border: OutlineInputBorder(),
+                ],
+                if (rounds != null) ...[
+                  const SizedBox(height: 12),
+                  rounds.when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (e, s) => AppErrorState(
+                      message: 'Erro ao carregar rodadas',
+                      onRetry: () => ref.invalidate(roundsProvider(effectiveCat!)),
                     ),
-                    items: roundData
-                        .map((r) => DropdownMenuItem(
-                              value: r.id,
-                              child: Text('Rodada ${r.number} - ${r.name}'),
-                            ))
-                        .toList(),
-                    onChanged: (value) => setState(() {
-                      _roundId = value;
-                      _gameId = null;
-                    }),
+                    data: (_) => _roundDropdown(roundData, effectiveRound, ref),
                   ),
-                ),
-              if (rounds != null) const SizedBox(height: 12),
-              if (games != null)
-                games.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (e, s) => const Text('Erro ao carregar jogos'),
-                  data: (_) => DropdownButtonFormField<String>(
-                    initialValue: effectiveGameId,
-                    decoration: const InputDecoration(
-                      labelText: 'Jogo',
-                      border: OutlineInputBorder(),
+                ],
+                if (games != null) ...[
+                  const SizedBox(height: 12),
+                  games.when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (e, s) => AppErrorState(
+                      message: 'Erro ao carregar jogos',
+                      onRetry: () =>
+                          ref.invalidate(gamesByRoundProvider(effectiveRound!)),
                     ),
-                    items: gamesData!
-                        .map((g) => DropdownMenuItem(
-                              value: g.id,
-                              child: Text(
-                                '${g.homeTeamName ?? 'Casa'} x ${g.awayTeamName ?? 'Fora'} · '
-                                '${_formatDateTime(g.scheduledAt)} · ${g.status.name}',
-                              ),
-                            ))
-                        .toList(),
-                    onChanged: (value) => setState(() => _gameId = value),
+                    data: (_) => _gameDropdown(gamesData!, effectiveGameId, ref),
                   ),
-                ),
-              if (games != null) const SizedBox(height: 16),
-              if (selectedGame != null) _buildRoster(selectedGame),
+                ],
+                if (games != null) const SizedBox(height: 16),
+                if (selectedGameObj != null)
+                  _buildRoster(context, ref, selectedGameObj),
             ],
           ),
         ),
@@ -156,7 +110,86 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     );
   }
 
-  Widget _buildRoster(Game game) {
+  Widget _compDropdown(
+      List<Competition> items, String? value, WidgetRef ref) {
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      decoration: const InputDecoration(
+        labelText: 'Campeonato',
+        border: OutlineInputBorder(),
+      ),
+      items: items
+          .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+          .toList(),
+      onChanged: (v) {
+        ref.read(selectedCompetitionProvider.notifier).state = v;
+        ref.read(selectedCategoryProvider.notifier).state = null;
+        ref.read(selectedRoundProvider.notifier).state = null;
+        ref.read(selectedGameProvider.notifier).state = null;
+      },
+    );
+  }
+
+  Widget _catDropdown(List<Category> items, String? value, WidgetRef ref) {
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      decoration: const InputDecoration(
+        labelText: 'Categoria',
+        border: OutlineInputBorder(),
+      ),
+      items: items
+          .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+          .toList(),
+      onChanged: (v) {
+        ref.read(selectedCategoryProvider.notifier).state = v;
+        ref.read(selectedRoundProvider.notifier).state = null;
+        ref.read(selectedGameProvider.notifier).state = null;
+      },
+    );
+  }
+
+  Widget _roundDropdown(List<Round> items, String? value, WidgetRef ref) {
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      decoration: const InputDecoration(
+        labelText: 'Rodada',
+        border: OutlineInputBorder(),
+      ),
+      items: items
+          .map((r) => DropdownMenuItem(
+                value: r.id,
+                child: Text('Rodada ${r.number} - ${r.name}'),
+              ))
+          .toList(),
+      onChanged: (v) {
+        ref.read(selectedRoundProvider.notifier).state = v;
+        ref.read(selectedGameProvider.notifier).state = null;
+      },
+    );
+  }
+
+  Widget _gameDropdown(List<Game> items, String? value, WidgetRef ref) {
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      decoration: const InputDecoration(
+        labelText: 'Jogo',
+        border: OutlineInputBorder(),
+      ),
+      items: items
+          .map((g) => DropdownMenuItem(
+                value: g.id,
+                child: Text(
+                  '${g.homeTeamName ?? 'Casa'} x ${g.awayTeamName ?? 'Fora'} · '
+                  '${_formatDateTime(g.scheduledAt)} · ${g.status.name}',
+                ),
+              ))
+          .toList(),
+      onChanged: (v) =>
+          ref.read(selectedGameProvider.notifier).state = v,
+    );
+  }
+
+  Widget _buildRoster(BuildContext context, WidgetRef ref, Game game) {
     final checkins = ref.watch(checkinProvider(game.id));
     final inProgress = game.status == GameStatus.inProgress;
 
@@ -173,27 +206,77 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
             icon: Icons.groups_outlined,
           );
         }
+        final home = items.where((c) => c.teamId == game.homeTeamId).toList();
+        final away = items.where((c) => c.teamId == game.awayTeamId).toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Status: ${game.status.name}',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
+            _statusCard(game),
             const SizedBox(height: 8),
-            for (final checkIn in items) _buildAthleteTile(checkIn, inProgress),
+            if (home.isNotEmpty) _teamSection(context, ref, home, inProgress),
+            if (away.isNotEmpty) _teamSection(context, ref, away, inProgress),
           ],
         );
       },
     );
   }
 
-  Widget _buildAthleteTile(CheckIn checkIn, bool inProgress) {
+  Widget _statusCard(Game game) {
+    final present = 0; // atualizado por seção; simplificação visual
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${game.homeTeamName ?? 'Casa'} x ${game.awayTeamName ?? 'Fora'}',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${_formatDateTime(game.scheduledAt)} · ${_gameStatusLabel(game.status)}'
+              '${present > 0 ? '' : ''}',
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _teamSection(
+      BuildContext context, WidgetRef ref, List<CheckIn> items, bool inProgress) {
+    final teamName = items.first.teamName ?? 'Time';
+    final present = items.where((c) => c.status == CheckInStatus.present).length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  teamName,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+              Text(
+                '$present/${items.length} presentes',
+                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        for (final checkIn in items)
+          _buildAthleteTile(context, ref, checkIn, inProgress),
+      ],
+    );
+  }
+
+  Widget _buildAthleteTile(
+      BuildContext context, WidgetRef ref, CheckIn checkIn, bool inProgress) {
     final statusLabel = switch (checkIn.status) {
       CheckInStatus.present => 'PRESENTE',
       CheckInStatus.noShow => 'FALTOU',
@@ -211,8 +294,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
       child: ListTile(
         title: Text(checkIn.athleteName),
         subtitle: Text(
-          '${checkIn.teamName ?? ''}'
-          '${numberText.isNotEmpty ? ' · $numberText' : ''}'
+          '${numberText.isNotEmpty ? numberText : ''}'
           '${officialText.isNotEmpty ? ' · $officialText' : ''}'
           '${statusLabel.isNotEmpty ? ' · $statusLabel' : ''}',
         ),
@@ -225,14 +307,11 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                 hasOverride ? Icons.tag : Icons.tag_outlined,
                 color: hasOverride ? Colors.orange : null,
               ),
-              onPressed: () => _editMatchNumber(checkIn),
+              onPressed: () => _editMatchNumber(context, ref, checkIn),
             ),
-            if (_submitting)
-              const SizedBox(
-                height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-            else if (inProgress)
+            if (inProgress)
               FilledButton.tonal(
-                onPressed: () => _validate(checkIn),
+                onPressed: () => _validate(context, ref, checkIn),
                 child: const Text('Validar'),
               )
             else
@@ -243,12 +322,13 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                     tooltip: 'Presente',
                     icon: const Icon(Icons.check_circle, color: Colors.green),
                     onPressed: () =>
-                        _mark(checkIn, CheckInStatus.present),
+                        _mark(context, ref, checkIn, CheckInStatus.present),
                   ),
                   IconButton(
                     tooltip: 'Não compareceu',
                     icon: const Icon(Icons.cancel, color: Colors.red),
-                    onPressed: () => _mark(checkIn, CheckInStatus.noShow),
+                    onPressed: () =>
+                        _mark(context, ref, checkIn, CheckInStatus.noShow),
                   ),
                 ],
               ),
@@ -258,7 +338,56 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     );
   }
 
-  Future<void> _editMatchNumber(CheckIn checkIn) async {
+  Future<void> _mark(BuildContext context, WidgetRef ref, CheckIn checkIn,
+      CheckInStatus status) async {
+    try {
+      await ref.read(checkInApiProvider).checkin(
+            gameId: checkIn.gameId,
+            athleteId: checkIn.athleteId,
+            status: status,
+          );
+      ref.invalidate(checkinProvider(checkIn.gameId));
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível registrar o check-in')),
+        );
+      }
+    }
+  }
+
+  Future<void> _validate(
+      BuildContext context, WidgetRef ref, CheckIn checkIn) async {
+    try {
+      final result = await ref
+          .read(checkInApiProvider)
+          .validate(gameId: checkIn.gameId, athleteId: checkIn.athleteId);
+      if (context.mounted) {
+        if (result.status == CheckInStatus.notRegistered) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${checkIn.athleteName} não está no roster'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Atleta validado')),
+          );
+        }
+      }
+      ref.invalidate(checkinProvider(checkIn.gameId));
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível validar o atleta')),
+        );
+      }
+    }
+  }
+
+  Future<void> _editMatchNumber(
+      BuildContext context, WidgetRef ref, CheckIn checkIn) async {
     final controller = TextEditingController(
       text: checkIn.matchNumber?.toString() ?? '',
     );
@@ -302,10 +431,9 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
       ),
     );
 
-    if (newNumber == null || !mounted) return;
+    if (newNumber == null || !context.mounted) return;
 
     final int? number = newNumber == -1 ? null : newNumber;
-    setState(() => _submitting = true);
     try {
       await ref.read(checkInApiProvider).setMatchNumber(
             gameId: checkIn.gameId,
@@ -314,75 +442,26 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
           );
       ref.invalidate(checkinProvider(checkIn.gameId));
     } on RepositoryException catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.message)),
         );
       }
     } catch (_) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Não foi possível salvar a numeração')),
         );
       }
-    } finally {
-      if (mounted) setState(() => _submitting = false);
     }
   }
 
-  Future<void> _mark(CheckIn checkIn, CheckInStatus status) async {
-    setState(() => _submitting = true);
-    try {
-      await ref
-          .read(checkInApiProvider)
-          .checkin(
-            gameId: checkIn.gameId,
-            athleteId: checkIn.athleteId,
-            status: status,
-          );
-      ref.invalidate(checkinProvider(checkIn.gameId));
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível registrar o check-in')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
-  }
-
-  Future<void> _validate(CheckIn checkIn) async {
-    setState(() => _submitting = true);
-    try {
-      final result = await ref
-          .read(checkInApiProvider)
-          .validate(gameId: checkIn.gameId, athleteId: checkIn.athleteId);
-      if (mounted) {
-        if (result.status == CheckInStatus.notRegistered) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${checkIn.athleteName} não está no roster'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Atleta validado')),
-          );
-        }
-      }
-      ref.invalidate(checkinProvider(checkIn.gameId));
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível validar o atleta')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
-  }
+  String _gameStatusLabel(GameStatus status) => switch (status) {
+        GameStatus.scheduled => 'Agendado',
+        GameStatus.inProgress => 'Ao vivo',
+        GameStatus.finished => 'Encerrado',
+        GameStatus.cancelled => 'Cancelado',
+      };
 }
 
 String _formatDateTime(DateTime value) =>
