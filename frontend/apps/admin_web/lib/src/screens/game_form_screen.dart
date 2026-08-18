@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
 
 /// Argumentos de navegação do formulário de jogo.
 typedef GameFormArgs = ({String? categoryId, String? roundId, Game? game});
@@ -127,7 +128,7 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar jogo' : 'Novo jogo'),
-        leading: const BackButton(),
+        leading: AppBackButton(fallbackRoute: '/games'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

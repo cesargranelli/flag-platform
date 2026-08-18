@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
 
 /// Formulário de criação/edição de categoria.
 class CategoryFormScreen extends ConsumerStatefulWidget {
@@ -118,7 +119,7 @@ class _CategoryFormScreenState extends ConsumerState<CategoryFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar categoria' : 'Nova categoria'),
-        leading: const BackButton(),
+        leading: AppBackButton(fallbackRoute: '/categories'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

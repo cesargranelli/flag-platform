@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
 
 /// Formulário de criação/edição de organização em etapas (wizard).
 class OrganizationFormScreen extends ConsumerStatefulWidget {
@@ -164,7 +165,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar organização' : 'Nova organização'),
-        leading: const BackButton(),
+        leading: AppBackButton(fallbackRoute: '/organizations'),
       ),
       body: orgFuture == null
           ? _buildWizard(context)

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
 
 /// Detalhe de um jogo: confronto, placar, status e informações.
 ///
@@ -26,7 +27,7 @@ class GameDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(game?.homeTeamName ?? 'Jogo'),
-        leading: const BackButton(),
+        leading: AppBackButton(fallbackRoute: '/games'),
       ),
       body: gameFuture == null
           ? _buildDetail(context, ref, game!)

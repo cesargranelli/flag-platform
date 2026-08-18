@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
 
 /// Detalhe de um time: apresenta os dados e oferece a edição.
 ///
@@ -23,7 +24,7 @@ class TeamDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(team?.name ?? 'Time'),
-        leading: const BackButton(),
+        leading: AppBackButton(fallbackRoute: '/teams'),
       ),
       body: teamFuture == null
           ? _buildDetail(context, ref, team!)

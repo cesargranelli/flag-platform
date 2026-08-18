@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
 
 /// Formulário de criação/edição de rodada.
 class RoundFormScreen extends ConsumerStatefulWidget {
@@ -140,7 +141,7 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar rodada' : 'Nova rodada'),
-        leading: const BackButton(),
+        leading: AppBackButton(fallbackRoute: '/rounds'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

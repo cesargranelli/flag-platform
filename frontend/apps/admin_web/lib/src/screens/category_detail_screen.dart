@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
 
 /// Detalhe de uma categoria: apresenta os dados e oferece editar/excluir.
 ///
@@ -26,7 +27,7 @@ class CategoryDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(category?.name ?? 'Categoria'),
-        leading: const BackButton(),
+        leading: AppBackButton(fallbackRoute: '/categories'),
       ),
       body: catFuture == null
           ? _buildDetail(context, ref, category!)
