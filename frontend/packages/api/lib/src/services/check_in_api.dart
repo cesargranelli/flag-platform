@@ -33,4 +33,17 @@ class CheckInApi {
         {},
         CheckIn.fromJson,
       );
+
+  /// Define (ou limpa, com number nulo) a numeração de partida do atleta,
+  /// sem alterar o número oficial cadastrado.
+  Future<CheckIn> setMatchNumber({
+    required String gameId,
+    required String athleteId,
+    int? number,
+  }) =>
+      _client.put(
+        '/api/v1/games/$gameId/checkin/$athleteId/match-number',
+        {'number': number},
+        CheckIn.fromJson,
+      );
 }

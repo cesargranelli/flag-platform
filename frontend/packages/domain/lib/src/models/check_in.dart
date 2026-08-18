@@ -11,6 +11,8 @@ class CheckIn {
   final String athleteName;
   final String? athleteNickname;
   final int? number;
+  final int? athleteNumber;
+  final int? matchNumber;
   final String? position;
   final CheckInStatus? status;
   final String? validatedBy;
@@ -24,6 +26,8 @@ class CheckIn {
     this.teamName,
     this.athleteNickname,
     this.number,
+    this.athleteNumber,
+    this.matchNumber,
     this.position,
     this.status,
     this.validatedBy,
@@ -38,6 +42,8 @@ class CheckIn {
         athleteName: json['athleteName'] as String,
         athleteNickname: json['athleteNickname'] as String?,
         number: json['number'] as int?,
+        athleteNumber: json['athleteNumber'] as int?,
+        matchNumber: json['matchNumber'] as int?,
         position: json['position'] as String?,
         status: json['status'] is String
             ? CheckInStatus.fromJson(json['status'] as String)

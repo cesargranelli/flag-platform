@@ -1,3 +1,4 @@
+import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
@@ -200,40 +201,133 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
       _ => '',
     };
 
+    final hasOverride = checkIn.matchNumber != null;
+    final numberText = checkIn.number != null ? 'Camisa ${checkIn.number}' : '';
+    final officialText =
+        hasOverride && checkIn.athleteNumber != null ? 'oficial ${checkIn.athleteNumber}' : '';
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         title: Text(checkIn.athleteName),
         subtitle: Text(
-          '${checkIn.teamName ?? ''}${checkIn.number != null ? ' · Camisa ${checkIn.number}' : ''}'
+          '${checkIn.teamName ?? ''}'
+          '${numberText.isNotEmpty ? ' · $numberText' : ''}'
+          '${officialText.isNotEmpty ? ' · $officialText' : ''}'
           '${statusLabel.isNotEmpty ? ' · $statusLabel' : ''}',
         ),
-        trailing: _submitting
-            ? const SizedBox(
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'Numeração da partida',
+              icon: Icon(
+                hasOverride ? Icons.tag : Icons.tag_outlined,
+                color: hasOverride ? Colors.orange : null,
+              ),
+              onPressed: () => _editMatchNumber(checkIn),
+            ),
+            if (_submitting)
+              const SizedBox(
                 height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-            : inProgress
-                ? FilledButton.tonal(
-                    onPressed: () => _validate(checkIn),
-                    child: const Text('Validar'),
-                  )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        tooltip: 'Presente',
-                        icon: const Icon(Icons.check_circle, color: Colors.green),
-                        onPressed: () =>
-                            _mark(checkIn, CheckInStatus.present),
-                      ),
-                      IconButton(
-                        tooltip: 'Não compareceu',
-                        icon: const Icon(Icons.cancel, color: Colors.red),
-                        onPressed: () => _mark(checkIn, CheckInStatus.noShow),
-                      ),
-                    ],
+            else if (inProgress)
+              FilledButton.tonal(
+                onPressed: () => _validate(checkIn),
+                child: const Text('Validar'),
+              )
+            else
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Presente',
+                    icon: const Icon(Icons.check_circle, color: Colors.green),
+                    onPressed: () =>
+                        _mark(checkIn, CheckInStatus.present),
                   ),
+                  IconButton(
+                    tooltip: 'Não compareceu',
+                    icon: const Icon(Icons.cancel, color: Colors.red),
+                    onPressed: () => _mark(checkIn, CheckInStatus.noShow),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
+  }
+
+  Future<void> _editMatchNumber(CheckIn checkIn) async {
+    final controller = TextEditingController(
+      text: checkIn.matchNumber?.toString() ?? '',
+    );
+    final newNumber = await showDialog<int?>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Numeração da partida'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${checkIn.athleteName}\nNúmero oficial: ${checkIn.athleteNumber ?? '—'}',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Número da partida',
+                hintText: 'Deixe vazio para usar o oficial',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              Navigator.pop(context, text.isEmpty ? -1 : int.tryParse(text));
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+
+    if (newNumber == null || !mounted) return;
+
+    final int? number = newNumber == -1 ? null : newNumber;
+    setState(() => _submitting = true);
+    try {
+      await ref.read(checkInApiProvider).setMatchNumber(
+            gameId: checkIn.gameId,
+            athleteId: checkIn.athleteId,
+            number: number,
+          );
+      ref.invalidate(checkinProvider(checkIn.gameId));
+    } on RepositoryException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível salvar a numeração')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   Future<void> _mark(CheckIn checkIn, CheckInStatus status) async {
