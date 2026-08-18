@@ -39,7 +39,7 @@ class GamesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Jogos'),
-        leading: const BackButton(),
+        leading: BackButton(onPressed: () => context.go('/')),
       ),
       floatingActionButton: effectiveRound == null
           ? null
