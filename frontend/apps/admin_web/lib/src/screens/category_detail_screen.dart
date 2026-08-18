@@ -98,6 +98,8 @@ class CategoryDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
+                    _badges(category),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
@@ -131,6 +133,9 @@ class CategoryDetailScreen extends ConsumerWidget {
               'Informações',
               [
                 _row('Nome', category.name),
+                _row('Modalidade', _modalityLabel(category)),
+                _row('Gênero', category.gender.label),
+                _row('Faixa etária', category.ageGroup.label),
                 if (competitionName.isNotEmpty)
                   _row('Campeonato', competitionName),
                 _row('Criada em', _formatDate(category.createdAt)),
@@ -141,6 +146,40 @@ class CategoryDetailScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _badges(Category category) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _badge(_modalityLabel(category)),
+        _badge(category.gender.label),
+        _badge(category.ageGroup.label),
+      ],
+    );
+  }
+
+  Widget _badge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 12, color: AppColors.primary),
+      ),
+    );
+  }
+
+  String _modalityLabel(Category category) {
+    final name = category.modalityName;
+    final format = category.modalityFormat;
+    if (name != null && format != null) return '$name $format'.trim();
+    if (name != null) return name;
+    return '—';
   }
 
   Future<void> _confirmDelete(

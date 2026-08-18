@@ -17,6 +17,9 @@ Category category({
   return Category(
     id: id,
     competitionId: competitionId,
+    modalityId: '11111111-1111-1111-1111-111111111111',
+    gender: Gender.male,
+    ageGroup: AgeGroup.adult,
     name: name,
   );
 }

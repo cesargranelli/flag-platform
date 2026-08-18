@@ -1,6 +1,7 @@
 export 'src/models/organization.dart';
 export 'src/models/competition.dart';
 export 'src/models/category.dart';
+export 'src/models/modality.dart';
 export 'src/models/venue.dart';
 export 'src/models/team.dart';
 export 'src/models/round.dart';
@@ -22,3 +23,5 @@ export 'src/enums/organization_status.dart';
 export 'src/enums/organization_type.dart';
 export 'src/enums/round_type.dart';
 export 'src/enums/athlete_position.dart';
+export 'src/enums/gender.dart';
+export 'src/enums/age_group.dart';

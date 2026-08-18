@@ -1,5 +1,6 @@
 import 'package:flag_admin_web/src/app.dart';
 import 'package:flag_admin_web/src/providers/providers.dart';
+import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,7 @@ void main() {
     WidgetTester tester, {
     required FakeCategoryApi categoryApi,
     FakeCompetitionApi? competitionApi,
+    FakeModalityApi? modalityApi,
   }) {
     final session = InMemorySessionManager()
       ..seedToken('jwt', roles: ['ORGANIZER'], userName: 'Ana Lima');
@@ -26,6 +28,8 @@ void main() {
           competitionApiProvider.overrideWithValue(
               competitionApi ?? FakeCompetitionApi()..competitions = [testCompetition()]),
           categoryApiProvider.overrideWithValue(categoryApi),
+          modalityApiProvider.overrideWithValue(
+              modalityApi ?? FakeModalityApi()..modalities = [testModality()]),
         ],
         child: const FlagAdminWeb(),
       ),
@@ -119,14 +123,32 @@ void main() {
     await tester.tap(find.text('Taça SP').last);
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-        find.widgetWithText(TextFormField, 'Nome'), 'Sub-17');
+    await tester.tap(find.widgetWithText(
+        DropdownButtonFormField<String>, 'Modalidade'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flag Football 5x5').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(
+        DropdownButtonFormField<Gender>, 'Gênero'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Masculino').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(
+        DropdownButtonFormField<AgeGroup>, 'Faixa etária'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Adulto').last);
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Salvar'));
     await tester.tap(find.text('Salvar'));
     await tester.pumpAndSettle();
 
     expect(api.createCalls, 1);
-    expect(api.lastBody?['name'], 'Sub-17');
-    expect(find.text('Sub-17'), findsOneWidget);
+    expect(api.lastBody?['modalityId'], isNotEmpty);
+    expect(api.lastBody?['gender'], 'MALE');
+    expect(api.lastBody?['ageGroup'], 'ADULT');
   });
 
   testWidgets('clica em uma categoria e vê a tela de detalhe',
@@ -163,13 +185,19 @@ void main() {
 
     expect(find.text('Editar categoria'), findsOneWidget);
 
-    await tester.enterText(
-        find.widgetWithText(TextFormField, 'Nome'), 'Masculino 6x6');
+    await tester.tap(find.widgetWithText(
+        DropdownButtonFormField<AgeGroup>, 'Faixa etária'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sub-17').last);
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Salvar'));
     await tester.tap(find.text('Salvar'));
     await tester.pumpAndSettle();
 
+    expect(api.lastBody?['ageGroup'], 'SUB17');
     expect(find.text('Editar dados'), findsOneWidget);
-    expect(find.text('Masculino 6x6'), findsWidgets);
+    expect(find.text('Sub-17'), findsWidgets);
   });
 
   testWidgets('exclui uma categoria a partir do detalhe',

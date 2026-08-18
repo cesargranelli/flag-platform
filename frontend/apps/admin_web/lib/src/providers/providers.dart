@@ -76,6 +76,16 @@ final categoryApiProvider = Provider<CategoryApi>(
   (ref) => CategoryApi(ref.watch(apiClientProvider)),
 );
 
+/// Serviço de modalidades (catálogo).
+final modalityApiProvider = Provider<ModalityApi>(
+  (ref) => ModalityApi(ref.watch(apiClientProvider)),
+);
+
+/// Modalidades ativas (catálogo).
+final modalitiesProvider = FutureProvider<List<Modality>>(
+  (ref) => ref.watch(modalityApiProvider).list(),
+);
+
 /// Campeonato selecionado na tela de categorias.
 final selectedCompetitionProvider = StateProvider<String?>((ref) => null);
 
