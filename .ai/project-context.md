@@ -175,7 +175,7 @@ Se a resposta for não, fica fora do MVP.
 ## Handoff — 2026-08-18 (épico #176: reestruturação de competições)
 
 ### Estado atual
-- **Épico #176** "Reestruturar modelo de competições: modalidade, gênero e faixa etária" com 3 sub-tarefas: **#177 (backend) Done**, **#178 (frontend) Done**, **#179 (testes E2E + documentação) em andamento**.
+- **Épico #176** "Reestruturar modelo de competições: modalidade, gênero e faixa etária" — **concluído**: #177 (backend), #178 (frontend) e #179 (testes E2E + documentação) todas **Done**. PRs #180, #181, #182 merged.
 - **Backend**: 315 testes verdes. Novo módulo `modality` (catálogo) + categorias estruturadas (migrações Flyway até **V19**).
 - **Frontend**: admin_web 65, api 11, domain 26, core 4, public 30, referee 15 — todos verdes.
 
