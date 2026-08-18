@@ -93,4 +93,68 @@ void main() {
 
     expect(find.text('João Silva não está no roster'), findsOneWidget);
   });
+
+  testWidgets('exibe override de numeração com badge do oficial',
+      (WidgetTester tester) async {
+    final api = FakeCheckInApi()
+      ..entries = [
+        testCheckIn(number: 10, athleteNumber: 7, matchNumber: 10),
+      ];
+
+    await pumpApp(
+      tester,
+      gameApi: FakeGameApi()..games = [testGame()],
+      checkInApi: api,
+    );
+    await tester.pumpAndSettle();
+    await openCheckIn(tester);
+
+    expect(find.textContaining('Camisa 10'), findsOneWidget);
+    expect(find.textContaining('oficial 7'), findsOneWidget);
+  });
+
+  testWidgets('define numeração de partida via diálogo',
+      (WidgetTester tester) async {
+    final api = FakeCheckInApi()..entries = [testCheckIn()];
+
+    await pumpApp(
+      tester,
+      gameApi: FakeGameApi()..games = [testGame()],
+      checkInApi: api,
+    );
+    await tester.pumpAndSettle();
+    await openCheckIn(tester);
+
+    await tester.tap(find.byIcon(Icons.tag_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Numeração da partida'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).last, '10');
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+
+    expect(api.lastMatchNumber, 10);
+  });
+
+  testWidgets('limpa numeração de partida (volta ao oficial)',
+      (WidgetTester tester) async {
+    final api = FakeCheckInApi()..entries = [testCheckIn()];
+
+    await pumpApp(
+      tester,
+      gameApi: FakeGameApi()..games = [testGame()],
+      checkInApi: api,
+    );
+    await tester.pumpAndSettle();
+    await openCheckIn(tester);
+
+    await tester.tap(find.byIcon(Icons.tag_outlined));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+
+    expect(api.lastMatchNumber, isNull);
+  });
 }

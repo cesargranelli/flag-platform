@@ -10,7 +10,9 @@ void main() {
         'teamName': 'Tritões',
         'athleteId': 'athlete-1',
         'athleteName': 'João Silva',
-        'number': 7,
+        'number': 10,
+        'athleteNumber': 7,
+        'matchNumber': 10,
         'status': 'PRESENT',
         'validatedBy': 'user-1',
         'validatedAt': '2026-08-10T10:00:00.000',
@@ -23,7 +25,9 @@ void main() {
       expect(checkIn.teamName, 'Tritões');
       expect(checkIn.athleteId, 'athlete-1');
       expect(checkIn.athleteName, 'João Silva');
-      expect(checkIn.number, 7);
+      expect(checkIn.number, 10);
+      expect(checkIn.athleteNumber, 7);
+      expect(checkIn.matchNumber, 10);
       expect(checkIn.status, CheckInStatus.present);
       expect(checkIn.validatedBy, 'user-1');
       expect(checkIn.toJson()['status'], 'PRESENT');

@@ -192,6 +192,7 @@ class FakeCheckInApi extends CheckInApi {
   List<CheckIn> entries = [];
   CheckInStatus? lastStatus;
   CheckInStatus? validateResult;
+  int? lastMatchNumber;
 
   @override
   Future<List<CheckIn>> getList(String gameId) async => entries;
@@ -225,6 +226,25 @@ class FakeCheckInApi extends CheckInApi {
       status: validateResult ?? CheckInStatus.present,
     );
   }
+
+  @override
+  Future<CheckIn> setMatchNumber({
+    required String gameId,
+    required String athleteId,
+    int? number,
+  }) async {
+    lastMatchNumber = number;
+    return CheckIn(
+      gameId: gameId,
+      teamId: 't1',
+      athleteId: athleteId,
+      athleteName: 'João Silva',
+      number: number ?? 7,
+      athleteNumber: 7,
+      matchNumber: number,
+      status: CheckInStatus.present,
+    );
+  }
 }
 
 CheckIn testCheckIn({
@@ -233,6 +253,9 @@ CheckIn testCheckIn({
   String athleteName = 'João Silva',
   String teamName = 'Tritões',
   CheckInStatus? status,
+  int? number = 7,
+  int? athleteNumber,
+  int? matchNumber,
 }) =>
     CheckIn(
       gameId: gameId,
@@ -240,6 +263,8 @@ CheckIn testCheckIn({
       teamName: teamName,
       athleteId: athleteId,
       athleteName: athleteName,
-      number: 7,
+      number: number,
+      athleteNumber: athleteNumber,
+      matchNumber: matchNumber,
       status: status,
     );
