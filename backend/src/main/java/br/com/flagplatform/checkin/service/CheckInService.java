@@ -3,10 +3,12 @@ package br.com.flagplatform.checkin.service;
 import br.com.flagplatform.athlete.AthleteInfo;
 import br.com.flagplatform.athlete.AthleteLookup;
 import br.com.flagplatform.checkin.dto.request.CheckInStatusRequest;
+import br.com.flagplatform.checkin.dto.request.MatchNumberRequest;
 import br.com.flagplatform.checkin.dto.response.CheckInResponse;
 import br.com.flagplatform.checkin.dto.response.ValidationResponse;
 import br.com.flagplatform.checkin.entity.CheckInEntity;
 import br.com.flagplatform.checkin.exception.AthleteNotInGameException;
+import br.com.flagplatform.checkin.exception.DuplicateMatchNumberException;
 import br.com.flagplatform.checkin.exception.GameNotInProgressException;
 import br.com.flagplatform.checkin.repository.CheckInRepository;
 import br.com.flagplatform.common.enums.CheckInStatus;
@@ -104,6 +106,9 @@ public class CheckInService {
         String teamName = teamLookup.findTeamInfoById(teamId).name();
         AthleteInfo athlete = athleteLookup.findAthleteInfoById(athleteId);
 
+        Integer matchNumber = checkIn != null ? checkIn.getMatchNumber() : null;
+        Integer effectiveNumber = matchNumber != null ? matchNumber : athlete.number();
+
         return new CheckInResponse(
                 gameId,
                 teamId,
@@ -111,11 +116,48 @@ public class CheckInService {
                 athleteId,
                 athlete.name(),
                 athlete.nickname(),
+                effectiveNumber,
                 athlete.number(),
+                matchNumber,
                 athlete.position(),
                 checkIn != null ? checkIn.getStatus() : null,
                 checkIn != null ? checkIn.getValidatedBy() : null,
                 checkIn != null ? checkIn.getValidatedAt() : null);
+    }
+
+    /**
+     * Define (ou limpa, com number nulo) a numeracao de partida de um atleta,
+     * sem alterar o numero oficial cadastrado no atleta. Bloqueia duplicado
+     * dentro do mesmo time nesta partida.
+     */
+    @Transactional
+    public CheckInResponse setMatchNumber(UUID gameId, UUID athleteId, MatchNumberRequest request) {
+        GameInfo game = gameLookup.findGameInfoById(gameId);
+        UUID teamId = resolveTeam(game, athleteId);
+
+        Integer number = request.number();
+
+        if (number != null
+                && repository.existsByGameIdAndTeamIdAndMatchNumberAndAthleteIdNot(
+                        gameId, teamId, number, athleteId)) {
+            throw new DuplicateMatchNumberException(gameId, number);
+        }
+
+        CheckInEntity entity = repository.findByGameIdAndAthleteId(gameId, athleteId)
+                .orElseGet(() -> {
+                    CheckInEntity created = new CheckInEntity();
+                    created.setGameId(gameId);
+                    created.setTeamId(teamId);
+                    created.setAthleteId(athleteId);
+                    created.setStatus(CheckInStatus.PRESENT);
+                    return created;
+                });
+
+        entity.setMatchNumber(number);
+
+        CheckInEntity saved = repository.save(entity);
+
+        return buildResponse(gameId, saved.getTeamId(), athleteId, saved);
     }
 
     @Transactional

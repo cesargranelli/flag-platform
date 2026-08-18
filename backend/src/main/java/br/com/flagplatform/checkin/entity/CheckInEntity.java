@@ -38,6 +38,10 @@ public class CheckInEntity extends BaseEntity {
     @Column(nullable = false)
     private CheckInStatus status;
 
+    /** Numero do atleta apenas para esta partida (override; null = usar o oficial). */
+    @Column(name = "match_number")
+    private Integer matchNumber;
+
     @Column(name = "validated_by")
     private UUID validatedBy;
 

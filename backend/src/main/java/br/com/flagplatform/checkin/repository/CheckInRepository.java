@@ -13,4 +13,10 @@ public interface CheckInRepository extends JpaRepository<CheckInEntity, UUID> {
 
     Optional<CheckInEntity> findByGameIdAndAthleteId(UUID gameId, UUID athleteId);
 
+    /**
+     * Verifica se outro atleta do mesmo time já usa o numero da partida no jogo.
+     */
+    boolean existsByGameIdAndTeamIdAndMatchNumberAndAthleteIdNot(
+            UUID gameId, UUID teamId, Integer matchNumber, UUID athleteId);
+
 }
