@@ -875,5 +875,7 @@ Organization testOrganization({
     organizationType: OrganizationType.association,
     document: '11.222.333/0001-81',
     documentType: DocumentType.cnpj,
+    presidentName: 'Maria Silva',
+    presidentCpf: '123.456.789-09',
   );
 }

@@ -13,6 +13,8 @@ class Organization {
   final OrganizationType? organizationType;
   final String? document;
   final DocumentType? documentType;
+  final String? presidentName;
+  final String? presidentCpf;
   final String? email;
   final String? phone;
   final String? website;
@@ -40,6 +42,8 @@ class Organization {
     this.organizationType,
     this.document,
     this.documentType,
+    this.presidentName,
+    this.presidentCpf,
     this.email,
     this.phone,
     this.website,
@@ -66,6 +70,8 @@ class Organization {
         documentType: json['documentType'] is String
             ? DocumentType.fromJson(json['documentType'] as String)
             : null,
+        presidentName: json['presidentName'] as String?,
+        presidentCpf: json['presidentCpf'] as String?,
         email: json['email'] as String?,
         phone: json['phone'] as String?,
         website: json['website'] as String?,
@@ -93,6 +99,8 @@ class Organization {
         if (organizationType != null) 'organizationType': organizationType!.toJson(),
         if (document != null) 'document': document,
         if (documentType != null) 'documentType': documentType!.toJson(),
+        if (presidentName != null) 'presidentName': presidentName,
+        if (presidentCpf != null) 'presidentCpf': presidentCpf,
         if (email != null) 'email': email,
         if (phone != null) 'phone': phone,
         if (website != null) 'website': website,

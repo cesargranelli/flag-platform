@@ -25,7 +25,11 @@ class AppTheme {
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: true,
+        iconTheme: IconThemeData(color: Colors.white, size: 24),
       ),
       textTheme: _textTheme(base.textTheme),
       cardTheme: const CardThemeData(
