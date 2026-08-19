@@ -229,21 +229,31 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton(
+                  OutlinedButton.icon(
                     onPressed: _submitting || _step == 0
                         ? null
                         : () => setState(() => _step -= 1),
-                    child: const Text('Voltar'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      minimumSize: const Size(120, 56),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(16)),
+                      ),
+                    ),
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text('Voltar'),
                   ),
-                  FilledButton(
+                  FilledButton.icon(
                     onPressed: _submitting ? null : _next,
-                    child: _submitting
+                    icon: _submitting
                         ? const SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : Text(_step == 2 ? 'Salvar' : 'Continuar'),
+                        : const Icon(Icons.arrow_forward),
+                    label: Text(_step == 2 ? 'Salvar' : 'Continuar'),
                   ),
                 ],
               ),
@@ -321,13 +331,54 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
           const SizedBox(height: 16),
           _sectionTitle('Documento'),
           const SizedBox(height: 8),
-          SegmentedButton<DocumentType>(
-            segments: DocumentType.values
-                .map((d) => ButtonSegment(value: d, label: Text(d.label)))
-                .toList(),
-            selected: {_documentType ?? DocumentType.cnpj},
-            onSelectionChanged: (selection) =>
-                setState(() => _documentType = selection.first),
+          Row(
+            children: [
+              ChoiceChip(
+                label: const Text('CNPJ'),
+                selected: _documentType == DocumentType.cnpj,
+                selectedColor: AppColors.primary.withOpacity(0.15),
+                backgroundColor: Colors.transparent,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                labelStyle: TextStyle(
+                  color: _documentType == DocumentType.cnpj
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
+                  fontWeight: _documentType == DocumentType.cnpj
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                ),
+                shape: const StadiumBorder(
+                  side: BorderSide(color: AppColors.black, width: 1),
+                ),
+                disabledColor: Colors.transparent,
+                side: BorderSide.none,
+                onSelected: (selected) =>
+                    setState(() => _documentType = selected ? DocumentType.cnpj : DocumentType.cpf),
+              ),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text('CPF'),
+                selected: _documentType == DocumentType.cpf,
+                selectedColor: AppColors.primary.withOpacity(0.15),
+                backgroundColor: Colors.transparent,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                labelStyle: TextStyle(
+                  color: _documentType == DocumentType.cpf
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
+                  fontWeight: _documentType == DocumentType.cpf
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                ),
+                shape: const StadiumBorder(
+                  side: BorderSide(color: AppColors.black, width: 1),
+                ),
+                disabledColor: Colors.transparent,
+                side: BorderSide.none,
+                onSelected: (selected) =>
+                    setState(() => _documentType = selected ? DocumentType.cpf : DocumentType.cnpj),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           _documentField(),
