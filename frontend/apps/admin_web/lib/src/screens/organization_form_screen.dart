@@ -2,11 +2,11 @@ import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 
 /// Formulário de criação/edição de organização em etapas (wizard).
 class OrganizationFormScreen extends ConsumerStatefulWidget {
@@ -33,19 +33,22 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   late final TextEditingController _phone;
   late final TextEditingController _website;
   late final TextEditingController _instagram;
-  late final TextEditingController _country;
   late final TextEditingController _state;
   late final TextEditingController _city;
   late final TextEditingController _logoUrl;
   late final TextEditingController _primaryColor;
   late final TextEditingController _secondaryColor;
   late final TextEditingController _locale;
+
+  String _country = 'BR';
   final _timezone = 'America/Sao_Paulo'; // fixo; removido da UI
 
   OrganizationType? _type;
   DocumentType? _documentType;
   int _step = 0;
   bool _submitting = false;
+  bool _saved = false;
+  bool _hasChanges = false;
   String? _errorMessage;
 
   static const _titles = ['Identificação', 'Contato', 'Visual'];
@@ -66,24 +69,36 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     _phone = TextEditingController(text: org?.phone ?? '');
     _website = TextEditingController(text: org?.website ?? '');
     _instagram = TextEditingController(text: org?.instagram ?? '');
-    _country = TextEditingController(text: org?.country ?? 'BR');
     _state = TextEditingController(text: org?.state ?? '');
     _city = TextEditingController(text: org?.city ?? '');
     _logoUrl = TextEditingController(text: org?.logoUrl ?? '');
     _primaryColor = TextEditingController(text: org?.primaryColor ?? '');
     _secondaryColor = TextEditingController(text: org?.secondaryColor ?? '');
     _locale = TextEditingController(text: org?.locale ?? 'pt-BR');
+    _country = org?.country.isNotEmpty == true ? org!.country : 'BR';
     _type = org?.organizationType;
     _documentType = org?.documentType ?? DocumentType.cnpj;
+
+    for (final controller in [
+      _tradeName, _legalName, _abbreviation, _document, _presidentName,
+      _presidentCpf, _email, _phone, _website, _instagram, _state, _city,
+      _logoUrl, _primaryColor, _secondaryColor, _locale,
+    ]) {
+      controller.addListener(_markDirty);
+    }
+  }
+
+  void _markDirty() {
+    if (_saved) return;
+    setState(() => _hasChanges = true);
   }
 
   @override
   void dispose() {
     for (final controller in [
       _tradeName, _legalName, _abbreviation, _document, _presidentName,
-      _presidentCpf, _email, _phone, _website,
-      _instagram, _country, _state, _city, _logoUrl, _primaryColor,
-      _secondaryColor, _locale,
+      _presidentCpf, _email, _phone, _website, _instagram, _state, _city,
+      _logoUrl, _primaryColor, _secondaryColor, _locale,
     ]) {
       controller.dispose();
     }
@@ -106,8 +121,9 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         if (_email.text.trim().isNotEmpty) 'email': _email.text.trim(),
         if (_phone.text.trim().isNotEmpty) 'phone': _phone.text.trim(),
         if (_website.text.trim().isNotEmpty) 'website': _website.text.trim(),
-        if (_instagram.text.trim().isNotEmpty) 'instagram': _instagram.text.trim(),
-        'country': _country.text.trim().toUpperCase(),
+        if (_instagram.text.trim().isNotEmpty)
+          'instagram': _instagram.text.trim(),
+        'country': _country,
         if (_state.text.trim().isNotEmpty) 'state': _state.text.trim(),
         if (_city.text.trim().isNotEmpty) 'city': _city.text.trim(),
         if (_logoUrl.text.trim().isNotEmpty) 'logoUrl': _logoUrl.text.trim(),
@@ -136,14 +152,17 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       } else {
         await api.update(id, body);
       }
+      _saved = true;
       ref.invalidate(organizationsProvider);
-      if (mounted) {
-        if (id != null) {
-          // Volta para o detalhe recarregado (busca fresca via provider).
-          context.go('/organizations/$id');
-        } else {
-          context.pop();
-        }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Organização salva com sucesso')),
+      );
+      if (id != null) {
+        // Volta para o detalhe recarregado (busca fresca via provider).
+        context.go('/organizations/$id');
+      } else {
+        context.pop();
       }
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
@@ -171,25 +190,64 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     }
   }
 
+  void _goBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/organizations');
+    }
+  }
+
+  Future<void> _handleBack() async {
+    if (_hasChanges && !_submitting && !_saved) {
+      final discard = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Descartar alterações?'),
+          content: const Text('As alterações não salvas serão perdidas.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Continuar editando'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Descartar'),
+            ),
+          ],
+        ),
+      );
+      if (discard != true) return;
+      _saved = true;
+    }
+    _goBack();
+  }
+
   @override
   Widget build(BuildContext context) {
     final orgFuture = widget.organizationId != null && widget.organization == null
         ? ref.watch(organizationProvider(widget.organizationId!))
         : null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar organização' : 'Nova organização'),
-        leading: AppBackButton(fallbackRoute: '/organizations'),
+    return PopScope(
+      canPop: !_hasChanges || _submitting || _saved,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _handleBack();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_isEditing ? 'Editar organização' : 'Nova organização'),
+          leading: BackButton(onPressed: _handleBack),
+        ),
+        body: orgFuture == null
+            ? _buildWizard(context)
+            : orgFuture.when(
+                loading: () => const AppLoading(message: 'Carregando organização...'),
+                error: (error, stackTrace) =>
+                    const Center(child: Text('Não foi possível carregar a organização.')),
+                data: (_) => _buildWizard(context),
+              ),
       ),
-      body: orgFuture == null
-          ? _buildWizard(context)
-          : orgFuture.when(
-              loading: () => const AppLoading(message: 'Carregando organização...'),
-              error: (error, stackTrace) =>
-                  const Center(child: Text('Não foi possível carregar a organização.')),
-              data: (_) => _buildWizard(context),
-            ),
     );
   }
 
@@ -203,7 +261,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                     child: Row(
                       children: [
                         for (var i = 0; i < _titles.length; i++)
@@ -216,7 +274,14 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _stepContent(context, _step),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (_errorMessage != null)
+                            _errorBanner(_errorMessage!),
+                          _stepContent(context, _step),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -230,9 +295,15 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   OutlinedButton.icon(
-                    onPressed: _submitting || _step == 0
+                    onPressed: _submitting
                         ? null
-                        : () => setState(() => _step -= 1),
+                        : () {
+                            if (_step == 0) {
+                              _handleBack();
+                            } else {
+                              setState(() => _step -= 1);
+                            }
+                          },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       side: const BorderSide(color: AppColors.primary),
@@ -241,8 +312,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                         borderRadius: BorderRadius.all(Radius.circular(16)),
                       ),
                     ),
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Voltar'),
+                    icon: Icon(_step == 0 ? Icons.close : Icons.arrow_back),
+                    label: Text(_step == 0 ? 'Cancelar' : 'Voltar'),
                   ),
                   FilledButton.icon(
                     onPressed: _submitting ? null : _next,
@@ -257,6 +328,30 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _errorBanner(String message) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.danger),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.danger),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: AppColors.danger),
             ),
           ),
         ],
@@ -290,19 +385,54 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         ),
       );
     }
-    return Column(
-      children: [
-        circle,
-        const SizedBox(height: 4),
-        Text(
-          _titles[index],
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            color: selected ? AppColors.textPrimary : AppColors.textSecondary,
-          ),
+    return InkWell(
+      onTap: () {
+        if (index == _step) return;
+        if (index > _step && !_validateStep(_step)) return;
+        setState(() => _step = index);
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        child: Column(
+          children: [
+            circle,
+            const SizedBox(height: 4),
+            Text(
+              _titles[index],
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                color: selected ? AppColors.textPrimary : AppColors.textSecondary,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _card(String title, List<Widget> children) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...children,
+          ],
+        ),
+      ),
     );
   }
 
@@ -311,133 +441,149 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (step == 0) ...[
-          _field('Nome fantasia', _tradeName, 'Informe o nome fantasia'),
-          const SizedBox(height: 12),
-          _field('Razão social', _legalName, 'Informe a razão social'),
-          const SizedBox(height: 12),
-          _field('Sigla', _abbreviation),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<OrganizationType>(
-            initialValue: _type,
-            decoration: const InputDecoration(
-              labelText: 'Tipo',
-              border: OutlineInputBorder(),
+          _card('Dados básicos', [
+            _field('Nome fantasia', _tradeName,
+                hint: 'Informe o nome fantasia',
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Informe o nome fantasia'
+                    : null),
+            const SizedBox(height: 12),
+            _field('Razão social', _legalName,
+                hint: 'Informe a razão social',
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Informe a razão social'
+                    : null),
+            const SizedBox(height: 12),
+            _field('Sigla (opcional)', _abbreviation),
+            const SizedBox(height: 12),
+            _typeDropdown(),
+          ]),
+          _card('Documento', [
+            Row(
+              children: [
+                ChoiceChip(
+                  label: const Text('CNPJ'),
+                  selected: _documentType == DocumentType.cnpj,
+                  showCheckmark: false,
+                  onSelected: (selected) {
+                    setState(() {
+                      _documentType =
+                          selected ? DocumentType.cnpj : DocumentType.cpf;
+                    });
+                    _markDirty();
+                  },
+                ),
+                const SizedBox(width: 8),
+                ChoiceChip(
+                  label: const Text('CPF'),
+                  selected: _documentType == DocumentType.cpf,
+                  showCheckmark: false,
+                  onSelected: (selected) {
+                    setState(() {
+                      _documentType =
+                          selected ? DocumentType.cpf : DocumentType.cnpj;
+                    });
+                    _markDirty();
+                  },
+                ),
+              ],
             ),
-            items: OrganizationType.values
-                .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
-                .toList(),
-            onChanged: (value) => setState(() => _type = value),
-          ),
-          const SizedBox(height: 16),
-          _sectionTitle('Documento'),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              ChoiceChip(
-                label: const Text('CNPJ'),
-                selected: _documentType == DocumentType.cnpj,
-                selectedColor: AppColors.primary.withOpacity(0.15),
-                backgroundColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                labelStyle: TextStyle(
-                  color: _documentType == DocumentType.cnpj
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
-                  fontWeight: _documentType == DocumentType.cnpj
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
-                shape: const StadiumBorder(
-                  side: BorderSide(color: AppColors.black, width: 1),
-                ),
-                disabledColor: Colors.transparent,
-                side: BorderSide.none,
-                onSelected: (selected) =>
-                    setState(() => _documentType = selected ? DocumentType.cnpj : DocumentType.cpf),
-              ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('CPF'),
-                selected: _documentType == DocumentType.cpf,
-                selectedColor: AppColors.primary.withOpacity(0.15),
-                backgroundColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                labelStyle: TextStyle(
-                  color: _documentType == DocumentType.cpf
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
-                  fontWeight: _documentType == DocumentType.cpf
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                ),
-                shape: const StadiumBorder(
-                  side: BorderSide(color: AppColors.black, width: 1),
-                ),
-                disabledColor: Colors.transparent,
-                side: BorderSide.none,
-                onSelected: (selected) =>
-                    setState(() => _documentType = selected ? DocumentType.cpf : DocumentType.cnpj),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _documentField(),
-          const SizedBox(height: 16),
-          _sectionTitle('Presidente'),
-          const SizedBox(height: 8),
-          _field('Nome do presidente', _presidentName, 'Informe o nome do presidente'),
-          const SizedBox(height: 12),
-          _presidentCpfField(),
+            const SizedBox(height: 12),
+            _documentField(),
+          ]),
+          _card('Presidente', [
+            _field('Nome do presidente', _presidentName,
+                hint: 'Informe o nome do presidente',
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Informe o nome do presidente'
+                    : null),
+            const SizedBox(height: 12),
+            _presidentCpfField(),
+          ]),
         ] else if (step == 1) ...[
-          _field('E-mail', _email),
-          const SizedBox(height: 12),
-          _field('Telefone', _phone),
-          const SizedBox(height: 12),
-          _field('Site', _website),
-          const SizedBox(height: 12),
-          _field('Instagram', _instagram),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _field('País (2 letras)', _country, 'Informe o país')),
-              const SizedBox(width: 12),
-              Expanded(child: _field('Estado', _state)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _field('Cidade', _city),
+          _card('Contato', [
+            _emailField(),
+            const SizedBox(height: 12),
+            _phoneField(),
+            const SizedBox(height: 12),
+            _websiteField(),
+            const SizedBox(height: 12),
+            _instagramField(),
+          ]),
+          _card('Localização', [
+            _countryDropdown(),
+            const SizedBox(height: 12),
+            if (_country == 'BR')
+              _stateDropdown()
+            else
+              _field('Estado (opcional)', _state),
+            const SizedBox(height: 12),
+            _field('Cidade (opcional)', _city),
+          ]),
         ] else ...[
-          _field('URL do logo', _logoUrl),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _field('Cor primária', _primaryColor)),
-              const SizedBox(width: 12),
-              Expanded(child: _field('Cor secundária', _secondaryColor)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _field('Locale', _locale, 'Informe o locale'),
-          if (_errorMessage != null) ...[
+          _card('Identidade visual', [
+            _brandPreview(),
             const SizedBox(height: 16),
-            Text(
-              _errorMessage!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            _logoField(),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _colorField('Cor primária (opcional)', _primaryColor),
+                const SizedBox(width: 12),
+                _colorField('Cor secundária (opcional)', _secondaryColor),
+              ],
             ),
-          ],
+            const SizedBox(height: 12),
+            _localeDropdown(),
+          ]),
         ],
       ],
     );
   }
 
-  Widget _sectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
+  Widget _typeDropdown() {
+    return DropdownButtonFormField<OrganizationType>(
+      initialValue: _type,
+      decoration: const InputDecoration(labelText: 'Tipo'),
+      items: OrganizationType.values
+          .map((t) =>
+              DropdownMenuItem(value: t, child: Text(_typeLabel(t))))
+          .toList(),
+      onChanged: (value) {
+        setState(() => _type = value);
+        _markDirty();
+      },
+    );
+  }
+
+  Widget _documentField() {
+    final isCpf = _documentType == DocumentType.cpf;
+    return TextFormField(
+      controller: _document,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: isCpf ? 'CPF (opcional)' : 'CNPJ (opcional)',
+        hintText: isCpf ? '000.000.000-00' : '00.000.000/0000-00',
+        border: const OutlineInputBorder(),
       ),
+      onChanged: (value) {
+        final masked =
+            isCpf ? DocumentUtils.maskCpf(value) : DocumentUtils.maskCnpj(value);
+        if (masked != value) {
+          _document.value = TextEditingValue(
+            text: masked,
+            selection: TextSelection.collapsed(offset: masked.length),
+          );
+        }
+      },
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) return null; // opcional
+        final type = _documentType ?? DocumentType.cnpj;
+        final valid = type == DocumentType.cpf
+            ? DocumentUtils.isValidCpf(value)
+            : DocumentUtils.isValidCnpj(value);
+        return valid ? null : 'Documento inválido';
+      },
     );
   }
 
@@ -466,48 +612,527 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     );
   }
 
-  Widget _documentField() {
+  Widget _emailField() {
     return TextFormField(
-      controller: _document,
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        labelText: 'CNPJ',
-        hintText: _documentType == DocumentType.cpf ? '000.000.000-00' : '00.000.000/0000-00',
-        helperText: 'Opcional',
-        border: const OutlineInputBorder(),
+      controller: _email,
+      keyboardType: TextInputType.emailAddress,
+      decoration: const InputDecoration(
+        labelText: 'E-mail (opcional)',
+        hintText: 'contato@exemplo.com',
+      ),
+      validator: (v) {
+        if (v == null || v.trim().isEmpty) return null;
+        return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim())
+            ? null
+            : 'E-mail inválido';
+      },
+    );
+  }
+
+  Widget _phoneField() {
+    return TextFormField(
+      controller: _phone,
+      keyboardType: TextInputType.phone,
+      decoration: const InputDecoration(
+        labelText: 'Telefone (opcional)',
+        hintText: '(11) 99999-9999',
       ),
       onChanged: (value) {
-        final masked = _documentType == DocumentType.cpf
-            ? DocumentUtils.maskCpf(value)
-            : DocumentUtils.maskCnpj(value);
+        final masked = _maskPhone(value);
         if (masked != value) {
-          _document.value = TextEditingValue(
+          _phone.value = TextEditingValue(
             text: masked,
             selection: TextSelection.collapsed(offset: masked.length),
           );
         }
       },
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) return null; // CNPJ opcional
-        final type = _documentType ?? DocumentType.cnpj;
-        final valid = type == DocumentType.cpf
-            ? DocumentUtils.isValidCpf(value)
-            : DocumentUtils.isValidCnpj(value);
-        return valid ? null : 'Documento inválido';
+      validator: (v) {
+        if (v == null || v.trim().isEmpty) return null;
+        final digits = v.replaceAll(RegExp(r'\D'), '');
+        return (digits.length == 10 || digits.length == 11)
+            ? null
+            : 'Telefone inválido';
       },
     );
   }
 
-  Widget _field(String label, TextEditingController controller, [String? validatorMessage]) {
+  Widget _websiteField() {
+    return TextFormField(
+      controller: _website,
+      keyboardType: TextInputType.url,
+      decoration: const InputDecoration(
+        labelText: 'Site (opcional)',
+        hintText: 'https://exemplo.com.br',
+      ),
+      validator: (v) {
+        if (v == null || v.trim().isEmpty) return null;
+        final t = v.trim();
+        final uri =
+            Uri.tryParse(t.startsWith('http') ? t : 'https://$t');
+        return (uri != null &&
+                (uri.scheme == 'http' || uri.scheme == 'https') &&
+                uri.host.isNotEmpty)
+            ? null
+            : 'URL inválida';
+      },
+    );
+  }
+
+  Widget _instagramField() {
+    return TextFormField(
+      controller: _instagram,
+      decoration: const InputDecoration(
+        labelText: 'Instagram (opcional)',
+        hintText: '@meuclube',
+      ),
+      validator: (v) {
+        if (v == null || v.trim().isEmpty) return null;
+        final t = v.trim().replaceFirst('@', '');
+        return RegExp(r'^[A-Za-z0-9_.]{1,30}$').hasMatch(t)
+            ? null
+            : 'Usuário inválido';
+      },
+    );
+  }
+
+  Widget _countryDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue: _country,
+      decoration: const InputDecoration(labelText: 'País'),
+      items: [
+        for (final c in _countryOptions)
+          DropdownMenuItem(value: c.code, child: Text(c.name)),
+      ],
+      onChanged: (value) {
+        if (value == null) return;
+        setState(() {
+          _country = value;
+          _state.clear();
+        });
+        _markDirty();
+      },
+    );
+  }
+
+  Widget _stateDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue: _state.text.isEmpty ? null : _state.text,
+      decoration: const InputDecoration(
+        labelText: 'Estado',
+        hintText: 'Selecione o estado',
+      ),
+      items: [
+        for (final uf in _ufs)
+          DropdownMenuItem(
+              value: uf.$1, child: Text('${uf.$2} (${uf.$1})')),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _state.text = value ?? '';
+        });
+        _markDirty();
+      },
+    );
+  }
+
+  Widget _logoField() {
+    return TextFormField(
+      controller: _logoUrl,
+      keyboardType: TextInputType.url,
+      decoration: const InputDecoration(
+        labelText: 'URL do logo (opcional)',
+        hintText: 'https://exemplo.com/logo.png',
+      ),
+      validator: (v) {
+        if (v == null || v.trim().isEmpty) return null;
+        final uri = Uri.tryParse(v.trim());
+        return (uri != null &&
+                (uri.scheme == 'http' || uri.scheme == 'https') &&
+                uri.host.isNotEmpty)
+            ? null
+            : 'URL inválida';
+      },
+    );
+  }
+
+  Widget _colorField(String label, TextEditingController controller) {
+    return Expanded(
+      child: TextFormField(
+        controller: controller,
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[#0-9a-fA-F]')),
+          LengthLimitingTextInputFormatter(7),
+        ],
+        onChanged: (v) {
+          final t = v.toUpperCase();
+          if (t != v) {
+            controller.value = TextEditingValue(
+              text: t,
+              selection: TextSelection.collapsed(offset: t.length),
+            );
+          }
+        },
+        validator: (v) {
+          if (v == null || v.trim().isEmpty) return null;
+          return RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(v.trim())
+              ? null
+              : 'Use #RRGGBB';
+        },
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: '#FD6B22',
+          prefixIcon: IconButton(
+            tooltip: 'Escolher cor',
+            onPressed: () => _openColorPicker(controller),
+            icon: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: _parseHex(controller.text) ?? AppColors.primary,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.black26),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _localeDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue: _locale.text,
+      decoration: const InputDecoration(labelText: 'Idioma'),
+      items: [
+        for (final l in _localeOptions)
+          DropdownMenuItem(value: l.code, child: Text(l.name)),
+      ],
+      onChanged: (value) {
+        if (value == null) return;
+        setState(() => _locale.text = value);
+        _markDirty();
+      },
+    );
+  }
+
+  Widget _brandPreview() {
+    final primary = _parseHex(_primaryColor.text) ?? AppColors.primary;
+    final secondary = _parseHex(_secondaryColor.text) ?? AppColors.secondary;
+    final logo = _logoUrl.text.trim();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Prévia da marca',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: primary,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              if (logo.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    logo,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Icons.business,
+                      color: Colors.white,
+                      size: 40,
+                    ),
+                  ),
+                )
+              else
+                const Icon(Icons.business, color: Colors.white, size: 40),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _tradeName.text.isEmpty
+                          ? 'Nome da organização'
+                          : _tradeName.text,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 80,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: secondary,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _field(
+    String label,
+    TextEditingController controller, {
+    String? hint,
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
+  }) {
     return TextFormField(
       controller: controller,
+      keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(),
+        hintText: hint,
       ),
-      validator: validatorMessage == null
-          ? null
-          : (value) => (value == null || value.trim().isEmpty) ? validatorMessage : null,
+      validator: validator,
+    );
+  }
+
+  Future<void> _openColorPicker(TextEditingController controller) async {
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (_) => _ColorPickerDialog(initial: controller.text),
+    );
+    if (picked != null) {
+      setState(() => controller.text = picked);
+    }
+  }
+
+  static const _ufs = <(String, String)>[
+    ('AC', 'Acre'), ('AL', 'Alagoas'), ('AP', 'Amapá'), ('AM', 'Amazonas'),
+    ('BA', 'Bahia'), ('CE', 'Ceará'), ('DF', 'Distrito Federal'),
+    ('ES', 'Espírito Santo'), ('GO', 'Goiás'), ('MA', 'Maranhão'),
+    ('MT', 'Mato Grosso'), ('MS', 'Mato Grosso do Sul'), ('MG', 'Minas Gerais'),
+    ('PA', 'Pará'), ('PB', 'Paraíba'), ('PR', 'Paraná'),
+    ('PE', 'Pernambuco'), ('PI', 'Piauí'), ('RJ', 'Rio de Janeiro'),
+    ('RN', 'Rio Grande do Norte'), ('RS', 'Rio Grande do Sul'),
+    ('RO', 'Rondônia'), ('RR', 'Roraima'), ('SC', 'Santa Catarina'),
+    ('SP', 'São Paulo'), ('SE', 'Sergipe'), ('TO', 'Tocantins'),
+  ];
+
+  static const _countries = <_Option>[
+    _Option('Brasil', 'BR'),
+    _Option('Argentina', 'AR'),
+    _Option('Estados Unidos', 'US'),
+    _Option('Portugal', 'PT'),
+    _Option('Espanha', 'ES'),
+    _Option('França', 'FR'),
+    _Option('Alemanha', 'DE'),
+    _Option('Reino Unido', 'GB'),
+    _Option('Itália', 'IT'),
+    _Option('Canadá', 'CA'),
+    _Option('México', 'MX'),
+    _Option('Colômbia', 'CO'),
+    _Option('Chile', 'CL'),
+    _Option('Peru', 'PE'),
+    _Option('Uruguai', 'UY'),
+    _Option('Paraguai', 'PY'),
+    _Option('Japão', 'JP'),
+    _Option('Austrália', 'AU'),
+  ];
+
+  static const _locales = <_Option>[
+    _Option('Português (Brasil)', 'pt-BR'),
+    _Option('English (US)', 'en-US'),
+    _Option('Español', 'es-ES'),
+  ];
+
+  List<_Option> get _countryOptions {
+    final options = [..._countries];
+    if (_country.isNotEmpty && !options.any((o) => o.code == _country)) {
+      options.insert(0, _Option(_country, _country));
+    }
+    return options;
+  }
+
+  List<_Option> get _localeOptions {
+    final options = [..._locales];
+    if (!options.any((o) => o.code == _locale.text)) {
+      options.insert(0, _Option(_locale.text, _locale.text));
+    }
+    return options;
+  }
+
+  String _typeLabel(OrganizationType t) => switch (t) {
+        OrganizationType.federation => 'Federação',
+        OrganizationType.league => 'Liga',
+        OrganizationType.association => 'Associação',
+        OrganizationType.university => 'Universidade',
+        OrganizationType.club => 'Clube',
+        OrganizationType.other => 'Outro',
+      };
+
+  String _maskPhone(String value) {
+    final d = value.replaceAll(RegExp(r'\D'), '');
+    if (d.isEmpty) return '';
+    if (d.length <= 2) return d;
+    if (d.length <= 7) return '(${d.substring(0, 2)}) ${d.substring(2)}';
+    if (d.length <= 11) {
+      return '(${d.substring(0, 2)}) ${d.substring(2, d.length - 4)}-'
+          '${d.substring(d.length - 4)}';
+    }
+    return '(${d.substring(0, 2)}) ${d.substring(2, 7)}-'
+        '${d.substring(7, 11)}';
+  }
+}
+
+Color? _parseHex(String hex) {
+  final h = hex.trim().replaceAll('#', '');
+  if (h.length != 6) return null;
+  final value = int.tryParse(h, radix: 16);
+  if (value == null) return null;
+  return Color(0xFF000000 | value);
+}
+
+class _Option {
+  const _Option(this.name, this.code);
+  final String name;
+  final String code;
+}
+
+class _ColorPickerDialog extends StatefulWidget {
+  const _ColorPickerDialog({this.initial});
+
+  final String? initial;
+
+  @override
+  State<_ColorPickerDialog> createState() => _ColorPickerDialogState();
+}
+
+class _ColorPickerDialogState extends State<_ColorPickerDialog> {
+  late final TextEditingController _hex;
+
+  static const _presets = <String>[
+    '#FD6B22', '#F15223', '#FF6628', '#4FBF67', '#F04C4C', '#040415',
+    '#1B1D21', '#737373', '#4C9AFF', '#7C5CFF', '#2EC4B6', '#FFD166',
+    '#EF476F', '#06D6A0', '#FFFFFF', '#000000',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial ?? '';
+    _hex = TextEditingController(text: initial.replaceAll('#', ''));
+  }
+
+  @override
+  void dispose() {
+    _hex.dispose();
+    super.dispose();
+  }
+
+  void _apply(String hex) {
+    setState(() {
+      _hex.text = hex.replaceAll('#', '');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = _parseHex('#${_hex.text}') ?? Colors.transparent;
+    return AlertDialog(
+      title: const Text('Escolher cor'),
+      content: SizedBox(
+        width: 320,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _hex,
+              decoration: const InputDecoration(
+                labelText: 'Código hex',
+                hintText: 'FD6B22',
+                prefixText: '#',
+                suffixIcon: Icon(Icons.circle, color: Colors.black26),
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9a-fA-F]')),
+                LengthLimitingTextInputFormatter(6),
+              ],
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: preview,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.black, width: 1),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '#${_hex.text.toUpperCase()}',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final hex in _presets)
+                  InkWell(
+                    onTap: () => _apply(hex),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: _parseHex(hex) ?? Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.black, width: 1),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final hex = _hex.text.trim();
+            Navigator.pop(context, '#${hex.toUpperCase()}');
+          },
+          child: const Text('Aplicar'),
+        ),
+      ],
     );
   }
 }
