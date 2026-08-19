@@ -26,6 +26,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   late final TextEditingController _tradeName;
   late final TextEditingController _legalName;
   late final TextEditingController _abbreviation;
+  late final TextEditingController _document;
   late final TextEditingController _email;
   late final TextEditingController _phone;
   late final TextEditingController _website;
@@ -40,6 +41,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   late final TextEditingController _locale;
 
   OrganizationType? _type;
+  DocumentType? _documentType;
   int _step = 0;
   bool _submitting = false;
   String? _errorMessage;
@@ -55,6 +57,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     _tradeName = TextEditingController(text: org?.tradeName ?? '');
     _legalName = TextEditingController(text: org?.legalName ?? '');
     _abbreviation = TextEditingController(text: org?.abbreviation ?? '');
+    _document = TextEditingController(text: org?.document ?? '');
     _email = TextEditingController(text: org?.email ?? '');
     _phone = TextEditingController(text: org?.phone ?? '');
     _website = TextEditingController(text: org?.website ?? '');
@@ -68,12 +71,13 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     _timezone = TextEditingController(text: org?.timezone ?? 'America/Sao_Paulo');
     _locale = TextEditingController(text: org?.locale ?? 'pt-BR');
     _type = org?.organizationType;
+    _documentType = org?.documentType;
   }
 
   @override
   void dispose() {
     for (final controller in [
-      _tradeName, _legalName, _abbreviation, _email, _phone, _website,
+      _tradeName, _legalName, _abbreviation, _document, _email, _phone, _website,
       _instagram, _country, _state, _city, _logoUrl, _primaryColor,
       _secondaryColor, _timezone, _locale,
     ]) {
@@ -88,6 +92,9 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         if (_abbreviation.text.trim().isNotEmpty)
           'abbreviation': _abbreviation.text.trim(),
         if (_type != null) 'organizationType': _type!.toJson(),
+        if (_document.text.trim().isNotEmpty)
+          'document': _document.text.trim().replaceAll(RegExp(r'\D'), ''),
+        if (_documentType != null) 'documentType': _documentType!.toJson(),
         if (_email.text.trim().isNotEmpty) 'email': _email.text.trim(),
         if (_phone.text.trim().isNotEmpty) 'phone': _phone.text.trim(),
         if (_website.text.trim().isNotEmpty) 'website': _website.text.trim(),
@@ -303,6 +310,20 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                 .toList(),
             onChanged: (value) => setState(() => _type = value),
           ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<DocumentType>(
+            initialValue: _documentType,
+            decoration: const InputDecoration(
+              labelText: 'Tipo de documento',
+              border: OutlineInputBorder(),
+            ),
+            items: DocumentType.values
+                .map((d) => DropdownMenuItem(value: d, child: Text(d.label)))
+                .toList(),
+            onChanged: (value) => setState(() => _documentType = value),
+          ),
+          const SizedBox(height: 12),
+          _documentField(),
         ] else if (step == 1) ...[
           _field('E-mail', _email),
           const SizedBox(height: 12),
@@ -344,6 +365,39 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
           ],
         ],
       ],
+    );
+  }
+
+  Widget _documentField() {
+    return TextFormField(
+      controller: _document,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: 'CNPJ da organização ou CPF do presidente',
+        hintText: _documentType == DocumentType.cpf ? '000.000.000-00' : '00.000.000/0000-00',
+        border: const OutlineInputBorder(),
+      ),
+      onChanged: (value) {
+        final masked = _documentType == DocumentType.cpf
+            ? DocumentUtils.maskCpf(value)
+            : DocumentUtils.maskCnpj(value);
+        if (masked != value) {
+          _document.value = TextEditingValue(
+            text: masked,
+            selection: TextSelection.collapsed(offset: masked.length),
+          );
+        }
+      },
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return 'Informe o CNPJ da organização ou o CPF do presidente';
+        }
+        final type = _documentType ?? DocumentType.cnpj;
+        final valid = type == DocumentType.cpf
+            ? DocumentUtils.isValidCpf(value)
+            : DocumentUtils.isValidCnpj(value);
+        return valid ? null : 'Documento inválido';
+      },
     );
   }
 

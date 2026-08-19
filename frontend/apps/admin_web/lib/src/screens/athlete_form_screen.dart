@@ -23,6 +23,7 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _name;
+  late final TextEditingController _cpf;
   late final TextEditingController _nickname;
   late final TextEditingController _number;
   late final TextEditingController _photoUrl;
@@ -37,6 +38,7 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
     super.initState();
     final athlete = widget.athlete;
     _name = TextEditingController(text: athlete?.name ?? '');
+    _cpf = TextEditingController(text: athlete?.cpf ?? '');
     _nickname = TextEditingController(text: athlete?.nickname ?? '');
     _number = TextEditingController(text: athlete?.number?.toString() ?? '');
     _photoUrl = TextEditingController(text: athlete?.photoUrl ?? '');
@@ -45,10 +47,15 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
 
   @override
   void dispose() {
-    for (final controller in [_name, _nickname, _number, _photoUrl]) {
+    for (final controller in [_name, _cpf, _nickname, _number, _photoUrl]) {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  String? _validateCpf(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Informe o CPF';
+    return DocumentUtils.isValidCpf(value) ? null : 'CPF inválido';
   }
 
   String? _validateNumber(String? value) {
@@ -69,6 +76,7 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
 
   Map<String, dynamic> _body() => {
         'name': _name.text.trim(),
+        'cpf': _cpf.text.trim().replaceAll(RegExp(r'\D'), ''),
         if (_nickname.text.trim().isNotEmpty) 'nickname': _nickname.text.trim(),
         if (_position != null) 'position': _position!.toJson(),
         if (int.tryParse(_number.text.trim()) != null)
@@ -136,6 +144,26 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
                   validator: (value) => (value == null || value.trim().isEmpty)
                       ? 'Informe o nome'
                       : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _cpf,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'CPF',
+                    hintText: '000.000.000-00',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    final masked = DocumentUtils.maskCpf(value);
+                    if (masked != value) {
+                      _cpf.value = TextEditingValue(
+                        text: masked,
+                        selection: TextSelection.collapsed(offset: masked.length),
+                      );
+                    }
+                  },
+                  validator: _validateCpf,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(

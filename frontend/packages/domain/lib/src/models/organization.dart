@@ -1,3 +1,4 @@
+import '../enums/document_type.dart';
 import '../enums/organization_status.dart';
 import '../enums/organization_type.dart';
 
@@ -10,6 +11,8 @@ class Organization {
   final String tradeName;
   final String? abbreviation;
   final OrganizationType? organizationType;
+  final String? document;
+  final DocumentType? documentType;
   final String? email;
   final String? phone;
   final String? website;
@@ -35,6 +38,8 @@ class Organization {
     required this.locale,
     this.abbreviation,
     this.organizationType,
+    this.document,
+    this.documentType,
     this.email,
     this.phone,
     this.website,
@@ -56,6 +61,10 @@ class Organization {
         abbreviation: json['abbreviation'] as String?,
         organizationType: json['organizationType'] is String
             ? OrganizationType.fromJson(json['organizationType'] as String)
+            : null,
+        document: json['document'] as String?,
+        documentType: json['documentType'] is String
+            ? DocumentType.fromJson(json['documentType'] as String)
             : null,
         email: json['email'] as String?,
         phone: json['phone'] as String?,
@@ -82,6 +91,8 @@ class Organization {
         'tradeName': tradeName,
         if (abbreviation != null) 'abbreviation': abbreviation,
         if (organizationType != null) 'organizationType': organizationType!.toJson(),
+        if (document != null) 'document': document,
+        if (documentType != null) 'documentType': documentType!.toJson(),
         if (email != null) 'email': email,
         if (phone != null) 'phone': phone,
         if (website != null) 'website': website,

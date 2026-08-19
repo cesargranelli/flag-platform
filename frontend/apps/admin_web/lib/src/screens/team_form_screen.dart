@@ -25,8 +25,10 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
 
   late final TextEditingController _name;
   late final TextEditingController _shortName;
+  late final TextEditingController _document;
   late final TextEditingController _logoUrl;
   String? _categoryId;
+  DocumentType? _documentType;
   bool _submitting = false;
   String? _errorMessage;
 
@@ -38,14 +40,17 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
     final team = widget.team;
     _name = TextEditingController(text: team?.name ?? '');
     _shortName = TextEditingController(text: team?.shortName ?? '');
+    _document = TextEditingController(text: team?.document ?? '');
     _logoUrl = TextEditingController(text: team?.logoUrl ?? '');
     _categoryId = team?.categoryId ?? widget.initialCategoryId;
+    _documentType = team?.documentType;
   }
 
   @override
   void dispose() {
     _name.dispose();
     _shortName.dispose();
+    _document.dispose();
     _logoUrl.dispose();
     super.dispose();
   }
@@ -70,6 +75,10 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
           categoryId: categoryId,
           name: _name.text.trim(),
           shortName: _shortName.text.trim().isEmpty ? null : _shortName.text.trim(),
+          document: _document.text.trim().isEmpty
+              ? null
+              : _document.text.trim().replaceAll(RegExp(r'\D'), ''),
+          documentType: _documentType,
           logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
         );
       } else {
@@ -78,6 +87,10 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
           categoryId: categoryId,
           name: _name.text.trim(),
           shortName: _shortName.text.trim().isEmpty ? null : _shortName.text.trim(),
+          document: _document.text.trim().isEmpty
+              ? null
+              : _document.text.trim().replaceAll(RegExp(r'\D'), ''),
+          documentType: _documentType,
           logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
         );
       }
@@ -196,6 +209,51 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
                     helperText: 'Ex.: FLA',
                     border: OutlineInputBorder(),
                   ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<DocumentType>(
+                  initialValue: _documentType,
+                  decoration: const InputDecoration(
+                    labelText: 'Tipo de documento',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: DocumentType.values
+                      .map((d) => DropdownMenuItem(value: d, child: Text(d.label)))
+                      .toList(),
+                  onChanged: (value) => setState(() => _documentType = value),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _document,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'CNPJ do time ou CPF do representante',
+                    hintText: _documentType == DocumentType.cpf
+                        ? '000.000.000-00'
+                        : '00.000.000/0000-00',
+                    border: const OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    final masked = _documentType == DocumentType.cpf
+                        ? DocumentUtils.maskCpf(value)
+                        : DocumentUtils.maskCnpj(value);
+                    if (masked != value) {
+                      _document.value = TextEditingValue(
+                        text: masked,
+                        selection: TextSelection.collapsed(offset: masked.length),
+                      );
+                    }
+                  },
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Informe o CNPJ do time ou o CPF do representante';
+                    }
+                    final type = _documentType ?? DocumentType.cnpj;
+                    final valid = type == DocumentType.cpf
+                        ? DocumentUtils.isValidCpf(value)
+                        : DocumentUtils.isValidCnpj(value);
+                    return valid ? null : 'Documento inválido';
+                  },
                 ),
                 const SizedBox(height: 12),
                 TextFormField(

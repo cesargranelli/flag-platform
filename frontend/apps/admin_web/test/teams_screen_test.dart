@@ -1,5 +1,6 @@
 import 'package:flag_admin_web/src/app.dart';
 import 'package:flag_admin_web/src/providers/providers.dart';
+import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -72,6 +73,13 @@ void main() {
     expect(find.text('Novo time'), findsOneWidget);
 
     await tester.enterText(find.widgetWithText(TextFormField, 'Nome'), 'Cometas');
+    await tester.tap(find.byType(DropdownButtonFormField<DocumentType>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('CNPJ').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'CNPJ do time ou CPF do representante'),
+        '11.222.333/0001-81');
     await tester.ensureVisible(find.text('Salvar'));
     await tester.tap(find.text('Salvar'));
     await tester.pumpAndSettle();

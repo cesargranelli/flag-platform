@@ -67,6 +67,7 @@ void main() {
     expect(find.text('Novo atleta'), findsOneWidget);
 
     await tester.enterText(find.widgetWithText(TextFormField, 'Nome'), 'Carlos');
+    await tester.enterText(find.widgetWithText(TextFormField, 'CPF'), '123.456.789-09');
     await tester.ensureVisible(find.text('Salvar'));
     await tester.tap(find.text('Salvar'));
     await tester.pumpAndSettle();

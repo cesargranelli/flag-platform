@@ -1,3 +1,5 @@
+import '../enums/document_type.dart';
+
 /// Time de uma categoria.
 ///
 /// Shape de `/api/v1/teams`.
@@ -6,6 +8,8 @@ class Team {
   final String categoryId;
   final String name;
   final String? shortName;
+  final String? document;
+  final DocumentType? documentType;
   final String? logoUrl;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -15,6 +19,8 @@ class Team {
     required this.categoryId,
     required this.name,
     this.shortName,
+    this.document,
+    this.documentType,
     this.logoUrl,
     this.createdAt,
     this.updatedAt,
@@ -25,6 +31,10 @@ class Team {
         categoryId: json['categoryId'] as String,
         name: json['name'] as String,
         shortName: json['shortName'] as String?,
+        document: json['document'] as String?,
+        documentType: json['documentType'] is String
+            ? DocumentType.fromJson(json['documentType'] as String)
+            : null,
         logoUrl: json['logoUrl'] as String?,
         createdAt: json['createdAt'] is String
             ? DateTime.tryParse(json['createdAt'] as String)
@@ -39,6 +49,8 @@ class Team {
         'categoryId': categoryId,
         'name': name,
         if (shortName != null) 'shortName': shortName,
+        if (document != null) 'document': document,
+        if (documentType != null) 'documentType': documentType!.toJson(),
         if (logoUrl != null) 'logoUrl': logoUrl,
       };
 }

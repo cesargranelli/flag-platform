@@ -20,6 +20,8 @@ class TeamApi {
     required String categoryId,
     required String name,
     String? shortName,
+    String? document,
+    DocumentType? documentType,
     String? logoUrl,
   }) =>
       _client.post(
@@ -28,6 +30,8 @@ class TeamApi {
           'categoryId': categoryId,
           'name': name,
           'shortName': ?shortName,
+          'document': ?document,
+          'documentType': documentType?.toJson(),
           'logoUrl': ?logoUrl,
         },
         Team.fromJson,
@@ -38,6 +42,8 @@ class TeamApi {
     required String categoryId,
     required String name,
     String? shortName,
+    String? document,
+    DocumentType? documentType,
     String? logoUrl,
   }) =>
       _client.put(
@@ -46,6 +52,8 @@ class TeamApi {
           'categoryId': categoryId,
           'name': name,
           'shortName': ?shortName,
+          'document': ?document,
+          'documentType': documentType?.toJson(),
           'logoUrl': ?logoUrl,
         },
         Team.fromJson,
