@@ -27,6 +27,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   late final TextEditingController _legalName;
   late final TextEditingController _abbreviation;
   late final TextEditingController _document;
+  late final TextEditingController _presidentName;
+  late final TextEditingController _presidentCpf;
   late final TextEditingController _email;
   late final TextEditingController _phone;
   late final TextEditingController _website;
@@ -37,8 +39,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   late final TextEditingController _logoUrl;
   late final TextEditingController _primaryColor;
   late final TextEditingController _secondaryColor;
-  late final TextEditingController _timezone;
   late final TextEditingController _locale;
+  final _timezone = 'America/Sao_Paulo'; // fixo; removido da UI
 
   OrganizationType? _type;
   DocumentType? _documentType;
@@ -58,6 +60,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     _legalName = TextEditingController(text: org?.legalName ?? '');
     _abbreviation = TextEditingController(text: org?.abbreviation ?? '');
     _document = TextEditingController(text: org?.document ?? '');
+    _presidentName = TextEditingController(text: org?.presidentName ?? '');
+    _presidentCpf = TextEditingController(text: org?.presidentCpf ?? '');
     _email = TextEditingController(text: org?.email ?? '');
     _phone = TextEditingController(text: org?.phone ?? '');
     _website = TextEditingController(text: org?.website ?? '');
@@ -68,18 +72,18 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     _logoUrl = TextEditingController(text: org?.logoUrl ?? '');
     _primaryColor = TextEditingController(text: org?.primaryColor ?? '');
     _secondaryColor = TextEditingController(text: org?.secondaryColor ?? '');
-    _timezone = TextEditingController(text: org?.timezone ?? 'America/Sao_Paulo');
     _locale = TextEditingController(text: org?.locale ?? 'pt-BR');
     _type = org?.organizationType;
-    _documentType = org?.documentType;
+    _documentType = org?.documentType ?? DocumentType.cnpj;
   }
 
   @override
   void dispose() {
     for (final controller in [
-      _tradeName, _legalName, _abbreviation, _document, _email, _phone, _website,
+      _tradeName, _legalName, _abbreviation, _document, _presidentName,
+      _presidentCpf, _email, _phone, _website,
       _instagram, _country, _state, _city, _logoUrl, _primaryColor,
-      _secondaryColor, _timezone, _locale,
+      _secondaryColor, _locale,
     ]) {
       controller.dispose();
     }
@@ -95,6 +99,10 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         if (_document.text.trim().isNotEmpty)
           'document': _document.text.trim().replaceAll(RegExp(r'\D'), ''),
         if (_documentType != null) 'documentType': _documentType!.toJson(),
+        if (_presidentName.text.trim().isNotEmpty)
+          'presidentName': _presidentName.text.trim(),
+        if (_presidentCpf.text.trim().isNotEmpty)
+          'presidentCpf': _presidentCpf.text.trim().replaceAll(RegExp(r'\D'), ''),
         if (_email.text.trim().isNotEmpty) 'email': _email.text.trim(),
         if (_phone.text.trim().isNotEmpty) 'phone': _phone.text.trim(),
         if (_website.text.trim().isNotEmpty) 'website': _website.text.trim(),
@@ -107,7 +115,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
           'primaryColor': _primaryColor.text.trim(),
         if (_secondaryColor.text.trim().isNotEmpty)
           'secondaryColor': _secondaryColor.text.trim(),
-        'timezone': _timezone.text.trim(),
+        'timezone': _timezone,
         'locale': _locale.text.trim(),
       };
 
@@ -310,20 +318,25 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                 .toList(),
             onChanged: (value) => setState(() => _type = value),
           ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<DocumentType>(
-            initialValue: _documentType,
-            decoration: const InputDecoration(
-              labelText: 'Tipo de documento',
-              border: OutlineInputBorder(),
-            ),
-            items: DocumentType.values
-                .map((d) => DropdownMenuItem(value: d, child: Text(d.label)))
+          const SizedBox(height: 16),
+          _sectionTitle('Documento'),
+          const SizedBox(height: 8),
+          SegmentedButton<DocumentType>(
+            segments: DocumentType.values
+                .map((d) => ButtonSegment(value: d, label: Text(d.label)))
                 .toList(),
-            onChanged: (value) => setState(() => _documentType = value),
+            selected: {_documentType ?? DocumentType.cnpj},
+            onSelectionChanged: (selection) =>
+                setState(() => _documentType = selection.first),
           ),
           const SizedBox(height: 12),
           _documentField(),
+          const SizedBox(height: 16),
+          _sectionTitle('Presidente'),
+          const SizedBox(height: 8),
+          _field('Nome do presidente', _presidentName, 'Informe o nome do presidente'),
+          const SizedBox(height: 12),
+          _presidentCpfField(),
         ] else if (step == 1) ...[
           _field('E-mail', _email),
           const SizedBox(height: 12),
@@ -353,8 +366,6 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
             ],
           ),
           const SizedBox(height: 12),
-          _field('Timezone', _timezone, 'Informe o fuso horário'),
-          const SizedBox(height: 12),
           _field('Locale', _locale, 'Informe o locale'),
           if (_errorMessage != null) ...[
             const SizedBox(height: 16),
@@ -368,13 +379,50 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     );
   }
 
+  Widget _sectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: AppColors.textPrimary,
+      ),
+    );
+  }
+
+  Widget _presidentCpfField() {
+    return TextFormField(
+      controller: _presidentCpf,
+      keyboardType: TextInputType.number,
+      decoration: const InputDecoration(
+        labelText: 'CPF do presidente',
+        hintText: '000.000.000-00',
+        border: OutlineInputBorder(),
+      ),
+      onChanged: (value) {
+        final masked = DocumentUtils.maskCpf(value);
+        if (masked != value) {
+          _presidentCpf.value = TextEditingValue(
+            text: masked,
+            selection: TextSelection.collapsed(offset: masked.length),
+          );
+        }
+      },
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) return 'Informe o CPF do presidente';
+        return DocumentUtils.isValidCpf(value) ? null : 'CPF inválido';
+      },
+    );
+  }
+
   Widget _documentField() {
     return TextFormField(
       controller: _document,
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
-        labelText: 'CNPJ da organização ou CPF do presidente',
+        labelText: 'CNPJ',
         hintText: _documentType == DocumentType.cpf ? '000.000.000-00' : '00.000.000/0000-00',
+        helperText: 'Opcional',
         border: const OutlineInputBorder(),
       ),
       onChanged: (value) {
@@ -389,9 +437,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         }
       },
       validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Informe o CNPJ da organização ou o CPF do presidente';
-        }
+        if (value == null || value.trim().isEmpty) return null; // CNPJ opcional
         final type = _documentType ?? DocumentType.cnpj;
         final valid = type == DocumentType.cpf
             ? DocumentUtils.isValidCpf(value)

@@ -111,9 +111,21 @@ class OrganizationDetailScreen extends ConsumerWidget {
                 _row('Sigla', org.abbreviation!),
               if (org.organizationType != null)
                 _row('Tipo', org.organizationType!.name),
+              if (org.document != null && org.document!.isNotEmpty)
+                _row('CNPJ', org.document!),
               _row('País', org.country),
               if (org.state != null && org.state!.isNotEmpty) _row('Estado', org.state!),
               if (org.city != null && org.city!.isNotEmpty) _row('Cidade', org.city!),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _infoCard(
+            'Presidente',
+            [
+              if (org.presidentName != null && org.presidentName!.isNotEmpty)
+                _row('Nome', org.presidentName!),
+              if (org.presidentCpf != null && org.presidentCpf!.isNotEmpty)
+                _row('CPF', org.presidentCpf!),
             ],
           ),
           const SizedBox(height: 12),
@@ -134,7 +146,6 @@ class OrganizationDetailScreen extends ConsumerWidget {
           _infoCard(
             'Visual',
             [
-              if (org.timezone.isNotEmpty) _row('Timezone', org.timezone),
               if (org.locale.isNotEmpty) _row('Locale', org.locale),
               if (org.primaryColor != null && org.primaryColor!.isNotEmpty)
                 _row('Cor primária', org.primaryColor!),
