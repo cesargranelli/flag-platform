@@ -288,6 +288,8 @@ class RoundControllerIntegrationTest {
         fields.put("organizationType", "ASSOCIATION");
         fields.put("document", cnpj("org-" + tradeName));
         fields.put("documentType", "CNPJ");
+        fields.put("presidentName", "Maria Silva");
+        fields.put("presidentCpf", cpf("pres-" + tradeName));
         fields.put("email", "contato@round.org.br");
         fields.put("phone", "11999999999");
         fields.put("website", "https://round.org.br");
@@ -370,6 +372,27 @@ class RoundControllerIntegrationTest {
         System.arraycopy(a, 0, r, 0, a.length);
         r[a.length] = b;
         return r;
+    }
+
+    /**
+     * Gera um CPF valido e unico a partir de um seed.
+     */
+    private String cpf(String seed) {
+        String base = String.format("%09d",
+                Math.abs((seed + "-" + System.nanoTime()).hashCode()) % 1000000000L);
+        int[] digits = base.chars().map(c -> c - '0').toArray();
+        int d1 = cpfDv(digits, 10);
+        int d2 = cpfDv(concat(digits, d1), 11);
+        return base + d1 + d2;
+    }
+
+    private int cpfDv(int[] digits, int start) {
+        int sum = 0;
+        for (int i = 0; i < digits.length; i++) {
+            sum += digits[i] * (start - i);
+        }
+        int rest = (sum * 10) % 11;
+        return rest == 10 ? 0 : rest;
     }
 
 }

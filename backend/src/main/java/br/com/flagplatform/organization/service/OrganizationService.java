@@ -42,6 +42,7 @@ public class OrganizationService implements OrganizationLookup {
         }
 
         validateDocument(request.document(), request.documentType(), null);
+        validatePresident(request.presidentCpf(), null);
 
         OrganizationEntity entity = mapper.toEntity(request);
         entity.setStatus(OrganizationStatus.ACTIVE);
@@ -73,6 +74,7 @@ public class OrganizationService implements OrganizationLookup {
         }
 
         validateDocument(request.document(), request.documentType(), id);
+        validatePresident(request.presidentCpf(), id);
 
         mapper.updateEntity(entity, request);
 
@@ -85,7 +87,7 @@ public class OrganizationService implements OrganizationLookup {
      */
     private void validateDocument(String document, DocumentType type, UUID currentId) {
         if (document == null || document.isBlank()) {
-            throw new InvalidDocumentException("Informe o CNPJ da organização ou o CPF do presidente.");
+            return; // CNPJ opcional
         }
         if (type == null) {
             throw new InvalidDocumentException("Informe o tipo do documento (CNPJ ou CPF).");
@@ -97,6 +99,25 @@ public class OrganizationService implements OrganizationLookup {
         boolean duplicate = currentId == null
                 ? repository.existsByDocument(normalized)
                 : repository.existsByDocumentAndIdNot(normalized, currentId);
+        if (duplicate) {
+            throw new DuplicateDocumentException(normalized);
+        }
+    }
+
+    /**
+     * Valida o CPF do presidente: obrigatorio, digitos validos e unico.
+     */
+    private void validatePresident(String presidentCpf, UUID currentId) {
+        if (presidentCpf == null || presidentCpf.isBlank()) {
+            throw new InvalidDocumentException("Informe o CPF do presidente.");
+        }
+        if (!DocumentValidator.isValid(presidentCpf, DocumentType.CPF)) {
+            throw new InvalidDocumentException("CPF do presidente inválido.");
+        }
+        String normalized = presidentCpf.replaceAll("\\D", "");
+        boolean duplicate = currentId == null
+                ? repository.existsByPresidentCpf(normalized)
+                : repository.existsByPresidentCpfAndIdNot(normalized, currentId);
         if (duplicate) {
             throw new DuplicateDocumentException(normalized);
         }

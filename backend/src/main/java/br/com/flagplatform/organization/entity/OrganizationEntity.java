@@ -29,6 +29,8 @@ public class OrganizationEntity extends BaseEntity {
     private OrganizationType organizationType;
     private String document;
     private DocumentType documentType;
+    private String presidentName;
+    private String presidentCpf;
     private String email;
     private String phone;
     private String website;

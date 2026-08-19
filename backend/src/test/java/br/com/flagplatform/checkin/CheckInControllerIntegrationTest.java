@@ -447,6 +447,8 @@ class CheckInControllerIntegrationTest {
         fields.put("organizationType", "ASSOCIATION");
         fields.put("document", cnpj("org-" + tradeName));
         fields.put("documentType", "CNPJ");
+        fields.put("presidentName", "Maria Silva");
+        fields.put("presidentCpf", cpf("pres-" + tradeName));
         fields.put("email", "contato@chk.org.br");
         fields.put("phone", "11999999999");
         fields.put("website", "https://chk.org.br");
