@@ -487,6 +487,8 @@ class FakeTeamApi extends TeamApi {
     required String categoryId,
     required String name,
     String? shortName,
+    String? document,
+    DocumentType? documentType,
     String? logoUrl,
   }) async {
     createCalls++;
@@ -494,6 +496,8 @@ class FakeTeamApi extends TeamApi {
       'categoryId': categoryId,
       'name': name,
       'shortName': shortName,
+      'document': document,
+      'documentType': documentType?.toJson(),
       'logoUrl': logoUrl,
     };
     final team = Team(id: 'team-novo', categoryId: categoryId, name: name);
@@ -507,6 +511,8 @@ class FakeTeamApi extends TeamApi {
     required String categoryId,
     required String name,
     String? shortName,
+    String? document,
+    DocumentType? documentType,
     String? logoUrl,
   }) async {
     updateCalls++;
@@ -514,6 +520,8 @@ class FakeTeamApi extends TeamApi {
       'categoryId': categoryId,
       'name': name,
       'shortName': shortName,
+      'document': document,
+      'documentType': documentType?.toJson(),
       'logoUrl': logoUrl,
     };
     final updated = Team(id: id, categoryId: categoryId, name: name);
@@ -732,10 +740,12 @@ class FakeRosterApi extends RosterApi {
 Athlete testAthlete({
   String id = '11111111-1111-1111-1111-111111111111',
   String name = 'João Silva',
+  String cpf = '12345678909',
   AthletePosition position = AthletePosition.qb,
   int? number = 7,
 }) {
-  return Athlete(id: id, name: name, position: position, number: number);
+  return Athlete(
+      id: id, name: name, cpf: cpf, position: position, number: number);
 }
 
 /// Jogo de exemplo para testes.
@@ -776,7 +786,13 @@ Team testTeam({
   String categoryId = '11111111-1111-1111-1111-111111111111',
   String name = 'Tritões',
 }) {
-  return Team(id: id, categoryId: categoryId, name: name);
+  return Team(
+    id: id,
+    categoryId: categoryId,
+    name: name,
+    document: '11.222.333/0001-81',
+    documentType: DocumentType.cnpj,
+  );
 }
 
 /// Campo de exemplo para testes.
@@ -857,5 +873,7 @@ Organization testOrganization({
     timezone: 'America/Sao_Paulo',
     locale: 'pt-BR',
     organizationType: OrganizationType.association,
+    document: '11.222.333/0001-81',
+    documentType: DocumentType.cnpj,
   );
 }

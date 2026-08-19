@@ -6,6 +6,7 @@ import '../enums/athlete_position.dart';
 class Athlete {
   final String id;
   final String name;
+  final String? cpf;
   final String? nickname;
   final AthletePosition? position;
   final int? number;
@@ -16,6 +17,7 @@ class Athlete {
   const Athlete({
     required this.id,
     required this.name,
+    this.cpf,
     this.nickname,
     this.position,
     this.number,
@@ -27,6 +29,7 @@ class Athlete {
   factory Athlete.fromJson(Map<String, dynamic> json) => Athlete(
         id: json['id'] as String,
         name: json['name'] as String,
+        cpf: json['cpf'] as String?,
         nickname: json['nickname'] as String?,
         position: json['position'] is String
             ? AthletePosition.fromJson(json['position'] as String)
@@ -44,6 +47,7 @@ class Athlete {
   /// Corpo de criação/atualização (`POST/PUT /api/v1/athletes`).
   Map<String, dynamic> toJson() => {
         'name': name,
+        if (cpf != null) 'cpf': cpf,
         if (nickname != null) 'nickname': nickname,
         if (position != null) 'position': position!.toJson(),
         if (number != null) 'number': number,

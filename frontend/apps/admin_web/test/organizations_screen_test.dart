@@ -1,5 +1,6 @@
 import 'package:flag_admin_web/src/app.dart';
 import 'package:flag_admin_web/src/providers/providers.dart';
+import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -73,6 +74,13 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Copa Interior');
     await tester.enterText(find.byType(TextFormField).at(1), 'Liga do Interior');
+    await tester.tap(find.byType(DropdownButtonFormField<DocumentType>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('CNPJ').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'CNPJ da organização ou CPF do presidente'),
+        '11.222.333/0001-81');
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar'));
@@ -82,6 +90,7 @@ void main() {
 
     expect(api.createCalls, 1);
     expect(api.lastBody?['tradeName'], 'Copa Interior');
+    expect(api.lastBody?['documentType'], 'CNPJ');
     expect(find.text('Copa Interior'), findsOneWidget);
   });
 
