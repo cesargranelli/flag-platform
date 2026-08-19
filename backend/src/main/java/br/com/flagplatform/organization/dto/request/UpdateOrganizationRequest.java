@@ -25,6 +25,14 @@ public record UpdateOrganizationRequest(
 
         DocumentType documentType,
 
+        @NotBlank
+        @Size(max = 150)
+        String presidentName,
+
+        @NotBlank
+        @Size(max = 14)
+        String presidentCpf,
+
         @Email
         @Size(max = 150)
         String email,

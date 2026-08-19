@@ -15,6 +15,8 @@ public record OrganizationResponse(
         OrganizationType organizationType,
         String document,
         DocumentType documentType,
+        String presidentName,
+        String presidentCpf,
         String email,
         String phone,
         String website,

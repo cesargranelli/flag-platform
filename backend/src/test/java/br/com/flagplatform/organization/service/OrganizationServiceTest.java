@@ -53,6 +53,7 @@ class OrganizationServiceTest {
 
         when(repository.existsByTradeNameIgnoreCase(request.tradeName())).thenReturn(false);
         when(repository.existsByDocument("11222333000181")).thenReturn(false);
+        when(repository.existsByPresidentCpf("12345678909")).thenReturn(false);
         when(mapper.toEntity(request)).thenReturn(entity);
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toResponse(entity)).thenReturn(expected);
@@ -126,6 +127,7 @@ class OrganizationServiceTest {
         when(repository.findById(id)).thenReturn(Optional.of(entity));
         when(repository.existsByTradeNameIgnoreCaseAndIdNot(request.tradeName(), id)).thenReturn(false);
         when(repository.existsByDocumentAndIdNot("11222333000181", id)).thenReturn(false);
+        when(repository.existsByPresidentCpfAndIdNot("12345678909", id)).thenReturn(false);
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toDetailResponse(entity)).thenReturn(expected);
 
@@ -173,6 +175,8 @@ class OrganizationServiceTest {
                 OrganizationType.ASSOCIATION,
                 "11.222.333/0001-81",
                 DocumentType.CNPJ,
+                "Maria Silva",
+                "12345678909",
                 "contato@apfa.com.br",
                 "11999999999",
                 "https://apfa.com.br",
@@ -196,6 +200,8 @@ class OrganizationServiceTest {
                 OrganizationType.ASSOCIATION,
                 "11.222.333/0001-81",
                 DocumentType.CNPJ,
+                "Maria Silva",
+                "12345678909",
                 "contato@apfa.com.br",
                 "11999999999",
                 "https://apfa.com.br",
@@ -219,6 +225,8 @@ class OrganizationServiceTest {
         entity.setOrganizationType(OrganizationType.ASSOCIATION);
         entity.setDocument("11222333000181");
         entity.setDocumentType(DocumentType.CNPJ);
+        entity.setPresidentName("Maria Silva");
+        entity.setPresidentCpf("12345678909");
         entity.setCountry("BR");
         entity.setTimezone("America/Sao_Paulo");
         entity.setLocale("pt-BR");
@@ -235,6 +243,8 @@ class OrganizationServiceTest {
                 entity.getOrganizationType(),
                 entity.getDocument(),
                 entity.getDocumentType(),
+                entity.getPresidentName(),
+                entity.getPresidentCpf(),
                 entity.getEmail(),
                 entity.getPhone(),
                 entity.getWebsite(),
