@@ -73,7 +73,8 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Copa Interior');
     await tester.enterText(find.byType(TextFormField).at(1), 'Liga do Interior');
-    await tester.enterText(find.widgetWithText(TextFormField, 'CNPJ'),
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'CNPJ (opcional)'),
         '11.222.333/0001-81');
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Nome do presidente'), 'Maria Silva');
@@ -143,6 +144,115 @@ void main() {
     expect(api.lastBody?['tradeName'], 'Flag Brasil 2026');
     expect(find.text('Flag Brasil 2026'), findsWidgets);
     expect(find.text('Editar dados'), findsOneWidget);
+  });
+
+  testWidgets('confirma descarte ao sair com alterações não salvas',
+      (WidgetTester tester) async {
+    final api = FakeOrganizationApi();
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+    await openOrganizations(tester);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Copa Interior');
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Descartar alterações?'), findsOneWidget);
+
+    await tester.tap(find.text('Continuar editando'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nova organização'), findsOneWidget);
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Descartar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nova organização'), findsNothing);
+  });
+
+testWidgets('troca o campo de estado para texto ao escolher outro país',
+      (WidgetTester tester) async {
+    final api = FakeOrganizationApi();
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+    await openOrganizations(tester);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Copa Interior');
+    await tester.enterText(find.byType(TextFormField).at(1), 'Liga do Interior');
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nome do presidente'), 'Maria Silva');
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'CPF do presidente'), '123.456.789-09');
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(TextFormField, 'Estado (opcional)'), findsNothing);
+    expect(find.byType(DropdownButtonFormField<String>), findsNWidgets(2));
+
+    await tester.ensureVisible(
+        find.byType(DropdownButtonFormField<String>).first);
+    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Estados Unidos').last);
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(TextFormField, 'Estado (opcional)'), findsOneWidget);
+    expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
+  });
+
+  testWidgets('abre o seletor de cor e aplica o valor no campo hex',
+      (WidgetTester tester) async {
+    final api = FakeOrganizationApi();
+
+    await pumpApp(tester, api);
+    await tester.pumpAndSettle();
+    await openOrganizations(tester);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Copa Interior');
+    await tester.enterText(find.byType(TextFormField).at(1), 'Liga do Interior');
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nome do presidente'), 'Maria Silva');
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'CPF do presidente'), '123.456.789-09');
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Prévia da marca'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Escolher cor').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Escolher cor'), findsOneWidget);
+
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      ),
+      'FF0000',
+    );
+    await tester.tap(find.text('Aplicar'));
+    await tester.pumpAndSettle();
+
+    final primaryField = tester.widget<TextFormField>(
+      find.widgetWithText(TextFormField, 'Cor primária (opcional)'),
+    );
+    expect(primaryField.controller?.text, '#FF0000');
   });
 }
 
