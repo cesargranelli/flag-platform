@@ -47,6 +47,21 @@ class TeamDetailScreen extends ConsumerWidget {
             .map((c) => c.name)
             .firstOrNull ??
         '';
+    final divisions = ref
+            .watch(divisionsProvider(team.categoryId))
+            .valueOrNull ??
+        const <Division>[];
+    final conferences = ref
+            .watch(conferencesProvider(team.categoryId))
+            .valueOrNull ??
+        const <Conference>[];
+    final division =
+        divisions.where((d) => d.id == team.divisionId).firstOrNull;
+    final conference = division?.conferenceId != null
+        ? conferences
+            .where((c) => c.id == division!.conferenceId)
+            .firstOrNull
+        : null;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -109,6 +124,8 @@ class TeamDetailScreen extends ConsumerWidget {
                     team.shortName?.isNotEmpty == true ? team.shortName! : '—'),
                 _row('Categoria', category?.name ?? '—'),
                 _row('Campeonato', competitionName),
+                _row('Divisão', division?.name ?? '—'),
+                if (conference != null) _row('Conferência', conference.name),
                 if (team.logoUrl != null && team.logoUrl!.isNotEmpty)
                   _row('URL do logo', team.logoUrl!),
               ],

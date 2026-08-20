@@ -28,6 +28,7 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
   late final TextEditingController _document;
   late final TextEditingController _logoUrl;
   String? _categoryId;
+  String? _divisionId;
   DocumentType? _documentType;
   bool _submitting = false;
   String? _errorMessage;
@@ -43,6 +44,7 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
     _document = TextEditingController(text: team?.document ?? '');
     _logoUrl = TextEditingController(text: team?.logoUrl ?? '');
     _categoryId = team?.categoryId ?? widget.initialCategoryId;
+    _divisionId = team?.divisionId;
     _documentType = team?.documentType;
   }
 
@@ -73,6 +75,7 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
       if (id == null) {
         await api.create(
           categoryId: categoryId,
+          divisionId: _divisionId,
           name: _name.text.trim(),
           shortName: _shortName.text.trim().isEmpty ? null : _shortName.text.trim(),
           document: _document.text.trim().isEmpty
@@ -85,6 +88,7 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
         await api.update(
           id,
           categoryId: categoryId,
+          divisionId: _divisionId,
           name: _name.text.trim(),
           shortName: _shortName.text.trim().isEmpty ? null : _shortName.text.trim(),
           document: _document.text.trim().isEmpty
@@ -181,13 +185,47 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
                               child: Text(c.name),
                             ))
                         .toList(),
-                    onChanged: (value) => setState(() => _categoryId = value),
+                    onChanged: (value) => setState(() {
+                      _categoryId = value;
+                      _divisionId = null;
+                    }),
                     validator: (value) => (value == null || value.isEmpty)
                         ? 'Selecione a categoria'
                         : null,
                   ),
                 ) ??
                 const LinearProgressIndicator()),
+                const SizedBox(height: 12),
+                if (categoryValue != null)
+                  ref.watch(divisionsProvider(categoryValue)).when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (e, s) => AppErrorState(
+                      message: 'Não foi possível carregar as divisões',
+                      onRetry: () =>
+                          ref.invalidate(divisionsProvider(categoryValue)),
+                    ),
+                    data: (divItems) => DropdownButtonFormField<String?>(
+                      initialValue: _divisionId,
+                      decoration: const InputDecoration(
+                        labelText: 'Divisão',
+                        helperText: 'Opcional',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Sem divisão'),
+                        ),
+                        ...divItems
+                            .map((d) => DropdownMenuItem<String?>(
+                                  value: d.id,
+                                  child: Text(d.name),
+                                )),
+                      ],
+                      onChanged: (value) =>
+                          setState(() => _divisionId = value),
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _name,

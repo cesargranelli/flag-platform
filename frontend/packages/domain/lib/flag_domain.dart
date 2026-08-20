@@ -1,6 +1,8 @@
 export 'src/models/organization.dart';
 export 'src/models/competition.dart';
 export 'src/models/category.dart';
+export 'src/models/conference.dart';
+export 'src/models/division.dart';
 export 'src/models/modality.dart';
 export 'src/models/venue.dart';
 export 'src/models/team.dart';

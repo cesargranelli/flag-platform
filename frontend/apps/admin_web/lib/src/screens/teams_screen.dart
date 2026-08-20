@@ -28,6 +28,10 @@ class TeamsScreen extends ConsumerWidget {
     final catItems = categories?.valueOrNull ?? const [];
     final effectiveCat =
         selectedCategory ?? (catItems.isNotEmpty ? catItems.first.id : null);
+    final divisions = effectiveCat == null
+        ? const <Division>[]
+        : ref.watch(divisionsProvider(effectiveCat)).valueOrNull ??
+            const <Division>[];
 
     return Scaffold(
       appBar: AppBar(
@@ -162,7 +166,7 @@ class TeamsScreen extends ConsumerWidget {
                                   ),
                                   itemBuilder: (context, index) {
                                     final team = items[index];
-                                    return _teamCard(context, team);
+                                    return _teamCard(context, team, divisions);
                                   },
                                 );
                               },
@@ -178,7 +182,10 @@ class TeamsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _teamCard(BuildContext context, Team team) {
+  Widget _teamCard(
+      BuildContext context, Team team, List<Division> divisions) {
+    final division =
+        divisions.where((d) => d.id == team.divisionId).firstOrNull;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -205,6 +212,16 @@ class TeamsScreen extends ConsumerWidget {
                       const SizedBox(height: 2),
                       Text(
                         team.shortName!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 13, color: AppColors.textSecondary),
+                      ),
+                    ],
+                    if (division != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        division.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

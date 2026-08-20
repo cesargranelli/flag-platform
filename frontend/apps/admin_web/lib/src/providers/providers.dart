@@ -120,6 +120,27 @@ final teamApiProvider = Provider<TeamApi>(
   (ref) => TeamApi(ref.watch(apiClientProvider)),
 );
 
+/// Serviço de conferências.
+final conferenceApiProvider = Provider<ConferenceApi>(
+  (ref) => ConferenceApi(ref.watch(apiClientProvider)),
+);
+
+/// Serviço de divisões.
+final divisionApiProvider = Provider<DivisionApi>(
+  (ref) => DivisionApi(ref.watch(apiClientProvider)),
+);
+
+/// Conferências de uma categoria.
+final conferencesProvider = FutureProvider.family<List<Conference>, String>(
+  (ref, categoryId) =>
+      ref.watch(conferenceApiProvider).listByCategory(categoryId),
+);
+
+/// Divisões de uma categoria.
+final divisionsProvider = FutureProvider.family<List<Division>, String>(
+  (ref, categoryId) => ref.watch(divisionApiProvider).listByCategory(categoryId),
+);
+
 /// Categoria selecionada na tela de times.
 final selectedCategoryProvider = StateProvider<String?>((ref) => null);
 
