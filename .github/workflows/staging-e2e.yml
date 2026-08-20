@@ -1,0 +1,222 @@
+name: Staging E2E
+
+# Quality gate de staging efêmero (issue #202): sobe uma stack completa
+# (postgres + backend Spring Boot + Admin Web Flutter Web), roda a suíte E2E
+# Playwright e derruba tudo ao final. Roda em paralelo ao release.yml e NÃO
+# é required check de PR — apenas o ci.yml é.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'e2e/**'
+      - 'infrastructure/**'
+
+concurrency:
+  group: staging-e2e-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (backend JAR + web Admin)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 25 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Empacotar backend (sem testes — cobertos no CI)
+        working-directory: backend
+        run: ./mvnw --batch-mode -DskipTests package
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Ativar melos
+        working-directory: frontend
+        run: dart pub global activate melos
+
+      - name: Bootstrap do workspace
+        working-directory: frontend
+        run: melos bootstrap
+
+      - name: Build web do Admin Web (staging)
+        working-directory: frontend/apps/admin_web
+        run: flutter build web --dart-define=API_BASE_URL=http://localhost:8080 --dart-define=ENVIRONMENT=staging
+
+      - name: Upload artefato — backend JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: backend/target/*.jar
+          if-no-files-found: error
+
+      - name: Upload artefato — Admin Web
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-web
+          path: frontend/apps/admin_web/build/web
+          if-no-files-found: error
+
+  staging-e2e:
+    name: Staging E2E (shard ${{ matrix.shard }}/${{ strategy.job-total }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: e2e
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: flagplatform
+          POSTGRES_USER: flagplatform
+          POSTGRES_PASSWORD: flagplatform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U flagplatform -d flagplatform"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 25 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Baixar artefato — backend JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: artifacts/backend-jar
+
+      - name: Baixar artefato — Admin Web
+        uses: actions/download-artifact@v4
+        with:
+          name: admin-web
+          path: artifacts/admin-web
+
+      - name: Iniciar backend (perfil staging) em background
+        working-directory: ${{ github.workspace }}
+        run: |
+          JAR=$(find artifacts/backend-jar -name '*.jar' | head -n 1)
+          if [ -z "$JAR" ]; then
+            echo "::error::JAR não encontrado em artifacts/backend-jar"
+            ls -la artifacts/backend-jar
+            exit 1
+          fi
+          echo "Iniciando backend: $JAR"
+          java -jar "$JAR" \
+            --spring.profiles.active=staging \
+            --spring.datasource.url=jdbc:postgresql://localhost:5432/flagplatform \
+            --spring.datasource.username=flagplatform \
+            --spring.datasource.password=flagplatform \
+            > backend.log 2>&1 &
+
+      - name: Aguardar saúde do backend (até 120s)
+        working-directory: ${{ github.workspace }}
+        run: |
+          for i in $(seq 1 24); do
+            if curl -fsS http://localhost:8080/actuator/health >/dev/null 2>&1; then
+              echo "Backend saudável após ~$((i * 5))s"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Backend não respondeu em 120s. Log do backend:"
+          cat backend.log || true
+          exit 1
+
+      - name: Servir build web na porta 8081 (python http.server)
+        working-directory: ${{ github.workspace }}
+        run: |
+          if [ ! -f artifacts/admin-web/index.html ]; then
+            echo "::error::index.html não encontrado em artifacts/admin-web"
+            ls -la artifacts/admin-web
+            exit 1
+          fi
+          python3 -m http.server 8081 --directory artifacts/admin-web > web.log 2>&1 &
+
+      - name: Aguardar web responder (até 30s)
+        working-directory: ${{ github.workspace }}
+        run: |
+          for i in $(seq 1 15); do
+            if curl -fsS http://localhost:8081/ >/dev/null 2>&1; then
+              echo "Web respondendo na porta 8081 após ~$((i * 2))s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Web não respondeu em 30s. Log do servidor web:"
+          cat web.log || true
+          exit 1
+
+      - name: Instalar dependências da suíte E2E
+        run: npm ci
+
+      - name: Instalar browsers (Playwright)
+        run: npx playwright install --with-deps
+
+      - name: Rodar suíte E2E (shard)
+        run: npx playwright test --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+        env:
+          BASE_URL: http://localhost:8081
+          E2E_WORKERS: '1'
+          E2E_ORGANIZER_EMAIL: organizer@flag.test
+          E2E_ORGANIZER_PASSWORD: Organizer@123
+
+      - name: Exibir log do backend (em falha)
+        if: failure()
+        working-directory: ${{ github.workspace }}
+        run: cat backend.log || true
+
+      - name: Publicar relatório Playwright
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-shard-${{ matrix.shard }}
+          path: e2e/playwright-report
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Publicar test-results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-shard-${{ matrix.shard }}
+          path: e2e/test-results
+          retention-days: 7
+          if-no-files-found: warn
