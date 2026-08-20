@@ -51,7 +51,13 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   bool _hasChanges = false;
   String? _errorMessage;
 
-  static const _titles = ['Identificação', 'Contato', 'Visual'];
+  static const _titles = [
+    'Identificação',
+    'Presidente',
+    'Contato',
+    'Localização',
+    'Identidade',
+  ];
 
   bool get _isEditing => widget.organizationId != null || widget.organization != null;
 
@@ -173,16 +179,13 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     }
   }
 
-  bool _validateStep(int step) {
-    if (step == 0) {
-      return _formKey.currentState!.validate();
-    }
-    return true;
+  bool _validateStep() {
+    return _formKey.currentState!.validate();
   }
 
   void _next() {
-    if (_validateStep(_step)) {
-      if (_step < 2) {
+    if (_validateStep()) {
+      if (_step < _titles.length - 1) {
         setState(() => _step += 1);
       } else {
         _save();
@@ -324,7 +327,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.arrow_forward),
-                    label: Text(_step == 2 ? 'Salvar' : 'Continuar'),
+                    label: Text(_step == _titles.length - 1 ? 'Salvar' : 'Continuar'),
                   ),
                 ],
               ),
@@ -388,7 +391,12 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     return InkWell(
       onTap: () {
         if (index == _step) return;
-        if (index > _step && !_validateStep(_step)) return;
+        // Só permite avançar um passo por vez, validando o passo atual
+        // antes (os passos intermediários só são validados na sequência).
+        if (index > _step) {
+          if (index > _step + 1) return;
+          if (!_validateStep()) return;
+        }
         setState(() => _step = index);
       },
       borderRadius: BorderRadius.circular(16),
@@ -398,12 +406,17 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
           children: [
             circle,
             const SizedBox(height: 4),
-            Text(
-              _titles[index],
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                color: selected ? AppColors.textPrimary : AppColors.textSecondary,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                _titles[index],
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                  color: selected
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
+                ),
               ),
             ),
           ],
@@ -412,7 +425,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     );
   }
 
-  Widget _card(String title, List<Widget> children) {
+  Widget _card(String? title, List<Widget> children) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
@@ -420,15 +433,17 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+            if (title != null) ...[
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
+            ],
             ...children,
           ],
         ),
@@ -457,40 +472,10 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
             _field('Sigla (opcional)', _abbreviation),
             const SizedBox(height: 12),
             _typeDropdown(),
-          ]),
-          _card('Documento', [
-            Row(
-              children: [
-                ChoiceChip(
-                  label: const Text('CNPJ'),
-                  selected: _documentType == DocumentType.cnpj,
-                  showCheckmark: false,
-                  onSelected: (selected) {
-                    setState(() {
-                      _documentType =
-                          selected ? DocumentType.cnpj : DocumentType.cpf;
-                    });
-                    _markDirty();
-                  },
-                ),
-                const SizedBox(width: 8),
-                ChoiceChip(
-                  label: const Text('CPF'),
-                  selected: _documentType == DocumentType.cpf,
-                  showCheckmark: false,
-                  onSelected: (selected) {
-                    setState(() {
-                      _documentType =
-                          selected ? DocumentType.cpf : DocumentType.cnpj;
-                    });
-                    _markDirty();
-                  },
-                ),
-              ],
-            ),
             const SizedBox(height: 12),
             _documentField(),
           ]),
+        ] else if (step == 1) ...[
           _card('Presidente', [
             _field('Nome do presidente', _presidentName,
                 hint: 'Informe o nome do presidente',
@@ -500,7 +485,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
             const SizedBox(height: 12),
             _presidentCpfField(),
           ]),
-        ] else if (step == 1) ...[
+        ] else if (step == 2) ...[
           _card('Contato', [
             _emailField(),
             const SizedBox(height: 12),
@@ -510,6 +495,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
             const SizedBox(height: 12),
             _instagramField(),
           ]),
+        ] else if (step == 3) ...[
           _card('Localização', [
             _countryDropdown(),
             const SizedBox(height: 12),
@@ -521,7 +507,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
             _field('Cidade (opcional)', _city),
           ]),
         ] else ...[
-          _card('Identidade visual', [
+          _card(null, [
             _brandPreview(),
             const SizedBox(height: 16),
             _logoField(),
@@ -557,18 +543,16 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _documentField() {
-    final isCpf = _documentType == DocumentType.cpf;
     return TextFormField(
       controller: _document,
       keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        labelText: isCpf ? 'CPF (opcional)' : 'CNPJ (opcional)',
-        hintText: isCpf ? '000.000.000-00' : '00.000.000/0000-00',
-        border: const OutlineInputBorder(),
+      decoration: const InputDecoration(
+        labelText: 'CNPJ (opcional)',
+        hintText: '00.000.000/0000-00',
+        border: OutlineInputBorder(),
       ),
       onChanged: (value) {
-        final masked =
-            isCpf ? DocumentUtils.maskCpf(value) : DocumentUtils.maskCnpj(value);
+        final masked = DocumentUtils.maskCnpj(value);
         if (masked != value) {
           _document.value = TextEditingValue(
             text: masked,
@@ -578,11 +562,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       },
       validator: (value) {
         if (value == null || value.trim().isEmpty) return null; // opcional
-        final type = _documentType ?? DocumentType.cnpj;
-        final valid = type == DocumentType.cpf
-            ? DocumentUtils.isValidCpf(value)
-            : DocumentUtils.isValidCnpj(value);
-        return valid ? null : 'Documento inválido';
+        return DocumentUtils.isValidCnpj(value) ? null : 'Documento inválido';
       },
     );
   }

@@ -76,10 +76,14 @@ void main() {
     await tester.enterText(
         find.widgetWithText(TextFormField, 'CNPJ (opcional)'),
         '11.222.333/0001-81');
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Nome do presidente'), 'Maria Silva');
     await tester.enterText(
         find.widgetWithText(TextFormField, 'CPF do presidente'), '123.456.789-09');
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar'));
@@ -137,6 +141,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Salvar'));
     await tester.pumpAndSettle();
 
@@ -189,10 +197,14 @@ testWidgets('troca o campo de estado para texto ao escolher outro país',
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Copa Interior');
     await tester.enterText(find.byType(TextFormField).at(1), 'Liga do Interior');
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Nome do presidente'), 'Maria Silva');
     await tester.enterText(
         find.widgetWithText(TextFormField, 'CPF do presidente'), '123.456.789-09');
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
 
@@ -223,10 +235,14 @@ testWidgets('troca o campo de estado para texto ao escolher outro país',
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Copa Interior');
     await tester.enterText(find.byType(TextFormField).at(1), 'Liga do Interior');
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
     await tester.enterText(
         find.widgetWithText(TextFormField, 'Nome do presidente'), 'Maria Silva');
     await tester.enterText(
         find.widgetWithText(TextFormField, 'CPF do presidente'), '123.456.789-09');
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar'));
