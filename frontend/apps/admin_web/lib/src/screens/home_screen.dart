@@ -25,6 +25,7 @@ class AdminHomeScreen extends ConsumerWidget {
       _MenuItem(Icons.category_outlined, AppStrings.categories, '/categories'),
       _MenuItem(Icons.sports_soccer, AppStrings.venues, '/venues'),
       _MenuItem(Icons.groups_outlined, AppStrings.teams, '/teams'),
+      _MenuItem(Icons.account_tree_outlined, 'Conferências e divisões', '/groupings'),
       _MenuItem(Icons.format_list_numbered, AppStrings.rounds, '/rounds'),
       _MenuItem(Icons.sports, AppStrings.games, '/games'),
       _MenuItem(Icons.person_outline, AppStrings.athletes, '/athletes'),
@@ -110,13 +111,18 @@ class AdminHomeScreen extends ConsumerWidget {
           children: [
             Icon(icon, size: 40, color: AppColors.primary),
             const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w600),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
               ),
             ),
           ],

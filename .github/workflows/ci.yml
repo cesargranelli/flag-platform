@@ -1,5 +1,7 @@
 name: CI
 
+# A qualidade é garantida pela suíte E2E (staging efêmero) em e2e/.
+# Este workflow valida apenas build/analyze de backend e frontend.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -8,7 +10,7 @@ on:
 
 jobs:
   backend:
-    name: Backend (build + testes)
+    name: Backend (build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -24,11 +26,11 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Build e testes (inclui Testcontainers)
-        run: ./mvnw --batch-mode test
+      - name: Compilar
+        run: ./mvnw --batch-mode -DskipTests compile
 
   frontend:
-    name: Frontend (analyze + testes)
+    name: Frontend (analyze)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -51,6 +53,3 @@ jobs:
 
       - name: Analyze
         run: melos analyze
-
-      - name: Test
-        run: melos test

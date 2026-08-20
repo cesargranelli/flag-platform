@@ -18,6 +18,7 @@ class TeamApi {
 
   Future<Team> create({
     required String categoryId,
+    String? divisionId,
     required String name,
     String? shortName,
     String? document,
@@ -28,6 +29,7 @@ class TeamApi {
         '/api/v1/teams',
         {
           'categoryId': categoryId,
+          'divisionId': ?divisionId,
           'name': name,
           'shortName': ?shortName,
           'document': ?document,
@@ -40,6 +42,7 @@ class TeamApi {
   Future<Team> update(
     String id, {
     required String categoryId,
+    String? divisionId,
     required String name,
     String? shortName,
     String? document,
@@ -50,6 +53,7 @@ class TeamApi {
         '/api/v1/teams/$id',
         {
           'categoryId': categoryId,
+          'divisionId': ?divisionId,
           'name': name,
           'shortName': ?shortName,
           'document': ?document,

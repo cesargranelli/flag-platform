@@ -5,12 +5,14 @@ import br.com.flagplatform.common.enums.DocumentType;
 import br.com.flagplatform.common.exception.DuplicateDocumentException;
 import br.com.flagplatform.common.exception.InvalidDocumentException;
 import br.com.flagplatform.common.validation.DocumentValidator;
+import br.com.flagplatform.division.DivisionLookup;
 import br.com.flagplatform.team.TeamInfo;
 import br.com.flagplatform.team.TeamLookup;
 import br.com.flagplatform.team.dto.request.CreateTeamRequest;
 import br.com.flagplatform.team.dto.request.UpdateTeamRequest;
 import br.com.flagplatform.team.dto.response.TeamResponse;
 import br.com.flagplatform.team.entity.TeamEntity;
+import br.com.flagplatform.team.exception.DivisionCategoryMismatchException;
 import br.com.flagplatform.team.exception.DuplicateTeamNameException;
 import br.com.flagplatform.team.exception.TeamNotFoundException;
 import br.com.flagplatform.team.mapper.TeamMapper;
@@ -30,10 +32,12 @@ public class TeamService implements TeamLookup {
     private final TeamMapper mapper;
     private final TeamRepository repository;
     private final CategoryLookup categoryLookup;
+    private final DivisionLookup divisionLookup;
 
     @Transactional
     public TeamResponse create(CreateTeamRequest request) {
         categoryLookup.assertExists(request.categoryId());
+        validateDivision(request.divisionId(), request.categoryId());
 
         if (repository.existsByCategoryIdAndNameIgnoreCase(request.categoryId(), request.name())) {
             throw new DuplicateTeamNameException(request.name());
@@ -56,6 +60,7 @@ public class TeamService implements TeamLookup {
     public TeamResponse update(UUID id, UpdateTeamRequest request) {
         TeamEntity entity = findEntityById(id);
         categoryLookup.assertExists(request.categoryId());
+        validateDivision(request.divisionId(), request.categoryId());
 
         if (repository.existsByCategoryIdAndNameIgnoreCaseAndIdNot(
                 request.categoryId(), request.name(), id)) {
@@ -67,6 +72,21 @@ public class TeamService implements TeamLookup {
         mapper.updateEntity(entity, request);
 
         return mapper.toResponse(repository.save(entity));
+    }
+
+    /**
+     * A divisão, quando informada, deve existir e pertencer à mesma categoria
+     * do time.
+     */
+    private void validateDivision(UUID divisionId, UUID categoryId) {
+        if (divisionId == null) {
+            return;
+        }
+        divisionLookup.assertExists(divisionId);
+        UUID divisionCategory = divisionLookup.findCategoryId(divisionId);
+        if (!divisionCategory.equals(categoryId)) {
+            throw new DivisionCategoryMismatchException();
+        }
     }
 
     /**

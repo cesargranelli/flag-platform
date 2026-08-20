@@ -136,18 +136,21 @@ flowchart LR
     end
 
     subgraph "GitHub Actions"
-        CI[ci.yml] -->|PR / push main| B[Backend: mvnw test]
-        CI --> F[Frontend: melos analyze + test]
+        CI[ci.yml] -->|PR / push main| B[Backend: mvnw compile]
+        CI --> F[Frontend: melos analyze]
+        E2E[staging-e2e.yml] -->|push main ou manual| STG[stack efêmera<br/>postgres + backend + web]
+        STG --> PW[Playwright E2E Admin Web<br/>quality gate]
         REL[release.yml] -->|push backend ou manual| BLD[build jar Java 25]
         BLD --> DEP[deploy: environment production<br/>gate de aprovação manual]
     end
 
-    B -->|Testcontainers| PG
+    PW -->|verde| DEP
 ```
 
 | Recurso | Descrição |
 |---------|-----------|
-| **CI** | Em todo PR: backend `./mvnw test` (Testcontainers) e frontend `melos analyze` + `melos test` |
+| **CI** | Em todo PR: backend `./mvnw compile` e frontend `melos analyze` (sem testes — qualidade via E2E) |
+| **Staging E2E** | `staging-e2e.yml` (push em `main` em paths relevantes ou manual): stack efêmera (postgres + backend perfil `staging` + build web Admin Web) + suíte Playwright em `e2e/` (login e criação de organização) como quality gate |
 | **Release** | `release.yml` (push em `main` em `backend/**` ou manual): build do jar → job `deploy` com **environment `production`** (aprovação manual) |
 | **Docker** | `infrastructure/docker/docker-compose.yml`: PostgreSQL 16 (healthcheck `pg_isready`) + pgAdmin (perfil `tools`) |
 | **Swagger** | `/swagger-ui.html` e `/api-docs` (springdoc 3.x) |

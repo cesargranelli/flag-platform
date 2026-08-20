@@ -28,6 +28,10 @@ public class TeamEntity extends BaseEntity {
     @Column(name = "category_id", nullable = false)
     private UUID categoryId;
 
+    /** Divisão opcional; a cadeia divisão -> conferência -> categoria é validada em serviço. */
+    @Column(name = "division_id")
+    private UUID divisionId;
+
     @Column(nullable = false, length = 150)
     private String name;
 

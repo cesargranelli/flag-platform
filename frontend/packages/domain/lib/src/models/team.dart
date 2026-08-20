@@ -6,6 +6,7 @@ import '../enums/document_type.dart';
 class Team {
   final String id;
   final String categoryId;
+  final String? divisionId;
   final String name;
   final String? shortName;
   final String? document;
@@ -17,6 +18,7 @@ class Team {
   const Team({
     required this.id,
     required this.categoryId,
+    this.divisionId,
     required this.name,
     this.shortName,
     this.document,
@@ -29,6 +31,7 @@ class Team {
   factory Team.fromJson(Map<String, dynamic> json) => Team(
         id: json['id'] as String,
         categoryId: json['categoryId'] as String,
+        divisionId: json['divisionId'] as String?,
         name: json['name'] as String,
         shortName: json['shortName'] as String?,
         document: json['document'] as String?,
@@ -47,6 +50,7 @@ class Team {
   /// Corpo de criação/atualização (`POST/PUT /api/v1/teams`).
   Map<String, dynamic> toJson() => {
         'categoryId': categoryId,
+        if (divisionId != null) 'divisionId': divisionId,
         'name': name,
         if (shortName != null) 'shortName': shortName,
         if (document != null) 'document': document,

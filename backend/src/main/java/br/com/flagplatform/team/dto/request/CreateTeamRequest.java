@@ -11,6 +11,8 @@ public record CreateTeamRequest(
         @NotNull
         UUID categoryId,
 
+        UUID divisionId,
+
         @NotBlank
         @Size(max = 150)
         String name,

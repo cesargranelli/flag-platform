@@ -6,6 +6,9 @@ import '../screens/approvals_screen.dart';
 import '../screens/categories_screen.dart';
 import '../screens/category_form_screen.dart';
 import '../screens/category_detail_screen.dart';
+import '../screens/conference_form_screen.dart';
+import '../screens/division_form_screen.dart';
+import '../screens/groupings_screen.dart';
 import '../screens/competition_form_screen.dart';
 import '../screens/competition_detail_screen.dart';
 import '../screens/competitions_screen.dart';
@@ -235,6 +238,55 @@ class AppRouter {
             path: '/teams',
             name: 'teams',
             builder: (context, state) => const TeamsScreen(),
+          ),
+          GoRoute(
+            path: '/groupings',
+            name: 'groupings',
+            builder: (context, state) => const GroupingsScreen(),
+          ),
+          GoRoute(
+            path: '/conferences/new',
+            name: 'conferenceNew',
+            builder: (context, state) => ConferenceFormScreen(
+              initialCategoryId: state.extra is String
+                  ? state.extra as String
+                  : null,
+            ),
+          ),
+          GoRoute(
+            path: '/conferences/:id/edit',
+            name: 'conferenceEdit',
+            builder: (context, state) {
+              final conference = state.extra is Conference
+                  ? state.extra as Conference
+                  : null;
+              return ConferenceFormScreen(
+                conferenceId: state.pathParameters['id'],
+                conference: conference,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/divisions/new',
+            name: 'divisionNew',
+            builder: (context, state) => DivisionFormScreen(
+              args: state.extra is DivisionFormArgs
+                  ? state.extra as DivisionFormArgs
+                  : null,
+            ),
+          ),
+          GoRoute(
+            path: '/divisions/:id/edit',
+            name: 'divisionEdit',
+            builder: (context, state) {
+              final division = state.extra is Division
+                  ? state.extra as Division
+                  : null;
+              return DivisionFormScreen(
+                divisionId: state.pathParameters['id'],
+                division: division,
+              );
+            },
           ),
           GoRoute(
             path: '/teams/new',

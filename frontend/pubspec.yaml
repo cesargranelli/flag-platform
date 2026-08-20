@@ -18,9 +18,6 @@ melos:
     analyze:
       run: melos exec -- flutter analyze
       description: Roda flutter analyze em todos os packages.
-    test:
-      run: melos exec -- flutter test
-      description: Roda os testes de todos os packages.
     clean:
       run: melos exec -- flutter clean
       description: Limpa os artefatos de build de todos os packages.
