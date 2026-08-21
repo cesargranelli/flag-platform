@@ -13,11 +13,11 @@ public interface RoundLookup {
 
     void assertExists(UUID id);
 
-    UUID findCategoryId(UUID roundId);
+    UUID findCompetitionId(UUID roundId);
 
-    List<UUID> findRoundIdsByCategoryId(UUID categoryId);
+    List<UUID> findRoundIdsByCompetitionId(UUID competitionId);
 
-    List<RoundInfo> findRoundInfoByCategoryIds(List<UUID> categoryIds);
+    List<RoundInfo> findRoundInfoByCompetitionId(UUID competitionId);
 
     RoundInfo findRoundInfoById(UUID roundId);
 

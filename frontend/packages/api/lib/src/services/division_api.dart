@@ -8,10 +8,10 @@ class DivisionApi {
 
   DivisionApi(this._client);
 
-  /// Lista as divisões de uma categoria (endpoint público).
-  Future<List<Division>> listByCategory(String categoryId) =>
+  /// Lista as divisões de um campeonato (endpoint público).
+  Future<List<Division>> listByCompetition(String competitionId) =>
       _client.getList(
-        '/api/v1/categories/$categoryId/divisions',
+        '/api/v1/competitions/$competitionId/divisions',
         Division.fromJson,
       );
 
@@ -20,30 +20,22 @@ class DivisionApi {
       _client.getOne('/api/v1/divisions/$id', Division.fromJson);
 
   Future<Division> create({
-    required String categoryId,
+    required String competitionId,
     String? conferenceId,
     required String name,
-  }) =>
-      _client.post(
-        '/api/v1/categories/$categoryId/divisions',
-        {
-          'conferenceId': conferenceId,
-          'name': name,
-        },
-        Division.fromJson,
-      );
+  }) => _client.post('/api/v1/competitions/$competitionId/divisions', {
+    'conferenceId': ?conferenceId,
+    'name': name,
+  }, Division.fromJson);
 
   Future<Division> update(
     String id, {
+    required String competitionId,
     String? conferenceId,
     required String name,
-  }) =>
-      _client.put(
-        '/api/v1/divisions/$id',
-        {
-          'conferenceId': conferenceId,
-          'name': name,
-        },
-        Division.fromJson,
-      );
+  }) => _client.put('/api/v1/divisions/$id', {
+    'competitionId': competitionId,
+    'conferenceId': ?conferenceId,
+    'name': name,
+  }, Division.fromJson);
 }

@@ -15,7 +15,6 @@ class GameOperationScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final competitions = ref.watch(competitionsProvider);
     final selectedComp = ref.watch(selectedCompetitionProvider);
-    final selectedCat = ref.watch(selectedCategoryProvider);
     final selectedRound = ref.watch(selectedRoundProvider);
     final selectedGame = ref.watch(selectedGameProvider);
 
@@ -23,16 +22,10 @@ class GameOperationScreen extends ConsumerWidget {
     final effectiveComp =
         selectedComp ?? (compData.isNotEmpty ? compData.first.id : null);
 
-    final categories = effectiveComp == null
+    // Fluxo único: campeonato → rodadas (categorias foram removidas, V24).
+    final rounds = effectiveComp == null
         ? null
-        : ref.watch(categoriesProvider(effectiveComp));
-    final catData = categories?.valueOrNull ?? const [];
-    final effectiveCat =
-        selectedCat ?? (catData.isNotEmpty ? catData.first.id : null);
-
-    final rounds = effectiveCat == null
-        ? null
-        : ref.watch(roundsProvider(effectiveCat));
+        : ref.watch(roundsProvider(effectiveComp));
     final roundData = rounds?.valueOrNull ?? const [];
     final effectiveRound =
         selectedRound ?? (roundData.isNotEmpty ? roundData.first.id : null);
@@ -42,7 +35,8 @@ class GameOperationScreen extends ConsumerWidget {
         : ref.watch(gamesByRoundProvider(effectiveRound));
     final gamesData = games?.valueOrNull;
     final effectiveGameId =
-        selectedGame ?? (gamesData?.isNotEmpty == true ? gamesData!.first.id : null);
+        selectedGame ??
+        (gamesData?.isNotEmpty == true ? gamesData!.first.id : null);
     Game? selectedGameObj;
     if (effectiveGameId != null && gamesData != null) {
       final matches = gamesData.where((g) => g.id == effectiveGameId);
@@ -62,45 +56,34 @@ class GameOperationScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-                _compDropdown(compData, effectiveComp, ref),
-                if (categories != null) ...[
-                  const SizedBox(height: 12),
-                  categories.when(
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, s) => AppErrorState(
-                      message: 'Erro ao carregar categorias',
-                      onRetry: () =>
-                          ref.invalidate(categoriesProvider(effectiveComp!)),
-                    ),
-                    data: (_) => _catDropdown(catData, effectiveCat, ref),
+              _compDropdown(compData, effectiveComp, ref),
+              if (rounds != null) ...[
+                const SizedBox(height: 12),
+                rounds.when(
+                  loading: () => const LinearProgressIndicator(),
+                  error: (e, s) => AppErrorState(
+                    message: 'Erro ao carregar rodadas',
+                    onRetry: () =>
+                        ref.invalidate(roundsProvider(effectiveComp!)),
                   ),
-                ],
-                if (rounds != null) ...[
-                  const SizedBox(height: 12),
-                  rounds.when(
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, s) => AppErrorState(
-                      message: 'Erro ao carregar rodadas',
-                      onRetry: () => ref.invalidate(roundsProvider(effectiveCat!)),
-                    ),
-                    data: (_) => _roundDropdown(roundData, effectiveRound, ref),
+                  data: (_) => _roundDropdown(roundData, effectiveRound, ref),
+                ),
+              ],
+              if (games != null) ...[
+                const SizedBox(height: 12),
+                games.when(
+                  loading: () => const LinearProgressIndicator(),
+                  error: (e, s) => AppErrorState(
+                    message: 'Erro ao carregar jogos',
+                    onRetry: () =>
+                        ref.invalidate(gamesByRoundProvider(effectiveRound!)),
                   ),
-                ],
-                if (games != null) ...[
-                  const SizedBox(height: 12),
-                  games.when(
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, s) => AppErrorState(
-                      message: 'Erro ao carregar jogos',
-                      onRetry: () =>
-                          ref.invalidate(gamesByRoundProvider(effectiveRound!)),
-                    ),
-                    data: (_) => _gameDropdown(gamesData!, effectiveGameId, ref),
-                  ),
-                ],
-                if (games != null) const SizedBox(height: 16),
-                if (selectedGameObj != null)
-                  _buildGameActions(context, ref, selectedGameObj),
+                  data: (_) => _gameDropdown(gamesData!, effectiveGameId, ref),
+                ),
+              ],
+              if (games != null) const SizedBox(height: 16),
+              if (selectedGameObj != null)
+                _buildGameActions(context, ref, selectedGameObj),
             ],
           ),
         ),
@@ -108,8 +91,7 @@ class GameOperationScreen extends ConsumerWidget {
     );
   }
 
-  Widget _compDropdown(
-      List<Competition> items, String? value, WidgetRef ref) {
+  Widget _compDropdown(List<Competition> items, String? value, WidgetRef ref) {
     return DropdownButtonFormField<String>(
       initialValue: value,
       decoration: const InputDecoration(
@@ -121,25 +103,6 @@ class GameOperationScreen extends ConsumerWidget {
           .toList(),
       onChanged: (v) {
         ref.read(selectedCompetitionProvider.notifier).state = v;
-        ref.read(selectedCategoryProvider.notifier).state = null;
-        ref.read(selectedRoundProvider.notifier).state = null;
-        ref.read(selectedGameProvider.notifier).state = null;
-      },
-    );
-  }
-
-  Widget _catDropdown(List<Category> items, String? value, WidgetRef ref) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      decoration: const InputDecoration(
-        labelText: 'Categoria',
-        border: OutlineInputBorder(),
-      ),
-      items: items
-          .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
-          .toList(),
-      onChanged: (v) {
-        ref.read(selectedCategoryProvider.notifier).state = v;
         ref.read(selectedRoundProvider.notifier).state = null;
         ref.read(selectedGameProvider.notifier).state = null;
       },
@@ -154,10 +117,12 @@ class GameOperationScreen extends ConsumerWidget {
         border: OutlineInputBorder(),
       ),
       items: items
-          .map((r) => DropdownMenuItem(
-                value: r.id,
-                child: Text('Rodada ${r.number} - ${r.name}'),
-              ))
+          .map(
+            (r) => DropdownMenuItem(
+              value: r.id,
+              child: Text('Rodada ${r.number} - ${r.name}'),
+            ),
+          )
           .toList(),
       onChanged: (v) {
         ref.read(selectedRoundProvider.notifier).state = v;
@@ -174,16 +139,17 @@ class GameOperationScreen extends ConsumerWidget {
         border: OutlineInputBorder(),
       ),
       items: items
-          .map((g) => DropdownMenuItem(
-                value: g.id,
-                child: Text(
-                  '${g.homeTeamName ?? 'Casa'} x ${g.awayTeamName ?? 'Fora'} · '
-                  '${_formatDateTime(g.scheduledAt)} · ${g.status.name}',
-                ),
-              ))
+          .map(
+            (g) => DropdownMenuItem(
+              value: g.id,
+              child: Text(
+                '${g.homeTeamName ?? 'Casa'} x ${g.awayTeamName ?? 'Fora'} · '
+                '${_formatDateTime(g.scheduledAt)} · ${g.status.name}',
+              ),
+            ),
+          )
           .toList(),
-      onChanged: (v) =>
-          ref.read(selectedGameProvider.notifier).state = v,
+      onChanged: (v) => ref.read(selectedGameProvider.notifier).state = v,
     );
   }
 
@@ -199,12 +165,18 @@ class GameOperationScreen extends ConsumerWidget {
               children: [
                 Text(
                   '${game.homeTeamName ?? 'Casa'} x ${game.awayTeamName ?? 'Fora'}',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${_formatDateTime(game.scheduledAt)} · ${_gameStatusLabel(game.status)}',
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -241,14 +213,23 @@ class GameOperationScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _scoreTeam('Casa', game.homeScore ?? 0,
-                    () => _addPoint(context, ref, game, game.homeTeamId!)),
+                _scoreTeam(
+                  'Casa',
+                  game.homeScore ?? 0,
+                  () => _addPoint(context, ref, game, game.homeTeamId!),
+                ),
                 Text(
                   '${game.homeScore ?? 0} x ${game.awayScore ?? 0}',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                _scoreTeam('Fora', game.awayScore ?? 0,
-                    () => _addPoint(context, ref, game, game.awayTeamId!)),
+                _scoreTeam(
+                  'Fora',
+                  game.awayScore ?? 0,
+                  () => _addPoint(context, ref, game, game.awayTeamId!),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -278,7 +259,11 @@ class GameOperationScreen extends ConsumerWidget {
   }
 
   Future<void> _addPoint(
-      BuildContext context, WidgetRef ref, Game game, String teamId) async {
+    BuildContext context,
+    WidgetRef ref,
+    Game game,
+    String teamId,
+  ) async {
     try {
       await ref.read(gameApiProvider).addScoreEvent(game.id, teamId);
       ref.invalidate(gamesByRoundProvider(game.roundId));
@@ -292,7 +277,10 @@ class GameOperationScreen extends ConsumerWidget {
   }
 
   Future<void> _correctScore(
-      BuildContext context, WidgetRef ref, Game game) async {
+    BuildContext context,
+    WidgetRef ref,
+    Game game,
+  ) async {
     final home = TextEditingController(text: (game.homeScore ?? 0).toString());
     final away = TextEditingController(text: (game.awayScore ?? 0).toString());
     final saved = await showDialog<bool>(
@@ -339,7 +327,10 @@ class GameOperationScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmStart(
-      BuildContext context, WidgetRef ref, Game game) async {
+    BuildContext context,
+    WidgetRef ref,
+    Game game,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -362,12 +353,15 @@ class GameOperationScreen extends ConsumerWidget {
     );
     if (confirmed == true) {
       try {
-        await ref.read(gameApiProvider).updateStatus(game.id, GameStatus.inProgress);
+        await ref
+            .read(gameApiProvider)
+            .updateStatus(game.id, GameStatus.inProgress);
         ref.invalidate(gamesByRoundProvider(game.roundId));
       } on RepositoryException catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(e.message)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(e.message)));
         }
       } catch (_) {
         if (context.mounted) {
@@ -380,7 +374,10 @@ class GameOperationScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmFinish(
-      BuildContext context, WidgetRef ref, Game game) async {
+    BuildContext context,
+    WidgetRef ref,
+    Game game,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -400,12 +397,16 @@ class GameOperationScreen extends ConsumerWidget {
     );
     if (confirmed == true) {
       try {
-        await ref.read(gameApiProvider).updateStatus(game.id, GameStatus.finished);
+        await ref
+            .read(gameApiProvider)
+            .updateStatus(game.id, GameStatus.finished);
         ref.invalidate(gamesByRoundProvider(game.roundId));
       } catch (_) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Não foi possível finalizar a partida')),
+            const SnackBar(
+              content: Text('Não foi possível finalizar a partida'),
+            ),
           );
         }
       }
@@ -413,11 +414,11 @@ class GameOperationScreen extends ConsumerWidget {
   }
 
   String _gameStatusLabel(GameStatus status) => switch (status) {
-        GameStatus.scheduled => 'Agendado',
-        GameStatus.inProgress => 'Ao vivo',
-        GameStatus.finished => 'Encerrado',
-        GameStatus.cancelled => 'Cancelado',
-      };
+    GameStatus.scheduled => 'Agendado',
+    GameStatus.inProgress => 'Ao vivo',
+    GameStatus.finished => 'Encerrado',
+    GameStatus.cancelled => 'Cancelado',
+  };
 }
 
 /// Card de timeline de pontos de uma partida (consome os score events).
@@ -450,7 +451,10 @@ class _ScoreTimelineCard extends ConsumerWidget {
               data: (items) => items.isEmpty
                   ? const Text(
                       'Nenhum ponto registrado ainda',
-                      style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
                     )
                   : ScoreTimeline(game: game, events: items),
             ),

@@ -32,7 +32,7 @@ public class RoundController {
 
     @Operation(
             summary = "Criar rodada",
-            description = "Cria uma nova rodada em uma categoria. Requer autenticação."
+            description = "Cria uma nova rodada em um campeonato. Requer autenticação."
     )
     @PostMapping("/api/v1/rounds")
     @ResponseStatus(HttpStatus.CREATED)
@@ -42,13 +42,13 @@ public class RoundController {
     }
 
     @Operation(
-            summary = "Listar rodadas por categoria",
-            description = "Lista as rodadas de uma categoria, ordenadas por número. Acesso público."
+            summary = "Listar rodadas por campeonato",
+            description = "Lista as rodadas de um campeonato, ordenadas por número. Acesso público."
     )
-    @GetMapping("/api/v1/categories/{categoryId}/rounds")
-    public List<RoundResponse> findByCategoryId(
-            @Parameter(description = "Id da categoria") @PathVariable UUID categoryId) {
-        return service.findByCategoryId(categoryId);
+    @GetMapping("/api/v1/competitions/{competitionId}/rounds")
+    public List<RoundResponse> findByCompetitionId(
+            @Parameter(description = "Id do campeonato") @PathVariable UUID competitionId) {
+        return service.findByCompetitionId(competitionId);
     }
 
     @Operation(

@@ -8,5 +8,5 @@ import java.util.UUID;
  * Fica na raiz do módulo para não vazar API interna (entidade/DTO) e manter
  * o isolamento do Spring Modulith.
  */
-public record DivisionInfo(UUID id, UUID categoryId, UUID conferenceId, String name) {
+public record DivisionInfo(UUID id, UUID competitionId, UUID conferenceId, String name) {
 }

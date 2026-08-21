@@ -10,10 +10,10 @@ import java.util.UUID;
 @Repository
 public interface ConferenceRepository extends JpaRepository<ConferenceEntity, UUID> {
 
-    List<ConferenceEntity> findAllByCategoryIdOrderByNameAsc(UUID categoryId);
+    List<ConferenceEntity> findAllByCompetitionIdOrderByNameAsc(UUID competitionId);
 
-    boolean existsByCategoryIdAndNameIgnoreCase(UUID categoryId, String name);
+    boolean existsByCompetitionIdAndNameIgnoreCase(UUID competitionId, String name);
 
-    boolean existsByCategoryIdAndNameIgnoreCaseAndIdNot(UUID categoryId, String name, UUID id);
+    boolean existsByCompetitionIdAndNameIgnoreCaseAndIdNot(UUID competitionId, String name, UUID id);
 
 }

@@ -15,9 +15,9 @@ public interface TeamLookup {
 
     boolean existsById(UUID id);
 
-    List<UUID> findTeamIdsByCategoryId(UUID categoryId);
+    List<UUID> findTeamIdsByCompetitionId(UUID competitionId);
 
-    List<TeamInfo> findTeamInfoByCategoryId(UUID categoryId);
+    List<TeamInfo> findTeamInfoByCompetitionId(UUID competitionId);
 
     TeamInfo findTeamInfoById(UUID id);
 

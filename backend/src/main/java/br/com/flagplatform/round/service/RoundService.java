@@ -1,6 +1,6 @@
 package br.com.flagplatform.round.service;
 
-import br.com.flagplatform.category.CategoryLookup;
+import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.round.RoundInfo;
 import br.com.flagplatform.round.RoundLookup;
 import br.com.flagplatform.round.dto.request.CreateRoundRequest;
@@ -25,21 +25,21 @@ public class RoundService implements RoundLookup {
 
     private final RoundMapper mapper;
     private final RoundRepository repository;
-    private final CategoryLookup categoryLookup;
+    private final CompetitionLookup competitionLookup;
 
     @Transactional
     public RoundResponse create(CreateRoundRequest request) {
-        categoryLookup.assertExists(request.categoryId());
+        competitionLookup.assertExists(request.competitionId());
 
-        if (repository.existsByCategoryIdAndNumber(request.categoryId(), request.number())) {
+        if (repository.existsByCompetitionIdAndNumber(request.competitionId(), request.number())) {
             throw new DuplicateRoundNumberException(request.number());
         }
 
         return mapper.toResponse(repository.save(mapper.toEntity(request)));
     }
 
-    public List<RoundResponse> findByCategoryId(UUID categoryId) {
-        return mapper.toResponseList(repository.findAllByCategoryIdOrderByNumberAsc(categoryId));
+    public List<RoundResponse> findByCompetitionId(UUID competitionId) {
+        return mapper.toResponseList(repository.findAllByCompetitionIdOrderByNumberAsc(competitionId));
     }
 
     public RoundResponse findById(UUID id) {
@@ -49,10 +49,10 @@ public class RoundService implements RoundLookup {
     @Transactional
     public RoundResponse update(UUID id, UpdateRoundRequest request) {
         RoundEntity entity = findEntityById(id);
-        categoryLookup.assertExists(request.categoryId());
+        competitionLookup.assertExists(request.competitionId());
 
-        if (repository.existsByCategoryIdAndNumberAndIdNot(
-                request.categoryId(), request.number(), id)) {
+        if (repository.existsByCompetitionIdAndNumberAndIdNot(
+                request.competitionId(), request.number(), id)) {
             throw new DuplicateRoundNumberException(request.number());
         }
 
@@ -72,20 +72,20 @@ public class RoundService implements RoundLookup {
     }
 
     @Override
-    public UUID findCategoryId(UUID roundId) {
-        return findEntityById(roundId).getCategoryId();
+    public UUID findCompetitionId(UUID roundId) {
+        return findEntityById(roundId).getCompetitionId();
     }
 
     @Override
-    public List<UUID> findRoundIdsByCategoryId(UUID categoryId) {
-        return repository.findAllByCategoryId(categoryId).stream()
+    public List<UUID> findRoundIdsByCompetitionId(UUID competitionId) {
+        return repository.findAllByCompetitionId(competitionId).stream()
                 .map(RoundEntity::getId)
                 .toList();
     }
 
     @Override
-    public List<RoundInfo> findRoundInfoByCategoryIds(List<UUID> categoryIds) {
-        return repository.findAllByCategoryIdIn(categoryIds).stream()
+    public List<RoundInfo> findRoundInfoByCompetitionId(UUID competitionId) {
+        return repository.findAllByCompetitionId(competitionId).stream()
                 .map(round -> new RoundInfo(round.getId(), round.getNumber()))
                 .toList();
     }

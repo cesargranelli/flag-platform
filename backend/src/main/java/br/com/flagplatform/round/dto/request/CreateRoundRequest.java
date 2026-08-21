@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public record CreateRoundRequest(
         @NotNull
-        UUID categoryId,
+        UUID competitionId,
 
         @NotNull
         Integer number,

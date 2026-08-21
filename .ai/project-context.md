@@ -133,6 +133,14 @@ modules/{nome}/
 - CQRS / Event Sourcing
 - Abstrações antecipadas
 
+## Regras de Fluxo — Issues e Branches (GitHub)
+
+Regras obrigatórias para toda issue criada no repositório `cesargranelli/flag-platform`:
+
+1. **Assinatura da issue**: toda issue deve ser atribuída (assignee) ao usuário **`cesargranellidev`**.
+2. **Separação por subagente**: quando o escopo envolver mais de uma frente (backend, frontend/app, devops), criar **uma issue separada por subagente executor** — nunca uma issue única misturando escopos. Cada issue recebe os labels do seu escopo (`backend`, `frontend`, `app`, `admin-web`, etc.).
+3. **Associação issue ↔ branch-feature**: o corpo de cada issue deve referenciar explicitamente a branch-feature em execução para aquela issue (ex.: `**Branch:** \`issue-{n}-{slug}\``). Uma branch por issue; a issue só é fechada após o merge da sua branch.
+
 ## Pergunta Principal
 
 > "Isso ajuda uma organização de Flag Football a realizar um campeonato melhor?"

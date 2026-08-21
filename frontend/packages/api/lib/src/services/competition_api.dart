@@ -28,19 +28,24 @@ class CompetitionApi {
     String? startDate,
     String? endDate,
     CompetitionStatus? status,
-  }) =>
-      _client.post(
-        '/api/v1/competitions',
-        _body(
-          organizationId: organizationId,
-          name: name,
-          description: description,
-          startDate: startDate,
-          endDate: endDate,
-          status: status,
-        ),
-        Competition.fromJson,
-      );
+    String? modalityId,
+    String? gender,
+    String? ageGroup,
+  }) => _client.post(
+    '/api/v1/competitions',
+    _body(
+      organizationId: organizationId,
+      name: name,
+      description: description,
+      startDate: startDate,
+      endDate: endDate,
+      status: status,
+      modalityId: modalityId,
+      gender: gender,
+      ageGroup: ageGroup,
+    ),
+    Competition.fromJson,
+  );
 
   Future<Competition> update(
     String id, {
@@ -50,19 +55,24 @@ class CompetitionApi {
     String? startDate,
     String? endDate,
     CompetitionStatus? status,
-  }) =>
-      _client.put(
-        '/api/v1/competitions/$id',
-        _body(
-          organizationId: organizationId,
-          name: name,
-          description: description,
-          startDate: startDate,
-          endDate: endDate,
-          status: status,
-        ),
-        Competition.fromJson,
-      );
+    String? modalityId,
+    String? gender,
+    String? ageGroup,
+  }) => _client.put(
+    '/api/v1/competitions/$id',
+    _body(
+      organizationId: organizationId,
+      name: name,
+      description: description,
+      startDate: startDate,
+      endDate: endDate,
+      status: status,
+      modalityId: modalityId,
+      gender: gender,
+      ageGroup: ageGroup,
+    ),
+    Competition.fromJson,
+  );
 
   Map<String, dynamic> _body({
     required String organizationId,
@@ -71,14 +81,19 @@ class CompetitionApi {
     String? startDate,
     String? endDate,
     CompetitionStatus? status,
-  }) =>
-      {
-        'organizationId': organizationId,
-        'name': name,
-        if (description != null && description.isNotEmpty)
-          'description': description,
-        'startDate': ?startDate,
-        'endDate': ?endDate,
-        'status': ?(status?.toJson()),
-      };
+    String? modalityId,
+    String? gender,
+    String? ageGroup,
+  }) => {
+    'organizationId': organizationId,
+    'name': name,
+    if (description != null && description.isNotEmpty)
+      'description': description,
+    'startDate': ?startDate,
+    'endDate': ?endDate,
+    'status': ?(status?.toJson()),
+    'modalityId': ?modalityId,
+    'gender': ?gender,
+    'ageGroup': ?ageGroup,
+  };
 }

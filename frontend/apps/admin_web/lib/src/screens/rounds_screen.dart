@@ -18,11 +18,11 @@ class RoundsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final competitions = ref.watch(competitionsProvider);
     final selectedCompetition = ref.watch(selectedCompetitionProvider);
-    final selectedRound = ref.watch(selectedRoundProvider);
 
     final compItems = competitions.valueOrNull ?? const [];
     final effectiveComp =
-        selectedCompetition ?? (compItems.isNotEmpty ? compItems.first.id : null);
+        selectedCompetition ??
+        (compItems.isNotEmpty ? compItems.first.id : null);
 
     return Scaffold(
       appBar: AppBar(
@@ -32,7 +32,8 @@ class RoundsScreen extends ConsumerWidget {
       floatingActionButton: effectiveComp != null
           ? FloatingActionButton(
               tooltip: 'Nova rodada',
-              onPressed: () => context.push('/rounds/new', extra: effectiveComp),
+              onPressed: () =>
+                  context.push('/rounds/new', extra: effectiveComp),
               child: const Icon(Icons.add),
             )
           : null,
@@ -66,12 +67,16 @@ class RoundsScreen extends ConsumerWidget {
                           border: OutlineInputBorder(),
                         ),
                         items: compItems
-                            .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                            .map(
+                              (c) => DropdownMenuItem(
+                                value: c.id,
+                                child: Text(c.name),
+                              ),
+                            )
                             .toList(),
                         onChanged: (value) {
-                          ref
-                              .read(selectedCompetitionProvider.notifier)
-                              .state = value;
+                          ref.read(selectedCompetitionProvider.notifier).state =
+                              value;
                           ref.read(selectedRoundProvider.notifier).state = null;
                         },
                       ),
@@ -82,49 +87,53 @@ class RoundsScreen extends ConsumerWidget {
               Expanded(
                 child: effectiveComp != null
                     ? ref
-                        .watch(roundsProvider(effectiveComp!))
-                        .when(
-                          loading: () => const AppLoading(message: 'Carregando rodadas...'),
-                          error: (error, stackTrace) => AppErrorState(
-                            message: 'Não foi possível carregar as rodadas',
-                            onRetry: () =>
-                                ref.invalidate(roundsProvider(effectiveComp!)),
-                          ),
-                          data: (items) {
-                            if (items.isEmpty) {
-                              return const AppEmptyState(
-                                message: 'Nenhuma rodada cadastrada',
-                                icon: Icons.format_list_numbered,
+                          .watch(roundsProvider(effectiveComp))
+                          .when(
+                            loading: () => const AppLoading(
+                              message: 'Carregando rodadas...',
+                            ),
+                            error: (error, stackTrace) => AppErrorState(
+                              message: 'Não foi possível carregar as rodadas',
+                              onRetry: () =>
+                                  ref.invalidate(roundsProvider(effectiveComp)),
+                            ),
+                            data: (items) {
+                              if (items.isEmpty) {
+                                return const AppEmptyState(
+                                  message: 'Nenhuma rodada cadastrada',
+                                  icon: Icons.format_list_numbered,
+                                );
+                              }
+                              return AppLayout.content(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final columns = constraints.maxWidth >= 600
+                                        ? 2
+                                        : 1;
+                                    return GridView.builder(
+                                      padding: const EdgeInsets.all(16),
+                                      itemCount: items.length,
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: columns,
+                                            crossAxisSpacing: 12,
+                                            mainAxisSpacing: 12,
+                                            mainAxisExtent: 96,
+                                          ),
+                                      itemBuilder: (context, index) {
+                                        final round = items[index];
+                                        return _roundCard(context, round);
+                                      },
+                                    );
+                                  },
+                                ),
                               );
-                            }
-                            return AppLayout.content(
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final columns =
-                                      constraints.maxWidth >= 600 ? 2 : 1;
-                                  return GridView.builder(
-                                    padding: const EdgeInsets.all(16),
-                                    itemCount: items.length,
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: columns,
-                                      crossAxisSpacing: 12,
-                                      mainAxisSpacing: 12,
-                                      mainAxisExtent: 96,
-                                    ),
-                                    itemBuilder: (context, index) {
-                                      final round = items[index];
-                                      return _roundCard(context, round);
-                                    },
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        )
+                            },
+                          )
                     : const AppEmptyState(
                         message: 'Nenhuma rodada cadastrada',
-                        icon: Icons.format_list_numbered),
+                        icon: Icons.format_list_numbered,
+                      ),
               ),
             ],
           );
@@ -153,9 +162,10 @@ class RoundsScreen extends ConsumerWidget {
                   child: Text(
                     '${round.number}',
                     style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
               ),
@@ -170,13 +180,17 @@ class RoundsScreen extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       round.type.label,
                       style: const TextStyle(
-                          fontSize: 13, color: AppColors.textSecondary),
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),

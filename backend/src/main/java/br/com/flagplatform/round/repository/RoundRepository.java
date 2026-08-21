@@ -10,14 +10,12 @@ import java.util.UUID;
 @Repository
 public interface RoundRepository extends JpaRepository<RoundEntity, UUID> {
 
-    List<RoundEntity> findAllByCategoryIdOrderByNumberAsc(UUID categoryId);
+    List<RoundEntity> findAllByCompetitionIdOrderByNumberAsc(UUID competitionId);
 
-    List<RoundEntity> findAllByCategoryId(UUID categoryId);
+    List<RoundEntity> findAllByCompetitionId(UUID competitionId);
 
-    List<RoundEntity> findAllByCategoryIdIn(List<UUID> categoryIds);
+    boolean existsByCompetitionIdAndNumber(UUID competitionId, Integer number);
 
-    boolean existsByCategoryIdAndNumber(UUID categoryId, Integer number);
-
-    boolean existsByCategoryIdAndNumberAndIdNot(UUID categoryId, Integer number, UUID id);
+    boolean existsByCompetitionIdAndNumberAndIdNot(UUID competitionId, Integer number, UUID id);
 
 }

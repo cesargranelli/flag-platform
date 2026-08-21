@@ -10,11 +10,7 @@ import '../widgets/app_back_button.dart';
 
 /// Formulário de criação/edição de time.
 class TeamFormScreen extends ConsumerStatefulWidget {
-  const TeamFormScreen({
-    super.key,
-    this.teamId,
-    this.team,
-  });
+  const TeamFormScreen({super.key, this.teamId, this.team});
 
   final String? teamId;
   final Team? team;
@@ -76,7 +72,9 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
           competitionId: _competitionId ?? '',
           divisionId: _divisionId,
           name: _name.text.trim(),
-          shortName: _shortName.text.trim().isEmpty ? null : _shortName.text.trim(),
+          shortName: _shortName.text.trim().isEmpty
+              ? null
+              : _shortName.text.trim(),
           document: _document.text.trim().isEmpty
               ? null
               : _document.text.trim().replaceAll(RegExp(r'\D'), ''),
@@ -89,7 +87,9 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
           competitionId: _competitionId ?? '',
           divisionId: _divisionId,
           name: _name.text.trim(),
-          shortName: _shortName.text.trim().isEmpty ? null : _shortName.text.trim(),
+          shortName: _shortName.text.trim().isEmpty
+              ? null
+              : _shortName.text.trim(),
           document: _document.text.trim().isEmpty
               ? null
               : _document.text.trim().replaceAll(RegExp(r'\D'), ''),
@@ -118,7 +118,8 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
   String? _validateLogoUrl(String? value) {
     if (value == null || value.trim().isEmpty) return null;
     final uri = Uri.tryParse(value.trim());
-    final valid = uri != null &&
+    final valid =
+        uri != null &&
         (uri.scheme == 'http' || uri.scheme == 'https') &&
         uri.host.isNotEmpty;
     return valid ? null : 'Informe uma URL válida (http/https)';
@@ -129,7 +130,9 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
     final competitions = ref.watch(competitionsProvider);
     final compItems = competitions.valueOrNull ?? const [];
     final effectiveComp =
-        _competitionId ?? ref.watch(selectedCompetitionProvider) ?? (compItems.isNotEmpty ? compItems.first.id : null);
+        _competitionId ??
+        ref.watch(selectedCompetitionProvider) ??
+        (compItems.isNotEmpty ? compItems.first.id : null);
 
     return Scaffold(
       appBar: AppBar(
@@ -151,13 +154,19 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
                     border: OutlineInputBorder(),
                   ),
                   items: compItems
-                      .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                      .map(
+                        (c) =>
+                            DropdownMenuItem(value: c.id, child: Text(c.name)),
+                      )
                       .toList(),
                   onChanged: (value) {
-                    ref.read(selectedCompetitionProvider.notifier).state = value;
+                    setState(() => _competitionId = value);
+                    ref.read(selectedCompetitionProvider.notifier).state =
+                        value;
                   },
-                  validator: (value) =>
-                      (value == null || value.isEmpty) ? 'Selecione o campeonato' : null,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Selecione o campeonato'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -189,7 +198,9 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
                     border: OutlineInputBorder(),
                   ),
                   items: DocumentType.values
-                      .map((d) => DropdownMenuItem(value: d, child: Text(d.label)))
+                      .map(
+                        (d) => DropdownMenuItem(value: d, child: Text(d.label)),
+                      )
                       .toList(),
                   onChanged: (value) => setState(() => _documentType = value),
                 ),
@@ -211,7 +222,9 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
                     if (masked != value) {
                       _document.value = TextEditingValue(
                         text: masked,
-                        selection: TextSelection.collapsed(offset: masked.length),
+                        selection: TextSelection.collapsed(
+                          offset: masked.length,
+                        ),
                       );
                     }
                   },
@@ -242,8 +255,9 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                        fontWeight: FontWeight.w600),
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 24),

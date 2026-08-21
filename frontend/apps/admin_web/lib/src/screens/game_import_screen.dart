@@ -11,7 +11,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
 
-typedef GameImportArgs = ({String roundId, String? categoryId});
+typedef GameImportArgs = ({String roundId, String? competitionId});
 
 /// Importação em lote de jogos para uma rodada (CSV/TXT).
 ///
@@ -19,10 +19,14 @@ typedef GameImportArgs = ({String roundId, String? categoryId});
 /// por nome; a resolução nome -> id acontece aqui, tratando homônimos sem
 /// resolução silenciosa.
 class GameImportScreen extends ConsumerStatefulWidget {
-  const GameImportScreen({super.key, required this.roundId, required this.categoryId});
+  const GameImportScreen({
+    super.key,
+    required this.roundId,
+    this.competitionId,
+  });
 
   final String roundId;
-  final String? categoryId;
+  final String? competitionId;
 
   @override
   ConsumerState<GameImportScreen> createState() => _GameImportScreenState();
@@ -90,8 +94,9 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
         return;
       }
       if (rows.length > _maxLines) {
-        setState(() =>
-            _errorMessage = 'Máximo de $_maxLines linhas por arquivo.');
+        setState(
+          () => _errorMessage = 'Máximo de $_maxLines linhas por arquivo.',
+        );
         return;
       }
       setState(() => _rows = rows);
@@ -118,7 +123,8 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
     final rows = <_GameRow>[];
     for (var i = 1; i < lines.length; i++) {
       final values = _splitLine(lines[i], delimiter);
-      if (homeIdx >= 0 && homeIdx < values.length &&
+      if (homeIdx >= 0 &&
+          homeIdx < values.length &&
           values[homeIdx].isNotEmpty) {
         final home = values[homeIdx].trim();
         final away = awayIdx >= 0 && awayIdx < values.length
@@ -165,11 +171,12 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
     final rows = _rows;
     if (rows == null) return;
 
-    final teams = widget.categoryId == null
+    final competitionId =
+        widget.competitionId ?? ref.read(selectedCompetitionProvider);
+    final teams = competitionId == null
         ? const <Team>[]
-        : ref.watch(teamsProvider(widget.categoryId!)).valueOrNull ?? const [];
-    final venues =
-        ref.watch(venuesProvider).valueOrNull ?? const <Venue>[];
+        : ref.read(teamsProvider(competitionId)).valueOrNull ?? const [];
+    final venues = ref.read(venuesProvider).valueOrNull ?? const <Venue>[];
 
     final items = <Map<String, dynamic>>[];
     for (final row in rows) {
@@ -179,15 +186,18 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
       final awayTeam = teams
           .where((t) => t.name.trim().toLowerCase() == row.away.toLowerCase())
           .toList();
-      if (homeTeam.length != 1 || awayTeam.length != 1) continue; // ambíguo/não encontrado
+      if (homeTeam.length != 1 || awayTeam.length != 1) {
+        continue; // ambíguo/não encontrado
+      }
       final scheduledAt = _parseDateTime(row.date, row.time);
       if (scheduledAt == null) continue;
       final venue = row.venue.isEmpty
           ? null
           : venues
-              .where((v) =>
-                  v.name.trim().toLowerCase() == row.venue.toLowerCase())
-              .toList();
+                .where(
+                  (v) => v.name.trim().toLowerCase() == row.venue.toLowerCase(),
+                )
+                .toList();
       if (row.venue.isNotEmpty && venue!.length != 1) continue;
       items.add({
         'homeTeamId': homeTeam.first.id,
@@ -238,7 +248,9 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
                 Text(
                   'Importe vários jogos para a rodada a partir de um arquivo CSV/TXT.',
                   style: const TextStyle(
-                      fontSize: 14, color: AppColors.textSecondary),
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
@@ -324,10 +336,7 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Text(
-        text,
-        style: TextStyle(fontSize: 13, color: color),
-      ),
+      child: Text(text, style: TextStyle(fontSize: 13, color: color)),
     );
   }
 
@@ -335,8 +344,10 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Resultado por linha',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text(
+          'Resultado por linha',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 8),
         for (final line in result.lines)
           Padding(
@@ -352,11 +363,11 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
   }
 
   String _statusLabel(String status) => switch (status) {
-        'IMPORTED' => 'Importado',
-        'SKIPPED' => 'Ignorado',
-        'INVALID' => 'Inválido',
-        _ => status,
-      };
+    'IMPORTED' => 'Importado',
+    'SKIPPED' => 'Ignorado',
+    'INVALID' => 'Inválido',
+    _ => status,
+  };
 }
 
 class _GameRow {

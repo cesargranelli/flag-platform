@@ -15,7 +15,7 @@ import java.util.UUID;
 @Mapper(componentModel = "spring")
 public interface ConferenceMapper {
 
-    ConferenceEntity toEntity(UUID categoryId, CreateConferenceRequest request);
+    ConferenceEntity toEntity(UUID competitionId, CreateConferenceRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     ConferenceEntity updateEntity(

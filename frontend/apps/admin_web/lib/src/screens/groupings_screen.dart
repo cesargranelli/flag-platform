@@ -22,7 +22,8 @@ class GroupingsScreen extends ConsumerWidget {
 
     final compItems = competitions.valueOrNull ?? const [];
     final effectiveComp =
-        selectedCompetition ?? (compItems.isNotEmpty ? compItems.first.id : null);
+        selectedCompetition ??
+        (compItems.isNotEmpty ? compItems.first.id : null);
 
     return Scaffold(
       appBar: AppBar(
@@ -66,12 +67,16 @@ class GroupingsScreen extends ConsumerWidget {
                           border: OutlineInputBorder(),
                         ),
                         items: compItems
-                            .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                            .map(
+                              (c) => DropdownMenuItem(
+                                value: c.id,
+                                child: Text(c.name),
+                              ),
+                            )
                             .toList(),
                         onChanged: (value) {
-                          ref
-                              .read(selectedCompetitionProvider.notifier)
-                              .state = value;
+                          ref.read(selectedCompetitionProvider.notifier).state =
+                              value;
                         },
                       ),
                     ],
@@ -80,10 +85,11 @@ class GroupingsScreen extends ConsumerWidget {
               ),
               Expanded(
                 child: effectiveComp != null
-                    ? _buildSections(context, ref, effectiveComp!)
+                    ? _buildSections(context, ref, effectiveComp)
                     : const AppEmptyState(
                         message: 'Nenhuma conferência cadastrada',
-                        icon: Icons.category_outlined),
+                        icon: Icons.category_outlined,
+                      ),
               ),
             ],
           );
@@ -92,7 +98,11 @@ class GroupingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSections(BuildContext context, WidgetRef ref, String competitionId) {
+  Widget _buildSections(
+    BuildContext context,
+    WidgetRef ref,
+    String competitionId,
+  ) {
     final conferences = ref.watch(conferencesProvider(competitionId));
     final divisions = ref.watch(divisionsProvider(competitionId));
     final divItems = divisions.valueOrNull ?? const <Division>[];
@@ -144,8 +154,9 @@ class GroupingsScreen extends ConsumerWidget {
           loading: () => const SizedBox.shrink(),
           error: (e, s) => const SizedBox.shrink(),
           data: (_) {
-            final standalone =
-                divItems.where((d) => d.conferenceId == null).toList();
+            final standalone = divItems
+                .where((d) => d.conferenceId == null)
+                .toList();
             return _sectionCard(
               title: 'Divisões sem conferência',
               action: TextButton.icon(
@@ -161,17 +172,17 @@ class GroupingsScreen extends ConsumerWidget {
                       padding: const EdgeInsets.all(16),
                       child: Text(
                         'Nenhuma divisão sem conferência.',
-                        style:
-                            const TextStyle(color: AppColors.textSecondary),
+                        style: const TextStyle(color: AppColors.textSecondary),
                       ),
                     )
                   : Column(
                       children: standalone
-                          .map((d) =>
-                              _divisionRow(context, ref, competitionId, d))
+                          .map(
+                            (d) => _divisionRow(context, ref, competitionId, d),
+                          )
                           .toList(),
                     ),
-            ),
+            );
           },
         ),
       ],
@@ -194,14 +205,18 @@ class GroupingsScreen extends ConsumerWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.account_tree_outlined,
-                    color: AppColors.primary),
+                const Icon(
+                  Icons.account_tree_outlined,
+                  color: AppColors.primary,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     conference.name,
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 IconButton(
@@ -216,7 +231,9 @@ class GroupingsScreen extends ConsumerWidget {
             ),
             if (divisions.isNotEmpty) ...[
               const SizedBox(height: 4),
-              ...divisions.map((d) => _divisionRow(context, ref, competitionId, d)),
+              ...divisions.map(
+                (d) => _divisionRow(context, ref, competitionId, d),
+              ),
             ],
             const SizedBox(height: 4),
             Align(
@@ -255,10 +272,8 @@ class GroupingsScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'Editar divisão',
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () => context.push(
-              '/divisions/${division.id}/edit',
-              extra: division,
-            ),
+            onPressed: () =>
+                context.push('/divisions/${division.id}/edit', extra: division),
           ),
         ],
       ),
@@ -283,7 +298,9 @@ class GroupingsScreen extends ConsumerWidget {
                   child: Text(
                     title,
                     style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.bold),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 ?action,

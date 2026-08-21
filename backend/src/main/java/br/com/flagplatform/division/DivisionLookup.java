@@ -13,8 +13,8 @@ public interface DivisionLookup {
 
     void assertExists(UUID id);
 
-    UUID findCategoryId(UUID divisionId);
+    UUID findCompetitionId(UUID divisionId);
 
-    List<DivisionInfo> findDivisionInfoByCategoryId(UUID categoryId);
+    List<DivisionInfo> findDivisionInfoByCompetitionId(UUID competitionId);
 
 }

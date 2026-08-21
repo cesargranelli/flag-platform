@@ -70,10 +70,8 @@ class CompetitionsScreen extends ConsumerWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push(
-          '/competitions/${competition.id}',
-          extra: competition,
-        ),
+        onTap: () =>
+            context.push('/competitions/${competition.id}', extra: competition),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -85,8 +83,11 @@ class CompetitionsScreen extends ConsumerWidget {
                   color: AppColors.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.emoji_events_outlined,
-                    color: AppColors.primary, size: 28),
+                child: const Icon(
+                  Icons.emoji_events_outlined,
+                  color: AppColors.primary,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -99,7 +100,9 @@ class CompetitionsScreen extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -107,13 +110,14 @@ class CompetitionsScreen extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          fontSize: 13, color: AppColors.textSecondary),
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        if (competition.modalityId != null)
-                          _modalityChip(competition.modalityId!),
+                        if (competition.modalityId != null) _modalityChip(),
                         const SizedBox(width: 4),
                         if (competition.gender != null)
                           _genderChip(competition.gender!),
@@ -131,7 +135,7 @@ class CompetitionsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _modalityChip(int modalityId) {
+  Widget _modalityChip() {
     return Chip(
       label: const Text('Modalidade'),
       backgroundColor: AppColors.primary.withValues(alpha: 0.1),
@@ -141,7 +145,13 @@ class CompetitionsScreen extends ConsumerWidget {
 
   Widget _genderChip(String gender) {
     return Chip(
-      label: Text(gender == 'MALE' ? 'Masculino' : gender == 'FEMALE' ? 'Feminino' : 'Misto'),
+      label: Text(
+        gender == 'MALE'
+            ? 'Masculino'
+            : gender == 'FEMALE'
+            ? 'Feminino'
+            : 'Misto',
+      ),
       backgroundColor: AppColors.primary.withValues(alpha: 0.1),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
     );
@@ -159,10 +169,7 @@ class CompetitionsScreen extends ConsumerWidget {
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 12, color: color),
-      ),
+      child: Text(label, style: TextStyle(fontSize: 12, color: color)),
     );
   }
 }

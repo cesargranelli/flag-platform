@@ -1,6 +1,6 @@
 package br.com.flagplatform.division.service;
 
-import br.com.flagplatform.category.CategoryLookup;
+import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.conference.ConferenceLookup;
 import br.com.flagplatform.division.DivisionInfo;
 import br.com.flagplatform.division.DivisionLookup;
@@ -8,7 +8,7 @@ import br.com.flagplatform.division.dto.request.CreateDivisionRequest;
 import br.com.flagplatform.division.dto.request.UpdateDivisionRequest;
 import br.com.flagplatform.division.dto.response.DivisionResponse;
 import br.com.flagplatform.division.entity.DivisionEntity;
-import br.com.flagplatform.division.exception.ConferenceCategoryMismatchException;
+import br.com.flagplatform.division.exception.ConferenceCompetitionMismatchException;
 import br.com.flagplatform.division.exception.DivisionNotFoundException;
 import br.com.flagplatform.division.exception.DuplicateDivisionNameException;
 import br.com.flagplatform.division.mapper.DivisionMapper;
@@ -27,20 +27,20 @@ public class DivisionService implements DivisionLookup {
 
     private final DivisionMapper mapper;
     private final DivisionRepository repository;
-    private final CategoryLookup categoryLookup;
+    private final CompetitionLookup competitionLookup;
     private final ConferenceLookup conferenceLookup;
 
     @Transactional
-    public DivisionResponse create(UUID categoryId, CreateDivisionRequest request) {
-        categoryLookup.assertExists(categoryId);
-        validateConference(request.conferenceId(), categoryId);
-        ensureUniqueName(categoryId, request.conferenceId(), request.name(), null);
+    public DivisionResponse create(UUID competitionId, CreateDivisionRequest request) {
+        competitionLookup.assertExists(competitionId);
+        validateConference(request.conferenceId(), competitionId);
+        ensureUniqueName(competitionId, request.conferenceId(), request.name(), null);
 
-        return mapper.toResponse(repository.save(mapper.toEntity(categoryId, request)));
+        return mapper.toResponse(repository.save(mapper.toEntity(competitionId, request)));
     }
 
-    public List<DivisionResponse> findByCategoryId(UUID categoryId) {
-        return mapper.toResponseList(repository.findAllByCategoryIdOrderByNameAsc(categoryId));
+    public List<DivisionResponse> findByCompetitionId(UUID competitionId) {
+        return mapper.toResponseList(repository.findAllByCompetitionIdOrderByNameAsc(competitionId));
     }
 
     public DivisionResponse findById(UUID id) {
@@ -50,8 +50,8 @@ public class DivisionService implements DivisionLookup {
     @Transactional
     public DivisionResponse update(UUID id, UpdateDivisionRequest request) {
         DivisionEntity entity = findEntityById(id);
-        validateConference(request.conferenceId(), entity.getCategoryId());
-        ensureUniqueName(entity.getCategoryId(), request.conferenceId(), request.name(), id);
+        validateConference(request.conferenceId(), entity.getCompetitionId());
+        ensureUniqueName(entity.getCompetitionId(), request.conferenceId(), request.name(), id);
 
         mapper.updateEntity(entity, request);
 
@@ -60,33 +60,33 @@ public class DivisionService implements DivisionLookup {
 
     /**
      * A conferência, quando informada, deve existir e pertencer à mesma
-     * categoria da divisão.
+     * competição da divisão.
      */
-    private void validateConference(UUID conferenceId, UUID categoryId) {
+    private void validateConference(UUID conferenceId, UUID competitionId) {
         if (conferenceId == null) {
             return;
         }
         conferenceLookup.assertExists(conferenceId);
-        UUID conferenceCategory = conferenceLookup.findCategoryId(conferenceId);
-        if (!conferenceCategory.equals(categoryId)) {
-            throw new ConferenceCategoryMismatchException();
+        UUID conferenceCompetition = conferenceLookup.findCompetitionId(conferenceId);
+        if (!conferenceCompetition.equals(competitionId)) {
+            throw new ConferenceCompetitionMismatchException();
         }
     }
 
-    private void ensureUniqueName(UUID categoryId, UUID conferenceId, String name, UUID currentId) {
+    private void ensureUniqueName(UUID competitionId, UUID conferenceId, String name, UUID currentId) {
         boolean duplicate;
         if (conferenceId == null) {
             duplicate = currentId == null
-                    ? repository.existsByCategoryIdAndConferenceIdIsNullAndNameIgnoreCase(
-                            categoryId, name)
-                    : repository.existsByCategoryIdAndConferenceIdIsNullAndNameIgnoreCaseAndIdNot(
-                            categoryId, name, currentId);
+                    ? repository.existsByCompetitionIdAndConferenceIdIsNullAndNameIgnoreCase(
+                            competitionId, name)
+                    : repository.existsByCompetitionIdAndConferenceIdIsNullAndNameIgnoreCaseAndIdNot(
+                            competitionId, name, currentId);
         } else {
             duplicate = currentId == null
-                    ? repository.existsByCategoryIdAndConferenceIdAndNameIgnoreCase(
-                            categoryId, conferenceId, name)
-                    : repository.existsByCategoryIdAndConferenceIdAndNameIgnoreCaseAndIdNot(
-                            categoryId, conferenceId, name, currentId);
+                    ? repository.existsByCompetitionIdAndConferenceIdAndNameIgnoreCase(
+                            competitionId, conferenceId, name)
+                    : repository.existsByCompetitionIdAndConferenceIdAndNameIgnoreCaseAndIdNot(
+                            competitionId, conferenceId, name, currentId);
         }
         if (duplicate) {
             throw new DuplicateDivisionNameException(name);
@@ -104,16 +104,16 @@ public class DivisionService implements DivisionLookup {
     }
 
     @Override
-    public UUID findCategoryId(UUID divisionId) {
-        return findEntityById(divisionId).getCategoryId();
+    public UUID findCompetitionId(UUID divisionId) {
+        return findEntityById(divisionId).getCompetitionId();
     }
 
     @Override
-    public List<DivisionInfo> findDivisionInfoByCategoryId(UUID categoryId) {
-        return repository.findAllByCategoryIdOrderByNameAsc(categoryId).stream()
+    public List<DivisionInfo> findDivisionInfoByCompetitionId(UUID competitionId) {
+        return repository.findAllByCompetitionIdOrderByNameAsc(competitionId).stream()
                 .map(division -> new DivisionInfo(
                         division.getId(),
-                        division.getCategoryId(),
+                        division.getCompetitionId(),
                         division.getConferenceId(),
                         division.getName()))
                 .toList();

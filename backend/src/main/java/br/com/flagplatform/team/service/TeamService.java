@@ -1,18 +1,19 @@
 package br.com.flagplatform.team.service;
 
-import br.com.flagplatform.category.CategoryLookup;
 import br.com.flagplatform.common.enums.DocumentType;
 import br.com.flagplatform.common.exception.DuplicateDocumentException;
 import br.com.flagplatform.common.exception.InvalidDocumentException;
 import br.com.flagplatform.common.validation.DocumentValidator;
 import br.com.flagplatform.division.DivisionLookup;
+import br.com.flagplatform.division.exception.DivisionCompetitionMismatchException;
+import br.com.flagplatform.organization.OrganizationLookup;
 import br.com.flagplatform.team.TeamInfo;
 import br.com.flagplatform.team.TeamLookup;
 import br.com.flagplatform.team.dto.request.CreateTeamRequest;
 import br.com.flagplatform.team.dto.request.UpdateTeamRequest;
 import br.com.flagplatform.team.dto.response.TeamResponse;
 import br.com.flagplatform.team.entity.TeamEntity;
-import br.com.flagplatform.team.exception.DivisionCategoryMismatchException;
+import br.com.flagplatform.team.exception.DuplicateTeamRegistrationException;
 import br.com.flagplatform.team.exception.DuplicateTeamNameException;
 import br.com.flagplatform.team.exception.TeamNotFoundException;
 import br.com.flagplatform.team.mapper.TeamMapper;
@@ -31,15 +32,22 @@ public class TeamService implements TeamLookup {
 
     private final TeamMapper mapper;
     private final TeamRepository repository;
-    private final CategoryLookup categoryLookup;
+    private final OrganizationLookup organizationLookup;
     private final DivisionLookup divisionLookup;
 
     @Transactional
     public TeamResponse create(CreateTeamRequest request) {
-        categoryLookup.assertExists(request.categoryId());
-        validateDivision(request.divisionId(), request.categoryId());
+        organizationLookup.assertExists(request.organizationId());
+        validateDivision(request.divisionId(), request.competitionId());
 
-        if (repository.existsByCategoryIdAndNameIgnoreCase(request.categoryId(), request.name())) {
+        if (repository.existsByCompetitionIdAndOrganizationId(
+                request.competitionId(), request.organizationId())) {
+            throw new DuplicateTeamRegistrationException(request.organizationId(), request.competitionId());
+        }
+
+        if (request.name() != null && !request.name().isBlank()
+                && repository.existsByCompetitionIdAndNameIgnoreCase(
+                        request.competitionId(), request.name())) {
             throw new DuplicateTeamNameException(request.name());
         }
 
@@ -48,8 +56,8 @@ public class TeamService implements TeamLookup {
         return mapper.toResponse(repository.save(mapper.toEntity(request)));
     }
 
-    public List<TeamResponse> findByCategoryId(UUID categoryId) {
-        return mapper.toResponseList(repository.findAllByCategoryIdOrderByNameAsc(categoryId));
+    public List<TeamResponse> findByCompetitionId(UUID competitionId) {
+        return mapper.toResponseList(repository.findAllByCompetitionIdOrderByNameAsc(competitionId));
     }
 
     public TeamResponse findById(UUID id) {
@@ -59,11 +67,19 @@ public class TeamService implements TeamLookup {
     @Transactional
     public TeamResponse update(UUID id, UpdateTeamRequest request) {
         TeamEntity entity = findEntityById(id);
-        categoryLookup.assertExists(request.categoryId());
-        validateDivision(request.divisionId(), request.categoryId());
+        organizationLookup.assertExists(request.organizationId());
+        validateDivision(request.divisionId(), request.competitionId());
 
-        if (repository.existsByCategoryIdAndNameIgnoreCaseAndIdNot(
-                request.categoryId(), request.name(), id)) {
+        boolean changingEnrollment = !entity.getCompetitionId().equals(request.competitionId())
+                || !entity.getOrganizationId().equals(request.organizationId());
+        if (changingEnrollment && repository.existsByCompetitionIdAndOrganizationId(
+                request.competitionId(), request.organizationId())) {
+            throw new DuplicateTeamRegistrationException(request.organizationId(), request.competitionId());
+        }
+
+        if (request.name() != null && !request.name().isBlank()
+                && repository.existsByCompetitionIdAndNameIgnoreCaseAndIdNot(
+                        request.competitionId(), request.name(), id)) {
             throw new DuplicateTeamNameException(request.name());
         }
 
@@ -75,17 +91,17 @@ public class TeamService implements TeamLookup {
     }
 
     /**
-     * A divisão, quando informada, deve existir e pertencer à mesma categoria
-     * do time.
+     * A divisão, quando informada, deve existir e pertencer à mesma
+     * competição do time.
      */
-    private void validateDivision(UUID divisionId, UUID categoryId) {
+    private void validateDivision(UUID divisionId, UUID competitionId) {
         if (divisionId == null) {
             return;
         }
         divisionLookup.assertExists(divisionId);
-        UUID divisionCategory = divisionLookup.findCategoryId(divisionId);
-        if (!divisionCategory.equals(categoryId)) {
-            throw new DivisionCategoryMismatchException();
+        UUID divisionCompetition = divisionLookup.findCompetitionId(divisionId);
+        if (!divisionCompetition.equals(competitionId)) {
+            throw new DivisionCompetitionMismatchException();
         }
     }
 
@@ -128,15 +144,15 @@ public class TeamService implements TeamLookup {
     }
 
     @Override
-    public List<UUID> findTeamIdsByCategoryId(UUID categoryId) {
-        return repository.findAllByCategoryIdOrderByNameAsc(categoryId).stream()
+    public List<UUID> findTeamIdsByCompetitionId(UUID competitionId) {
+        return repository.findAllByCompetitionIdOrderByNameAsc(competitionId).stream()
                 .map(TeamEntity::getId)
                 .toList();
     }
 
     @Override
-    public List<TeamInfo> findTeamInfoByCategoryId(UUID categoryId) {
-        return repository.findAllByCategoryIdOrderByNameAsc(categoryId).stream()
+    public List<TeamInfo> findTeamInfoByCompetitionId(UUID competitionId) {
+        return repository.findAllByCompetitionIdOrderByNameAsc(competitionId).stream()
                 .map(team -> new TeamInfo(team.getId(), team.getName()))
                 .toList();
     }

@@ -13,8 +13,8 @@ public interface ConferenceLookup {
 
     void assertExists(UUID id);
 
-    UUID findCategoryId(UUID conferenceId);
+    UUID findCompetitionId(UUID conferenceId);
 
-    List<ConferenceInfo> findConferenceInfoByCategoryId(UUID categoryId);
+    List<ConferenceInfo> findConferenceInfoByCompetitionId(UUID competitionId);
 
 }

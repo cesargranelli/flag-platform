@@ -1,6 +1,6 @@
 package br.com.flagplatform.conference.service;
 
-import br.com.flagplatform.category.CategoryLookup;
+import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.conference.ConferenceInfo;
 import br.com.flagplatform.conference.ConferenceLookup;
 import br.com.flagplatform.conference.dto.request.CreateConferenceRequest;
@@ -25,21 +25,21 @@ public class ConferenceService implements ConferenceLookup {
 
     private final ConferenceMapper mapper;
     private final ConferenceRepository repository;
-    private final CategoryLookup categoryLookup;
+    private final CompetitionLookup competitionLookup;
 
     @Transactional
-    public ConferenceResponse create(UUID categoryId, CreateConferenceRequest request) {
-        categoryLookup.assertExists(categoryId);
+    public ConferenceResponse create(UUID competitionId, CreateConferenceRequest request) {
+        competitionLookup.assertExists(competitionId);
 
-        if (repository.existsByCategoryIdAndNameIgnoreCase(categoryId, request.name())) {
+        if (repository.existsByCompetitionIdAndNameIgnoreCase(competitionId, request.name())) {
             throw new DuplicateConferenceNameException(request.name());
         }
 
-        return mapper.toResponse(repository.save(mapper.toEntity(categoryId, request)));
+        return mapper.toResponse(repository.save(mapper.toEntity(competitionId, request)));
     }
 
-    public List<ConferenceResponse> findByCategoryId(UUID categoryId) {
-        return mapper.toResponseList(repository.findAllByCategoryIdOrderByNameAsc(categoryId));
+    public List<ConferenceResponse> findByCompetitionId(UUID competitionId) {
+        return mapper.toResponseList(repository.findAllByCompetitionIdOrderByNameAsc(competitionId));
     }
 
     public ConferenceResponse findById(UUID id) {
@@ -50,8 +50,8 @@ public class ConferenceService implements ConferenceLookup {
     public ConferenceResponse update(UUID id, UpdateConferenceRequest request) {
         ConferenceEntity entity = findEntityById(id);
 
-        if (repository.existsByCategoryIdAndNameIgnoreCaseAndIdNot(
-                entity.getCategoryId(), request.name(), id)) {
+        if (repository.existsByCompetitionIdAndNameIgnoreCaseAndIdNot(
+                entity.getCompetitionId(), request.name(), id)) {
             throw new DuplicateConferenceNameException(request.name());
         }
 
@@ -71,15 +71,15 @@ public class ConferenceService implements ConferenceLookup {
     }
 
     @Override
-    public UUID findCategoryId(UUID conferenceId) {
-        return findEntityById(conferenceId).getCategoryId();
+    public UUID findCompetitionId(UUID conferenceId) {
+        return findEntityById(conferenceId).getCompetitionId();
     }
 
     @Override
-    public List<ConferenceInfo> findConferenceInfoByCategoryId(UUID categoryId) {
-        return repository.findAllByCategoryIdOrderByNameAsc(categoryId).stream()
+    public List<ConferenceInfo> findConferenceInfoByCompetitionId(UUID competitionId) {
+        return repository.findAllByCompetitionIdOrderByNameAsc(competitionId).stream()
                 .map(conference -> new ConferenceInfo(
-                        conference.getId(), conference.getCategoryId(), conference.getName()))
+                        conference.getId(), conference.getCompetitionId(), conference.getName()))
                 .toList();
     }
 

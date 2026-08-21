@@ -9,7 +9,10 @@ import java.util.UUID;
 
 public record CreateTeamRequest(
         @NotNull
-        UUID categoryId,
+        UUID organizationId,
+
+        @NotNull
+        UUID competitionId,
 
         UUID divisionId,
 
