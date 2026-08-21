@@ -117,7 +117,8 @@ class CompetitionsScreen extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        if (competition.modalityId != null) _modalityChip(),
+                        if (competition.modality != null)
+                          _modalityChip(competition.modality!),
                         const SizedBox(width: 4),
                         if (competition.gender != null)
                           _genderChip(competition.gender!),
@@ -135,9 +136,9 @@ class CompetitionsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _modalityChip() {
+  Widget _modalityChip(Modality modality) {
     return Chip(
-      label: const Text('Modalidade'),
+      label: Text(modality.label),
       backgroundColor: AppColors.primary.withValues(alpha: 0.1),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
     );

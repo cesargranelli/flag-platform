@@ -109,7 +109,7 @@ class CompetitionDetailScreen extends ConsumerWidget {
                     _infoCard('Atributos', [
                       _row(
                         'Modalidade',
-                        comp.modalityId != null ? 'Definido' : 'Não definido',
+                        comp.modality?.label ?? 'Não definido',
                       ),
                       _row('Gênero', comp.gender ?? 'Não definido'),
                       _row('Faixa Etária', comp.ageGroup ?? 'Não definido'),

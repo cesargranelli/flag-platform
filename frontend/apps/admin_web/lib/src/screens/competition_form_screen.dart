@@ -32,7 +32,7 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
   late final TextEditingController _organizationId;
   late final TextEditingController _startDate;
   late final TextEditingController _endDate;
-  String? _modalityId;
+  Modality? _modality;
   String? _gender;
   String? _ageGroup;
 
@@ -56,7 +56,7 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
       text: _formatDate(competition?.startDate),
     );
     _endDate = TextEditingController(text: _formatDate(competition?.endDate));
-    _modalityId = competition?.modalityId;
+    _modality = competition?.modality;
     _gender = competition?.gender;
     _ageGroup = competition?.ageGroup;
     _status = competition?.status;
@@ -114,7 +114,7 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
           startDate: _startDate.text.isEmpty ? null : _startDate.text,
           endDate: _endDate.text.isEmpty ? null : _endDate.text,
           status: _status,
-          modalityId: _modalityId,
+          modality: _modality,
           gender: _gender,
           ageGroup: _ageGroup,
         );
@@ -127,7 +127,7 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
           startDate: _startDate.text.isEmpty ? null : _startDate.text,
           endDate: _endDate.text.isEmpty ? null : _endDate.text,
           status: _status,
-          modalityId: _modalityId,
+          modality: _modality,
           gender: _gender,
           ageGroup: _ageGroup,
         );
@@ -148,7 +148,6 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
   @override
   Widget build(BuildContext context) {
     final organizations = ref.watch(organizationsProvider);
-    final modalities = ref.watch(modalitiesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -227,28 +226,23 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
                   onChanged: (value) => setState(() => _status = value),
                 ),
                 const SizedBox(height: 12),
-                modalities.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (e, s) => const Text('Erro ao carregar modalidades'),
-                  data: (items) => DropdownButtonFormField<String>(
-                    initialValue: _modalityId,
-                    decoration: const InputDecoration(
-                      labelText: 'Modalidade',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: items
-                        .map(
-                          (m) => DropdownMenuItem(
-                            value: m.id,
-                            child: Text(m.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) => setState(() => _modalityId = value),
-                    validator: (value) => (value == null || value.isEmpty)
-                        ? 'Selecione a modalidade'
-                        : null,
+                DropdownButtonFormField<Modality>(
+                  initialValue: _modality,
+                  decoration: const InputDecoration(
+                    labelText: 'Modalidade',
+                    border: OutlineInputBorder(),
                   ),
+                  items: Modality.values
+                      .map(
+                        (m) => DropdownMenuItem(
+                          value: m,
+                          child: Text(m.label),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => _modality = value),
+                  validator: (value) =>
+                      value == null ? 'Selecione a modalidade' : null,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(

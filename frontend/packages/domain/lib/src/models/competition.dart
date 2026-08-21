@@ -1,4 +1,5 @@
 import '../enums/competition_status.dart';
+import '../enums/modality.dart';
 
 /// Campeonato do Flag Platform.
 ///
@@ -26,7 +27,7 @@ class Competition {
   final DateTime? endDate;
 
   /// Atributos da competição (adicionados na V24).
-  final String? modalityId;
+  final Modality? modality;
 
   final String? gender;
 
@@ -41,7 +42,7 @@ class Competition {
     this.description,
     this.startDate,
     this.endDate,
-    this.modalityId,
+    this.modality,
     this.gender,
     this.ageGroup,
   });
@@ -55,7 +56,9 @@ class Competition {
         description: json['description'] as String?,
         startDate: _tryParseDate(json['startDate']),
         endDate: _tryParseDate(json['endDate']),
-        modalityId: json['modalityId'] as String?,
+        modality: json['modality'] == null
+            ? null
+            : Modality.fromJson(json['modality'] as String),
         gender: json['gender'] as String?,
         ageGroup: json['ageGroup'] as String?,
       );
@@ -69,7 +72,7 @@ class Competition {
         if (description != null) 'description': description,
         if (startDate != null) 'startDate': startDate!.toIso8601String(),
         if (endDate != null) 'endDate': endDate!.toIso8601String(),
-        if (modalityId != null) 'modalityId': modalityId,
+        if (modality != null) 'modality': modality!.toJson(),
         if (gender != null) 'gender': gender,
         if (ageGroup != null) 'ageGroup': ageGroup,
       };

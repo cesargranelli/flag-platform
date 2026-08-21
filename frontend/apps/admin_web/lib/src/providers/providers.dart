@@ -68,21 +68,8 @@ final competitionProvider = FutureProvider.family<Competition, String>(
   (ref, id) => ref.watch(competitionApiProvider).getById(id),
 );
 
-/// Serviço de modalidades (catálogo).
-final modalityApiProvider = Provider<ModalityApi>(
-  (ref) => ModalityApi(ref.watch(apiClientProvider)),
-);
-
-/// Modalidades ativas (catálogo).
-final modalitiesProvider = FutureProvider<List<Modality>>(
-  (ref) => ref.watch(modalityApiProvider).list(),
-);
-
 /// Campeonato selecionado na tela de competições.
 final selectedCompetitionProvider = StateProvider<String?>((ref) => null);
-
-/// Modalidade selecionada no form de campeonato.
-final selectedModalityProvider = StateProvider<String?>((ref) => null);
 
 /// Gênero selecionado no form de campeonato.
 final selectedGenderProvider = StateProvider<String?>((ref) => null);
