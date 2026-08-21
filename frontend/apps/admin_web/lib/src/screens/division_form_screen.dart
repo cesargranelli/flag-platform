@@ -10,16 +10,13 @@ import '../widgets/app_back_button.dart';
 
 /// Argumentos de navegação do formulário de divisão.
 class DivisionFormArgs {
-  const DivisionFormArgs({this.categoryId, this.conferenceId});
+  const DivisionFormArgs({this.competitionId, this.conferenceId});
 
-  final String? categoryId;
+  final String? competitionId;
   final String? conferenceId;
 }
 
 /// Formulário de criação/edição de divisão.
-///
-/// A conferência é opcional: a divisão pode ficar "sem conferência". Na
-/// edição, escolher "Sem conferência" remove o vínculo.
 class DivisionFormScreen extends ConsumerStatefulWidget {
   const DivisionFormScreen({
     super.key,
@@ -41,7 +38,7 @@ class _DivisionFormScreenState extends ConsumerState<DivisionFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _name;
-  String? _categoryId;
+  String? _competitionId;
   String? _conferenceId;
   bool _submitting = false;
   String? _errorMessage;
@@ -53,8 +50,8 @@ class _DivisionFormScreenState extends ConsumerState<DivisionFormScreen> {
     super.initState();
     final division = widget.division;
     _name = TextEditingController(text: division?.name ?? '');
-    _categoryId = division?.categoryId ?? widget.args?.categoryId;
-    _conferenceId = division?.conferenceId ?? widget.args?.conferenceId;
+    _competitionId = widget.args?.competitionId;
+    _conferenceId = widget.args?.conferenceId;
   }
 
   @override
@@ -66,9 +63,11 @@ class _DivisionFormScreenState extends ConsumerState<DivisionFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final categoryId = _categoryId;
-    if (categoryId == null) {
-      setState(() => _errorMessage = 'Categoria não informada.');
+    final competitionId = _competitionId ?? ref.watch(selectedCompetitionProvider);
+    final conferenceId = _conferenceId;
+
+    if (competitionId == null || competitionId.isEmpty) {
+      setState(() => _errorMessage = 'Concurso não informado.');
       return;
     }
 
@@ -82,18 +81,19 @@ class _DivisionFormScreenState extends ConsumerState<DivisionFormScreen> {
       final id = widget.divisionId ?? widget.division?.id;
       if (id == null) {
         await api.create(
-          categoryId: categoryId,
-          conferenceId: _conferenceId,
+          competitionId: competitionId,
+          conferenceId: conferenceId,
           name: _name.text.trim(),
         );
       } else {
         await api.update(
           id,
-          conferenceId: _conferenceId,
+          competitionId: competitionId,
+          conferenceId: conferenceId,
           name: _name.text.trim(),
         );
       }
-      ref.invalidate(divisionsProvider(categoryId));
+      ref.invalidate(competitionsProvider);
       if (mounted) context.pop();
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
@@ -106,13 +106,9 @@ class _DivisionFormScreenState extends ConsumerState<DivisionFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final categoryId = _categoryId;
-    final categoryName = categoryId == null
-        ? ''
-        : ref.watch(categoryProvider(categoryId)).valueOrNull?.name ?? '';
-    final conferences = categoryId == null
-        ? null
-        : ref.watch(conferencesProvider(categoryId));
+    final competitions = ref.watch(competitionsProvider);
+    final compItems = competitions.valueOrNull ?? const [];
+    final effectiveComp = _competitionId ?? ref.watch(selectedCompetitionProvider) ?? (compItems.isNotEmpty ? compItems.first.id : null);
 
     return Scaffold(
       appBar: AppBar(
@@ -127,59 +123,34 @@ class _DivisionFormScreenState extends ConsumerState<DivisionFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextFormField(
-                  initialValue: categoryName,
-                  readOnly: true,
+                DropdownButtonFormField<String>(
+                  initialValue: effectiveComp,
                   decoration: const InputDecoration(
-                    labelText: 'Categoria',
+                    labelText: 'Campeonato',
                     border: OutlineInputBorder(),
                   ),
+                  items: compItems
+                      .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                      .toList(),
+                  onChanged: (value) {
+                    ref.read(selectedCompetitionProvider.notifier).state = value;
+                  },
+                  validator: (value) =>
+                      (value == null || value.isEmpty) ? 'Selecione o campeonato' : null,
                 ),
-                const SizedBox(height: 12),
-                conferences?.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (e, s) => AppErrorState(
-                    message: 'Não foi possível carregar as conferências',
-                    onRetry: () =>
-                        ref.invalidate(conferencesProvider(categoryId!)),
-                  ),
-                  data: (items) => DropdownButtonFormField<String?>(
-                    initialValue: _conferenceId,
-                    decoration: const InputDecoration(
-                      labelText: 'Conferência',
-                      helperText: 'Opcional',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('Sem conferência'),
-                      ),
-                      ...items
-                          .map((c) => DropdownMenuItem<String?>(
-                                value: c.id,
-                                child: Text(c.name),
-                              )),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _conferenceId = value),
-                  ),
-                ) ??
-                    const LinearProgressIndicator(),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _name,
                   maxLength: 100,
                   decoration: const InputDecoration(
                     labelText: 'Nome',
-                    helperText: 'Ex.: Divisão Norte',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) =>
-                      (value == null || value.trim().isEmpty)
-                          ? 'Informe o nome'
-                          : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Informe o nome'
+                      : null,
                 ),
+                const SizedBox(height: 12),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 8),
                   Text(

@@ -1,14 +1,16 @@
 import '../enums/document_type.dart';
 
-/// Time de uma categoria.
+/// Time de uma competição.
 ///
-/// Shape de `/api/v1/teams`.
+/// Shape de `/api/v1/competitions/{competitionId}/teams`.
 class Team {
   final String id;
-  final String categoryId;
+  final String competitionId;
   final String? divisionId;
   final String name;
   final String? shortName;
+  final String? sportName;
+  final int? athleteCount;
   final String? document;
   final DocumentType? documentType;
   final String? logoUrl;
@@ -17,10 +19,12 @@ class Team {
 
   const Team({
     required this.id,
-    required this.categoryId,
+    required this.competitionId,
     this.divisionId,
     required this.name,
     this.shortName,
+    this.sportName,
+    this.athleteCount,
     this.document,
     this.documentType,
     this.logoUrl,
@@ -30,10 +34,12 @@ class Team {
 
   factory Team.fromJson(Map<String, dynamic> json) => Team(
         id: json['id'] as String,
-        categoryId: json['categoryId'] as String,
+        competitionId: json['competitionId'] as String,
         divisionId: json['divisionId'] as String?,
         name: json['name'] as String,
         shortName: json['shortName'] as String?,
+        sportName: json['sportName'] as String?,
+        athleteCount: json['athleteCount'] as int?,
         document: json['document'] as String?,
         documentType: json['documentType'] is String
             ? DocumentType.fromJson(json['documentType'] as String)
@@ -49,12 +55,15 @@ class Team {
 
   /// Corpo de criação/atualização (`POST/PUT /api/v1/teams`).
   Map<String, dynamic> toJson() => {
-        'categoryId': categoryId,
+        'competitionId': competitionId,
         if (divisionId != null) 'divisionId': divisionId,
         'name': name,
         if (shortName != null) 'shortName': shortName,
+        if (sportName != null) 'sportName': sportName,
+        if (athleteCount != null) 'athleteCount': athleteCount,
         if (document != null) 'document': document,
         if (documentType != null) 'documentType': documentType!.toJson(),
         if (logoUrl != null) 'logoUrl': logoUrl,
       };
+}
 }

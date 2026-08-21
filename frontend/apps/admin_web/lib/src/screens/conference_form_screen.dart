@@ -14,12 +14,12 @@ class ConferenceFormScreen extends ConsumerStatefulWidget {
     super.key,
     this.conferenceId,
     this.conference,
-    this.initialCategoryId,
+    this.competitionId,
   });
 
   final String? conferenceId;
   final Conference? conference;
-  final String? initialCategoryId;
+  final String? competitionId;
 
   @override
   ConsumerState<ConferenceFormScreen> createState() =>
@@ -51,12 +51,6 @@ class _ConferenceFormScreenState extends ConsumerState<ConferenceFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final categoryId = widget.conference?.categoryId ?? widget.initialCategoryId;
-    if (categoryId == null) {
-      setState(() => _errorMessage = 'Categoria não informada.');
-      return;
-    }
-
     setState(() {
       _submitting = true;
       _errorMessage = null;
@@ -65,12 +59,13 @@ class _ConferenceFormScreenState extends ConsumerState<ConferenceFormScreen> {
     try {
       final api = ref.read(conferenceApiProvider);
       final id = widget.conferenceId ?? widget.conference?.id;
+      final competitionId = widget.competitionId ?? ref.watch(selectedCompetitionProvider) ?? '';
       if (id == null) {
-        await api.create(categoryId: categoryId, name: _name.text.trim());
+        await api.create(competitionId: competitionId, name: _name.text.trim());
       } else {
         await api.update(id, name: _name.text.trim());
       }
-      ref.invalidate(conferencesProvider(categoryId));
+      ref.invalidate(competitionsProvider);
       if (mounted) context.pop();
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);

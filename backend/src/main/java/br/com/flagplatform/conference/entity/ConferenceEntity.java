@@ -15,8 +15,8 @@ import java.util.UUID;
 @Table(name = "conferences")
 public class ConferenceEntity extends BaseEntity {
 
-    @Column(name = "category_id", nullable = false)
-    private UUID categoryId;
+    @Column(name = "competition_id", nullable = false)
+    private UUID competitionId;
 
     @Column(nullable = false, length = 100)
     private String name;

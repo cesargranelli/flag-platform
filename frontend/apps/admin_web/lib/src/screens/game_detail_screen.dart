@@ -8,17 +8,14 @@ import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
 
 /// Detalhe de um jogo: confronto, placar, status e informações.
-///
-/// O jogo não possui exclusão (backend sem DELETE). A edição é uma ação
-/// explícita na tela.
 class GameDetailScreen extends ConsumerWidget {
   const GameDetailScreen({super.key, this.gameId, this.game, this.args});
 
   final String? gameId;
   final Game? game;
 
-  /// Argumentos de navegação (categoria/rodada) para a edição.
-  final ({String? categoryId, String? roundId, Game? game})? args;
+  /// Argumentos de navegação para a edição.
+  final ({String? roundId, Game? game})? args;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,13 +40,9 @@ class GameDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildDetail(BuildContext context, WidgetRef ref, Game game) {
-    final categoryId = args?.categoryId;
-    final category = categoryId == null
-        ? null
-        : ref.watch(categoryProvider(categoryId)).valueOrNull;
     final competitions = ref.watch(competitionsProvider);
     final competitionName = competitions.valueOrNull
-            ?.where((c) => c.id == category?.competitionId)
+            ?.where((c) => c.id == game.competitionId)
             .map((c) => c.name)
             .firstOrNull ??
         '';
@@ -84,16 +77,12 @@ class GameDetailScreen extends ConsumerWidget {
                         'Placar: ${game.homeScore ?? 0} x ${game.awayScore ?? 0}',
                         style: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.w600),
-                      ),
+                        ),
                     const SizedBox(height: 16),
                     FilledButton.icon(
                       onPressed: () => context.push(
                         '/games/${game.id}/edit',
-                        extra: (
-                          categoryId: args?.categoryId,
-                          roundId: game.roundId,
-                          game: game,
-                        ),
+                        extra: (roundId: game.roundId, game: game),
                       ),
                       icon: const Icon(Icons.edit_outlined),
                       label: const Text('Editar dados'),
@@ -107,7 +96,6 @@ class GameDetailScreen extends ConsumerWidget {
               'Informações',
               [
                 _row('Rodada', game.roundNumber?.toString() ?? '—'),
-                if (category != null) _row('Categoria', category.name),
                 if (competitionName.isNotEmpty) _row('Campeonato', competitionName),
                 _row('Horário', _formatDateTime(game.scheduledAt)),
                 if (game.venueName != null && game.venueName!.isNotEmpty)

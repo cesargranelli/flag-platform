@@ -8,8 +8,9 @@ import '../providers/providers.dart';
 
 /// Gestão de jogos: lista por rodada e acesso ao detalhe.
 ///
-/// A cascata campeonato → categoria → rodada define o contexto da listagem;
-/// clicar num jogo navega para o detalhe.
+/// O fluxo agora é: campeonato → divisão → rodada → jogo.
+/// As categories foram removidas; a associação competition→round
+/// ocorre diretamente pela competition_id (migração V24).
 class GamesScreen extends ConsumerWidget {
   const GamesScreen({super.key});
 
@@ -17,51 +18,38 @@ class GamesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final competitions = ref.watch(competitionsProvider);
     final selectedCompetition = ref.watch(selectedCompetitionProvider);
-    final selectedCategory = ref.watch(selectedCategoryProvider);
     final selectedRound = ref.watch(selectedRoundProvider);
 
     final compItems = competitions.valueOrNull ?? const [];
     final effectiveComp =
         selectedCompetition ?? (compItems.isNotEmpty ? compItems.first.id : null);
-    final categories = effectiveComp == null
-        ? null
-        : ref.watch(categoriesProvider(effectiveComp));
-    final catItems = categories?.valueOrNull ?? const [];
-    final effectiveCat =
-        selectedCategory ?? (catItems.isNotEmpty ? catItems.first.id : null);
-    final rounds = effectiveCat == null
-        ? null
-        : ref.watch(roundsProvider(effectiveCat));
-    final roundItems = rounds?.valueOrNull ?? const [];
-    final effectiveRound =
-        selectedRound ?? (roundItems.isNotEmpty ? roundItems.first.id : null);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Jogos'),
         leading: BackButton(onPressed: () => context.go('/')),
         actions: [
-          if (effectiveRound != null)
+          if (effectiveComp != null)
             IconButton(
               tooltip: 'Importar CSV',
               icon: const Icon(Icons.upload_file),
               onPressed: () => context.push(
                 '/games/import',
-                extra: (roundId: effectiveRound, categoryId: effectiveCat),
+                extra: (competitionId: effectiveComp),
               ),
             ),
         ],
       ),
-      floatingActionButton: effectiveRound == null
-          ? null
-          : FloatingActionButton(
+      floatingActionButton: effectiveComp != null
+          ? FloatingActionButton(
               tooltip: 'Novo jogo',
               onPressed: () => context.push(
                 '/games/new',
-                extra: (categoryId: effectiveCat, roundId: effectiveRound, game: null),
+                extra: (competitionId: effectiveComp, game: null),
               ),
               child: const Icon(Icons.add),
-            ),
+            )
+          : null,
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -96,120 +84,105 @@ class GamesScreen extends ConsumerWidget {
                             .toList(),
                         onChanged: (value) {
                           ref.read(selectedCompetitionProvider.notifier).state = value;
-                          ref.read(selectedCategoryProvider.notifier).state = null;
                           ref.read(selectedRoundProvider.notifier).state = null;
                         },
                       ),
                       const SizedBox(height: 12),
-                      categories!.when(
-                        loading: () => const LinearProgressIndicator(),
-                        error: (e, s) => AppErrorState(
-                          message: 'Não foi possível carregar as categorias',
-                          onRetry: () =>
-                              ref.invalidate(categoriesProvider(effectiveComp!)),
-                        ),
-                        data: (items) => DropdownButtonFormField<String>(
-                          key: ValueKey('cat-$effectiveCat'),
-                          initialValue: effectiveCat,
-                          decoration: const InputDecoration(
-                            labelText: 'Categoria',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: items
-                              .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
-                              .toList(),
-                          onChanged: (value) {
-                            ref.read(selectedCategoryProvider.notifier).state = value;
-                            ref.read(selectedRoundProvider.notifier).state = null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      (rounds?.when(
-                        loading: () => const LinearProgressIndicator(),
-                        error: (e, s) => AppErrorState(
-                          message: 'Não foi possível carregar as rodadas',
-                          onRetry: () =>
-                              ref.invalidate(roundsProvider(effectiveCat!)),
-                        ),
-                        data: (items) => DropdownButtonFormField<String>(
-                          key: ValueKey('round-$effectiveRound'),
-                          initialValue: effectiveRound,
-                          decoration: const InputDecoration(
-                            labelText: 'Rodada',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: items
-                              .map((r) => DropdownMenuItem(
-                                    value: r.id,
-                                    child: Text('Rodada ${r.number} - ${r.name}'),
-                                  ))
-                              .toList(),
-                          onChanged: (value) =>
-                              ref.read(selectedRoundProvider.notifier).state = value,
-                        ),
-                      ) ??
-                      const LinearProgressIndicator()),
+                      (selectedCompetition != null)
+                          ? ref
+                              .watch(roundsProvider(effectiveComp!))
+                              .when(
+                                loading: () => const LinearProgressIndicator(),
+                                error: (e, s) => AppErrorState(
+                                  message:
+                                      'Não foi possível carregar as rodadas',
+                                  onRetry: () =>
+                                      ref.invalidate(roundsProvider(effectiveComp!)),
+                                ),
+                                data: (roundItems) => DropdownButtonFormField<String>(
+                                  key: ValueKey('round-$effectiveComp'),
+                                  initialValue:
+                                      selectedRound ?? roundItems.first.id,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Rodada',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  items: roundItems
+                                      .map((r) => DropdownMenuItem(
+                                            value: r.id,
+                                            child:
+                                                Text('Rodada ${r.number} - ${r.name}'),
+                                          ))
+                                      .toList(),
+                                  onChanged: (value) =>
+                                      ref
+                                          .read(selectedRoundProvider.notifier)
+                                          .state = value,
+                                )
+                          : const LinearProgressIndicator(),
                     ],
                   ),
                 ),
               ),
               Expanded(
-                child: effectiveRound == null
+                child: selectedRound == null
                     ? const AppEmptyState(
                         message: 'Nenhuma rodada cadastrada',
                         icon: Icons.format_list_numbered,
                       )
-                    : ref.watch(gamesByRoundProvider(effectiveRound)).when(
-                        loading: () => const AppLoading(message: 'Carregando jogos...'),
-                        error: (error, stackTrace) => AppErrorState(
-                          message: 'Não foi possível carregar os jogos',
-                          onRetry: () =>
-                              ref.invalidate(gamesByRoundProvider(effectiveRound)),
-                        ),
-                        data: (items) {
-                          if (items.isEmpty) {
-                            return const AppEmptyState(
-                              message: 'Nenhum jogo cadastrado',
-                              icon: Icons.sports,
-                            );
-                          }
-                          return AppLayout.content(
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final columns =
-                                    constraints.maxWidth >= 600 ? 2 : 1;
-                                return GridView.builder(
-                                  padding: const EdgeInsets.all(16),
-                                  itemCount: items.length,
-                                  gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: columns,
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 12,
-                                    mainAxisExtent: 104,
-                                  ),
-                                  itemBuilder: (context, index) {
-                                    final game = items[index];
-                                    return _gameCard(
-                                      context,
-                                      game,
-                                      onTap: () => context.push(
-                                        '/games/${game.id}',
-                                        extra: (
-                                          categoryId: effectiveCat,
-                                          roundId: game.roundId,
-                                          game: game,
+                    : ref
+                        .watch(gamesByRoundProvider(selectedRound))
+                        .when(
+                          loading: () => const AppLoading(
+                              message: 'Carregando jogos...'),
+                          error: (error, stackTrace) => AppErrorState(
+                            message: 'Não foi possível carregar os jogos',
+                            onRetry: () =>
+                                ref.invalidate(gamesByRoundProvider(selectedRound)),
+                          ),
+                          data: (items) {
+                            if (items.isEmpty) {
+                              return const AppEmptyState(
+                                message: 'Nenhum jogo cadastrado',
+                                icon: Icons.sports,
+                              );
+                            }
+                            return AppLayout.content(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final columns =
+                                      constraints.maxWidth >= 600 ? 2 : 1;
+                                  return GridView.builder(
+                                    padding: const EdgeInsets.all(16),
+                                    itemCount: items.length,
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: columns,
+                                      crossAxisSpacing: 12,
+                                      mainAxisSpacing: 12,
+                                      mainAxisExtent: 104,
+                                    ),
+                                    itemBuilder: (context, index) {
+                                      final game = items[index];
+                                      return _gameCard(
+                                        context,
+                                        game,
+                                        onTap: () => context.push(
+                                          '/games/${game.id}',
+                                          extra: (
+                                            competitionId: effectiveComp,
+                                            roundId: game.roundId,
+                                            game: game,
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
               ),
             ],
           );

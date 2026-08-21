@@ -109,6 +109,16 @@ class CompetitionsScreen extends ConsumerWidget {
                       style: const TextStyle(
                           fontSize: 13, color: AppColors.textSecondary),
                     ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        if (competition.modalityId != null)
+                          _modalityChip(competition.modalityId!),
+                        const SizedBox(width: 4),
+                        if (competition.gender != null)
+                          _genderChip(competition.gender!),
+                      ],
+                    ),
                     const SizedBox(height: 4),
                     _statusChip(competition.status),
                   ],
@@ -118,6 +128,22 @@ class CompetitionsScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _modalityChip(int modalityId) {
+    return Chip(
+      label: const Text('Modalidade'),
+      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    );
+  }
+
+  Widget _genderChip(String gender) {
+    return Chip(
+      label: Text(gender == 'MALE' ? 'Masculino' : gender == 'FEMALE' ? 'Feminino' : 'Misto'),
+      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
     );
   }
 

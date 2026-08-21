@@ -11,11 +11,14 @@ import '../widgets/app_back_button.dart';
 
 /// Formulário de criação/edição de rodada.
 class RoundFormScreen extends ConsumerStatefulWidget {
-  const RoundFormScreen({super.key, this.roundId, this.round, this.initialCategoryId});
+  const RoundFormScreen({
+    super.key,
+    this.roundId,
+    this.round,
+  });
 
   final String? roundId;
   final Round? round;
-  final String? initialCategoryId;
 
   @override
   ConsumerState<RoundFormScreen> createState() => _RoundFormScreenState();
@@ -26,7 +29,6 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
 
   late final TextEditingController _name;
   late final TextEditingController _number;
-  String? _categoryId;
   RoundType? _type;
   bool _submitting = false;
   String? _errorMessage;
@@ -39,7 +41,6 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
     final round = widget.round;
     _name = TextEditingController(text: round?.name ?? '');
     _number = TextEditingController(text: round?.number.toString() ?? '');
-    _categoryId = round?.categoryId ?? widget.initialCategoryId;
     _type = round?.type ?? RoundType.regular;
   }
 
@@ -53,42 +54,33 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final categoryId = _categoryId;
-    final type = _type;
-    if (categoryId == null || type == null) return;
-
     setState(() {
       _submitting = true;
       _errorMessage = null;
     });
 
-    final previousCategoryId = widget.round?.categoryId;
     try {
       final api = ref.read(roundApiProvider);
       final id = widget.roundId ?? widget.round?.id;
       if (id == null) {
         await api.create(
-          categoryId: categoryId,
+          competitionId: ref.watch(selectedCompetitionProvider) ?? '',
           number: int.parse(_number.text.trim()),
           name: _name.text.trim(),
-          type: type,
+          type: _type,
         );
       } else {
         await api.update(
           id,
-          categoryId: categoryId,
+          competitionId: ref.watch(selectedCompetitionProvider) ?? '',
           number: int.parse(_number.text.trim()),
           name: _name.text.trim(),
-          type: type,
+          type: _type,
         );
       }
-      ref.invalidate(roundsProvider(categoryId));
-      if (previousCategoryId != null && previousCategoryId != categoryId) {
-        ref.invalidate(roundsProvider(previousCategoryId));
-      }
+      ref.invalidate(roundsProvider);
       if (mounted) {
         if (id != null) {
-          // Volta para o detalhe recarregado (busca fresca via provider).
           ref.invalidate(roundProvider(id));
           context.go('/rounds/$id');
         } else {
@@ -116,27 +108,10 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Na edição, o campeonato é derivado da categoria da rodada (não do estado
-    // global selectedCompetitionProvider, que pode apontar para outro
-    // campeonato). Na criação, usa o contexto global como fallback.
-    final editingRoundCategoryId = widget.round?.categoryId;
-    final editingCategory =
-        editingRoundCategoryId != null && widget.round != null
-            ? ref.watch(categoryProvider(editingRoundCategoryId)).valueOrNull
-            : null;
     final competitions = ref.watch(competitionsProvider);
     final compItems = competitions.valueOrNull ?? const [];
-    final effectiveComp = editingCategory?.competitionId ??
-        (ref.watch(selectedCompetitionProvider) ??
-            (compItems.isNotEmpty ? compItems.first.id : null));
-    final categories = effectiveComp == null
-        ? null
-        : ref.watch(categoriesProvider(effectiveComp));
-    final defaultCategoryId = widget.round?.categoryId ??
-        (widget.roundId == null
-            ? (widget.initialCategoryId ?? ref.read(selectedCategoryProvider))
-            : null);
-    final categoryValue = _categoryId ?? defaultCategoryId;
+    final effectiveComp =
+        ref.watch(selectedCompetitionProvider) ?? (compItems.isNotEmpty ? compItems.first.id : null);
 
     return Scaffold(
       appBar: AppBar(
@@ -151,32 +126,21 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                (categories?.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (e, s) => AppErrorState(
-                    message: 'Não foi possível carregar as categorias',
-                    onRetry: () =>
-                        ref.invalidate(categoriesProvider(effectiveComp!)),
+                DropdownButtonFormField<String>(
+                  initialValue: effectiveComp,
+                  decoration: const InputDecoration(
+                    labelText: 'Campeonato',
+                    border: OutlineInputBorder(),
                   ),
-                  data: (items) => DropdownButtonFormField<String>(
-                    initialValue: categoryValue,
-                    decoration: const InputDecoration(
-                      labelText: 'Categoria',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: items
-                        .map((c) => DropdownMenuItem(
-                              value: c.id,
-                              child: Text(c.name),
-                            ))
-                        .toList(),
-                    onChanged: (value) => setState(() => _categoryId = value),
-                    validator: (value) => (value == null || value.isEmpty)
-                        ? 'Selecione a categoria'
-                        : null,
-                  ),
-                ) ??
-                const LinearProgressIndicator()),
+                  items: compItems
+                      .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                      .toList(),
+                  onChanged: (value) {
+                    ref.read(selectedCompetitionProvider.notifier).state = value;
+                  },
+                  validator: (value) =>
+                      (value == null || value.isEmpty) ? 'Selecione o campeonato' : null,
+                ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _number,

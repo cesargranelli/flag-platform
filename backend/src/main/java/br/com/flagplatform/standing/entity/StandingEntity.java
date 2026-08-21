@@ -17,15 +17,15 @@ import java.util.UUID;
         name = "standings",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_standings_category_team",
-                        columnNames = {"category_id", "team_id"}
+                        name = "uk_standings_competition_team",
+                        columnNames = {"competition_id", "team_id"}
                 )
         }
 )
 public class StandingEntity extends BaseEntity {
 
-    @Column(name = "category_id", nullable = false)
-    private UUID categoryId;
+    @Column(name = "competition_id", nullable = false)
+    private UUID competitionId;
 
     @Column(name = "team_id", nullable = false)
     private UUID teamId;

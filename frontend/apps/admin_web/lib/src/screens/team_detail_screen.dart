@@ -8,9 +8,6 @@ import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
 
 /// Detalhe de um time: apresenta os dados e oferece a edição.
-///
-/// O time não possui exclusão (backend sem DELETE). A edição é uma ação
-/// explícita na tela.
 class TeamDetailScreen extends ConsumerWidget {
   const TeamDetailScreen({super.key, this.teamId, this.team});
 
@@ -40,28 +37,12 @@ class TeamDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildDetail(BuildContext context, WidgetRef ref, Team team) {
-    final category = ref.watch(categoryProvider(team.categoryId)).valueOrNull;
     final competitions = ref.watch(competitionsProvider);
     final competitionName = competitions.valueOrNull
-            ?.where((c) => c.id == category?.competitionId)
+            ?.where((c) => c.id == team.competitionId)
             .map((c) => c.name)
             .firstOrNull ??
         '';
-    final divisions = ref
-            .watch(divisionsProvider(team.categoryId))
-            .valueOrNull ??
-        const <Division>[];
-    final conferences = ref
-            .watch(conferencesProvider(team.categoryId))
-            .valueOrNull ??
-        const <Conference>[];
-    final division =
-        divisions.where((d) => d.id == team.divisionId).firstOrNull;
-    final conference = division?.conferenceId != null
-        ? conferences
-            .where((c) => c.id == division!.conferenceId)
-            .firstOrNull
-        : null;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -122,10 +103,8 @@ class TeamDetailScreen extends ConsumerWidget {
                 _row('Nome', team.name),
                 _row('Sigla',
                     team.shortName?.isNotEmpty == true ? team.shortName! : '—'),
-                _row('Categoria', category?.name ?? '—'),
-                _row('Campeonato', competitionName),
-                _row('Divisão', division?.name ?? '—'),
-                if (conference != null) _row('Conferência', conference.name),
+                _row('Competição', competitionName),
+                _row('Divisão', team.divisionName ?? '—'),
                 if (team.logoUrl != null && team.logoUrl!.isNotEmpty)
                   _row('URL do logo', team.logoUrl!),
               ],
