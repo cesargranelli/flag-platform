@@ -59,3 +59,6 @@ e2e/node_modules/
 e2e/test-results/
 e2e/playwright-report/
 e2e/playwright/.cache/
+
+# lixo gerado por tarefa de agente com encoding corrompido
+docs/fixes/

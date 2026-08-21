@@ -42,7 +42,7 @@ public class OrganizationService implements OrganizationLookup {
         }
 
         validateDocument(request.document(), request.documentType(), null);
-        validatePresident(request.presidentCpf(), null);
+        validatePresident(request.presidentCpf());
 
         OrganizationEntity entity = mapper.toEntity(request);
         entity.setStatus(OrganizationStatus.ACTIVE);
@@ -74,7 +74,7 @@ public class OrganizationService implements OrganizationLookup {
         }
 
         validateDocument(request.document(), request.documentType(), id);
-        validatePresident(request.presidentCpf(), id);
+        validatePresident(request.presidentCpf());
 
         mapper.updateEntity(entity, request);
 
@@ -105,21 +105,15 @@ public class OrganizationService implements OrganizationLookup {
     }
 
     /**
-     * Valida o CPF do presidente: obrigatorio, digitos validos e unico.
+     * Valida o CPF do presidente: obrigatorio e com digitos validos.
+     * O mesmo presidente pode presidir multiplas organizacoes (V27).
      */
-    private void validatePresident(String presidentCpf, UUID currentId) {
+    private void validatePresident(String presidentCpf) {
         if (presidentCpf == null || presidentCpf.isBlank()) {
             throw new InvalidDocumentException("Informe o CPF do presidente.");
         }
         if (!DocumentValidator.isValid(presidentCpf, DocumentType.CPF)) {
             throw new InvalidDocumentException("CPF do presidente inválido.");
-        }
-        String normalized = presidentCpf.replaceAll("\\D", "");
-        boolean duplicate = currentId == null
-                ? repository.existsByPresidentCpf(normalized)
-                : repository.existsByPresidentCpfAndIdNot(normalized, currentId);
-        if (duplicate) {
-            throw new DuplicateDocumentException(normalized);
         }
     }
 
