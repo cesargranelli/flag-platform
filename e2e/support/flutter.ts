@@ -15,8 +15,14 @@ const BOOT_TIMEOUT = 30_000;
 
 /** Aguarda o bootstrap do app e habilita a árvore de acessibilidade (idempotente). */
 export async function enableFlutterSemantics(page: Page): Promise<void> {
-  // O app só existe após o loader do Flutter montar o flt-glass-pane.
-  await page.waitForSelector('flt-glass-pane', { timeout: BOOT_TIMEOUT });
+  // O app só precisa EXISTIR (attached): em Chromium headless o flt-glass-pane
+  // é reportado como hidden mesmo com o app renderizando no canvas, então
+  // aguardar "visible" trava o teste. Conteúdo real só aparece no DOM após
+  // habilitar a árvore de acessibilidade.
+  await page.waitForSelector('flt-glass-pane', {
+    state: 'attached',
+    timeout: BOOT_TIMEOUT,
+  });
 
   // Semantics já habilitadas? Nada a fazer.
   if ((await page.$('flt-semantics')) !== null) return;
@@ -45,7 +51,9 @@ export async function enableFlutterSemantics(page: Page): Promise<void> {
     );
   }
 
-  await page.waitForSelector('flt-semantics', { timeout: 15_000 });
+  // Os nós flt-semantics só surgem após o app montar a árvore de acessibilidade
+  // — se este passo falhar, o app não chegou ao primeiro frame (investigar boot).
+  await page.waitForSelector('flt-semantics', { timeout: 30_000 });
 }
 
 /**
