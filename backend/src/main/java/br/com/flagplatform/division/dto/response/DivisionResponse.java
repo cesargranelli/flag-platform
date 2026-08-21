@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record DivisionResponse(
         UUID id,
-        UUID categoryId,
+        UUID competitionId,
         UUID conferenceId,
         String name,
         LocalDateTime createdAt,

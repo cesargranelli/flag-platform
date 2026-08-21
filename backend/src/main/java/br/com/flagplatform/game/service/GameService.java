@@ -1,6 +1,5 @@
 package br.com.flagplatform.game.service;
 
-import br.com.flagplatform.category.CategoryLookup;
 import br.com.flagplatform.common.enums.GameStatus;
 import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.game.FinishedGame;
@@ -55,7 +54,6 @@ public class GameService implements GameLookup {
     private final GameRepository repository;
     private final ScoreEventRepository scoreEventRepository;
     private final CompetitionLookup competitionLookup;
-    private final CategoryLookup categoryLookup;
     private final RoundLookup roundLookup;
     private final VenueLookup venueLookup;
     private final TeamLookup teamLookup;
@@ -161,12 +159,8 @@ public class GameService implements GameLookup {
 
     public List<GameSummaryResponse> findByCompetitionId(UUID competitionId) {
         competitionLookup.assertExists(competitionId);
-        List<UUID> categoryIds = categoryLookup.findCategoryIdsByCompetitionId(competitionId);
-        if (categoryIds.isEmpty()) {
-            return List.of();
-        }
 
-        List<RoundInfo> rounds = roundLookup.findRoundInfoByCategoryIds(categoryIds);
+        List<RoundInfo> rounds = roundLookup.findRoundInfoByCompetitionId(competitionId);
         if (rounds.isEmpty()) {
             return List.of();
         }
@@ -231,15 +225,15 @@ public class GameService implements GameLookup {
         entity.setStatus(GameStatus.FINISHED);
         GameEntity saved = repository.save(entity);
 
-        UUID categoryId = roundLookup.findCategoryId(saved.getRoundId());
-        applicationEventPublisher.publishEvent(new GameResultRegisteredEvent(saved.getId(), categoryId));
+        UUID competitionId = roundLookup.findCompetitionId(saved.getRoundId());
+        applicationEventPublisher.publishEvent(new GameResultRegisteredEvent(saved.getId(), competitionId));
 
         return mapper.toResponse(saved);
     }
 
     @Override
-    public List<FinishedGame> findFinishedByCategoryId(UUID categoryId) {
-        List<UUID> roundIds = roundLookup.findRoundIdsByCategoryId(categoryId);
+    public List<FinishedGame> findFinishedByCompetitionId(UUID competitionId) {
+        List<UUID> roundIds = roundLookup.findRoundIdsByCompetitionId(competitionId);
         if (roundIds.isEmpty()) {
             return List.of();
         }

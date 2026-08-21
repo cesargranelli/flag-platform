@@ -32,7 +32,7 @@ public class TeamController {
 
     @Operation(
             summary = "Criar time",
-            description = "Cria um novo time em uma categoria. Requer autenticação."
+            description = "Cria a inscrição de uma organização (clube) no campeonato. Requer autenticação."
     )
     @PostMapping("/api/v1/teams")
     @ResponseStatus(HttpStatus.CREATED)
@@ -42,13 +42,13 @@ public class TeamController {
     }
 
     @Operation(
-            summary = "Listar times por categoria",
-            description = "Lista os times de uma categoria, ordenados por nome. Acesso público."
+            summary = "Listar times por campeonato",
+            description = "Lista os times inscritos em um campeonato, ordenados por nome. Acesso público."
     )
-    @GetMapping("/api/v1/categories/{categoryId}/teams")
-    public List<TeamResponse> findByCategoryId(
-            @Parameter(description = "Id da categoria") @PathVariable UUID categoryId) {
-        return service.findByCategoryId(categoryId);
+    @GetMapping("/api/v1/competitions/{competitionId}/teams")
+    public List<TeamResponse> findByCompetitionId(
+            @Parameter(description = "Id do campeonato") @PathVariable UUID competitionId) {
+        return service.findByCompetitionId(competitionId);
     }
 
     @Operation(

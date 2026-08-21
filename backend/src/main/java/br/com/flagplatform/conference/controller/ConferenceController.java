@@ -32,25 +32,25 @@ public class ConferenceController {
 
     @Operation(
             summary = "Criar conferência",
-            description = "Cria uma conferência dentro de uma categoria. Requer autenticação."
+            description = "Cria uma conferência dentro de um campeonato. Requer autenticação."
     )
-    @PostMapping("/api/v1/categories/{categoryId}/conferences")
+    @PostMapping("/api/v1/competitions/{competitionId}/conferences")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public ConferenceResponse create(
-            @Parameter(description = "Id da categoria") @PathVariable UUID categoryId,
+            @Parameter(description = "Id do campeonato") @PathVariable UUID competitionId,
             @Valid @RequestBody CreateConferenceRequest request) {
-        return service.create(categoryId, request);
+        return service.create(competitionId, request);
     }
 
     @Operation(
-            summary = "Listar conferências por categoria",
-            description = "Lista as conferências de uma categoria, ordenadas por nome. Acesso público."
+            summary = "Listar conferências por campeonato",
+            description = "Lista as conferências de um campeonato, ordenadas por nome. Acesso público."
     )
-    @GetMapping("/api/v1/categories/{categoryId}/conferences")
-    public List<ConferenceResponse> findByCategoryId(
-            @Parameter(description = "Id da categoria") @PathVariable UUID categoryId) {
-        return service.findByCategoryId(categoryId);
+    @GetMapping("/api/v1/competitions/{competitionId}/conferences")
+    public List<ConferenceResponse> findByCompetitionId(
+            @Parameter(description = "Id do campeonato") @PathVariable UUID competitionId) {
+        return service.findByCompetitionId(competitionId);
     }
 
     @Operation(

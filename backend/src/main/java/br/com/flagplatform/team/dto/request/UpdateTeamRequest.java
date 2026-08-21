@@ -9,7 +9,10 @@ import java.util.UUID;
 
 public record UpdateTeamRequest(
         @NotNull
-        UUID categoryId,
+        UUID organizationId,
+
+        @NotNull
+        UUID competitionId,
 
         UUID divisionId,
 

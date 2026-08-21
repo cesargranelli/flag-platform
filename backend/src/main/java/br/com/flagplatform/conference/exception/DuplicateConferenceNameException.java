@@ -9,7 +9,7 @@ public class DuplicateConferenceNameException extends ApiException {
         super(
                 HttpStatus.CONFLICT,
                 "Duplicate conference name",
-                "A conference named '%s' already exists in this category.".formatted(name),
+                "A conference named '%s' already exists in this competition.".formatted(name),
                 "duplicate_conference_name"
         );
     }

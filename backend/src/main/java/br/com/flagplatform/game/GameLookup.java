@@ -11,7 +11,7 @@ import java.util.UUID;
  */
 public interface GameLookup {
 
-    List<FinishedGame> findFinishedByCategoryId(UUID categoryId);
+    List<FinishedGame> findFinishedByCompetitionId(UUID competitionId);
 
     GameInfo findGameInfoById(UUID id);
 

@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record ConferenceResponse(
         UUID id,
-        UUID categoryId,
+        UUID competitionId,
         String name,
         LocalDateTime createdAt,
         LocalDateTime updatedAt

@@ -14,10 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -36,24 +36,24 @@ public class StandingService {
      * roda em uma transação própria e realmente persiste.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void recalculate(UUID categoryId) {
-        List<UUID> teamIds = teamLookup.findTeamIdsByCategoryId(categoryId);
-        List<FinishedGame> games = gameLookup.findFinishedByCategoryId(categoryId);
+    public void recalculate(UUID competitionId) {
+        List<UUID> teamIds = teamLookup.findTeamIdsByCompetitionId(competitionId);
+        List<FinishedGame> games = gameLookup.findFinishedByCompetitionId(competitionId);
 
-        repository.deleteAllByCategoryId(categoryId);
+        repository.deleteAllByCompetitionId(competitionId);
 
         if (teamIds.isEmpty()) {
             return;
         }
 
         List<StandingEntity> standings = teamIds.stream()
-                .map(teamId -> buildStanding(categoryId, teamId, games))
+                .map(teamId -> buildStanding(competitionId, teamId, games))
                 .toList();
 
         repository.saveAll(standings);
     }
 
-    private StandingEntity buildStanding(UUID categoryId, UUID teamId, List<FinishedGame> games) {
+    private StandingEntity buildStanding(UUID competitionId, UUID teamId, List<FinishedGame> games) {
         int played = 0;
         int wins = 0;
         int draws = 0;
@@ -80,7 +80,7 @@ public class StandingService {
         }
 
         StandingEntity entity = new StandingEntity();
-        entity.setCategoryId(categoryId);
+        entity.setCompetitionId(competitionId);
         entity.setTeamId(teamId);
         entity.setPlayed(played);
         entity.setWins(wins);
@@ -93,15 +93,18 @@ public class StandingService {
     }
 
     /**
-     * Consulta pública da classificação de uma categoria, ordenada por
+     * Consulta pública da classificação de uma competição, ordenada por
      * pontos DESC, saldo de gols DESC, gols pró DESC e nome do time ASC
      * (desempate estável).
      */
-    public List<StandingResponse> findByCategoryId(UUID categoryId) {
-        Map<UUID, String> teamNames = teamLookup.findTeamInfoByCategoryId(categoryId).stream()
-                .collect(Collectors.toMap(TeamInfo::id, TeamInfo::name));
+    public List<StandingResponse> findByCompetitionId(UUID competitionId) {
+        Map<UUID, String> teamNames = new HashMap<>();
+        for (TeamInfo team : teamLookup.findTeamInfoByCompetitionId(competitionId)) {
+            // name é opcional desde V24; normaliza para manter a ordenação estável
+            teamNames.put(team.id(), team.name() == null ? "" : team.name());
+        }
 
-        List<Entry> entries = repository.findAllByCategoryId(categoryId).stream()
+        List<Entry> entries = repository.findAllByCompetitionId(competitionId).stream()
                 .map(row -> new Entry(row, teamNames.getOrDefault(row.getTeamId(), "")))
                 .sorted(Comparator
                         .comparingInt(Entry::points).reversed()

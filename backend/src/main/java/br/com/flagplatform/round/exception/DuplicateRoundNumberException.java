@@ -9,7 +9,7 @@ public class DuplicateRoundNumberException extends ApiException {
         super(
                 HttpStatus.CONFLICT,
                 "Duplicate round number",
-                "A round with number '%d' already exists in this category.".formatted(number),
+                "A round with number '%d' already exists in this competition.".formatted(number),
                 "duplicate_round_number"
         );
     }

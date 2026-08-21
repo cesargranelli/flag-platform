@@ -22,12 +22,12 @@ public class StandingController {
 
     @Operation(
             summary = "Consultar classificacao",
-            description = "Retorna a tabela de classificacao de uma categoria, ordenada por pontos, saldo de gols e gols pro. Acesso publico."
+            description = "Retorna a tabela de classificacao de um campeonato, ordenada por pontos, saldo de gols e gols pro. Acesso publico."
     )
-    @GetMapping("/api/v1/categories/{categoryId}/standings")
-    public List<StandingResponse> findByCategoryId(
-            @Parameter(description = "Id da categoria") @PathVariable UUID categoryId) {
-        return service.findByCategoryId(categoryId);
+    @GetMapping("/api/v1/competitions/{competitionId}/standings")
+    public List<StandingResponse> findByCompetitionId(
+            @Parameter(description = "Id do campeonato") @PathVariable UUID competitionId) {
+        return service.findByCompetitionId(competitionId);
     }
 
 }

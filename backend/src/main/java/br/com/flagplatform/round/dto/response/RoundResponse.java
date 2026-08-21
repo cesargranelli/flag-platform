@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public record RoundResponse(
         UUID id,
-        UUID categoryId,
+        UUID competitionId,
         Integer number,
         String name,
         RoundType type,

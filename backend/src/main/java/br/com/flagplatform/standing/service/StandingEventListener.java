@@ -14,6 +14,6 @@ public class StandingEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onGameResultRegistered(GameResultRegisteredEvent event) {
-        standingService.recalculate(event.categoryId());
+        standingService.recalculate(event.competitionId());
     }
 }

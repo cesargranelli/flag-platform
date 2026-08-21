@@ -13,7 +13,7 @@ import java.util.UUID;
 @Mapper(componentModel = "spring")
 public interface DivisionMapper {
 
-    DivisionEntity toEntity(UUID categoryId, CreateDivisionRequest request);
+    DivisionEntity toEntity(UUID competitionId, CreateDivisionRequest request);
 
     DivisionEntity updateEntity(
             @MappingTarget DivisionEntity entity,

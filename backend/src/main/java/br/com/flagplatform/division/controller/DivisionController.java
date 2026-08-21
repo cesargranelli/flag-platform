@@ -32,26 +32,26 @@ public class DivisionController {
 
     @Operation(
             summary = "Criar divisão",
-            description = "Cria uma divisão dentro de uma categoria, opcionalmente " +
+            description = "Cria uma divisão dentro de um campeonato, opcionalmente " +
                     "vinculada a uma conferência. Requer autenticação."
     )
-    @PostMapping("/api/v1/categories/{categoryId}/divisions")
+    @PostMapping("/api/v1/competitions/{competitionId}/divisions")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public DivisionResponse create(
-            @Parameter(description = "Id da categoria") @PathVariable UUID categoryId,
+            @Parameter(description = "Id do campeonato") @PathVariable UUID competitionId,
             @Valid @RequestBody CreateDivisionRequest request) {
-        return service.create(categoryId, request);
+        return service.create(competitionId, request);
     }
 
     @Operation(
-            summary = "Listar divisões por categoria",
-            description = "Lista as divisões de uma categoria, ordenadas por nome. Acesso público."
+            summary = "Listar divisões por campeonato",
+            description = "Lista as divisões de um campeonato, ordenadas por nome. Acesso público."
     )
-    @GetMapping("/api/v1/categories/{categoryId}/divisions")
-    public List<DivisionResponse> findByCategoryId(
-            @Parameter(description = "Id da categoria") @PathVariable UUID categoryId) {
-        return service.findByCategoryId(categoryId);
+    @GetMapping("/api/v1/competitions/{competitionId}/divisions")
+    public List<DivisionResponse> findByCompetitionId(
+            @Parameter(description = "Id do campeonato") @PathVariable UUID competitionId) {
+        return service.findByCompetitionId(competitionId);
     }
 
     @Operation(

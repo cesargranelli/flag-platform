@@ -10,18 +10,18 @@ import java.util.UUID;
 @Repository
 public interface DivisionRepository extends JpaRepository<DivisionEntity, UUID> {
 
-    List<DivisionEntity> findAllByCategoryIdOrderByNameAsc(UUID categoryId);
+    List<DivisionEntity> findAllByCompetitionIdOrderByNameAsc(UUID competitionId);
 
-    boolean existsByCategoryIdAndConferenceIdAndNameIgnoreCase(
-            UUID categoryId, UUID conferenceId, String name);
+    boolean existsByCompetitionIdAndConferenceIdAndNameIgnoreCase(
+            UUID competitionId, UUID conferenceId, String name);
 
-    boolean existsByCategoryIdAndConferenceIdAndNameIgnoreCaseAndIdNot(
-            UUID categoryId, UUID conferenceId, String name, UUID id);
+    boolean existsByCompetitionIdAndConferenceIdAndNameIgnoreCaseAndIdNot(
+            UUID competitionId, UUID conferenceId, String name, UUID id);
 
-    boolean existsByCategoryIdAndConferenceIdIsNullAndNameIgnoreCase(
-            UUID categoryId, String name);
+    boolean existsByCompetitionIdAndConferenceIdIsNullAndNameIgnoreCase(
+            UUID competitionId, String name);
 
-    boolean existsByCategoryIdAndConferenceIdIsNullAndNameIgnoreCaseAndIdNot(
-            UUID categoryId, String name, UUID id);
+    boolean existsByCompetitionIdAndConferenceIdIsNullAndNameIgnoreCaseAndIdNot(
+            UUID competitionId, String name, UUID id);
 
 }

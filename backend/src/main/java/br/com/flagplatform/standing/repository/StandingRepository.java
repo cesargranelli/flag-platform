@@ -13,15 +13,15 @@ import java.util.UUID;
 @Repository
 public interface StandingRepository extends JpaRepository<StandingEntity, UUID> {
 
-    List<StandingEntity> findAllByCategoryId(UUID categoryId);
+    List<StandingEntity> findAllByCompetitionId(UUID competitionId);
 
     /**
      * Bulk delete imediato: um delete derivado faria SELECT + remove, adiando o
      * DELETE para o flush (que roda DEPOIS dos INSERTs do saveAll do recálculo),
-     * violando a unique (category_id, team_id).
+     * violando a unique (competition_id, team_id).
      */
     @Modifying
-    @Query("delete from StandingEntity s where s.categoryId = :categoryId")
-    void deleteAllByCategoryId(@Param("categoryId") UUID categoryId);
+    @Query("delete from StandingEntity s where s.competitionId = :competitionId")
+    void deleteAllByCompetitionId(@Param("competitionId") UUID competitionId);
 
 }
