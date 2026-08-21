@@ -36,9 +36,6 @@ ALTER TABLE platform.conferences
     ALTER COLUMN competition_id SET NOT NULL,
     ADD CONSTRAINT fk_conferences_competition
         FOREIGN KEY (competition_id) REFERENCES platform.competitions (id);
-ALTER TABLE platform.conferences
-    DROP CONSTRAINT uk_conferences_category_name,
-    ADD CONSTRAINT uk_conferences_competition_name UNIQUE (competition_id, name);
 
 -- Divisions passam a pertencer ao campeonato
 ALTER TABLE platform.divisions
@@ -82,9 +79,6 @@ ALTER TABLE platform.teams
         FOREIGN KEY (organization_id) REFERENCES platform.organizations (id),
     ADD CONSTRAINT fk_teams_competition
         FOREIGN KEY (competition_id) REFERENCES platform.competitions (id);
-ALTER TABLE platform.teams
-    DROP CONSTRAINT uk_teams_category_name,
-    ADD CONSTRAINT uk_teams_competition_organization UNIQUE (competition_id, organization_id);
 
 -- Rounds passam a pertencer ao campeonato
 ALTER TABLE platform.rounds
@@ -100,9 +94,6 @@ ALTER TABLE platform.rounds
     ALTER COLUMN competition_id SET NOT NULL,
     ADD CONSTRAINT fk_rounds_competition
         FOREIGN KEY (competition_id) REFERENCES platform.competitions (id);
-ALTER TABLE platform.rounds
-    DROP CONSTRAINT uk_rounds_category_number,
-    ADD CONSTRAINT uk_rounds_competition_number UNIQUE (competition_id, number);
 
 -- Standings passam a pertencer ao campeonato
 ALTER TABLE platform.standings
@@ -118,9 +109,6 @@ ALTER TABLE platform.standings
     ALTER COLUMN competition_id SET NOT NULL,
     ADD CONSTRAINT fk_standings_competition
         FOREIGN KEY (competition_id) REFERENCES platform.competitions (id);
-ALTER TABLE platform.standings
-    DROP CONSTRAINT uk_standings_category_team,
-    ADD CONSTRAINT uk_standings_competition_team UNIQUE (competition_id, team_id);
 
 -- Remove o conceito de categoria
 DROP TABLE platform.categories;
