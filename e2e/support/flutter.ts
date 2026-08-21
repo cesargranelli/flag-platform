@@ -70,12 +70,14 @@ export function flutterField(page: Page, label: string): Locator {
 }
 
 /**
- * Preenche um campo do Flutter Web como um usuário: clica (foca) e digita.
+ * Preenche um campo do Flutter Web como um usuário: clica (foca), aguarda o
+ * <input> real existir, digita e valida.
  *
- * O clique no flt-semantics cai na posição do campo no canvas, o Flutter cria
- * o <input> real sob demanda e a digitação via teclado é recebida por ele.
- * `verify` valida o valor final do input real (exato ou RegExp — use RegExp
- * para campos com máscara, ex.: CPF/CNPJ/telefone). Passe `false` para pular.
+ * O clique no flt-semantics cai na posição do campo no canvas e o Flutter cria
+ * o <input> sob demanda — em headless esse clique é instável (pode não focar).
+ * Por isso tentamos até 3 vezes: clicar → aguardar input visível → só então
+ * digitar. `verify` valida o valor final do input real (exato ou RegExp — use
+ * RegExp para campos com máscara, ex.: CPF/CNPJ/telefone). `false` pula.
  */
 export async function flutterFill(
   page: Page,
@@ -84,12 +86,24 @@ export async function flutterFill(
   verify: string | RegExp | false = value,
 ): Promise<void> {
   const field = flutterField(page, label).first();
-  await field.click();
+
+  let input = field.locator('input').first();
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    await field.click();
+    try {
+      await input.waitFor({ state: 'visible', timeout: 3_000 });
+      break;
+    } catch {
+      if (attempt === 3) throw new Error(`Flutter Web: campo "${label}" não recebeu foco após 3 cliques.`);
+      input = field.locator('input').first();
+    }
+  }
+
   // delay baixo para o engine do Flutter acompanhar (máscaras, formatters).
   await page.keyboard.type(value, { delay: 25 });
 
   if (verify !== false) {
-    await expect(field.locator('input').first()).toHaveValue(verify, {
+    await expect(input).toHaveValue(verify, {
       timeout: 5_000,
     });
   }
