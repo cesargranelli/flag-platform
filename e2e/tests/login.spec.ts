@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { enableFlutterSemantics, flutterField } from '../support/flutter';
+import { enableFlutterSemantics, flutterFill } from '../support/flutter';
 
 const ORGANIZER_EMAIL = process.env.E2E_ORGANIZER_EMAIL || 'organizer@flag.test';
 const ORGANIZER_PASSWORD =
@@ -21,11 +21,8 @@ test.describe('Login', () => {
     await page.goto('/');
     await enableFlutterSemantics(page);
 
-    await flutterField(page, 'E-mail').click();
-    await page.keyboard.type(ORGANIZER_EMAIL);
-
-    await flutterField(page, 'Senha').click();
-    await page.keyboard.type(ORGANIZER_PASSWORD);
+    await flutterFill(page, 'E-mail', ORGANIZER_EMAIL);
+    await flutterFill(page, 'Senha', ORGANIZER_PASSWORD);
 
     await page.getByRole('button', { name: 'Entrar' }).click();
 
@@ -42,11 +39,8 @@ test.describe('Login', () => {
     await page.goto('/');
     await enableFlutterSemantics(page);
 
-    await flutterField(page, 'E-mail').click();
-    await page.keyboard.type('nao-existe@flag.test');
-
-    await flutterField(page, 'Senha').click();
-    await page.keyboard.type('SenhaErrada@123');
+    await flutterFill(page, 'E-mail', 'nao-existe@flag.test');
+    await flutterFill(page, 'Senha', 'SenhaErrada@123');
 
     await page.getByRole('button', { name: 'Entrar' }).click();
 
