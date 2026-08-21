@@ -8,13 +8,13 @@ class RoundApi {
 
   RoundApi(this._client);
 
-  Future<List<Round>> listByCategory(String categoryId) => _client.getList(
-        '/api/v1/categories/$categoryId/rounds',
+  Future<List<Round>> listByCompetition(String competitionId) => _client.getList(
+        '/api/v1/competitions/$competitionId/rounds',
         Round.fromJson,
       );
 
-  Future<List<Round>> listByCompetition(String competitionId) => _client.getList(
-        '/api/v1/competitions/$competitionId/rounds',
+  Future<List<Round>> listByDivision(String divisionId) => _client.getList(
+        '/api/v1/divisions/$divisionId/rounds',
         Round.fromJson,
       );
 
@@ -23,7 +23,7 @@ class RoundApi {
       _client.getOne('/api/v1/rounds/$id', Round.fromJson);
 
   Future<Round> create({
-    required String categoryId,
+    required String competitionId,
     required int number,
     required String name,
     required RoundType type,
@@ -31,7 +31,7 @@ class RoundApi {
       _client.post(
         '/api/v1/rounds',
         {
-          'categoryId': categoryId,
+          'competitionId': competitionId,
           'number': number,
           'name': name,
           'type': type.toJson(),
@@ -41,7 +41,7 @@ class RoundApi {
 
   Future<Round> update(
     String id, {
-    required String categoryId,
+    required String competitionId,
     required int number,
     required String name,
     required RoundType type,
@@ -49,7 +49,7 @@ class RoundApi {
       _client.put(
         '/api/v1/rounds/$id',
         {
-          'categoryId': categoryId,
+          'competitionId': competitionId,
           'number': number,
           'name': name,
           'type': type.toJson(),

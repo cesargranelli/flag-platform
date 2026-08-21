@@ -8,11 +8,6 @@ class TeamApi {
 
   TeamApi(this._client);
 
-  Future<List<Team>> listByCategory(String categoryId) => _client.getList(
-        '/api/v1/categories/$categoryId/teams',
-        Team.fromJson,
-      );
-
   Future<List<Team>> listByCompetition(String competitionId) => _client.getList(
         '/api/v1/competitions/$competitionId/teams',
         Team.fromJson,
@@ -22,8 +17,8 @@ class TeamApi {
       _client.getOne('/api/v1/teams/$id', Team.fromJson);
 
   Future<Team> create({
-    required String categoryId,
-    String? divisionId,
+    required String organizationId,
+    String? competitionId,
     required String name,
     String? shortName,
     String? document,
@@ -33,8 +28,8 @@ class TeamApi {
       _client.post(
         '/api/v1/teams',
         {
-          'categoryId': categoryId,
-          'divisionId': ?divisionId,
+          'organizationId': organizationId,
+          'competitionId': competitionId,
           'name': name,
           'shortName': ?shortName,
           'document': ?document,
@@ -46,8 +41,8 @@ class TeamApi {
 
   Future<Team> update(
     String id, {
-    required String categoryId,
-    String? divisionId,
+    required String organizationId,
+    String? competitionId,
     required String name,
     String? shortName,
     String? document,
@@ -57,8 +52,8 @@ class TeamApi {
       _client.put(
         '/api/v1/teams/$id',
         {
-          'categoryId': categoryId,
-          'divisionId': ?divisionId,
+          'organizationId': organizationId,
+          'competitionId': ?competitionId,
           'name': name,
           'shortName': ?shortName,
           'document': ?document,
