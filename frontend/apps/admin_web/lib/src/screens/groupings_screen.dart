@@ -5,249 +5,162 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
 import 'division_form_screen.dart';
 
 /// Gestão de conferências e divisões por campeonato.
 ///
-/// O fluxo agora é: campeonato → conferências → divisões.
-/// As categories foram removidas; as conferências e divisões
-/// associam-se diretamente ao competition_id (migração V24).
+/// Redesign da issue #218: cabeçalho de contexto (campeonato selecionado,
+/// status, contadores e seletor), conferências como cards expansíveis com
+/// suas divisões e ações de criação unificadas nos cabeçalhos de seção.
+/// O fluxo continua: campeonato → conferências → divisões (migração V24).
 class GroupingsScreen extends ConsumerWidget {
   const GroupingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final competitions = ref.watch(competitionsProvider);
-    final selectedCompetition = ref.watch(selectedCompetitionProvider);
-
-    final compItems = competitions.valueOrNull ?? const [];
-    final effectiveComp =
-        selectedCompetition ??
-        (compItems.isNotEmpty ? compItems.first.id : null);
+    final selectedCompetitionId = ref.watch(selectedCompetitionProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Conferências e divisões'),
-        leading: BackButton(onPressed: () => context.go('/')),
+        leading: const AppBackButton(fallbackRoute: '/'),
       ),
-      floatingActionButton: effectiveComp != null
-          ? FloatingActionButton(
-              tooltip: 'Nova conferência',
-              onPressed: () =>
-                  context.push('/conferences/new', extra: effectiveComp),
-              child: const Icon(Icons.add),
-            )
-          : null,
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
           message: 'Não foi possível carregar os campeonatos',
           onRetry: () => ref.invalidate(competitionsProvider),
         ),
-        data: (_) {
+        data: (compItems) {
           if (compItems.isEmpty) {
             return const AppEmptyState(
-              message: 'Nenhum campeonato cadastrado',
+              message: 'Nenhum campeonato cadastrado. '
+                  'Crie um campeonato para organizar conferências e divisões.',
               icon: Icons.emoji_events_outlined,
             );
           }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppLayout.content(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      DropdownButtonFormField<String>(
-                        initialValue: effectiveComp,
-                        decoration: const InputDecoration(
-                          labelText: 'Campeonato',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: compItems
-                            .map(
-                              (c) => DropdownMenuItem(
-                                value: c.id,
-                                child: Text(c.name),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          ref.read(selectedCompetitionProvider.notifier).state =
-                              value;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: effectiveComp != null
-                    ? _buildSections(context, ref, effectiveComp)
-                    : const AppEmptyState(
-                        message: 'Nenhuma conferência cadastrada',
-                        icon: Icons.category_outlined,
-                      ),
-              ),
-            ],
-          );
+          // O id selecionado pode estar obsoleto (ex.: campeonato removido
+          // em outra sessão); nesse caso cai para o primeiro disponível.
+          var selected = compItems.first;
+          for (final c in compItems) {
+            if (c.id == selectedCompetitionId) {
+              selected = c;
+              break;
+            }
+          }
+          return _GroupingsBody(competitions: compItems, competition: selected);
         },
       ),
     );
   }
+}
 
-  Widget _buildSections(
-    BuildContext context,
-    WidgetRef ref,
-    String competitionId,
-  ) {
-    final conferences = ref.watch(conferencesProvider(competitionId));
-    final divisions = ref.watch(divisionsProvider(competitionId));
-    final divItems = divisions.valueOrNull ?? const <Division>[];
+/// Corpo da tela para o campeonato selecionado.
+class _GroupingsBody extends ConsumerWidget {
+  const _GroupingsBody({required this.competitions, required this.competition});
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        conferences.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (e, s) => AppErrorState(
-            message: 'Não foi possível carregar as conferências',
-            onRetry: () => ref.invalidate(conferencesProvider(competitionId)),
-          ),
-          data: (confItems) {
-            if (confItems.isEmpty) {
-              return _sectionCard(
-                title: 'Conferências',
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'Nenhuma conferência cadastrada.',
-                    style: const TextStyle(color: AppColors.textSecondary),
-                  ),
-                ),
-              );
-            }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: confItems.map((conf) {
-                final confDivisions = divItems
-                    .where((d) => d.conferenceId == conf.id)
-                    .toList();
-                return _conferenceCard(
-                  context,
-                  ref,
-                  competitionId,
-                  conf,
-                  confDivisions,
-                );
-              }).toList(),
-            );
-          },
-        ),
-        const SizedBox(height: 8),
-        divisions.when(
-          loading: () => const SizedBox.shrink(),
-          error: (e, s) => const SizedBox.shrink(),
-          data: (_) {
-            final standalone = divItems
-                .where((d) => d.conferenceId == null)
-                .toList();
-            return _sectionCard(
-              title: 'Divisões sem conferência',
-              action: TextButton.icon(
-                onPressed: () => context.push(
-                  '/divisions/new',
-                  extra: DivisionFormArgs(competitionId: competitionId),
-                ),
-                icon: const Icon(Icons.add),
-                label: const Text('Nova divisão'),
-              ),
-              child: standalone.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        'Nenhuma divisão sem conferência.',
-                        style: const TextStyle(color: AppColors.textSecondary),
-                      ),
-                    )
-                  : Column(
-                      children: standalone
-                          .map(
-                            (d) => _divisionRow(context, ref, competitionId, d),
-                          )
-                          .toList(),
-                    ),
-            );
-          },
-        ),
-      ],
+  final List<Competition> competitions;
+  final Competition competition;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final conferences = ref.watch(conferencesProvider(competition.id));
+    final divisions = ref.watch(divisionsProvider(competition.id));
+
+    return AppLayout.content(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _contextHeader(context, ref, conferences, divisions),
+          const SizedBox(height: 24),
+          _conferencesSection(context, ref, conferences, divisions),
+          const SizedBox(height: 24),
+          _standaloneDivisionsSection(context, ref, divisions),
+        ],
+      ),
     );
   }
 
-  Widget _conferenceCard(
+  /// Cabeçalho de contexto: campeonato, status, contadores e seletor.
+  Widget _contextHeader(
     BuildContext context,
     WidgetRef ref,
-    String competitionId,
-    Conference conference,
-    List<Division> divisions,
+    AsyncValue<List<Conference>> conferences,
+    AsyncValue<List<Division>> divisions,
   ) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.account_tree_outlined,
-                  color: AppColors.primary,
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.emoji_events_outlined,
+                    color: AppColors.primary,
+                  ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    conference.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        competition.name,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _countersLabel(conferences, divisions),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                      ),
+                    ],
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Editar conferência',
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () => context.push(
-                    '/conferences/${conference.id}/edit',
-                    extra: conference,
-                  ),
-                ),
+                const SizedBox(width: 12),
+                _statusChip(competition.status),
               ],
             ),
-            if (divisions.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              ...divisions.map(
-                (d) => _divisionRow(context, ref, competitionId, d),
-              ),
-            ],
-            const SizedBox(height: 4),
+            const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => context.push(
-                  '/divisions/new',
-                  extra: DivisionFormArgs(
-                    competitionId: competitionId,
-                    conferenceId: conference.id,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: DropdownButtonFormField<String>(
+                  initialValue: competition.id,
+                  decoration: const InputDecoration(
+                    labelText: 'Campeonato',
+                    border: OutlineInputBorder(),
                   ),
+                  items: competitions
+                      .map(
+                        (c) => DropdownMenuItem(
+                          value: c.id,
+                          child: Text(c.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      ref.read(selectedCompetitionProvider.notifier).state =
+                          value;
+                    }
+                  },
                 ),
-                icon: const Icon(Icons.add),
-                label: const Text('Adicionar divisão'),
               ),
             ),
           ],
@@ -256,60 +169,383 @@ class GroupingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _divisionRow(
+  /// Seção de conferências: título, ação primária e lista expansível.
+  Widget _conferencesSection(
     BuildContext context,
     WidgetRef ref,
-    String competitionId,
-    Division division,
+    AsyncValue<List<Conference>> conferences,
+    AsyncValue<List<Division>> divisions,
   ) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 32, bottom: 4),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(division.name, style: const TextStyle(fontSize: 14)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Conferências',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            FilledButton.icon(
+              onPressed: () =>
+                  context.push('/conferences/new', extra: competition.id),
+              icon: const Icon(Icons.add),
+              label: const Text('Nova conferência'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        conferences.when(
+          loading: () =>
+              const AppLoading(message: 'Carregando conferências...'),
+          error: (error, stackTrace) => AppErrorState(
+            message: 'Não foi possível carregar as conferências',
+            onRetry: () => ref.invalidate(conferencesProvider(competition.id)),
           ),
-          IconButton(
-            tooltip: 'Editar divisão',
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () =>
-                context.push('/divisions/${division.id}/edit', extra: division),
+          data: (confItems) {
+            if (confItems.isEmpty) {
+              return const AppEmptyState(
+                message: 'Nenhuma conferência criada. '
+                    'Crie a primeira para organizar seu campeonato.',
+                icon: Icons.account_tree_outlined,
+              );
+            }
+            final divItems = divisions.valueOrNull ?? const <Division>[];
+            return Column(
+              children: [
+                for (final conf in confItems)
+                  _ConferenceCard(
+                    key: ValueKey(conf.id),
+                    conference: conf,
+                    divisions: divItems
+                        .where((d) => d.conferenceId == conf.id)
+                        .toList(),
+                    divisionsLoading: divisions.isLoading,
+                    divisionsFailed: divisions.hasError,
+                    // Com uma única conferência, abre-a para dar contexto
+                    // imediato da estrutura (critério da issue #218).
+                    initiallyExpanded: confItems.length == 1,
+                    competitionId: competition.id,
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Seção de divisões sem conferência vinculada.
+  Widget _standaloneDivisionsSection(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<Division>> divisions,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Divisões sem conferência',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => context.push(
+                '/divisions/new',
+                extra: DivisionFormArgs(competitionId: competition.id),
+              ),
+              icon: const Icon(Icons.add),
+              label: const Text('Adicionar divisão'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: divisions.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando divisões...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar as divisões',
+                onRetry: () =>
+                    ref.invalidate(divisionsProvider(competition.id)),
+              ),
+              data: (divItems) {
+                final standalone = divItems
+                    .where((d) => d.conferenceId == null)
+                    .toList();
+                if (standalone.isEmpty) {
+                  return const AppEmptyState(
+                    message: 'Nenhuma divisão sem conferência. '
+                        'Use "Adicionar divisão" para criar uma.',
+                    icon: Icons.subdirectory_arrow_right,
+                  );
+                }
+                return Column(
+                  children: [
+                    for (final division in standalone)
+                      _divisionRow(context, division),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Chip de status do campeonato (mesmo padrão da tela de detalhe).
+  Widget _statusChip(CompetitionStatus status) {
+    final color = switch (status) {
+      CompetitionStatus.draft => AppColors.textSecondary,
+      CompetitionStatus.published => AppColors.success,
+      CompetitionStatus.finished => AppColors.danger,
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        _statusLabel(status),
+        style: TextStyle(fontSize: 13, color: color),
+      ),
+    );
+  }
+
+  String _statusLabel(CompetitionStatus status) => switch (status) {
+    CompetitionStatus.draft => 'Rascunho',
+    CompetitionStatus.published => 'Publicado',
+    CompetitionStatus.finished => 'Encerrado',
+  };
+
+  /// Rótulo de contadores do cabeçalho ("X conferências · Y divisões").
+  String _countersLabel(
+    AsyncValue<List<Conference>> conferences,
+    AsyncValue<List<Division>> divisions,
+  ) {
+    if (conferences.isLoading || divisions.isLoading) {
+      return 'Carregando estrutura...';
+    }
+    final confPart = _countPart(
+      conferences.valueOrNull?.length,
+      'conferência',
+      'conferências',
+    );
+    final divPart = _countPart(
+      divisions.valueOrNull?.length,
+      'divisão',
+      'divisões',
+    );
+    return '$confPart · $divPart';
+  }
+}
+
+/// Card expansível de uma conferência com suas divisões.
+///
+/// O estado de expansão vive aqui (chaveada pelo id da conferência), então
+/// sobrevive a refetches dos providers sem resetar o que o usuário abriu.
+class _ConferenceCard extends StatefulWidget {
+  const _ConferenceCard({
+    super.key,
+    required this.conference,
+    required this.divisions,
+    required this.divisionsLoading,
+    required this.divisionsFailed,
+    required this.initiallyExpanded,
+    required this.competitionId,
+  });
+
+  final Conference conference;
+  final List<Division> divisions;
+  final bool divisionsLoading;
+  final bool divisionsFailed;
+  final bool initiallyExpanded;
+  final String competitionId;
+
+  @override
+  State<_ConferenceCard> createState() => _ConferenceCardState();
+}
+
+class _ConferenceCardState extends State<_ConferenceCard> {
+  late bool _expanded = widget.initiallyExpanded;
+
+  void _toggle() => setState(() => _expanded = !_expanded);
+
+  @override
+  Widget build(BuildContext context) {
+    final conference = widget.conference;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Cabeçalho clicável: expande/recolhe as divisões.
+          InkWell(
+            onTap: _toggle,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.account_tree_outlined,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      conference.name,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _divisionsMeta(context),
+                  IconButton(
+                    tooltip: 'Editar conferência',
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    onPressed: () => context.push(
+                      '/conferences/${conference.id}/edit',
+                      extra: conference,
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.keyboard_arrow_down),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 200),
+            sizeCurve: Curves.easeInOut,
+            crossFadeState: _expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (widget.divisions.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'Nenhuma divisão nesta conferência.',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.textSecondary),
+                          ),
+                        )
+                      else
+                        for (final division in widget.divisions)
+                          _divisionRow(context, division),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () => context.push(
+                            '/divisions/new',
+                            extra: DivisionFormArgs(
+                              competitionId: widget.competitionId,
+                              conferenceId: conference.id,
+                            ),
+                          ),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Adicionar divisão'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _sectionCard({
-    required String title,
-    Widget? action,
-    required Widget child,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                ?action,
-              ],
+  /// Contagem de divisões como chip/meta no cabeçalho do card.
+  Widget _divisionsMeta(BuildContext context) {
+    if (widget.divisionsLoading) {
+      return const SizedBox(
+        width: 16,
+        height: 16,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    final String label;
+    if (widget.divisionsFailed) {
+      label = '—';
+    } else if (widget.divisions.isEmpty) {
+      label = 'Sem divisões';
+    } else {
+      label = _plural(widget.divisions.length, 'divisão', 'divisões');
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.grayFill,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
             ),
-          ),
-          child,
-        ],
       ),
     );
   }
 }
+
+/// Linha de divisão com ícone de hierarquia e ação de edição.
+Widget _divisionRow(BuildContext context, Division division) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Row(
+      children: [
+        const SizedBox(width: 8),
+        const Icon(
+          Icons.subdirectory_arrow_right,
+          size: 18,
+          color: AppColors.textSecondary,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            division.name,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+        IconButton(
+          tooltip: 'Editar divisão',
+          icon: const Icon(Icons.edit_outlined, size: 20),
+          onPressed: () =>
+              context.push('/divisions/${division.id}/edit', extra: division),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Contagem com plural correto em português.
+String _plural(int count, String singular, String plural) =>
+    '$count ${count == 1 ? singular : plural}';
+
+/// Parte do rótulo de contadores; [count] nulo indica falha de carregamento.
+String _countPart(int? count, String singular, String plural) =>
+    count == null ? '$plural indisponíveis' : _plural(count, singular, plural);
