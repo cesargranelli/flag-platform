@@ -3,6 +3,7 @@ package br.com.flagplatform.competition.entity;
 import br.com.flagplatform.common.enums.CompetitionStatus;
 import br.com.flagplatform.common.enums.Gender;
 import br.com.flagplatform.common.enums.AgeGroup;
+import br.com.flagplatform.common.enums.Modality;
 import br.com.flagplatform.common.persistence.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -31,8 +32,8 @@ public class CompetitionEntity extends BaseEntity {
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;
 
-    @Column(name = "modality_id", nullable = false)
-    private UUID modalityId;
+    @Column(name = "modality", nullable = false, length = 20)
+    private Modality modality;
 
     @Column(nullable = false, length = 20)
     private Gender gender;

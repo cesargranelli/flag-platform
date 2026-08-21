@@ -1,6 +1,7 @@
 package br.com.flagplatform.competition.dto.request;
 
 import br.com.flagplatform.common.enums.CompetitionStatus;
+import br.com.flagplatform.common.enums.Modality;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -11,6 +12,9 @@ import java.util.UUID;
 public record UpdateCompetitionRequest(
         @NotNull
         UUID organizationId,
+
+        @NotNull
+        Modality modality,
 
         @NotBlank
         @Size(max = 100)
