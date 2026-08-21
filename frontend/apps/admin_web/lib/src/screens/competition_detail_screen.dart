@@ -54,6 +54,7 @@ class CompetitionDetailScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Identidade: cabeçalho do campeonato com edição explícita.
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -98,69 +99,77 @@ class CompetitionDetailScreen extends ConsumerWidget {
                                   color: AppColors.textSecondary,
                                 ),
                               ),
+                              const SizedBox(height: 8),
+                              _statusChip(comp.status),
                             ],
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Row(children: [_statusChip(comp.status)]),
-                    const SizedBox(height: 16),
-                    _infoCard('Atributos', [
-                      _row(
-                        'Modalidade',
-                        comp.modality?.label ?? 'Não definido',
+                    FilledButton.icon(
+                      onPressed: () => context.push(
+                        '/competitions/${comp.id}/edit',
+                        extra: comp,
                       ),
-                      _row('Gênero', comp.gender ?? 'Não definido'),
-                      _row('Faixa Etária', comp.ageGroup ?? 'Não definido'),
-                    ]),
-                    const SizedBox(height: 16),
-                    _infoCard('Ações dentro do campeonato', [
-                      _actionRowButton(
-                        context,
-                        icon: Icons.account_tree_outlined,
-                        label: 'Gerenciar Conferências e Divisões',
-                        onTap: () {
-                          ref.read(selectedCompetitionProvider.notifier).state =
-                              comp.id;
-                          context.push('/groupings');
-                        },
-                      ),
-                      _actionRowButton(
-                        context,
-                        icon: Icons.groups,
-                        label: 'Associar Clubes',
-                        onTap: () {
-                          ref.read(selectedCompetitionProvider.notifier).state =
-                              comp.id;
-                          context.push('/teams');
-                        },
-                      ),
-                    ]),
-                    const SizedBox(height: 12),
-                    _infoCard('Informações', [
-                      _row('Nome', comp.name),
-                      _row('Status', _statusLabel(comp.status)),
-                      if (comp.organizationName != null)
-                        _row('Organização', comp.organizationName!),
-                      if (comp.description != null &&
-                          comp.description!.isNotEmpty)
-                        _row('Descrição', comp.description!),
-                    ]),
-                    const SizedBox(height: 12),
-                    _infoCard('Período', [
-                      if (comp.startDate != null)
-                        _row('Início', _formatDate(comp.startDate!)),
-                      if (comp.endDate != null)
-                        _row('Fim', _formatDate(comp.endDate!)),
-                      if (comp.startDate == null && comp.endDate == null)
-                        _row('Período', 'Não definido'),
-                    ]),
-                    const SizedBox(height: 12),
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Editar campeonato'),
+                    ),
                   ],
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+
+            // Atributos da competição.
+            _infoCard('Atributos', [
+              _row('Modalidade', comp.modality?.label ?? 'Não definido'),
+              _row('Gênero', _genderLabel(comp.gender)),
+              _row('Faixa Etária', _ageGroupLabel(comp.ageGroup)),
+            ]),
+            const SizedBox(height: 12),
+
+            // Período de realização.
+            _infoCard('Período', [
+              if (comp.startDate != null)
+                _row('Início', _formatDate(comp.startDate!)),
+              if (comp.endDate != null) _row('Fim', _formatDate(comp.endDate!)),
+              if (comp.startDate == null && comp.endDate == null)
+                _row('Período', 'Não definido'),
+            ]),
+            const SizedBox(height: 12),
+
+            // Descrição opcional.
+            if (comp.description != null && comp.description!.isNotEmpty) ...[
+              _infoCard('Descrição', [
+                _row('Descrição', comp.description!),
+              ]),
+              const SizedBox(height: 12),
+            ],
+
+            // Ações dentro do campeonato.
+            _infoCard('Ações do campeonato', [
+              _actionRowButton(
+                context,
+                icon: Icons.account_tree_outlined,
+                label: 'Gerenciar Conferências e Divisões',
+                onTap: () {
+                  ref.read(selectedCompetitionProvider.notifier).state =
+                      comp.id;
+                  context.push('/groupings');
+                },
+              ),
+              _actionRowButton(
+                context,
+                icon: Icons.groups,
+                label: 'Associar Clubes',
+                onTap: () {
+                  ref.read(selectedCompetitionProvider.notifier).state =
+                      comp.id;
+                  context.push('/teams');
+                },
+              ),
+            ]),
           ],
         ),
       ),
@@ -261,6 +270,26 @@ class CompetitionDetailScreen extends ConsumerWidget {
     CompetitionStatus.draft => 'Rascunho',
     CompetitionStatus.published => 'Publicado',
     CompetitionStatus.finished => 'Encerrado',
+  };
+
+  String _genderLabel(String? gender) => switch (gender) {
+    'MALE' => 'Masculino',
+    'FEMALE' => 'Feminino',
+    'MIXED' => 'Misto',
+    _ => 'Não definido',
+  };
+
+  String _ageGroupLabel(String? ageGroup) => switch (ageGroup) {
+    'SUB11' => 'Sub-11',
+    'SUB13' => 'Sub-13',
+    'SUB14' => 'Sub-14',
+    'SUB15' => 'Sub-15',
+    'SUB17' => 'Sub-17',
+    'SUB20' => 'Sub-20',
+    'ADULT' => 'Adulto',
+    'MASTER' => 'Master',
+    'OPEN' => 'Livre',
+    _ => 'Não definido',
   };
 
   String _formatDate(DateTime value) {
