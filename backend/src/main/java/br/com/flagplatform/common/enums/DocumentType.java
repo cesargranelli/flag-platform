@@ -3,15 +3,17 @@ package br.com.flagplatform.common.enums;
 import lombok.Getter;
 
 @Getter
-public enum DocumentType {
+public enum DocumentType implements PersistableEnum {
 
-    CNPJ("CNPJ"),
-    CPF("CPF");
+    CNPJ("CNPJ", "CNPJ"),
+    CPF("CPF", "CPF");
 
     private final String code;
+    private final String description;
 
-    DocumentType(String code) {
+    DocumentType(String code, String description) {
         this.code = code;
+        this.description = description;
     }
 
 }
