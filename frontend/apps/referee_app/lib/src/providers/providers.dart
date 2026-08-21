@@ -40,7 +40,6 @@ final competitionApiProvider = Provider<CompetitionApi>(
 /// Contexto de seleção compartilhado entre as telas de operação e check-in
 /// (padrão admin_web), para não re-selecionar a cascata a cada visita.
 final selectedCompetitionProvider = StateProvider<String?>((ref) => null);
-final selectedCategoryProvider = StateProvider<String?>((ref) => null);
 final selectedRoundProvider = StateProvider<String?>((ref) => null);
 final selectedGameProvider = StateProvider<String?>((ref) => null);
 
@@ -48,21 +47,14 @@ final competitionsProvider = FutureProvider<List<Competition>>(
   (ref) => ref.watch(competitionApiProvider).listAll(),
 );
 
-final categoryApiProvider = Provider<CategoryApi>(
-  (ref) => CategoryApi(ref.watch(apiClientProvider)),
-);
-
-final categoriesProvider = FutureProvider.family<List<Category>, String>(
-  (ref, competitionId) =>
-      ref.watch(categoryApiProvider).listByCompetition(competitionId),
-);
-
 final roundApiProvider = Provider<RoundApi>(
   (ref) => RoundApi(ref.watch(apiClientProvider)),
 );
 
+/// Rodadas de um campeonato (fluxo único, sem categorias).
 final roundsProvider = FutureProvider.family<List<Round>, String>(
-  (ref, categoryId) => ref.watch(roundApiProvider).listByCategory(categoryId),
+  (ref, competitionId) =>
+      ref.watch(roundApiProvider).listByCompetition(competitionId),
 );
 
 final gameApiProvider = Provider<GameApi>(

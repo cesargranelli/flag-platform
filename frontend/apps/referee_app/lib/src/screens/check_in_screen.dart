@@ -17,7 +17,6 @@ class CheckInScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final competitions = ref.watch(competitionsProvider);
     final selectedComp = ref.watch(selectedCompetitionProvider);
-    final selectedCat = ref.watch(selectedCategoryProvider);
     final selectedRound = ref.watch(selectedRoundProvider);
     final selectedGame = ref.watch(selectedGameProvider);
 
@@ -25,16 +24,10 @@ class CheckInScreen extends ConsumerWidget {
     final effectiveComp =
         selectedComp ?? (compData.isNotEmpty ? compData.first.id : null);
 
-    final categories = effectiveComp == null
+    // Fluxo único: campeonato → rodadas (categorias foram removidas, V24).
+    final rounds = effectiveComp == null
         ? null
-        : ref.watch(categoriesProvider(effectiveComp));
-    final catData = categories?.valueOrNull ?? const [];
-    final effectiveCat =
-        selectedCat ?? (catData.isNotEmpty ? catData.first.id : null);
-
-    final rounds = effectiveCat == null
-        ? null
-        : ref.watch(roundsProvider(effectiveCat));
+        : ref.watch(roundsProvider(effectiveComp));
     final roundData = rounds?.valueOrNull ?? const [];
     final effectiveRound =
         selectedRound ?? (roundData.isNotEmpty ? roundData.first.id : null);
@@ -44,7 +37,8 @@ class CheckInScreen extends ConsumerWidget {
         : ref.watch(gamesByRoundProvider(effectiveRound));
     final gamesData = games?.valueOrNull;
     final effectiveGameId =
-        selectedGame ?? (gamesData?.isNotEmpty == true ? gamesData!.first.id : null);
+        selectedGame ??
+        (gamesData?.isNotEmpty == true ? gamesData!.first.id : null);
     Game? selectedGameObj;
     if (effectiveGameId != null && gamesData != null) {
       final matches = gamesData.where((g) => g.id == effectiveGameId);
@@ -64,45 +58,34 @@ class CheckInScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-                _compDropdown(compData, effectiveComp, ref),
-                if (categories != null) ...[
-                  const SizedBox(height: 12),
-                  categories.when(
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, s) => AppErrorState(
-                      message: 'Erro ao carregar categorias',
-                      onRetry: () =>
-                          ref.invalidate(categoriesProvider(effectiveComp!)),
-                    ),
-                    data: (_) => _catDropdown(catData, effectiveCat, ref),
+              _compDropdown(compData, effectiveComp, ref),
+              if (rounds != null) ...[
+                const SizedBox(height: 12),
+                rounds.when(
+                  loading: () => const LinearProgressIndicator(),
+                  error: (e, s) => AppErrorState(
+                    message: 'Erro ao carregar rodadas',
+                    onRetry: () =>
+                        ref.invalidate(roundsProvider(effectiveComp!)),
                   ),
-                ],
-                if (rounds != null) ...[
-                  const SizedBox(height: 12),
-                  rounds.when(
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, s) => AppErrorState(
-                      message: 'Erro ao carregar rodadas',
-                      onRetry: () => ref.invalidate(roundsProvider(effectiveCat!)),
-                    ),
-                    data: (_) => _roundDropdown(roundData, effectiveRound, ref),
+                  data: (_) => _roundDropdown(roundData, effectiveRound, ref),
+                ),
+              ],
+              if (games != null) ...[
+                const SizedBox(height: 12),
+                games.when(
+                  loading: () => const LinearProgressIndicator(),
+                  error: (e, s) => AppErrorState(
+                    message: 'Erro ao carregar jogos',
+                    onRetry: () =>
+                        ref.invalidate(gamesByRoundProvider(effectiveRound!)),
                   ),
-                ],
-                if (games != null) ...[
-                  const SizedBox(height: 12),
-                  games.when(
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, s) => AppErrorState(
-                      message: 'Erro ao carregar jogos',
-                      onRetry: () =>
-                          ref.invalidate(gamesByRoundProvider(effectiveRound!)),
-                    ),
-                    data: (_) => _gameDropdown(gamesData!, effectiveGameId, ref),
-                  ),
-                ],
-                if (games != null) const SizedBox(height: 16),
-                if (selectedGameObj != null)
-                  _buildRoster(context, ref, selectedGameObj),
+                  data: (_) => _gameDropdown(gamesData!, effectiveGameId, ref),
+                ),
+              ],
+              if (games != null) const SizedBox(height: 16),
+              if (selectedGameObj != null)
+                _buildRoster(context, ref, selectedGameObj),
             ],
           ),
         ),
@@ -110,8 +93,7 @@ class CheckInScreen extends ConsumerWidget {
     );
   }
 
-  Widget _compDropdown(
-      List<Competition> items, String? value, WidgetRef ref) {
+  Widget _compDropdown(List<Competition> items, String? value, WidgetRef ref) {
     return DropdownButtonFormField<String>(
       initialValue: value,
       decoration: const InputDecoration(
@@ -123,25 +105,6 @@ class CheckInScreen extends ConsumerWidget {
           .toList(),
       onChanged: (v) {
         ref.read(selectedCompetitionProvider.notifier).state = v;
-        ref.read(selectedCategoryProvider.notifier).state = null;
-        ref.read(selectedRoundProvider.notifier).state = null;
-        ref.read(selectedGameProvider.notifier).state = null;
-      },
-    );
-  }
-
-  Widget _catDropdown(List<Category> items, String? value, WidgetRef ref) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      decoration: const InputDecoration(
-        labelText: 'Categoria',
-        border: OutlineInputBorder(),
-      ),
-      items: items
-          .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
-          .toList(),
-      onChanged: (v) {
-        ref.read(selectedCategoryProvider.notifier).state = v;
         ref.read(selectedRoundProvider.notifier).state = null;
         ref.read(selectedGameProvider.notifier).state = null;
       },
@@ -156,10 +119,12 @@ class CheckInScreen extends ConsumerWidget {
         border: OutlineInputBorder(),
       ),
       items: items
-          .map((r) => DropdownMenuItem(
-                value: r.id,
-                child: Text('Rodada ${r.number} - ${r.name}'),
-              ))
+          .map(
+            (r) => DropdownMenuItem(
+              value: r.id,
+              child: Text('Rodada ${r.number} - ${r.name}'),
+            ),
+          )
           .toList(),
       onChanged: (v) {
         ref.read(selectedRoundProvider.notifier).state = v;
@@ -176,16 +141,17 @@ class CheckInScreen extends ConsumerWidget {
         border: OutlineInputBorder(),
       ),
       items: items
-          .map((g) => DropdownMenuItem(
-                value: g.id,
-                child: Text(
-                  '${g.homeTeamName ?? 'Casa'} x ${g.awayTeamName ?? 'Fora'} · '
-                  '${_formatDateTime(g.scheduledAt)} · ${g.status.name}',
-                ),
-              ))
+          .map(
+            (g) => DropdownMenuItem(
+              value: g.id,
+              child: Text(
+                '${g.homeTeamName ?? 'Casa'} x ${g.awayTeamName ?? 'Fora'} · '
+                '${_formatDateTime(g.scheduledAt)} · ${g.status.name}',
+              ),
+            ),
+          )
           .toList(),
-      onChanged: (v) =>
-          ref.read(selectedGameProvider.notifier).state = v,
+      onChanged: (v) => ref.read(selectedGameProvider.notifier).state = v,
     );
   }
 
@@ -237,7 +203,10 @@ class CheckInScreen extends ConsumerWidget {
             Text(
               '${_formatDateTime(game.scheduledAt)} · ${_gameStatusLabel(game.status)}'
               '${present > 0 ? '' : ''}',
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -246,9 +215,15 @@ class CheckInScreen extends ConsumerWidget {
   }
 
   Widget _teamSection(
-      BuildContext context, WidgetRef ref, List<CheckIn> items, bool inProgress) {
+    BuildContext context,
+    WidgetRef ref,
+    List<CheckIn> items,
+    bool inProgress,
+  ) {
     final teamName = items.first.teamName ?? 'Time';
-    final present = items.where((c) => c.status == CheckInStatus.present).length;
+    final present = items
+        .where((c) => c.status == CheckInStatus.present)
+        .length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -259,12 +234,18 @@ class CheckInScreen extends ConsumerWidget {
               Expanded(
                 child: Text(
                   teamName,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               Text(
                 '$present/${items.length} presentes',
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -276,7 +257,11 @@ class CheckInScreen extends ConsumerWidget {
   }
 
   Widget _buildAthleteTile(
-      BuildContext context, WidgetRef ref, CheckIn checkIn, bool inProgress) {
+    BuildContext context,
+    WidgetRef ref,
+    CheckIn checkIn,
+    bool inProgress,
+  ) {
     final statusLabel = switch (checkIn.status) {
       CheckInStatus.present => 'PRESENTE',
       CheckInStatus.noShow => 'FALTOU',
@@ -286,8 +271,9 @@ class CheckInScreen extends ConsumerWidget {
 
     final hasOverride = checkIn.matchNumber != null;
     final numberText = checkIn.number != null ? 'Camisa ${checkIn.number}' : '';
-    final officialText =
-        hasOverride && checkIn.athleteNumber != null ? 'oficial ${checkIn.athleteNumber}' : '';
+    final officialText = hasOverride && checkIn.athleteNumber != null
+        ? 'oficial ${checkIn.athleteNumber}'
+        : '';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -338,10 +324,16 @@ class CheckInScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _mark(BuildContext context, WidgetRef ref, CheckIn checkIn,
-      CheckInStatus status) async {
+  Future<void> _mark(
+    BuildContext context,
+    WidgetRef ref,
+    CheckIn checkIn,
+    CheckInStatus status,
+  ) async {
     try {
-      await ref.read(checkInApiProvider).checkin(
+      await ref
+          .read(checkInApiProvider)
+          .checkin(
             gameId: checkIn.gameId,
             athleteId: checkIn.athleteId,
             status: status,
@@ -350,14 +342,19 @@ class CheckInScreen extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível registrar o check-in')),
+          const SnackBar(
+            content: Text('Não foi possível registrar o check-in'),
+          ),
         );
       }
     }
   }
 
   Future<void> _validate(
-      BuildContext context, WidgetRef ref, CheckIn checkIn) async {
+    BuildContext context,
+    WidgetRef ref,
+    CheckIn checkIn,
+  ) async {
     try {
       final result = await ref
           .read(checkInApiProvider)
@@ -371,9 +368,9 @@ class CheckInScreen extends ConsumerWidget {
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Atleta validado')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Atleta validado')));
         }
       }
       ref.invalidate(checkinProvider(checkIn.gameId));
@@ -387,7 +384,10 @@ class CheckInScreen extends ConsumerWidget {
   }
 
   Future<void> _editMatchNumber(
-      BuildContext context, WidgetRef ref, CheckIn checkIn) async {
+    BuildContext context,
+    WidgetRef ref,
+    CheckIn checkIn,
+  ) async {
     final controller = TextEditingController(
       text: checkIn.matchNumber?.toString() ?? '',
     );
@@ -435,7 +435,9 @@ class CheckInScreen extends ConsumerWidget {
 
     final int? number = newNumber == -1 ? null : newNumber;
     try {
-      await ref.read(checkInApiProvider).setMatchNumber(
+      await ref
+          .read(checkInApiProvider)
+          .setMatchNumber(
             gameId: checkIn.gameId,
             athleteId: checkIn.athleteId,
             number: number,
@@ -443,9 +445,9 @@ class CheckInScreen extends ConsumerWidget {
       ref.invalidate(checkinProvider(checkIn.gameId));
     } on RepositoryException catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
       }
     } catch (_) {
       if (context.mounted) {
@@ -457,11 +459,11 @@ class CheckInScreen extends ConsumerWidget {
   }
 
   String _gameStatusLabel(GameStatus status) => switch (status) {
-        GameStatus.scheduled => 'Agendado',
-        GameStatus.inProgress => 'Ao vivo',
-        GameStatus.finished => 'Encerrado',
-        GameStatus.cancelled => 'Cancelado',
-      };
+    GameStatus.scheduled => 'Agendado',
+    GameStatus.inProgress => 'Ao vivo',
+    GameStatus.finished => 'Encerrado',
+    GameStatus.cancelled => 'Cancelado',
+  };
 }
 
 String _formatDateTime(DateTime value) =>

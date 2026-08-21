@@ -59,7 +59,8 @@ class _ConferenceFormScreenState extends ConsumerState<ConferenceFormScreen> {
     try {
       final api = ref.read(conferenceApiProvider);
       final id = widget.conferenceId ?? widget.conference?.id;
-      final competitionId = widget.competitionId ?? ref.watch(selectedCompetitionProvider) ?? '';
+      final competitionId =
+          widget.competitionId ?? ref.read(selectedCompetitionProvider) ?? '';
       if (id == null) {
         await api.create(competitionId: competitionId, name: _name.text.trim());
       } else {
@@ -99,18 +100,18 @@ class _ConferenceFormScreenState extends ConsumerState<ConferenceFormScreen> {
                     helperText: 'Ex.: Conferência Leste',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) =>
-                      (value == null || value.trim().isEmpty)
-                          ? 'Informe o nome'
-                          : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Informe o nome'
+                      : null,
                 ),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 8),
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                        fontWeight: FontWeight.w600),
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 24),

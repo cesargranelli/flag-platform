@@ -7,9 +7,10 @@ import '../providers/providers.dart';
 
 /// Tela de classificação de um campeonato (issue #27).
 ///
-/// Exibe a tabela (posição, time, PJ, V, D, SG, PTS) de cada categoria do
-/// campeonato, com destaque para o líder e atualização via pull to refresh.
-class CompetitionStandingsScreen extends ConsumerStatefulWidget {
+/// Exibe a tabela (posição, time, PJ, V, D, SG, PTS) do campeonato, com
+/// destaque para o líder e atualização via pull to refresh. No fluxo único
+/// (migração V24) a classificação é por campeonato — não há mais categorias.
+class CompetitionStandingsScreen extends ConsumerWidget {
   final String competitionId;
   final String competitionName;
 
@@ -20,171 +21,58 @@ class CompetitionStandingsScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<CompetitionStandingsScreen> createState() =>
-      _CompetitionStandingsScreenState();
-}
-
-class _CompetitionStandingsScreenState
-    extends ConsumerState<CompetitionStandingsScreen> {
-  /// Categoria selecionada no filtro; `null` resolve para a primeira.
-  String? _selectedCategoryId;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = widget.competitionName.isEmpty
-        ? 'Classificação'
-        : widget.competitionName;
-    final categoriesAsync = ref.watch(
-      competitionCategoriesProvider(widget.competitionId),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final title = competitionName.isEmpty ? 'Classificação' : competitionName;
+    final standingsAsync = ref.watch(
+      competitionStandingsProvider(competitionId),
     );
 
     return Scaffold(
       appBar: AppBar(title: Text(title)),
-      body: categoriesAsync.when(
-        loading: () => const AppLoading(message: 'Carregando classificação...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar a classificação',
-          onRetry: () =>
-              ref.invalidate(competitionCategoriesProvider(widget.competitionId)),
-        ),
-        data: (categories) {
-          if (categories.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhuma categoria disponível',
-              icon: Icons.leaderboard_outlined,
-            );
-          }
-          final selectedId = _resolveSelected(categories);
-          return RefreshIndicator(
-            onRefresh: _refresh,
-            child: _StandingsView(
-              categories: categories,
-              selectedCategoryId: selectedId,
-              onCategorySelected: (id) =>
-                  setState(() => _selectedCategoryId = id),
-            ),
-          );
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(competitionStandingsProvider(competitionId));
+          await ref.read(competitionStandingsProvider(competitionId).future);
         },
-      ),
-    );
-  }
-
-  /// Categoria selecionada, mantendo a escolha do usuário quando ela ainda
-  /// existe; caso contrário, a primeira da lista.
-  String _resolveSelected(List<Category> categories) {
-    final selected = _selectedCategoryId;
-    if (selected != null && categories.any((c) => c.id == selected)) {
-      return selected;
-    }
-    return categories.first.id;
-  }
-
-  /// Recarrega categorias e a tabela da categoria selecionada.
-  Future<void> _refresh() async {
-    ref.invalidate(competitionCategoriesProvider(widget.competitionId));
-    final categories = await _safeCategories();
-    if (categories.isEmpty) {
-      return;
-    }
-    final selected = _resolveSelected(categories);
-    ref.invalidate(categoryStandingsProvider(selected));
-    await _safeStandings(selected);
-  }
-
-  Future<List<Category>> _safeCategories() => ref
-      .read(competitionCategoriesProvider(widget.competitionId).future)
-      .catchError((_) => const <Category>[]);
-
-  Future<List<Standing>> _safeStandings(String categoryId) => ref
-      .read(categoryStandingsProvider(categoryId).future)
-      .catchError((_) => const <Standing>[]);
-}
-
-/// Conteúdo da classificação: filtro de categoria, tabela e pull to refresh.
-class _StandingsView extends ConsumerWidget {
-  final List<Category> categories;
-  final String selectedCategoryId;
-  final ValueChanged<String> onCategorySelected;
-
-  const _StandingsView({
-    required this.categories,
-    required this.selectedCategoryId,
-    required this.onCategorySelected,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final standingsAsync = ref.watch(
-      categoryStandingsProvider(selectedCategoryId),
-    );
-
-    return standingsAsync.when(
-      loading: () => const AppLoading(message: 'Carregando classificação...'),
-      error: (error, stackTrace) => AppErrorState(
-        message: 'Não foi possível carregar a classificação',
-        onRetry: () => ref.invalidate(categoryStandingsProvider(selectedCategoryId)),
-      ),
-      data: (standings) {
-        if (standings.isEmpty) {
-          return ListView(
+        child: standingsAsync.when(
+          loading: () => ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             children: const [
               SizedBox(height: 120),
-              AppEmptyState(
-                message: 'Nenhuma classificação disponível',
-                icon: Icons.leaderboard_outlined,
+              AppLoading(message: 'Carregando classificação...'),
+            ],
+          ),
+          error: (error, stackTrace) => ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              const SizedBox(height: 120),
+              AppErrorState(
+                message: 'Não foi possível carregar a classificação',
+                onRetry: () =>
+                    ref.invalidate(competitionStandingsProvider(competitionId)),
               ),
             ],
-          );
-        }
-        return ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          children: [
-            if (categories.length > 1) ...[
-              _CategoryFilter(
-                categories: categories,
-                selectedCategoryId: selectedCategoryId,
-                onSelected: onCategorySelected,
-              ),
-              const SizedBox(height: 16),
-            ],
-            _StandingsTable(standings: standings),
-          ],
-        );
-      },
-    );
-  }
-}
-
-/// Filtro horizontal por categoria ("chips" de cada categoria do campeonato).
-class _CategoryFilter extends StatelessWidget {
-  final List<Category> categories;
-  final String selectedCategoryId;
-  final ValueChanged<String> onSelected;
-
-  const _CategoryFilter({
-    required this.categories,
-    required this.selectedCategoryId,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (final category in categories)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text(category.name),
-                selected: category.id == selectedCategoryId,
-                onSelected: (_) => onSelected(category.id),
-              ),
-            ),
-        ],
+          ),
+          data: (standings) {
+            if (standings.isEmpty) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 120),
+                  AppEmptyState(
+                    message: 'Nenhuma classificação disponível',
+                    icon: Icons.leaderboard_outlined,
+                  ),
+                ],
+              );
+            }
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: [_StandingsTable(standings: standings)],
+            );
+          },
+        ),
       ),
     );
   }
@@ -200,7 +88,9 @@ class _StandingsTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: AppColors.textSecondary.withValues(alpha: 0.3),
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -323,10 +213,7 @@ class _StandingRow extends StatelessWidget {
           SizedBox(width: 48, child: _ValueCell(goalDifference)),
           SizedBox(
             width: 48,
-            child: _ValueCell(
-              '${standing.points}',
-              bold: isLeader,
-            ),
+            child: _ValueCell('${standing.points}', bold: isLeader),
           ),
           const SizedBox(width: 12),
         ],

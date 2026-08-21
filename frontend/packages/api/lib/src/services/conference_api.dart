@@ -8,10 +8,10 @@ class ConferenceApi {
 
   ConferenceApi(this._client);
 
-  /// Lista as conferências de uma categoria (endpoint público).
-  Future<List<Conference>> listByCategory(String categoryId) =>
+  /// Lista as conferências de um campeonato (endpoint público).
+  Future<List<Conference>> listByCompetition(String competitionId) =>
       _client.getList(
-        '/api/v1/categories/$categoryId/conferences',
+        '/api/v1/competitions/$competitionId/conferences',
         Conference.fromJson,
       );
 
@@ -20,26 +20,15 @@ class ConferenceApi {
       _client.getOne('/api/v1/conferences/$id', Conference.fromJson);
 
   Future<Conference> create({
-    required String categoryId,
+    required String competitionId,
     required String name,
-  }) =>
-      _client.post(
-        '/api/v1/categories/$categoryId/conferences',
-        {
-          'name': name,
-        },
-        Conference.fromJson,
-      );
+  }) => _client.post('/api/v1/competitions/$competitionId/conferences', {
+    'name': name,
+  }, Conference.fromJson);
 
-  Future<Conference> update(
-    String id, {
-    required String name,
-  }) =>
-      _client.put(
-        '/api/v1/conferences/$id',
-        {
-          'name': name,
-        },
-        Conference.fromJson,
-      );
+  Future<Conference> update(String id, {required String name}) => _client.put(
+    '/api/v1/conferences/$id',
+    {'name': name},
+    Conference.fromJson,
+  );
 }

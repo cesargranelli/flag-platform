@@ -33,25 +33,21 @@ class CompetitionDetailScreen extends ConsumerWidget {
         leading: AppBackButton(fallbackRoute: '/competitions'),
       ),
       body: compFuture == null
-          ? _buildDetail(context, competition!)
+          ? _buildDetail(context, ref, competition!)
           : compFuture.when(
-              loading: () => const AppLoading(message: 'Carregando campeonato...'),
+              loading: () =>
+                  const AppLoading(message: 'Carregando campeonato...'),
               error: (error, stackTrace) => AppErrorState(
                 message: 'Não foi possível carregar o campeonato',
                 onRetry: () =>
                     ref.invalidate(competitionProvider(competitionId!)),
               ),
-              data: (comp) => _buildDetail(context, comp),
+              data: (comp) => _buildDetail(context, ref, comp),
             ),
     );
   }
 
-  Widget _buildDetail(BuildContext context, Competition comp) {
-    final competitions = ref.watch(competitionsProvider);
-    final compItems = competitions.valueOrNull ?? const [];
-    final effectiveComp =
-        compId != null && compItems.isNotEmpty ? compItems.first.id : null;
-
+  Widget _buildDetail(BuildContext context, WidgetRef ref, Competition comp) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: AppLayout.detail(
@@ -73,8 +69,11 @@ class CompetitionDetailScreen extends ConsumerWidget {
                             color: AppColors.primary.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Icon(Icons.emoji_events_outlined,
-                              color: AppColors.primary, size: 36),
+                          child: const Icon(
+                            Icons.emoji_events_outlined,
+                            color: AppColors.primary,
+                            size: 36,
+                          ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -84,7 +83,9 @@ class CompetitionDetailScreen extends ConsumerWidget {
                               Text(
                                 comp.name,
                                 style: const TextStyle(
-                                    fontSize: 22, fontWeight: FontWeight.bold),
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -93,7 +94,9 @@ class CompetitionDetailScreen extends ConsumerWidget {
                                         ? 'Organização #${comp.organizationId}'
                                         : ''),
                                 style: const TextStyle(
-                                    fontSize: 14, color: AppColors.textSecondary),
+                                  fontSize: 14,
+                                  color: AppColors.textSecondary,
+                                ),
                               ),
                             ],
                           ),
@@ -101,84 +104,64 @@ class CompetitionDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        _statusChip(comp.status),
-                      ],
-                    ),
+                    Row(children: [_statusChip(comp.status)]),
                     const SizedBox(height: 16),
-                    _infoCard(
-                      'Atributos',
-                      [
-                        _row('Modalidade', comp.modalityId != null ? 'Definido' : 'Não definido'),
-                        _row('Gênero', comp.gender ?? 'Não definido'),
-                        _row('Faixa Etária', comp.ageGroup ?? 'Não definido'),
-                      ],
-                    ),
+                    _infoCard('Atributos', [
+                      _row(
+                        'Modalidade',
+                        comp.modalityId != null ? 'Definido' : 'Não definido',
+                      ),
+                      _row('Gênero', comp.gender ?? 'Não definido'),
+                      _row('Faixa Etária', comp.ageGroup ?? 'Não definido'),
+                    ]),
                     const SizedBox(height: 16),
-                    _infoCard(
-                      'Ações dentro do campeonato',
-                      [
-                        _actionRowButton(
-                          context,
-                          icon: Icons.account_tree_outlined,
-                          label: 'Gerenciar Conferências',
-                          onTap: () => context.push(
-                            '/conferences',
-                            extra: (competitionId: comp.id),
-                          ),
-                        ),
-                        _actionRowButton(
-                          context,
-                          icon: Icons.account_tree_outlined,
-                          label: 'Gerenciar Divisões',
-                          onTap: () => context.push(
-                            '/divisions',
-                            extra: (competitionId: comp.id),
-                          ),
-                        ),
-                        _actionRowButton(
-                          context,
-                          Icons.groups,
-                          label: 'Associar Clubes',
-                          onTap: () => context.push(
-                            '/teams',
-                            extra: (competitionId: comp.id),
-                          ),
-                        ),
-                      ],
-                    ),
+                    _infoCard('Ações dentro do campeonato', [
+                      _actionRowButton(
+                        context,
+                        icon: Icons.account_tree_outlined,
+                        label: 'Gerenciar Conferências e Divisões',
+                        onTap: () {
+                          ref.read(selectedCompetitionProvider.notifier).state =
+                              comp.id;
+                          context.push('/groupings');
+                        },
+                      ),
+                      _actionRowButton(
+                        context,
+                        icon: Icons.groups,
+                        label: 'Associar Clubes',
+                        onTap: () {
+                          ref.read(selectedCompetitionProvider.notifier).state =
+                              comp.id;
+                          context.push('/teams');
+                        },
+                      ),
+                    ]),
                     const SizedBox(height: 12),
-                    _infoCard(
-                      'Informações',
-                      [
-                        _row('Nome', comp.name),
-                        _row('Status', _statusLabel(comp.status)),
-                        if (comp.organizationName != null)
-                          _row('Organização', comp.organizationName!),
-                        if (comp.description != null && comp.description!.isNotEmpty)
-                          _row('Descrição', comp.description!),
-                      ],
-                    ),
+                    _infoCard('Informações', [
+                      _row('Nome', comp.name),
+                      _row('Status', _statusLabel(comp.status)),
+                      if (comp.organizationName != null)
+                        _row('Organização', comp.organizationName!),
+                      if (comp.description != null &&
+                          comp.description!.isNotEmpty)
+                        _row('Descrição', comp.description!),
+                    ]),
                     const SizedBox(height: 12),
-                    _infoCard(
-                      'Período',
-                      [
-                        if (comp.startDate != null)
-                          _row('Início', _formatDate(comp.startDate!)),
-                        if (comp.endDate != null)
-                          _row('Fim', _formatDate(comp.endDate!)),
-                        if (comp.startDate == null && comp.endDate == null)
-                          _row('Período', 'Não definido'),
-                      ],
-                    ),
+                    _infoCard('Período', [
+                      if (comp.startDate != null)
+                        _row('Início', _formatDate(comp.startDate!)),
+                      if (comp.endDate != null)
+                        _row('Fim', _formatDate(comp.endDate!)),
+                      if (comp.startDate == null && comp.endDate == null)
+                        _row('Período', 'Não definido'),
+                    ]),
                     const SizedBox(height: 12),
                   ],
                 ),
               ),
             ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -194,8 +177,7 @@ class CompetitionDetailScreen extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          Icon(icon,
-              color: AppColors.primary, size: 20),
+          Icon(icon, color: AppColors.primary, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: TextButton(
@@ -203,7 +185,10 @@ class CompetitionDetailScreen extends ConsumerWidget {
               child: Text(
                 label,
                 style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.primary),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.primary,
+                ),
               ),
             ),
           ),
@@ -235,13 +220,16 @@ class CompetitionDetailScreen extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        crossAxisAlignment: Alignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 120,
             child: Text(
               label,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
           Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
@@ -251,7 +239,7 @@ class CompetitionDetailScreen extends ConsumerWidget {
   }
 
   Widget _statusChip(CompetitionStatus status) {
-    final color = switch {
+    final color = switch (status) {
       CompetitionStatus.draft => AppColors.textSecondary,
       CompetitionStatus.published => AppColors.success,
       CompetitionStatus.finished => AppColors.danger,
@@ -269,11 +257,11 @@ class CompetitionDetailScreen extends ConsumerWidget {
     );
   }
 
-  String _statusLabel(CompetitionStatus status) => switch {
-        CompetitionStatus.draft => 'Rascunho',
-        CompetitionStatus.published => 'Publicado',
-        CompetitionStatus.finished => 'Encerrado',
-      };
+  String _statusLabel(CompetitionStatus status) => switch (status) {
+    CompetitionStatus.draft => 'Rascunho',
+    CompetitionStatus.published => 'Publicado',
+    CompetitionStatus.finished => 'Encerrado',
+  };
 
   String _formatDate(DateTime value) {
     final local = value.toLocal();

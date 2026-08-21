@@ -8,64 +8,48 @@ class TeamApi {
 
   TeamApi(this._client);
 
-  Future<List<Team>> listByCategory(String categoryId) => _client.getList(
-        '/api/v1/categories/$categoryId/teams',
-        Team.fromJson,
-      );
-
+  /// Lista os times de um campeonato (endpoint público).
   Future<List<Team>> listByCompetition(String competitionId) => _client.getList(
-        '/api/v1/competitions/$competitionId/teams',
-        Team.fromJson,
-      );
+    '/api/v1/competitions/$competitionId/teams',
+    Team.fromJson,
+  );
 
   Future<Team> getById(String id) =>
       _client.getOne('/api/v1/teams/$id', Team.fromJson);
 
   Future<Team> create({
-    required String categoryId,
+    required String competitionId,
     String? divisionId,
     required String name,
     String? shortName,
     String? document,
     DocumentType? documentType,
     String? logoUrl,
-  }) =>
-      _client.post(
-        '/api/v1/teams',
-        {
-          'categoryId': categoryId,
-          'divisionId': ?divisionId,
-          'name': name,
-          'shortName': ?shortName,
-          'document': ?document,
-          'documentType': documentType?.toJson(),
-          'logoUrl': ?logoUrl,
-        },
-        Team.fromJson,
-      );
+  }) => _client.post('/api/v1/competitions/$competitionId/teams', {
+    'divisionId': ?divisionId,
+    'name': name,
+    'shortName': ?shortName,
+    'document': ?document,
+    'documentType': documentType?.toJson(),
+    'logoUrl': ?logoUrl,
+  }, Team.fromJson);
 
   Future<Team> update(
     String id, {
-    required String categoryId,
+    required String competitionId,
     String? divisionId,
     required String name,
     String? shortName,
     String? document,
     DocumentType? documentType,
     String? logoUrl,
-  }) =>
-      _client.put(
-        '/api/v1/teams/$id',
-        {
-          'categoryId': categoryId,
-          'divisionId': ?divisionId,
-          'name': name,
-          'shortName': ?shortName,
-          'document': ?document,
-          'documentType': documentType?.toJson(),
-          'logoUrl': ?logoUrl,
-        },
-        Team.fromJson,
-      );
+  }) => _client.put('/api/v1/teams/$id', {
+    'competitionId': competitionId,
+    'divisionId': ?divisionId,
+    'name': name,
+    'shortName': ?shortName,
+    'document': ?document,
+    'documentType': documentType?.toJson(),
+    'logoUrl': ?logoUrl,
+  }, Team.fromJson);
 }
-

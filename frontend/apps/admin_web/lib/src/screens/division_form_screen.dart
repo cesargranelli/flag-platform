@@ -30,8 +30,7 @@ class DivisionFormScreen extends ConsumerStatefulWidget {
   final DivisionFormArgs? args;
 
   @override
-  ConsumerState<DivisionFormScreen> createState() =>
-      _DivisionFormScreenState();
+  ConsumerState<DivisionFormScreen> createState() => _DivisionFormScreenState();
 }
 
 class _DivisionFormScreenState extends ConsumerState<DivisionFormScreen> {
@@ -63,7 +62,8 @@ class _DivisionFormScreenState extends ConsumerState<DivisionFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final competitionId = _competitionId ?? ref.watch(selectedCompetitionProvider);
+    final competitionId =
+        _competitionId ?? ref.read(selectedCompetitionProvider);
     final conferenceId = _conferenceId;
 
     if (competitionId == null || competitionId.isEmpty) {
@@ -108,7 +108,10 @@ class _DivisionFormScreenState extends ConsumerState<DivisionFormScreen> {
   Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
     final compItems = competitions.valueOrNull ?? const [];
-    final effectiveComp = _competitionId ?? ref.watch(selectedCompetitionProvider) ?? (compItems.isNotEmpty ? compItems.first.id : null);
+    final effectiveComp =
+        _competitionId ??
+        ref.watch(selectedCompetitionProvider) ??
+        (compItems.isNotEmpty ? compItems.first.id : null);
 
     return Scaffold(
       appBar: AppBar(
@@ -130,13 +133,19 @@ class _DivisionFormScreenState extends ConsumerState<DivisionFormScreen> {
                     border: OutlineInputBorder(),
                   ),
                   items: compItems
-                      .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                      .map(
+                        (c) =>
+                            DropdownMenuItem(value: c.id, child: Text(c.name)),
+                      )
                       .toList(),
                   onChanged: (value) {
-                    ref.read(selectedCompetitionProvider.notifier).state = value;
+                    setState(() => _competitionId = value);
+                    ref.read(selectedCompetitionProvider.notifier).state =
+                        value;
                   },
-                  validator: (value) =>
-                      (value == null || value.isEmpty) ? 'Selecione o campeonato' : null,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Selecione o campeonato'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -156,8 +165,9 @@ class _DivisionFormScreenState extends ConsumerState<DivisionFormScreen> {
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                        fontWeight: FontWeight.w600),
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 24),

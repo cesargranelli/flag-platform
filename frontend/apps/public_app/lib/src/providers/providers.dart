@@ -47,24 +47,14 @@ final gameScoreEventsProvider = FutureProvider.family<List<ScoreEvent>, String>(
   (ref, gameId) => ref.watch(gameApiProvider).listScoreEvents(gameId),
 );
 
-/// Serviço de categorias.
-final categoryApiProvider = Provider<CategoryApi>(
-  (ref) => CategoryApi(ref.watch(apiClientProvider)),
-);
-
-/// Categorias de uma competição, ordenadas por nome.
-final competitionCategoriesProvider = FutureProvider.family<List<Category>, String>(
-  (ref, competitionId) =>
-      ref.watch(categoryApiProvider).listByCompetition(competitionId),
-);
-
 /// Serviço de classificação.
 final standingApiProvider = Provider<StandingApi>(
   (ref) => StandingApi(ref.watch(apiClientProvider)),
 );
 
-/// Tabela de classificação de uma categoria.
-final categoryStandingsProvider = FutureProvider.family<List<Standing>, String>(
-  (ref, categoryId) =>
-      ref.watch(standingApiProvider).listByCategory(categoryId),
-);
+/// Tabela de classificação de um campeonato (fluxo único, sem categorias).
+final competitionStandingsProvider =
+    FutureProvider.family<List<Standing>, String>(
+      (ref, competitionId) =>
+          ref.watch(standingApiProvider).listByCompetition(competitionId),
+    );

@@ -9,7 +9,7 @@ import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
 
 /// Argumentos de navegação do formulário de jogo.
-typedef GameFormArgs = ({String? categoryId, String? roundId, Game? game});
+typedef GameFormArgs = ({String? competitionId, String? roundId, Game? game});
 
 /// Formulário de criação/edição de jogo.
 class GameFormScreen extends ConsumerStatefulWidget {
@@ -24,7 +24,6 @@ class GameFormScreen extends ConsumerStatefulWidget {
 class _GameFormScreenState extends ConsumerState<GameFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  String? _categoryId;
   String? _roundId;
   String? _homeTeamId;
   String? _awayTeamId;
@@ -39,7 +38,6 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
   void initState() {
     super.initState();
     final game = widget.args?.game;
-    _categoryId = widget.args?.categoryId;
     _roundId = game?.roundId ?? widget.args?.roundId;
     _homeTeamId = game?.homeTeamId;
     _awayTeamId = game?.awayTeamId;
@@ -63,7 +61,13 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
     );
     if (time == null) return;
     setState(() {
-      _scheduledAt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      _scheduledAt = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
     });
   }
 
@@ -117,12 +121,16 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final rounds = _categoryId == null
+    // O campeonato vem dos argumentos de navegação; sem eles (ex.: deep link),
+    // usa o campeonato selecionado no contexto global.
+    final competitionId =
+        widget.args?.competitionId ?? ref.watch(selectedCompetitionProvider);
+    final rounds = competitionId == null
         ? null
-        : ref.watch(roundsProvider(_categoryId!));
-    final teams = _categoryId == null
+        : ref.watch(roundsProvider(competitionId));
+    final teams = competitionId == null
         ? null
-        : ref.watch(teamsProvider(_categoryId!));
+        : ref.watch(teamsProvider(competitionId));
     final venues = ref.watch(venuesProvider);
 
     return Scaffold(
@@ -138,126 +146,149 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-              (rounds?.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (e, s) => const Text('Erro ao carregar rodadas'),
-                data: (items) => DropdownButtonFormField<String>(
-                  initialValue: _roundId,
-                  decoration: const InputDecoration(
-                    labelText: 'Rodada',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: items
-                      .map((r) => DropdownMenuItem(
-                            value: r.id,
-                            child: Text('Rodada ${r.number} - ${r.name}'),
-                          ))
-                      .toList(),
-                  onChanged: (value) => setState(() => _roundId = value),
-                  validator: (value) =>
-                      (value == null || value.isEmpty) ? 'Selecione a rodada' : null,
-                ),
-              ) ??
-              const LinearProgressIndicator()),
-              const SizedBox(height: 12),
-              (teams?.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (e, s) => const Text('Erro ao carregar times'),
-                data: (items) => DropdownButtonFormField<String>(
-                  initialValue: _homeTeamId,
-                  decoration: const InputDecoration(
-                    labelText: 'Time da casa',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: items
-                      .map((t) => DropdownMenuItem(value: t.id, child: Text(t.name)))
-                      .toList(),
-                  onChanged: (value) => setState(() => _homeTeamId = value),
-                  validator: (value) =>
-                      (value == null || value.isEmpty) ? 'Selecione o time da casa' : null,
-                ),
-              ) ??
-              const LinearProgressIndicator()),
-              const SizedBox(height: 12),
-              (teams?.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (e, s) => const Text('Erro ao carregar times'),
-                data: (items) => DropdownButtonFormField<String>(
-                  initialValue: _awayTeamId,
-                  decoration: const InputDecoration(
-                    labelText: 'Time visitante',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: items
-                      .map((t) => DropdownMenuItem(value: t.id, child: Text(t.name)))
-                      .toList(),
-                  onChanged: (value) => setState(() => _awayTeamId = value),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Selecione o time visitante';
-                    }
-                    if (_homeTeamId != null && value == _homeTeamId) {
-                      return 'O time visitante deve ser diferente do time da casa';
-                    }
-                    return null;
-                  },
-                ),
-              ) ??
-              const LinearProgressIndicator()),
-              const SizedBox(height: 12),
-              venues.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (e, s) => const Text('Erro ao carregar campos'),
-                data: (items) => DropdownButtonFormField<String?>(
-                  initialValue: _venueId,
-                  decoration: const InputDecoration(
-                    labelText: 'Campo (opcional)',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: [
-                    const DropdownMenuItem<String?>(value: null, child: Text('Sem campo')),
-                    ...items.map((v) => DropdownMenuItem<String?>(
+                (rounds?.when(
+                      loading: () => const LinearProgressIndicator(),
+                      error: (e, s) => const Text('Erro ao carregar rodadas'),
+                      data: (items) => DropdownButtonFormField<String>(
+                        initialValue: _roundId,
+                        decoration: const InputDecoration(
+                          labelText: 'Rodada',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: items
+                            .map(
+                              (r) => DropdownMenuItem(
+                                value: r.id,
+                                child: Text('Rodada ${r.number} - ${r.name}'),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) => setState(() => _roundId = value),
+                        validator: (value) => (value == null || value.isEmpty)
+                            ? 'Selecione a rodada'
+                            : null,
+                      ),
+                    ) ??
+                    const LinearProgressIndicator()),
+                const SizedBox(height: 12),
+                (teams?.when(
+                      loading: () => const LinearProgressIndicator(),
+                      error: (e, s) => const Text('Erro ao carregar times'),
+                      data: (items) => DropdownButtonFormField<String>(
+                        initialValue: _homeTeamId,
+                        decoration: const InputDecoration(
+                          labelText: 'Time da casa',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: items
+                            .map(
+                              (t) => DropdownMenuItem(
+                                value: t.id,
+                                child: Text(t.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) =>
+                            setState(() => _homeTeamId = value),
+                        validator: (value) => (value == null || value.isEmpty)
+                            ? 'Selecione o time da casa'
+                            : null,
+                      ),
+                    ) ??
+                    const LinearProgressIndicator()),
+                const SizedBox(height: 12),
+                (teams?.when(
+                      loading: () => const LinearProgressIndicator(),
+                      error: (e, s) => const Text('Erro ao carregar times'),
+                      data: (items) => DropdownButtonFormField<String>(
+                        initialValue: _awayTeamId,
+                        decoration: const InputDecoration(
+                          labelText: 'Time visitante',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: items
+                            .map(
+                              (t) => DropdownMenuItem(
+                                value: t.id,
+                                child: Text(t.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) =>
+                            setState(() => _awayTeamId = value),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Selecione o time visitante';
+                          }
+                          if (_homeTeamId != null && value == _homeTeamId) {
+                            return 'O time visitante deve ser diferente do time da casa';
+                          }
+                          return null;
+                        },
+                      ),
+                    ) ??
+                    const LinearProgressIndicator()),
+                const SizedBox(height: 12),
+                venues.when(
+                  loading: () => const LinearProgressIndicator(),
+                  error: (e, s) => const Text('Erro ao carregar campos'),
+                  data: (items) => DropdownButtonFormField<String?>(
+                    initialValue: _venueId,
+                    decoration: const InputDecoration(
+                      labelText: 'Campo (opcional)',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('Sem campo'),
+                      ),
+                      ...items.map(
+                        (v) => DropdownMenuItem<String?>(
                           value: v.id,
                           child: Text(v.name),
-                        )),
-                  ],
-                  onChanged: (value) => setState(() => _venueId = value),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) => setState(() => _venueId = value),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                readOnly: true,
-                onTap: _pickSchedule,
-                decoration: InputDecoration(
-                  labelText: 'Horário',
-                  suffixIcon: const Icon(Icons.schedule),
-                  border: const OutlineInputBorder(),
-                  hintText: _scheduledAt == null
-                      ? 'Selecione data e hora'
-                      : '${_formatDate(_scheduledAt!)} ${_formatTime(_scheduledAt!)}',
+                const SizedBox(height: 12),
+                TextFormField(
+                  readOnly: true,
+                  onTap: _pickSchedule,
+                  decoration: InputDecoration(
+                    labelText: 'Horário',
+                    suffixIcon: const Icon(Icons.schedule),
+                    border: const OutlineInputBorder(),
+                    hintText: _scheduledAt == null
+                        ? 'Selecione data e hora'
+                        : '${_formatDate(_scheduledAt!)} ${_formatTime(_scheduledAt!)}',
+                  ),
                 ),
-              ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    _errorMessage!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: _submitting ? null : _save,
+                  child: _submitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Salvar'),
                 ),
               ],
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _submitting ? null : _save,
-                child: _submitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Salvar'),
-              ),
-            ],
+            ),
           ),
-        ),
         ),
       ),
     );

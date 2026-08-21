@@ -38,9 +38,17 @@ class TeamDetailScreen extends ConsumerWidget {
 
   Widget _buildDetail(BuildContext context, WidgetRef ref, Team team) {
     final competitions = ref.watch(competitionsProvider);
-    final competitionName = competitions.valueOrNull
+    final competitionName =
+        competitions.valueOrNull
             ?.where((c) => c.id == team.competitionId)
             .map((c) => c.name)
+            .firstOrNull ??
+        '';
+    final divisions = ref.watch(divisionsProvider(team.competitionId));
+    final divisionName =
+        divisions.valueOrNull
+            ?.where((d) => d.id == team.divisionId)
+            .map((d) => d.name)
             .firstOrNull ??
         '';
 
@@ -67,7 +75,9 @@ class TeamDetailScreen extends ConsumerWidget {
                               Text(
                                 team.name,
                                 style: const TextStyle(
-                                    fontSize: 22, fontWeight: FontWeight.bold),
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               if (team.shortName != null &&
@@ -75,8 +85,9 @@ class TeamDetailScreen extends ConsumerWidget {
                                 Text(
                                   team.shortName!,
                                   style: const TextStyle(
-                                      fontSize: 14,
-                                      color: AppColors.textSecondary),
+                                    fontSize: 14,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                             ],
                           ),
@@ -85,10 +96,8 @@ class TeamDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     FilledButton.icon(
-                      onPressed: () => context.push(
-                        '/teams/${team.id}/edit',
-                        extra: team,
-                      ),
+                      onPressed: () =>
+                          context.push('/teams/${team.id}/edit', extra: team),
                       icon: const Icon(Icons.edit_outlined),
                       label: const Text('Editar dados'),
                     ),
@@ -97,24 +106,25 @@ class TeamDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard(
-              'Informações',
-              [
-                _row('Nome', team.name),
-                _row('Sigla',
-                    team.shortName?.isNotEmpty == true ? team.shortName! : '—'),
-                _row('Competição', competitionName),
-                _row('Divisão', team.divisionName ?? '—'),
-                if (team.logoUrl != null && team.logoUrl!.isNotEmpty)
-                  _row('URL do logo', team.logoUrl!),
-              ],
-            ),
+            _infoCard('Informações', [
+              _row('Nome', team.name),
+              _row(
+                'Sigla',
+                team.shortName?.isNotEmpty == true ? team.shortName! : '—',
+              ),
+              _row('Competição', competitionName),
+              _row('Divisão', divisionName),
+              if (team.logoUrl != null && team.logoUrl!.isNotEmpty)
+                _row('URL do logo', team.logoUrl!),
+            ]),
             const SizedBox(height: 16),
             Text(
               'Criado em ${_formatDate(team.createdAt)}'
               '${team.updatedAt != null ? ' • Atualizado em ${_formatDate(team.updatedAt)}' : ''}',
               style: const TextStyle(
-                  fontSize: 12, color: AppColors.textSecondary),
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -124,7 +134,8 @@ class TeamDetailScreen extends ConsumerWidget {
 
   Widget _avatar(Team team, {required double size, required double radius}) {
     final logo = team.logoUrl;
-    final validLogo = logo != null &&
+    final validLogo =
+        logo != null &&
         logo.isNotEmpty &&
         (Uri.tryParse(logo)?.hasScheme ?? false);
     return Container(
@@ -139,12 +150,17 @@ class TeamDetailScreen extends ConsumerWidget {
           ? Image.network(
               logo,
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  const Icon(Icons.groups_outlined,
-                      color: AppColors.primary, size: 32),
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.groups_outlined,
+                color: AppColors.primary,
+                size: 32,
+              ),
             )
-          : const Icon(Icons.groups_outlined,
-              color: AppColors.primary, size: 32),
+          : const Icon(
+              Icons.groups_outlined,
+              color: AppColors.primary,
+              size: 32,
+            ),
     );
   }
 
@@ -177,7 +193,10 @@ class TeamDetailScreen extends ConsumerWidget {
             width: 120,
             child: Text(
               label,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
           Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),

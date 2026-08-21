@@ -7,6 +7,7 @@ import '../enums/game_status.dart';
 class Game {
   final String id;
   final String roundId;
+  final String? competitionId;
   final String? homeTeamId;
   final String? awayTeamId;
   final int? roundNumber;
@@ -26,6 +27,7 @@ class Game {
     required this.roundId,
     required this.scheduledAt,
     required this.status,
+    this.competitionId,
     this.homeTeamId,
     this.awayTeamId,
     this.roundNumber,
@@ -42,6 +44,7 @@ class Game {
   factory Game.fromJson(Map<String, dynamic> json) => Game(
     id: json['id'] as String,
     roundId: json['roundId'] as String,
+    competitionId: json['competitionId'] as String?,
     homeTeamId: json['homeTeamId'] as String?,
     awayTeamId: json['awayTeamId'] as String?,
     roundNumber: json['roundNumber'] as int?,
@@ -60,6 +63,7 @@ class Game {
   Map<String, dynamic> toJson() => {
     'id': id,
     'roundId': roundId,
+    if (competitionId != null) 'competitionId': competitionId,
     if (homeTeamId != null) 'homeTeamId': homeTeamId,
     if (awayTeamId != null) 'awayTeamId': awayTeamId,
     if (roundNumber != null) 'roundNumber': roundNumber,

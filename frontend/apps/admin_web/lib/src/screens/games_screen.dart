@@ -22,21 +22,20 @@ class GamesScreen extends ConsumerWidget {
 
     final compItems = competitions.valueOrNull ?? const [];
     final effectiveComp =
-        selectedCompetition ?? (compItems.isNotEmpty ? compItems.first.id : null);
+        selectedCompetition ??
+        (compItems.isNotEmpty ? compItems.first.id : null);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Jogos'),
         leading: BackButton(onPressed: () => context.go('/')),
         actions: [
-          if (effectiveComp != null)
+          if (selectedRound != null)
             IconButton(
               tooltip: 'Importar CSV',
               icon: const Icon(Icons.upload_file),
-              onPressed: () => context.push(
-                '/games/import',
-                extra: (competitionId: effectiveComp),
-              ),
+              onPressed: () =>
+                  context.push('/games/import', extra: selectedRound),
             ),
         ],
       ),
@@ -45,7 +44,11 @@ class GamesScreen extends ConsumerWidget {
               tooltip: 'Novo jogo',
               onPressed: () => context.push(
                 '/games/new',
-                extra: (competitionId: effectiveComp, game: null),
+                extra: (
+                  competitionId: effectiveComp,
+                  roundId: selectedRound,
+                  game: null,
+                ),
               ),
               child: const Icon(Icons.add),
             )
@@ -80,44 +83,62 @@ class GamesScreen extends ConsumerWidget {
                           border: OutlineInputBorder(),
                         ),
                         items: compItems
-                            .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                            .map(
+                              (c) => DropdownMenuItem(
+                                value: c.id,
+                                child: Text(c.name),
+                              ),
+                            )
                             .toList(),
                         onChanged: (value) {
-                          ref.read(selectedCompetitionProvider.notifier).state = value;
+                          ref.read(selectedCompetitionProvider.notifier).state =
+                              value;
                           ref.read(selectedRoundProvider.notifier).state = null;
                         },
                       ),
                       const SizedBox(height: 12),
-                      (selectedCompetition != null)
+                      (effectiveComp != null)
                           ? ref
-                              .watch(roundsProvider(effectiveComp!))
-                              .when(
-                                loading: () => const LinearProgressIndicator(),
-                                error: (e, s) => AppErrorState(
-                                  message:
-                                      'Não foi possível carregar as rodadas',
-                                  onRetry: () =>
-                                      ref.invalidate(roundsProvider(effectiveComp!)),
-                                ),
-                                data: (roundItems) => DropdownButtonFormField<String>(
-                                  key: ValueKey('round-$effectiveComp'),
-                                  initialValue:
-                                      selectedRound ?? roundItems.first.id,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Rodada',
-                                    border: OutlineInputBorder(),
+                                .watch(roundsProvider(effectiveComp))
+                                .when(
+                                  loading: () =>
+                                      const LinearProgressIndicator(),
+                                  error: (e, s) => AppErrorState(
+                                    message:
+                                        'Não foi possível carregar as rodadas',
+                                    onRetry: () => ref.invalidate(
+                                      roundsProvider(effectiveComp),
+                                    ),
                                   ),
-                                  items: roundItems
-                                      .map((r) => DropdownMenuItem(
-                                            value: r.id,
-                                            child:
-                                                Text('Rodada ${r.number} - ${r.name}'),
-                                          ))
-                                      .toList(),
-                                  onChanged: (value) =>
-                                      ref
-                                          .read(selectedRoundProvider.notifier)
-                                          .state = value,
+                                  data: (roundItems) =>
+                                      DropdownButtonFormField<String>(
+                                        key: ValueKey('round-$effectiveComp'),
+                                        initialValue:
+                                            selectedRound ??
+                                            roundItems.first.id,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Rodada',
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        items: roundItems
+                                            .map(
+                                              (r) => DropdownMenuItem(
+                                                value: r.id,
+                                                child: Text(
+                                                  'Rodada ${r.number} - ${r.name}',
+                                                ),
+                                              ),
+                                            )
+                                            .toList(),
+                                        onChanged: (value) =>
+                                            ref
+                                                    .read(
+                                                      selectedRoundProvider
+                                                          .notifier,
+                                                    )
+                                                    .state =
+                                                value,
+                                      ),
                                 )
                           : const LinearProgressIndicator(),
                     ],
@@ -131,58 +152,61 @@ class GamesScreen extends ConsumerWidget {
                         icon: Icons.format_list_numbered,
                       )
                     : ref
-                        .watch(gamesByRoundProvider(selectedRound))
-                        .when(
-                          loading: () => const AppLoading(
-                              message: 'Carregando jogos...'),
-                          error: (error, stackTrace) => AppErrorState(
-                            message: 'Não foi possível carregar os jogos',
-                            onRetry: () =>
-                                ref.invalidate(gamesByRoundProvider(selectedRound)),
-                          ),
-                          data: (items) {
-                            if (items.isEmpty) {
-                              return const AppEmptyState(
-                                message: 'Nenhum jogo cadastrado',
-                                icon: Icons.sports,
-                              );
-                            }
-                            return AppLayout.content(
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final columns =
-                                      constraints.maxWidth >= 600 ? 2 : 1;
-                                  return GridView.builder(
-                                    padding: const EdgeInsets.all(16),
-                                    itemCount: items.length,
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: columns,
-                                      crossAxisSpacing: 12,
-                                      mainAxisSpacing: 12,
-                                      mainAxisExtent: 104,
-                                    ),
-                                    itemBuilder: (context, index) {
-                                      final game = items[index];
-                                      return _gameCard(
-                                        context,
-                                        game,
-                                        onTap: () => context.push(
-                                          '/games/${game.id}',
-                                          extra: (
-                                            competitionId: effectiveComp,
-                                            roundId: game.roundId,
-                                            game: game,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
+                          .watch(gamesByRoundProvider(selectedRound))
+                          .when(
+                            loading: () => const AppLoading(
+                              message: 'Carregando jogos...',
+                            ),
+                            error: (error, stackTrace) => AppErrorState(
+                              message: 'Não foi possível carregar os jogos',
+                              onRetry: () => ref.invalidate(
+                                gamesByRoundProvider(selectedRound),
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                            data: (items) {
+                              if (items.isEmpty) {
+                                return const AppEmptyState(
+                                  message: 'Nenhum jogo cadastrado',
+                                  icon: Icons.sports,
+                                );
+                              }
+                              return AppLayout.content(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final columns = constraints.maxWidth >= 600
+                                        ? 2
+                                        : 1;
+                                    return GridView.builder(
+                                      padding: const EdgeInsets.all(16),
+                                      itemCount: items.length,
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: columns,
+                                            crossAxisSpacing: 12,
+                                            mainAxisSpacing: 12,
+                                            mainAxisExtent: 104,
+                                          ),
+                                      itemBuilder: (context, index) {
+                                        final game = items[index];
+                                        return _gameCard(
+                                          context,
+                                          game,
+                                          onTap: () => context.push(
+                                            '/games/${game.id}',
+                                            extra: (
+                                              competitionId: effectiveComp,
+                                              roundId: game.roundId,
+                                              game: game,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
               ),
             ],
           );
@@ -191,7 +215,11 @@ class GamesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _gameCard(BuildContext context, Game game, {required VoidCallback onTap}) {
+  Widget _gameCard(
+    BuildContext context,
+    Game game, {
+    required VoidCallback onTap,
+  }) {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -210,7 +238,9 @@ class GamesScreen extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -224,7 +254,9 @@ class GamesScreen extends ConsumerWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                    fontSize: 13, color: AppColors.textSecondary),
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
               ),
               if (game.homeScore != null || game.awayScore != null) ...[
                 const SizedBox(height: 4),
@@ -253,10 +285,7 @@ class GamesScreen extends ConsumerWidget {
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 12, color: color),
-      ),
+      child: Text(label, style: TextStyle(fontSize: 12, color: color)),
     );
   }
 }

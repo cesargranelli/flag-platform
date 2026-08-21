@@ -11,11 +11,7 @@ import '../widgets/app_back_button.dart';
 
 /// Formulário de criação/edição de rodada.
 class RoundFormScreen extends ConsumerStatefulWidget {
-  const RoundFormScreen({
-    super.key,
-    this.roundId,
-    this.round,
-  });
+  const RoundFormScreen({super.key, this.roundId, this.round});
 
   final String? roundId;
   final Round? round;
@@ -61,21 +57,25 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
 
     try {
       final api = ref.read(roundApiProvider);
+      final competitionId =
+          widget.round?.competitionId ??
+          ref.read(selectedCompetitionProvider) ??
+          '';
       final id = widget.roundId ?? widget.round?.id;
       if (id == null) {
         await api.create(
-          competitionId: ref.watch(selectedCompetitionProvider) ?? '',
+          competitionId: competitionId,
           number: int.parse(_number.text.trim()),
           name: _name.text.trim(),
-          type: _type,
+          type: _type ?? RoundType.regular,
         );
       } else {
         await api.update(
           id,
-          competitionId: ref.watch(selectedCompetitionProvider) ?? '',
+          competitionId: competitionId,
           number: int.parse(_number.text.trim()),
           name: _name.text.trim(),
-          type: _type,
+          type: _type ?? RoundType.regular,
         );
       }
       ref.invalidate(roundsProvider);
@@ -111,7 +111,8 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
     final competitions = ref.watch(competitionsProvider);
     final compItems = competitions.valueOrNull ?? const [];
     final effectiveComp =
-        ref.watch(selectedCompetitionProvider) ?? (compItems.isNotEmpty ? compItems.first.id : null);
+        ref.watch(selectedCompetitionProvider) ??
+        (compItems.isNotEmpty ? compItems.first.id : null);
 
     return Scaffold(
       appBar: AppBar(
@@ -133,21 +134,24 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
                     border: OutlineInputBorder(),
                   ),
                   items: compItems
-                      .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                      .map(
+                        (c) =>
+                            DropdownMenuItem(value: c.id, child: Text(c.name)),
+                      )
                       .toList(),
                   onChanged: (value) {
-                    ref.read(selectedCompetitionProvider.notifier).state = value;
+                    ref.read(selectedCompetitionProvider.notifier).state =
+                        value;
                   },
-                  validator: (value) =>
-                      (value == null || value.isEmpty) ? 'Selecione o campeonato' : null,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Selecione o campeonato'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _number,
                   keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   maxLength: 3,
                   decoration: const InputDecoration(
                     labelText: 'Número',
@@ -174,22 +178,27 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
                   initialValue: _type,
                   decoration: const InputDecoration(
                     labelText: 'Tipo',
-                    helperText: 'Fases: Regular, Playoffs, Wildcard, Semifinal, Final',
+                    helperText:
+                        'Fases: Regular, Playoffs, Wildcard, Semifinal, Final',
                     border: OutlineInputBorder(),
                   ),
                   items: RoundType.values
-                      .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))
+                      .map(
+                        (t) => DropdownMenuItem(value: t, child: Text(t.label)),
+                      )
                       .toList(),
                   onChanged: (value) => setState(() => _type = value),
-                  validator: (value) => value == null ? 'Selecione o tipo' : null,
+                  validator: (value) =>
+                      value == null ? 'Selecione o tipo' : null,
                 ),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 8),
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                        fontWeight: FontWeight.w600),
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 24),

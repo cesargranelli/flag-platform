@@ -105,9 +105,22 @@ final divisionApiProvider = Provider<DivisionApi>(
   (ref) => DivisionApi(ref.watch(apiClientProvider)),
 );
 
+/// Conferências de um campeonato.
+final conferencesProvider = FutureProvider.family<List<Conference>, String>(
+  (ref, competitionId) =>
+      ref.watch(conferenceApiProvider).listByCompetition(competitionId),
+);
+
+/// Divisões de um campeonato.
+final divisionsProvider = FutureProvider.family<List<Division>, String>(
+  (ref, competitionId) =>
+      ref.watch(divisionApiProvider).listByCompetition(competitionId),
+);
+
 /// Times de um campeonato.
 final teamsProvider = FutureProvider.family<List<Team>, String>(
-  (ref, competitionId) => ref.watch(teamApiProvider).listByCompetition(competitionId),
+  (ref, competitionId) =>
+      ref.watch(teamApiProvider).listByCompetition(competitionId),
 );
 
 /// Detalhe de um time por id.
@@ -122,7 +135,8 @@ final roundApiProvider = Provider<RoundApi>(
 
 /// Rodadas de um campeonato.
 final roundsProvider = FutureProvider.family<List<Round>, String>(
-  (ref, competitionId) => ref.watch(roundApiProvider).listByCompetition(competitionId),
+  (ref, competitionId) =>
+      ref.watch(roundApiProvider).listByCompetition(competitionId),
 );
 
 /// Detalhe de uma rodada por id.
@@ -184,4 +198,19 @@ final usersProvider = FutureProvider<List<User>>(
 /// Contas pendentes de aprovação (somente ADMIN).
 final pendingUsersProvider = FutureProvider<List<User>>(
   (ref) => ref.watch(authApiProvider).listPendingUsers(),
+);
+
+/// Serviço de campos de jogo.
+final venueApiProvider = Provider<VenueApi>(
+  (ref) => VenueApi(ref.watch(apiClientProvider)),
+);
+
+/// Lista de campos de jogo.
+final venuesProvider = FutureProvider<List<Venue>>(
+  (ref) => ref.watch(venueApiProvider).list(),
+);
+
+/// Detalhe de um campo por id.
+final venueProvider = FutureProvider.family<Venue, String>(
+  (ref, id) => ref.watch(venueApiProvider).getById(id),
 );

@@ -18,11 +18,11 @@ class RostersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final competitions = ref.watch(competitionsProvider);
     final selectedCompetition = ref.watch(selectedCompetitionProvider);
-    final selectedTeam = ref.watch(selectedTeamProvider);
 
     final compItems = competitions.valueOrNull ?? const [];
     final effectiveComp =
-        selectedCompetition ?? (compItems.isNotEmpty ? compItems.first.id : null);
+        selectedCompetition ??
+        (compItems.isNotEmpty ? compItems.first.id : null);
 
     return Scaffold(
       appBar: AppBar(
@@ -33,15 +33,18 @@ class RostersScreen extends ConsumerWidget {
             IconButton(
               tooltip: 'Importar CSV',
               icon: const Icon(Icons.upload_file),
-              onPressed: () => context.push('/rosters/import', extra: effectiveComp),
+              onPressed: () =>
+                  context.push('/rosters/import', extra: effectiveComp),
             ),
         ],
       ),
       floatingActionButton: effectiveComp != null
           ? FloatingActionButton(
               tooltip: 'Inscrever atleta',
-              onPressed: () =>
-                  context.push('/teams/new', extra: (competitionId: effectiveComp)),
+              onPressed: () => context.push(
+                '/teams/new',
+                extra: (competitionId: effectiveComp),
+              ),
               child: const Icon(Icons.person_add_alt_1),
             )
           : null,
@@ -75,12 +78,16 @@ class RostersScreen extends ConsumerWidget {
                           border: OutlineInputBorder(),
                         ),
                         items: compItems
-                            .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                            .map(
+                              (c) => DropdownMenuItem(
+                                value: c.id,
+                                child: Text(c.name),
+                              ),
+                            )
                             .toList(),
                         onChanged: (value) {
-                          ref
-                              .read(selectedCompetitionProvider.notifier)
-                              .state = value;
+                          ref.read(selectedCompetitionProvider.notifier).state =
+                              value;
                           ref.read(selectedTeamProvider.notifier).state = null;
                         },
                       ),
@@ -91,54 +98,58 @@ class RostersScreen extends ConsumerWidget {
               Expanded(
                 child: effectiveComp != null
                     ? ref
-                        .watch(teamsProvider(effectiveComp!))
-                        .when(
-                          loading: () => const AppLoading(message: 'Carregando times...'),
-                          error: (error, stackTrace) => AppErrorState(
-                            message: 'Não foi possível carregar os times',
-                            onRetry: () =>
-                                ref.invalidate(teamsProvider(effectiveComp!)),
-                          ),
-                          data: (items) {
-                            if (items.isEmpty) {
-                              return const AppEmptyState(
-                                message: 'Nenhum time cadastrado',
-                                icon: Icons.groups_outlined,
+                          .watch(teamsProvider(effectiveComp))
+                          .when(
+                            loading: () => const AppLoading(
+                              message: 'Carregando times...',
+                            ),
+                            error: (error, stackTrace) => AppErrorState(
+                              message: 'Não foi possível carregar os times',
+                              onRetry: () =>
+                                  ref.invalidate(teamsProvider(effectiveComp)),
+                            ),
+                            data: (items) {
+                              if (items.isEmpty) {
+                                return const AppEmptyState(
+                                  message: 'Nenhum time cadastrado',
+                                  icon: Icons.groups_outlined,
+                                );
+                              }
+                              return AppLayout.content(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final columns = constraints.maxWidth >= 600
+                                        ? 2
+                                        : 1;
+                                    return GridView.builder(
+                                      padding: const EdgeInsets.all(16),
+                                      itemCount: items.length,
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: columns,
+                                            crossAxisSpacing: 12,
+                                            mainAxisSpacing: 12,
+                                            mainAxisExtent: 96,
+                                          ),
+                                      itemBuilder: (context, index) {
+                                        final team = items[index];
+                                        return _teamCard(
+                                          context,
+                                          ref,
+                                          team,
+                                          teamId: team.id,
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
                               );
-                            }
-                            return AppLayout.content(
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final columns =
-                                      constraints.maxWidth >= 600 ? 2 : 1;
-                                  return GridView.builder(
-                                    padding: const EdgeInsets.all(16),
-                                    itemCount: items.length,
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: columns,
-                                      crossAxisSpacing: 12,
-                                      mainAxisSpacing: 12,
-                                      mainAxisExtent: 96,
-                                    ),
-                                    itemBuilder: (context, index) {
-                                      final team = items[index];
-                                      return _teamCard(
-                                        context,
-                                        ref,
-                                        team,
-                                        teamId: team.id,
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        )
+                            },
+                          )
                     : const AppEmptyState(
                         message: 'Nenhum time cadastrado',
-                        icon: Icons.groups_outlined),
+                        icon: Icons.groups_outlined,
+                      ),
               ),
             ],
           );
@@ -168,9 +179,12 @@ class RostersScreen extends ConsumerWidget {
               ),
               child: Center(
                 child: Text(
-                  '${team.name}',
+                  team.name,
                   style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             ),
@@ -181,16 +195,18 @@ class RostersScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    team.sportName,
+                    team.sportName ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 14),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${team.athleteCount} atletas',
+                    '${team.athleteCount ?? 0} atletas',
                     style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary),
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
