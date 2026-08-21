@@ -28,7 +28,7 @@ class CompetitionApi {
     String? startDate,
     String? endDate,
     CompetitionStatus? status,
-    String? modalityId,
+    Modality? modality,
     String? gender,
     String? ageGroup,
   }) => _client.post(
@@ -40,7 +40,7 @@ class CompetitionApi {
       startDate: startDate,
       endDate: endDate,
       status: status,
-      modalityId: modalityId,
+      modality: modality,
       gender: gender,
       ageGroup: ageGroup,
     ),
@@ -55,7 +55,7 @@ class CompetitionApi {
     String? startDate,
     String? endDate,
     CompetitionStatus? status,
-    String? modalityId,
+    Modality? modality,
     String? gender,
     String? ageGroup,
   }) => _client.put(
@@ -67,7 +67,7 @@ class CompetitionApi {
       startDate: startDate,
       endDate: endDate,
       status: status,
-      modalityId: modalityId,
+      modality: modality,
       gender: gender,
       ageGroup: ageGroup,
     ),
@@ -81,7 +81,7 @@ class CompetitionApi {
     String? startDate,
     String? endDate,
     CompetitionStatus? status,
-    String? modalityId,
+    Modality? modality,
     String? gender,
     String? ageGroup,
   }) => {
@@ -92,7 +92,7 @@ class CompetitionApi {
     'startDate': ?startDate,
     'endDate': ?endDate,
     'status': ?(status?.toJson()),
-    'modalityId': ?modalityId,
+    'modality': ?(modality?.toJson()),
     'gender': ?gender,
     'ageGroup': ?ageGroup,
   };

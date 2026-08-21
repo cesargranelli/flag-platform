@@ -6,7 +6,6 @@ export 'src/services/game_api.dart';
 export 'src/services/category_api.dart';
 export 'src/services/conference_api.dart';
 export 'src/services/division_api.dart';
-export 'src/services/modality_api.dart';
 export 'src/services/standing_api.dart';
 export 'src/services/auth_api.dart';
 export 'src/services/venue_api.dart';
