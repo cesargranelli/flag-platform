@@ -18,15 +18,18 @@ import java.util.UUID;
         name = "teams",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_teams_category_name",
-                        columnNames = {"category_id", "name"}
+                        name = "uk_teams_competition_organization",
+                        columnNames = {"competition_id", "organization_id"}
                 )
         }
 )
 public class TeamEntity extends BaseEntity {
 
-    @Column(name = "category_id", nullable = false)
-    private UUID categoryId;
+    @Column(name = "organization_id", nullable = false)
+    private UUID organizationId;
+
+    @Column(name = "competition_id", nullable = false)
+    private UUID competitionId;
 
     /** Divisão opcional; a cadeia divisão -> conferência -> categoria é validada em serviço. */
     @Column(name = "division_id")

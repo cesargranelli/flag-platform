@@ -25,6 +25,13 @@ class Competition {
 
   final DateTime? endDate;
 
+  /// Atributos da competição (adicionados na V24).
+  final String? modalityId;
+
+  final String? gender;
+
+  final String? ageGroup;
+
   const Competition({
     required this.id,
     required this.name,
@@ -34,6 +41,9 @@ class Competition {
     this.description,
     this.startDate,
     this.endDate,
+    this.modalityId,
+    this.gender,
+    this.ageGroup,
   });
 
   factory Competition.fromJson(Map<String, dynamic> json) => Competition(
@@ -45,6 +55,9 @@ class Competition {
         description: json['description'] as String?,
         startDate: _tryParseDate(json['startDate']),
         endDate: _tryParseDate(json['endDate']),
+        modalityId: json['modalityId'] as String?,
+        gender: json['gender'] as String?,
+        ageGroup: json['ageGroup'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -56,6 +69,9 @@ class Competition {
         if (description != null) 'description': description,
         if (startDate != null) 'startDate': startDate!.toIso8601String(),
         if (endDate != null) 'endDate': endDate!.toIso8601String(),
+        if (modalityId != null) 'modalityId': modalityId,
+        if (gender != null) 'gender': gender,
+        if (ageGroup != null) 'ageGroup': ageGroup,
       };
 }
 

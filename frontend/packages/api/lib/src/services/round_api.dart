@@ -13,6 +13,11 @@ class RoundApi {
         Round.fromJson,
       );
 
+  Future<List<Round>> listByCompetition(String competitionId) => _client.getList(
+        '/api/v1/competitions/$competitionId/rounds',
+        Round.fromJson,
+      );
+
   /// Detalhe de uma rodada (endpoint público).
   Future<Round> getById(String id) =>
       _client.getOne('/api/v1/rounds/$id', Round.fromJson);

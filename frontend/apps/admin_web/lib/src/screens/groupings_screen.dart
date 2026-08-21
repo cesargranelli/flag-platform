@@ -7,10 +7,11 @@ import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 import 'division_form_screen.dart';
 
-/// Gestão de conferências e divisões por campeonato/categoria.
+/// Gestão de conferências e divisões por campeonato.
 ///
-/// As divisões aparecem agrupadas sob suas conferências; divisões sem
-/// conferência ficam na seção própria ao final da lista.
+/// O fluxo agora é: campeonato → conferências → divisões.
+/// As categories foram removidas; as conferências e divisões
+/// associam-se diretamente ao competition_id (migração V24).
 class GroupingsScreen extends ConsumerWidget {
   const GroupingsScreen({super.key});
 
@@ -18,31 +19,24 @@ class GroupingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final competitions = ref.watch(competitionsProvider);
     final selectedCompetition = ref.watch(selectedCompetitionProvider);
-    final selectedCategory = ref.watch(selectedCategoryProvider);
 
     final compItems = competitions.valueOrNull ?? const [];
     final effectiveComp =
         selectedCompetition ?? (compItems.isNotEmpty ? compItems.first.id : null);
-    final categories = effectiveComp == null
-        ? null
-        : ref.watch(categoriesProvider(effectiveComp));
-    final catItems = categories?.valueOrNull ?? const [];
-    final effectiveCat =
-        selectedCategory ?? (catItems.isNotEmpty ? catItems.first.id : null);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Conferências e divisões'),
         leading: BackButton(onPressed: () => context.go('/')),
       ),
-      floatingActionButton: effectiveCat == null
-          ? null
-          : FloatingActionButton(
+      floatingActionButton: effectiveComp != null
+          ? FloatingActionButton(
               tooltip: 'Nova conferência',
               onPressed: () =>
-                  context.push('/conferences/new', extra: effectiveCat),
+                  context.push('/conferences/new', extra: effectiveComp),
               child: const Icon(Icons.add),
-            ),
+            )
+          : null,
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -72,54 +66,24 @@ class GroupingsScreen extends ConsumerWidget {
                           border: OutlineInputBorder(),
                         ),
                         items: compItems
-                            .map((c) => DropdownMenuItem(
-                                  value: c.id,
-                                  child: Text(c.name),
-                                ))
+                            .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
                             .toList(),
                         onChanged: (value) {
                           ref
                               .read(selectedCompetitionProvider.notifier)
                               .state = value;
-                          ref.read(selectedCategoryProvider.notifier).state = null;
                         },
-                      ),
-                      const SizedBox(height: 12),
-                      categories!.when(
-                        loading: () => const LinearProgressIndicator(),
-                        error: (e, s) => AppErrorState(
-                          message: 'Não foi possível carregar as categorias',
-                          onRetry: () =>
-                              ref.invalidate(categoriesProvider(effectiveComp!)),
-                        ),
-                        data: (items) => DropdownButtonFormField<String>(
-                          initialValue: effectiveCat,
-                          decoration: const InputDecoration(
-                            labelText: 'Categoria',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: items
-                              .map((c) => DropdownMenuItem(
-                                    value: c.id,
-                                    child: Text(c.name),
-                                  ))
-                              .toList(),
-                          onChanged: (value) => ref
-                              .read(selectedCategoryProvider.notifier)
-                              .state = value,
-                        ),
                       ),
                     ],
                   ),
                 ),
               ),
               Expanded(
-                child: effectiveCat == null
-                    ? const AppEmptyState(
-                        message: 'Nenhuma categoria cadastrada',
-                        icon: Icons.category_outlined,
-                      )
-                    : _buildSections(context, ref, effectiveCat),
+                child: effectiveComp != null
+                    ? _buildSections(context, ref, effectiveComp!)
+                    : const AppEmptyState(
+                        message: 'Nenhuma conferência cadastrada',
+                        icon: Icons.category_outlined),
               ),
             ],
           );
@@ -128,9 +92,9 @@ class GroupingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSections(BuildContext context, WidgetRef ref, String categoryId) {
-    final conferences = ref.watch(conferencesProvider(categoryId));
-    final divisions = ref.watch(divisionsProvider(categoryId));
+  Widget _buildSections(BuildContext context, WidgetRef ref, String competitionId) {
+    final conferences = ref.watch(conferencesProvider(competitionId));
+    final divisions = ref.watch(divisionsProvider(competitionId));
     final divItems = divisions.valueOrNull ?? const <Division>[];
 
     return ListView(
@@ -143,7 +107,7 @@ class GroupingsScreen extends ConsumerWidget {
           ),
           error: (e, s) => AppErrorState(
             message: 'Não foi possível carregar as conferências',
-            onRetry: () => ref.invalidate(conferencesProvider(categoryId)),
+            onRetry: () => ref.invalidate(conferencesProvider(competitionId)),
           ),
           data: (confItems) {
             if (confItems.isEmpty) {
@@ -167,7 +131,7 @@ class GroupingsScreen extends ConsumerWidget {
                 return _conferenceCard(
                   context,
                   ref,
-                  categoryId,
+                  competitionId,
                   conf,
                   confDivisions,
                 );
@@ -187,7 +151,7 @@ class GroupingsScreen extends ConsumerWidget {
               action: TextButton.icon(
                 onPressed: () => context.push(
                   '/divisions/new',
-                  extra: DivisionFormArgs(categoryId: categoryId),
+                  extra: DivisionFormArgs(competitionId: competitionId),
                 ),
                 icon: const Icon(Icons.add),
                 label: const Text('Nova divisão'),
@@ -204,10 +168,10 @@ class GroupingsScreen extends ConsumerWidget {
                   : Column(
                       children: standalone
                           .map((d) =>
-                              _divisionRow(context, ref, categoryId, d))
+                              _divisionRow(context, ref, competitionId, d))
                           .toList(),
                     ),
-            );
+            ),
           },
         ),
       ],
@@ -217,7 +181,7 @@ class GroupingsScreen extends ConsumerWidget {
   Widget _conferenceCard(
     BuildContext context,
     WidgetRef ref,
-    String categoryId,
+    String competitionId,
     Conference conference,
     List<Division> divisions,
   ) {
@@ -252,7 +216,7 @@ class GroupingsScreen extends ConsumerWidget {
             ),
             if (divisions.isNotEmpty) ...[
               const SizedBox(height: 4),
-              ...divisions.map((d) => _divisionRow(context, ref, categoryId, d)),
+              ...divisions.map((d) => _divisionRow(context, ref, competitionId, d)),
             ],
             const SizedBox(height: 4),
             Align(
@@ -261,7 +225,7 @@ class GroupingsScreen extends ConsumerWidget {
                 onPressed: () => context.push(
                   '/divisions/new',
                   extra: DivisionFormArgs(
-                    categoryId: categoryId,
+                    competitionId: competitionId,
                     conferenceId: conference.id,
                   ),
                 ),
@@ -278,7 +242,7 @@ class GroupingsScreen extends ConsumerWidget {
   Widget _divisionRow(
     BuildContext context,
     WidgetRef ref,
-    String categoryId,
+    String competitionId,
     Division division,
   ) {
     return Padding(

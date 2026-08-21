@@ -15,10 +15,10 @@ import java.util.UUID;
 @Table(name = "divisions")
 public class DivisionEntity extends BaseEntity {
 
-    @Column(name = "category_id", nullable = false)
-    private UUID categoryId;
+    @Column(name = "competition_id", nullable = false)
+    private UUID competitionId;
 
-    /** Conferência opcional; nula indica divisão diretamente na categoria. */
+    /** Conferência opcional; nula indica divisão diretamente no campeonato. */
     @Column(name = "conference_id")
     private UUID conferenceId;
 

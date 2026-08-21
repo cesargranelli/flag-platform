@@ -8,9 +8,6 @@ import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
 
 /// Detalhe de uma rodada: apresenta os dados e oferece a edição.
-///
-/// A rodada não possui exclusão (backend sem DELETE). A edição é uma ação
-/// explícita na tela.
 class RoundDetailScreen extends ConsumerWidget {
   const RoundDetailScreen({super.key, this.roundId, this.round});
 
@@ -40,10 +37,9 @@ class RoundDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildDetail(BuildContext context, WidgetRef ref, Round round) {
-    final category = ref.watch(categoryProvider(round.categoryId)).valueOrNull;
     final competitions = ref.watch(competitionsProvider);
     final competitionName = competitions.valueOrNull
-            ?.where((c) => c.id == category?.competitionId)
+            ?.where((c) => c.id == round.competitionId)
             .map((c) => c.name)
             .firstOrNull ??
         '';
@@ -121,7 +117,6 @@ class RoundDetailScreen extends ConsumerWidget {
                 _row('Número', '${round.number}'),
                 _row('Nome', round.name),
                 _row('Tipo', round.type.label),
-                _row('Categoria', category?.name ?? '—'),
                 _row('Campeonato', competitionName),
               ],
             ),

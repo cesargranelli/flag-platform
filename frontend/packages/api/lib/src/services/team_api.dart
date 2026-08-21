@@ -13,6 +13,11 @@ class TeamApi {
         Team.fromJson,
       );
 
+  Future<List<Team>> listByCompetition(String competitionId) => _client.getList(
+        '/api/v1/competitions/$competitionId/teams',
+        Team.fromJson,
+      );
+
   Future<Team> getById(String id) =>
       _client.getOne('/api/v1/teams/$id', Team.fromJson);
 

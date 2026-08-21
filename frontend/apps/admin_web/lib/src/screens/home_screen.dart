@@ -19,13 +19,10 @@ class AdminHomeScreen extends ConsumerWidget {
     final userName = auth.state.user?.name;
     final isAdmin = auth.state.user?.role == 'ADMIN';
 
-    final items = <_MenuItem>[
+final items = <_MenuItem>[
       _MenuItem(Icons.business, 'Organizações', '/organizations'),
       _MenuItem(Icons.emoji_events_outlined, AppStrings.competitions, '/competitions'),
-      _MenuItem(Icons.category_outlined, AppStrings.categories, '/categories'),
       _MenuItem(Icons.sports_soccer, AppStrings.venues, '/venues'),
-      _MenuItem(Icons.groups_outlined, AppStrings.teams, '/teams'),
-      _MenuItem(Icons.account_tree_outlined, 'Conferências e divisões', '/groupings'),
       _MenuItem(Icons.format_list_numbered, AppStrings.rounds, '/rounds'),
       _MenuItem(Icons.sports, AppStrings.games, '/games'),
       _MenuItem(Icons.person_outline, AppStrings.athletes, '/athletes'),

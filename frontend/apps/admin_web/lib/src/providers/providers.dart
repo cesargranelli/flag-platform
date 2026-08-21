@@ -33,9 +33,6 @@ final authControllerProvider = ChangeNotifierProvider<AuthController>((ref) {
 });
 
 /// Router com proteção de rotas.
-///
-/// Usa `ref.read` (e não `watch`) para manter a mesma instância do GoRouter
-/// entre notificações; o redirect reage ao estado via `refreshListenable`.
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.read(authControllerProvider);
   return AppRouter.build(auth);
@@ -71,11 +68,6 @@ final competitionProvider = FutureProvider.family<Competition, String>(
   (ref, id) => ref.watch(competitionApiProvider).getById(id),
 );
 
-/// Serviço de categorias.
-final categoryApiProvider = Provider<CategoryApi>(
-  (ref) => CategoryApi(ref.watch(apiClientProvider)),
-);
-
 /// Serviço de modalidades (catálogo).
 final modalityApiProvider = Provider<ModalityApi>(
   (ref) => ModalityApi(ref.watch(apiClientProvider)),
@@ -86,34 +78,17 @@ final modalitiesProvider = FutureProvider<List<Modality>>(
   (ref) => ref.watch(modalityApiProvider).list(),
 );
 
-/// Campeonato selecionado na tela de categorias.
+/// Campeonato selecionado na tela de competições.
 final selectedCompetitionProvider = StateProvider<String?>((ref) => null);
 
-/// Categorias de um campeonato.
-final categoriesProvider = FutureProvider.family<List<Category>, String>(
-  (ref, competitionId) =>
-      ref.watch(categoryApiProvider).listByCompetition(competitionId),
-);
+/// Modalidade selecionada no form de campeonato.
+final selectedModalityProvider = StateProvider<String?>((ref) => null);
 
-/// Detalhe de uma categoria por id.
-final categoryProvider = FutureProvider.family<Category, String>(
-  (ref, id) => ref.watch(categoryApiProvider).getById(id),
-);
+/// Gênero selecionado no form de campeonato.
+final selectedGenderProvider = StateProvider<String?>((ref) => null);
 
-/// Serviço de campos de jogo.
-final venueApiProvider = Provider<VenueApi>(
-  (ref) => VenueApi(ref.watch(apiClientProvider)),
-);
-
-/// Lista de campos da tela de gestão.
-final venuesProvider = FutureProvider<List<Venue>>(
-  (ref) => ref.watch(venueApiProvider).list(),
-);
-
-/// Detalhe de um campo por id.
-final venueProvider = FutureProvider.family<Venue, String>(
-  (ref, id) => ref.watch(venueApiProvider).getById(id),
-);
+/// Faixa etária selecionada no form de campeonato.
+final selectedAgeGroupProvider = StateProvider<String?>((ref) => null);
 
 /// Serviço de times.
 final teamApiProvider = Provider<TeamApi>(
@@ -130,23 +105,9 @@ final divisionApiProvider = Provider<DivisionApi>(
   (ref) => DivisionApi(ref.watch(apiClientProvider)),
 );
 
-/// Conferências de uma categoria.
-final conferencesProvider = FutureProvider.family<List<Conference>, String>(
-  (ref, categoryId) =>
-      ref.watch(conferenceApiProvider).listByCategory(categoryId),
-);
-
-/// Divisões de uma categoria.
-final divisionsProvider = FutureProvider.family<List<Division>, String>(
-  (ref, categoryId) => ref.watch(divisionApiProvider).listByCategory(categoryId),
-);
-
-/// Categoria selecionada na tela de times.
-final selectedCategoryProvider = StateProvider<String?>((ref) => null);
-
-/// Times de uma categoria.
+/// Times de um campeonato.
 final teamsProvider = FutureProvider.family<List<Team>, String>(
-  (ref, categoryId) => ref.watch(teamApiProvider).listByCategory(categoryId),
+  (ref, competitionId) => ref.watch(teamApiProvider).listByCompetition(competitionId),
 );
 
 /// Detalhe de um time por id.
@@ -159,9 +120,9 @@ final roundApiProvider = Provider<RoundApi>(
   (ref) => RoundApi(ref.watch(apiClientProvider)),
 );
 
-/// Rodadas de uma categoria.
+/// Rodadas de um campeonato.
 final roundsProvider = FutureProvider.family<List<Round>, String>(
-  (ref, categoryId) => ref.watch(roundApiProvider).listByCategory(categoryId),
+  (ref, competitionId) => ref.watch(roundApiProvider).listByCompetition(competitionId),
 );
 
 /// Detalhe de uma rodada por id.

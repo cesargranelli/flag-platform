@@ -6,10 +6,11 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
-/// Gestão de rodadas: lista por campeonato/categoria e acesso ao detalhe.
+/// Gestão de rodadas: lista por campeonato e acesso ao detalhe.
 ///
-/// A cascata campeonato → categoria define o contexto da listagem; clicar em
-/// uma rodada navega para o detalhe.
+/// O fluxo agora é: campeonato → rodadas.
+/// As categories foram removidas; as rodadas associam-se diretamente
+/// ao competition_id (migração V24).
 class RoundsScreen extends ConsumerWidget {
   const RoundsScreen({super.key});
 
@@ -17,30 +18,24 @@ class RoundsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final competitions = ref.watch(competitionsProvider);
     final selectedCompetition = ref.watch(selectedCompetitionProvider);
-    final selectedCategory = ref.watch(selectedCategoryProvider);
+    final selectedRound = ref.watch(selectedRoundProvider);
 
     final compItems = competitions.valueOrNull ?? const [];
     final effectiveComp =
         selectedCompetition ?? (compItems.isNotEmpty ? compItems.first.id : null);
-    final categories = effectiveComp == null
-        ? null
-        : ref.watch(categoriesProvider(effectiveComp));
-    final catItems = categories?.valueOrNull ?? const [];
-    final effectiveCat =
-        selectedCategory ?? (catItems.isNotEmpty ? catItems.first.id : null);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Rodadas'),
         leading: BackButton(onPressed: () => context.go('/')),
       ),
-      floatingActionButton: effectiveCat == null
-          ? null
-          : FloatingActionButton(
+      floatingActionButton: effectiveComp != null
+          ? FloatingActionButton(
               tooltip: 'Nova rodada',
-              onPressed: () => context.push('/rounds/new', extra: effectiveCat),
+              onPressed: () => context.push('/rounds/new', extra: effectiveComp),
               child: const Icon(Icons.add),
-            ),
+            )
+          : null,
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -71,107 +66,65 @@ class RoundsScreen extends ConsumerWidget {
                           border: OutlineInputBorder(),
                         ),
                         items: compItems
-                            .map((c) => DropdownMenuItem(
-                                  value: c.id,
-                                  child: Text(c.name),
-                                ))
+                            .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
                             .toList(),
                         onChanged: (value) {
                           ref
                               .read(selectedCompetitionProvider.notifier)
                               .state = value;
-                          ref.read(selectedCategoryProvider.notifier).state = null;
+                          ref.read(selectedRoundProvider.notifier).state = null;
                         },
-                      ),
-                      const SizedBox(height: 12),
-                      categories!.when(
-                        loading: () => const LinearProgressIndicator(),
-                        error: (e, s) => AppErrorState(
-                          message: 'Não foi possível carregar as categorias',
-                          onRetry: () =>
-                              ref.invalidate(categoriesProvider(effectiveComp!)),
-                        ),
-                        data: (items) => Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            DropdownButtonFormField<String>(
-                              key: ValueKey('cat-$effectiveCat'),
-                              initialValue: effectiveCat,
-                              decoration: const InputDecoration(
-                                labelText: 'Categoria',
-                                border: OutlineInputBorder(),
-                              ),
-                              items: items
-                                  .map((c) => DropdownMenuItem(
-                                        value: c.id,
-                                        child: Text(c.name),
-                                      ))
-                                  .toList(),
-                              onChanged: (value) => ref
-                                  .read(selectedCategoryProvider.notifier)
-                                  .state = value,
-                            ),
-                            const SizedBox(height: 12),
-                            if (effectiveCat != null)
-                              Text(
-                                '${ref.watch(roundsProvider(effectiveCat)).valueOrNull?.length ?? 0} '
-                                '${ref.watch(roundsProvider(effectiveCat)).valueOrNull?.length == 1 ? 'rodada' : 'rodadas'}',
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.textSecondary),
-                              ),
-                          ],
-                        ),
                       ),
                     ],
                   ),
                 ),
               ),
               Expanded(
-                child: effectiveCat == null
-                    ? const AppEmptyState(
-                        message: 'Nenhuma categoria cadastrada',
-                        icon: Icons.category_outlined,
-                      )
-                    : ref.watch(roundsProvider(effectiveCat)).when(
-                        loading: () => const AppLoading(message: 'Carregando rodadas...'),
-                        error: (error, stackTrace) => AppErrorState(
-                          message: 'Não foi possível carregar as rodadas',
-                          onRetry: () =>
-                              ref.invalidate(roundsProvider(effectiveCat)),
-                        ),
-                        data: (items) {
-                          if (items.isEmpty) {
-                            return const AppEmptyState(
-                              message: 'Nenhuma rodada cadastrada',
-                              icon: Icons.format_list_numbered,
+                child: effectiveComp != null
+                    ? ref
+                        .watch(roundsProvider(effectiveComp!))
+                        .when(
+                          loading: () => const AppLoading(message: 'Carregando rodadas...'),
+                          error: (error, stackTrace) => AppErrorState(
+                            message: 'Não foi possível carregar as rodadas',
+                            onRetry: () =>
+                                ref.invalidate(roundsProvider(effectiveComp!)),
+                          ),
+                          data: (items) {
+                            if (items.isEmpty) {
+                              return const AppEmptyState(
+                                message: 'Nenhuma rodada cadastrada',
+                                icon: Icons.format_list_numbered,
+                              );
+                            }
+                            return AppLayout.content(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final columns =
+                                      constraints.maxWidth >= 600 ? 2 : 1;
+                                  return GridView.builder(
+                                    padding: const EdgeInsets.all(16),
+                                    itemCount: items.length,
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: columns,
+                                      crossAxisSpacing: 12,
+                                      mainAxisSpacing: 12,
+                                      mainAxisExtent: 96,
+                                    ),
+                                    itemBuilder: (context, index) {
+                                      final round = items[index];
+                                      return _roundCard(context, round);
+                                    },
+                                  );
+                                },
+                              ),
                             );
-                          }
-                          return AppLayout.content(
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final columns =
-                                    constraints.maxWidth >= 600 ? 2 : 1;
-                                return GridView.builder(
-                                  padding: const EdgeInsets.all(16),
-                                  itemCount: items.length,
-                                  gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: columns,
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 12,
-                                    mainAxisExtent: 96,
-                                  ),
-                                  itemBuilder: (context, index) {
-                                    final round = items[index];
-                                    return _roundCard(context, round);
-                                  },
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
+                          },
+                        )
+                    : const AppEmptyState(
+                        message: 'Nenhuma rodada cadastrada',
+                        icon: Icons.format_list_numbered),
               ),
             ],
           );

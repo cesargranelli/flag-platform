@@ -3,20 +3,17 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/auth_controller.dart';
 import '../screens/approvals_screen.dart';
-import '../screens/categories_screen.dart';
-import '../screens/category_form_screen.dart';
-import '../screens/category_detail_screen.dart';
+import '../screens/forgot_password_screen.dart';
+import '../screens/home_screen.dart';
+import '../screens/login_screen.dart';
+import '../screens/competitions_screen.dart';
 import '../screens/conference_form_screen.dart';
 import '../screens/division_form_screen.dart';
 import '../screens/groupings_screen.dart';
 import '../screens/competition_form_screen.dart';
 import '../screens/competition_detail_screen.dart';
-import '../screens/competitions_screen.dart';
-import '../screens/forgot_password_screen.dart';
-import '../screens/home_screen.dart';
-import '../screens/login_screen.dart';
-import '../screens/organization_form_screen.dart';
 import '../screens/organization_detail_screen.dart';
+import '../screens/organization_form_screen.dart';
 import '../screens/organizations_screen.dart';
 import '../screens/reset_password_screen.dart';
 import '../screens/venue_form_screen.dart';
@@ -167,42 +164,6 @@ class AppRouter {
             },
           ),
           GoRoute(
-            path: '/categories',
-            name: 'categories',
-            builder: (context, state) => const CategoriesScreen(),
-          ),
-          GoRoute(
-            path: '/categories/new',
-            name: 'categoryNew',
-            builder: (context, state) => const CategoryFormScreen(),
-          ),
-          GoRoute(
-            path: '/categories/:id',
-            name: 'categoryDetail',
-            builder: (context, state) {
-              final category = state.extra is Category
-                  ? state.extra as Category
-                  : null;
-              return CategoryDetailScreen(
-                categoryId: state.pathParameters['id'],
-                category: category,
-              );
-            },
-          ),
-          GoRoute(
-            path: '/categories/:id/edit',
-            name: 'categoryEdit',
-            builder: (context, state) {
-              final category = state.extra is Category
-                  ? state.extra as Category
-                  : null;
-              return CategoryFormScreen(
-                categoryId: state.pathParameters['id'],
-                category: category,
-              );
-            },
-          ),
-          GoRoute(
             path: '/venues',
             name: 'venues',
             builder: (context, state) => const VenuesScreen(),
@@ -240,15 +201,10 @@ class AppRouter {
             builder: (context, state) => const TeamsScreen(),
           ),
           GoRoute(
-            path: '/groupings',
-            name: 'groupings',
-            builder: (context, state) => const GroupingsScreen(),
-          ),
-          GoRoute(
             path: '/conferences/new',
             name: 'conferenceNew',
             builder: (context, state) => ConferenceFormScreen(
-              initialCategoryId: state.extra is String
+              competitionId: state.extra is String
                   ? state.extra as String
                   : null,
             ),
@@ -292,7 +248,7 @@ class AppRouter {
             path: '/teams/new',
             name: 'teamNew',
             builder: (context, state) => TeamFormScreen(
-              initialCategoryId: state.extra is String ? state.extra as String : null,
+              // competitionId removido; team agora tem organizationId + competitionId
             ),
           ),
           GoRoute(
@@ -326,7 +282,7 @@ class AppRouter {
             path: '/rounds/new',
             name: 'roundNew',
             builder: (context, state) => RoundFormScreen(
-              initialCategoryId: state.extra is String ? state.extra as String : null,
+              // competitionId removido do request direto; o service lida com o competition via division/competition lookup
             ),
           ),
           GoRoute(
@@ -366,35 +322,31 @@ class AppRouter {
           GoRoute(
             path: '/games/import',
             name: 'gameImport',
-            builder: (context, state) {
-              final extra = state.extra is GameImportArgs
-                  ? state.extra as GameImportArgs
-                  : null;
-              return GameImportScreen(
-                roundId: extra?.roundId ?? '',
-                categoryId: extra?.categoryId,
-              );
-            },
+            builder: (context, state) => GameImportScreen(
+              roundId: state.extra is String ? state.extra as String : '',
+            ),
           ),
-          GoRoute(
+GoRoute(
             path: '/games/:id',
             name: 'gameDetail',
-            builder: (context, state) {
-              final args = state.extra is GameFormArgs
-                  ? state.extra as GameFormArgs
-                  : null;
-              return GameDetailScreen(
-                gameId: state.pathParameters['id'],
-                game: args?.game,
-                args: args,
-              );
-            },
+            builder: (context, state) => GameDetailScreen(
+              gameId: state.pathParameters['id'],
+              game: state.extra is Game ? state.extra as Game : null,
+              args: null,
+            ),
           ),
           GoRoute(
             path: '/games/:id/edit',
             name: 'gameEdit',
             builder: (context, state) => GameFormScreen(
-              args: state.extra is GameFormArgs ? state.extra as GameFormArgs : null,
+              // competitionId removido; team agora tem competitionId + divisionId
+            ),
+          ),
+          GoRoute(
+            path: '/games/:id/edit',
+            name: 'gameEdit',
+            builder: (context, state) => GameFormScreen(
+              // competitionId removido; team agora tem competitionId + divisionId
             ),
           ),
           GoRoute(
@@ -467,4 +419,3 @@ class AppRouter {
           ),
         ],
       );
-}
