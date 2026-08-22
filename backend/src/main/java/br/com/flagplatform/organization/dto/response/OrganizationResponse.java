@@ -27,6 +27,8 @@ public record OrganizationResponse(
         String logoUrl,
         String primaryColor,
         String secondaryColor,
+        String tertiaryColor,
+        String quaternaryColor,
         String timezone,
         String locale,
         OrganizationStatus status,

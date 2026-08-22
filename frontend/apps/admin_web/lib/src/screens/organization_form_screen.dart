@@ -38,6 +38,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   late final TextEditingController _logoUrl;
   late final TextEditingController _primaryColor;
   late final TextEditingController _secondaryColor;
+  late final TextEditingController _tertiaryColor;
+  late final TextEditingController _quaternaryColor;
   late final TextEditingController _locale;
 
   String _country = 'BR';
@@ -80,6 +82,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     _logoUrl = TextEditingController(text: org?.logoUrl ?? '');
     _primaryColor = TextEditingController(text: org?.primaryColor ?? '');
     _secondaryColor = TextEditingController(text: org?.secondaryColor ?? '');
+    _tertiaryColor = TextEditingController(text: org?.tertiaryColor ?? '');
+    _quaternaryColor = TextEditingController(text: org?.quaternaryColor ?? '');
     _locale = TextEditingController(text: org?.locale ?? 'pt-BR');
     _country = org?.country.isNotEmpty == true ? org!.country : 'BR';
     _type = org?.organizationType;
@@ -88,7 +92,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     for (final controller in [
       _tradeName, _legalName, _abbreviation, _document, _presidentName,
       _presidentCpf, _email, _phone, _website, _instagram, _state, _city,
-      _logoUrl, _primaryColor, _secondaryColor, _locale,
+      _logoUrl, _primaryColor, _secondaryColor, _tertiaryColor,
+      _quaternaryColor, _locale,
     ]) {
       controller.addListener(_markDirty);
     }
@@ -104,7 +109,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     for (final controller in [
       _tradeName, _legalName, _abbreviation, _document, _presidentName,
       _presidentCpf, _email, _phone, _website, _instagram, _state, _city,
-      _logoUrl, _primaryColor, _secondaryColor, _locale,
+      _logoUrl, _primaryColor, _secondaryColor, _tertiaryColor,
+      _quaternaryColor, _locale,
     ]) {
       controller.dispose();
     }
@@ -137,6 +143,10 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
           'primaryColor': _primaryColor.text.trim(),
         if (_secondaryColor.text.trim().isNotEmpty)
           'secondaryColor': _secondaryColor.text.trim(),
+        if (_tertiaryColor.text.trim().isNotEmpty)
+          'tertiaryColor': _tertiaryColor.text.trim(),
+        if (_quaternaryColor.text.trim().isNotEmpty)
+          'quaternaryColor': _quaternaryColor.text.trim(),
         'timezone': _timezone,
         'locale': _locale.text.trim(),
       };
@@ -520,6 +530,14 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
               ],
             ),
             const SizedBox(height: 12),
+            Row(
+              children: [
+                _colorField('Cor terciária (opcional)', _tertiaryColor),
+                const SizedBox(width: 12),
+                _colorField('Cor quaternária (opcional)', _quaternaryColor),
+              ],
+            ),
+            const SizedBox(height: 12),
             _localeDropdown(),
           ]),
         ],
@@ -798,6 +816,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   Widget _brandPreview() {
     final primary = _parseHex(_primaryColor.text) ?? AppColors.primary;
     final secondary = _parseHex(_secondaryColor.text) ?? AppColors.secondary;
+    final tertiary = _parseHex(_tertiaryColor.text);
+    final quaternary = _parseHex(_quaternaryColor.text);
     final logo = _logoUrl.text.trim();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -869,7 +889,32 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
             ],
           ),
         ),
+        // Paleta completa (até 4 cores) quando terciária/quaternária definidas.
+        if (tertiary != null || quaternary != null) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _previewSwatch(primary),
+              _previewSwatch(secondary),
+              if (tertiary != null) _previewSwatch(tertiary),
+              if (quaternary != null) _previewSwatch(quaternary),
+            ],
+          ),
+        ],
       ],
+    );
+  }
+
+  Widget _previewSwatch(Color color) {
+    return Container(
+      width: 28,
+      height: 28,
+      margin: const EdgeInsets.only(right: 8),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.textSecondary, width: 0.5),
+      ),
     );
   }
 

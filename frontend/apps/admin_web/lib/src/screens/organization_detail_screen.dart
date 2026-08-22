@@ -151,6 +151,11 @@ class OrganizationDetailScreen extends ConsumerWidget {
                 _row('Cor primária', org.primaryColor!),
               if (org.secondaryColor != null && org.secondaryColor!.isNotEmpty)
                 _row('Cor secundária', org.secondaryColor!),
+              if (org.tertiaryColor != null && org.tertiaryColor!.isNotEmpty)
+                _row('Cor terciária', org.tertiaryColor!),
+              if (org.quaternaryColor != null &&
+                  org.quaternaryColor!.isNotEmpty)
+                _row('Cor quaternária', org.quaternaryColor!),
               if (org.logoUrl != null && org.logoUrl!.isNotEmpty)
                 _row('Logo', org.logoUrl!),
             ],

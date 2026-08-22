@@ -41,6 +41,8 @@ public class OrganizationEntity extends BaseEntity {
     private String logoUrl;
     private String primaryColor;
     private String secondaryColor;
+    private String tertiaryColor;
+    private String quaternaryColor;
     private String timezone;
     private String locale;
     private OrganizationStatus status;
