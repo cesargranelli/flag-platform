@@ -110,7 +110,7 @@ class OrganizationDetailScreen extends ConsumerWidget {
               if (org.abbreviation != null && org.abbreviation!.isNotEmpty)
                 _row('Sigla', org.abbreviation!),
               if (org.organizationType != null)
-                _row('Tipo', org.organizationType!.name),
+                _row('Tipo', _typeLabel(org.organizationType!)),
               if (org.document != null && org.document!.isNotEmpty)
                 _row('CNPJ', org.document!),
               _row('País', org.country),
@@ -148,14 +148,14 @@ class OrganizationDetailScreen extends ConsumerWidget {
             [
               if (org.locale.isNotEmpty) _row('Locale', org.locale),
               if (org.primaryColor != null && org.primaryColor!.isNotEmpty)
-                _row('Cor primária', org.primaryColor!),
+                _colorRow('Cor primária', org.primaryColor!),
               if (org.secondaryColor != null && org.secondaryColor!.isNotEmpty)
-                _row('Cor secundária', org.secondaryColor!),
+                _colorRow('Cor secundária', org.secondaryColor!),
               if (org.tertiaryColor != null && org.tertiaryColor!.isNotEmpty)
-                _row('Cor terciária', org.tertiaryColor!),
+                _colorRow('Cor terciária', org.tertiaryColor!),
               if (org.quaternaryColor != null &&
                   org.quaternaryColor!.isNotEmpty)
-                _row('Cor quaternária', org.quaternaryColor!),
+                _colorRow('Cor quaternária', org.quaternaryColor!),
               if (org.logoUrl != null && org.logoUrl!.isNotEmpty)
                 _row('Logo', org.logoUrl!),
             ],
@@ -213,6 +213,59 @@ class OrganizationDetailScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Linha de cor: swatch arredondado preenchido + valor hex legível.
+  Widget _colorRow(String label, String hex) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                  fontSize: 13, color: AppColors.textSecondary),
+            ),
+          ),
+          Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color: _parseHex(hex) ?? Colors.transparent,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: AppColors.textSecondary.withValues(alpha: 0.5),
+                width: 0.5,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            hex.toUpperCase(),
+            style: const TextStyle(fontSize: 13, letterSpacing: 0.3),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _typeLabel(OrganizationType type) => switch (type) {
+        OrganizationType.federation => 'Federação',
+        OrganizationType.league => 'Liga',
+        OrganizationType.association => 'Associação',
+        OrganizationType.university => 'Universitário',
+        OrganizationType.club => 'Clube',
+        OrganizationType.other => 'Outro',
+      };
+
+  /// Aceita "#RRGGBB" ou "RRGGBB"; retorna null se inválido.
+  Color? _parseHex(String? hex) {
+    if (hex == null || hex.isEmpty) return null;
+    final clean = hex.replaceAll('#', '').trim();
+    final value = int.tryParse('FF$clean', radix: 16);
+    return value == null ? null : Color(value);
   }
 
   String _formatDate(DateTime value) {
