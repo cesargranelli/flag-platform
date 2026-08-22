@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/club_assignment_modal.dart';
 import '../widgets/conference_form_modal.dart';
 import '../widgets/division_form_modal.dart';
 import '../widgets/edit_restriction_note.dart';
@@ -17,8 +18,8 @@ import '../widgets/edit_restriction_note.dart';
 /// suas divisões e ações de criação unificadas nos cabeçalhos de seção.
 /// O fluxo continua: campeonato → conferências → divisões (migração V24).
 ///
-/// Issue #258: criação/edição de conferências/divisões acontece em modais
-/// (sem rotas dedicadas).
+/// Issue #258: criação/edição de conferências/divisões e associação de
+/// clubes acontecem em modais (sem rotas dedicadas).
 class GroupingsScreen extends ConsumerWidget {
   const GroupingsScreen({super.key});
 
@@ -578,7 +579,16 @@ Widget _divisionRow(
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
-        if (canEdit)
+        if (canEdit) ...[
+          IconButton(
+            tooltip: 'Associar clubes',
+            icon: const Icon(Icons.group_add_outlined, size: 20),
+            onPressed: () => showClubAssignmentModal(
+              context,
+              competitionId: competitionId,
+              division: division,
+            ),
+          ),
           IconButton(
             tooltip: 'Editar divisão',
             icon: const Icon(Icons.edit_outlined, size: 20),
@@ -588,6 +598,7 @@ Widget _divisionRow(
               division: division,
             ),
           ),
+        ],
       ],
     ),
   );
