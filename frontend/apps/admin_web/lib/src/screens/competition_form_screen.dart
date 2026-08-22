@@ -28,6 +28,11 @@ class CompetitionFormScreen extends ConsumerStatefulWidget {
 class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  /// Issue #257 (A2): permite reverter o valor exibido do dropdown quando o
+  /// usuário cancela a confirmação de publicação (o FormField atualiza seu
+  /// estado interno antes de chamar onChanged).
+  final _statusFieldKey = GlobalKey<FormFieldState<CompetitionStatus>>();
+
   late final TextEditingController _name;
   late final TextEditingController _description;
   late final TextEditingController _organizationId;
@@ -58,7 +63,9 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
     _modality = null;
     _gender = null;
     _ageGroup = null;
-    _status = null;
+    // Issue #257 (A2): criação nasce sempre em Rascunho (default seguro);
+    // em edição o valor real chega via _applyCompetition.
+    _status = CompetitionStatus.draft;
   }
 
   /// Popula o formulário uma única vez com a competição carregada da API.
@@ -392,12 +399,20 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<CompetitionStatus>(
+                  key: _statusFieldKey,
                   initialValue: _status,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Status',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    // Issue #257 (A2): reforço em edição — publicar encerra
+                    // a possibilidade de editar o campeonato.
+                    helperText: _isEditing
+                        ? 'Campeonatos publicados não podem mais ser editados'
+                        : null,
                   ),
-                  items: CompetitionStatus.values
+                  // Issue #257 (A2): apenas Rascunho/Publicado; os ciclos de
+                  // Encerrar/Desativar têm ação dedicada no detail screen.
+                  items: _statusOptions
                       .map(
                         (s) => DropdownMenuItem(
                           value: s,
@@ -405,7 +420,17 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
                         ),
                       )
                       .toList(),
-                  onChanged: (value) => setState(() => _status = value),
+                  onChanged: (value) async {
+                    if (value == null || value == _status) return;
+                    if (value == CompetitionStatus.published &&
+                        !await _confirmPublish()) {
+                      // Cancelou: reverte a exibição do dropdown para o
+                      // status anterior (Rascunho).
+                      _statusFieldKey.currentState?.reset();
+                      return;
+                    }
+                    setState(() => _status = value);
+                  },
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<Modality>(
@@ -573,6 +598,50 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
         ),
       ),
     );
+  }
+
+  /// Issue #257 (A2): opções permitidas no formulário — apenas Rascunho e
+  /// Publicado (Encerrar/Desativar têm ação dedicada no detail screen).
+  ///
+  /// Se a competição carregada em edição estiver num status fora do fluxo
+  /// (legado), o valor atual é mantido na lista para o Dropdown não quebrar
+  /// por falta do item correspondente ao valor inicial.
+  List<CompetitionStatus> get _statusOptions {
+    const allowed = [
+      CompetitionStatus.draft,
+      CompetitionStatus.published,
+    ];
+    final current = _status;
+    if (current != null && !allowed.contains(current)) {
+      return [current, ...allowed];
+    }
+    return allowed;
+  }
+
+  /// Issue #257 (A2): publicação é irreversível — exige confirmação
+  /// explícita, no mesmo padrão de _confirm de competitions_screen.
+  Future<bool> _confirmPublish() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Publicar campeonato'),
+        content: const Text(
+          'Após publicar, o campeonato não poderá mais ser editado.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Publicar'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
   }
 
   String _statusLabel(CompetitionStatus status) => switch (status) {
