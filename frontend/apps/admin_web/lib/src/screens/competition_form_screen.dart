@@ -330,8 +330,8 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
                 message: competition.status == CompetitionStatus.published
                     ? 'Campeonato publicado — não é mais editável.'
                     : 'Campeonato '
-                        '${_statusLabel(competition.status).toLowerCase()} — '
-                        'não é mais editável.',
+                          '${_statusLabel(competition.status).toLowerCase()} — '
+                          'não é mais editável.',
                 icon: Icons.lock,
               ),
             );
@@ -630,51 +630,51 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
                         : null,
                   ),
                   const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _startDate,
-                        readOnly: true,
-                        onTap: () => _pickDate(_startDate),
-                        decoration: const InputDecoration(
-                          labelText: 'Início',
-                          suffixIcon: Icon(Icons.calendar_today),
-                          border: OutlineInputBorder(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _startDate,
+                          readOnly: true,
+                          onTap: () => _pickDate(_startDate),
+                          decoration: const InputDecoration(
+                            labelText: 'Início',
+                            suffixIcon: Icon(Icons.calendar_today),
+                            border: OutlineInputBorder(),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _endDate,
-                        readOnly: true,
-                        // Issue #257 (B3): calendário do Fim começa na data
-                        // de início informada (sem quebrar início vazio).
-                        onTap: () =>
-                            _pickDate(_endDate, minDate: _parsedStartDate),
-                        decoration: const InputDecoration(
-                          labelText: 'Fim',
-                          suffixIcon: Icon(Icons.calendar_today),
-                          border: OutlineInputBorder(),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _endDate,
+                          readOnly: true,
+                          // Issue #257 (B3): calendário do Fim começa na data
+                          // de início informada (sem quebrar início vazio).
+                          onTap: () =>
+                              _pickDate(_endDate, minDate: _parsedStartDate),
+                          decoration: const InputDecoration(
+                            labelText: 'Fim',
+                            suffixIcon: Icon(Icons.calendar_today),
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) {
+                            final start = _parsedStartDate;
+                            final end = value == null || value.isEmpty
+                                ? null
+                                : DateTime.tryParse(value);
+                            if (start != null &&
+                                end != null &&
+                                end.isBefore(start)) {
+                              return 'Data final deve ser maior ou igual à '
+                                  'data inicial';
+                            }
+                            return null;
+                          },
                         ),
-                        validator: (value) {
-                          final start = _parsedStartDate;
-                          final end = value == null || value.isEmpty
-                              ? null
-                              : DateTime.tryParse(value);
-                          if (start != null &&
-                              end != null &&
-                              end.isBefore(start)) {
-                            return 'Data final deve ser maior ou igual à '
-                                'data inicial';
-                          }
-                          return null;
-                        },
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                   if (canConfigureStructure) ...[
                     const SizedBox(height: 24),
                     Card(
