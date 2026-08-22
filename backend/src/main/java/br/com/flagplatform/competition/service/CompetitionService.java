@@ -9,6 +9,7 @@ import br.com.flagplatform.competition.dto.response.CompetitionResponse;
 import br.com.flagplatform.competition.dto.response.CompetitionSummaryResponse;
 import br.com.flagplatform.competition.entity.CompetitionEntity;
 import br.com.flagplatform.competition.exception.CompetitionNotFoundException;
+import br.com.flagplatform.competition.exception.CompetitionNotEditableException;
 import br.com.flagplatform.competition.exception.DuplicateCompetitionNameException;
 import br.com.flagplatform.competition.mapper.CompetitionMapper;
 import br.com.flagplatform.competition.repository.CompetitionRepository;
@@ -101,6 +102,13 @@ public class CompetitionService implements CompetitionLookup {
     @Transactional
     public CompetitionResponse update(UUID id, UpdateCompetitionRequest request) {
         CompetitionEntity entity = findEntityById(id);
+
+        // V250: edição permitida apenas enquanto rascunho — publicado,
+        // encerrado ou desativado não volta a ser editável.
+        if (entity.getStatus() != CompetitionStatus.DRAFT) {
+            throw new CompetitionNotEditableException(entity.getStatus());
+        }
+
         organizationLookup.assertExists(request.organizationId());
 
         if (repository.existsByOrganizationIdAndNameIgnoreCaseAndIdNot(

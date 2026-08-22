@@ -8,7 +8,6 @@ import br.com.flagplatform.common.pagination.PagedResponse;
 import br.com.flagplatform.common.validation.DocumentValidator;
 import br.com.flagplatform.organization.OrganizationLookup;
 import br.com.flagplatform.organization.dto.request.CreateOrganizationRequest;
-import br.com.flagplatform.organization.dto.request.UpdateOrganizationRequest;
 import br.com.flagplatform.organization.dto.response.OrganizationCreatedResponse;
 import br.com.flagplatform.organization.dto.response.OrganizationResponse;
 import br.com.flagplatform.organization.entity.OrganizationEntity;
@@ -92,22 +91,6 @@ public class OrganizationService implements OrganizationLookup {
     }
 
     @Transactional
-    public OrganizationResponse update(UUID id, UpdateOrganizationRequest request) {
-
-        OrganizationEntity entity = findEntityById(id);
-
-        if (repository.existsByTradeNameIgnoreCaseAndIdNot(request.tradeName(), id)) {
-            throw new DuplicateTradeNameException(request.tradeName());
-        }
-
-        validateDocument(request.document(), request.documentType(), id);
-        validatePresident(request.presidentCpf());
-
-        mapper.updateEntity(entity, request);
-
-        return mapper.toDetailResponse(repository.save(entity));
-    }
-
     /**
      * Valida o documento de uma organizacao: e obrigatorio informar CNPJ ou
      * CPF (um dos dois); o formato deve ser valido; o documento deve ser unico.

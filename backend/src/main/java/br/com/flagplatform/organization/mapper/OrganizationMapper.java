@@ -1,13 +1,11 @@
 package br.com.flagplatform.organization.mapper;
 
 import br.com.flagplatform.organization.dto.request.CreateOrganizationRequest;
-import br.com.flagplatform.organization.dto.request.UpdateOrganizationRequest;
 import br.com.flagplatform.organization.dto.response.OrganizationCreatedResponse;
 import br.com.flagplatform.organization.dto.response.OrganizationResponse;
 import br.com.flagplatform.organization.entity.OrganizationEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 import java.util.List;
 
@@ -18,10 +16,6 @@ public interface OrganizationMapper {
 
     @Mapping(target = "message", constant = "Organization created successfully")
     OrganizationCreatedResponse toResponse(OrganizationEntity entity);
-
-    OrganizationEntity updateEntity(
-            @MappingTarget OrganizationEntity entity,
-            UpdateOrganizationRequest request);
 
     OrganizationResponse toDetailResponse(OrganizationEntity entity);
 

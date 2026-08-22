@@ -3,7 +3,6 @@ package br.com.flagplatform.organization.controller;
 import br.com.flagplatform.common.security.CurrentUser;
 import br.com.flagplatform.common.security.SecurityExpressions;
 import br.com.flagplatform.organization.dto.request.CreateOrganizationRequest;
-import br.com.flagplatform.organization.dto.request.UpdateOrganizationRequest;
 import br.com.flagplatform.organization.dto.response.OrganizationCreatedResponse;
 import br.com.flagplatform.organization.dto.response.OrganizationResponse;
 import br.com.flagplatform.organization.service.OrganizationService;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -97,18 +95,6 @@ public class OrganizationController {
     public void reactivate(
             @Parameter(description = "Id da organização") @PathVariable UUID id) {
         service.reactivate(id);
-    }
-
-    @Operation(
-            summary = "Atualizar organização",
-            description = "Atualiza uma organização existente. Requer autenticação."
-    )
-    @PutMapping("/{id}")
-    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
-    public OrganizationResponse update(
-            @Parameter(description = "Id da organização") @PathVariable UUID id,
-            @Valid @RequestBody UpdateOrganizationRequest request) {
-        return service.update(id, request);
     }
 
 }
