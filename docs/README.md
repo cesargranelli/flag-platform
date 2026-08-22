@@ -16,7 +16,6 @@
 | Documento | Conteúdo |
 |-----------|----------|
 | [Visão de produto](product/vision.md) | Problema, solução, aplicações, roadmap |
-| [Backlog](product/backlog.md) | Fases, epics, issues e ordem de execução |
 
 ## Decisões de arquitetura (ADRs)
 
@@ -38,4 +37,4 @@
 
 ## Como ler esta documentação
 
-Comece pelo [overview](architecture/overview.md) para o contexto geral e siga para [fluxos lógicos](architecture/logical-flows.md) para os diagramas de ponta a ponta. Consulte os [ADRs](adr/) para entender as decisões de arquitetura e o [backlog](product/backlog.md) para o planejamento.
+Comece pelo [overview](architecture/overview.md) para o contexto geral e siga para [fluxos lógicos](architecture/logical-flows.md) para os diagramas de ponta a ponta. Consulte os [ADRs](adr/) para entender as decisões de arquitetura e as issues do GitHub para o planejamento.

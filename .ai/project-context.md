@@ -178,7 +178,7 @@ Se a resposta for não, fica fora do MVP.
 
 ### Como retomar a sessão
 - `opencode --continue` (ou selecionar a sessão no TUI) para voltar exatamente a esta conversa.
-- Se a sessão for perdida: este arquivo + `docs/product/backlog.md` + ADRs são o ponto de partida.
+- Se a sessão for perdida: este arquivo + issues do GitHub + ADRs são o ponto de partida.
 
 ---
 
