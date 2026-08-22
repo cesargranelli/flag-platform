@@ -9,6 +9,7 @@ import br.com.flagplatform.common.security.SecurityExpressions;
 import br.com.flagplatform.competition.service.CompetitionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -38,13 +39,16 @@ public class CompetitionController {
 
     @Operation(
             summary = "Criar campeonato",
-            description = "Cria um novo campeonato. Requer autenticação."
+            description = "Cria um novo campeonato. O usuário autenticado é registrado como criador "
+                    + "e passa a ser o único (além do ADMIN) autorizado a editá-lo e gerenciar seus recursos. Requer autenticação."
     )
     @PostMapping("/api/v1/competitions")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
-    public CompetitionResponse create(@Valid @RequestBody CreateCompetitionRequest request) {
-        return service.create(request);
+    public CompetitionResponse create(
+            @Valid @RequestBody CreateCompetitionRequest request,
+            Authentication authentication) {
+        return service.create(request, authentication.getName());
     }
 
     @Operation(
@@ -77,13 +81,16 @@ public class CompetitionController {
 
     @Operation(
             summary = "Desativar campeonato",
-            description = "Exclusão lógica: marca o campeonato como DISABLED. Ele deixa de aparecer nas listagens e só o ADMIN pode reativar."
+            description = "Exclusão lógica: marca o campeonato como DISABLED. Ele deixa de aparecer nas listagens e só o ADMIN pode reativar. "
+                    + "Permitido apenas ao criador do campeonato ou ADMIN."
     )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
     @DeleteMapping("/api/v1/competitions/{id}")
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public void deactivate(
-            @Parameter(description = "Id do campeonato") @PathVariable UUID id) {
-        service.deactivate(id);
+            @Parameter(description = "Id do campeonato") @PathVariable UUID id,
+            Authentication authentication) {
+        service.deactivate(id, authentication.getName());
     }
 
     @Operation(
@@ -112,14 +119,18 @@ public class CompetitionController {
 
     @Operation(
             summary = "Atualizar campeonato",
-            description = "Atualiza um campeonato existente. Requer autenticação."
+            description = "Atualiza um campeonato existente. Permitido apenas ao criador do campeonato ou ADMIN, "
+                    + "enquanto estiver em status DRAFT."
     )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
+    @ApiResponse(responseCode = "409", description = "Campeonato não está em status DRAFT")
     @PutMapping("/api/v1/competitions/{id}")
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public CompetitionResponse update(
             @Parameter(description = "Id do campeonato") @PathVariable UUID id,
-            @Valid @RequestBody UpdateCompetitionRequest request) {
-        return service.update(id, request);
+            @Valid @RequestBody UpdateCompetitionRequest request,
+            Authentication authentication) {
+        return service.update(id, request, authentication.getName());
     }
 
 }
