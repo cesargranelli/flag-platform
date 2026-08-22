@@ -17,7 +17,12 @@ class TeamApi {
   Future<Team> getById(String id) =>
       _client.getOne('/api/v1/teams/$id', Team.fromJson);
 
+  /// Cria um time.
+  ///
+  /// O backend espera `POST /api/v1/teams` com corpo completo
+  /// (`organizationId` e `competitionId` obrigatórios).
   Future<Team> create({
+    required String organizationId,
     required String competitionId,
     String? divisionId,
     required String name,
@@ -25,7 +30,9 @@ class TeamApi {
     String? document,
     DocumentType? documentType,
     String? logoUrl,
-  }) => _client.post('/api/v1/competitions/$competitionId/teams', {
+  }) => _client.post('/api/v1/teams', {
+    'organizationId': organizationId,
+    'competitionId': competitionId,
     'divisionId': ?divisionId,
     'name': name,
     'shortName': ?shortName,
@@ -34,8 +41,11 @@ class TeamApi {
     'logoUrl': ?logoUrl,
   }, Team.fromJson);
 
+  /// Atualiza um time enviando o MESMO corpo completo da criação
+  /// (o backend exige `organizationId` com `@NotNull`).
   Future<Team> update(
     String id, {
+    required String organizationId,
     required String competitionId,
     String? divisionId,
     required String name,
@@ -44,6 +54,7 @@ class TeamApi {
     DocumentType? documentType,
     String? logoUrl,
   }) => _client.put('/api/v1/teams/$id', {
+    'organizationId': organizationId,
     'competitionId': competitionId,
     'divisionId': ?divisionId,
     'name': name,

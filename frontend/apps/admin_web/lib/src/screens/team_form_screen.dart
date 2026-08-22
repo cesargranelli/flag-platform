@@ -26,6 +26,7 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
   late final TextEditingController _shortName;
   late final TextEditingController _document;
   late final TextEditingController _logoUrl;
+  String? _organizationId;
   String? _competitionId;
   String? _divisionId;
   DocumentType? _documentType;
@@ -43,6 +44,7 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
     _document = TextEditingController(text: team?.document ?? '');
     _logoUrl = TextEditingController(text: team?.logoUrl ?? '');
     _competitionId = widget.team?.competitionId;
+    _organizationId = team?.organizationId;
     _divisionId = team?.divisionId;
     _documentType = team?.documentType;
   }
@@ -67,8 +69,11 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
     try {
       final api = ref.read(teamApiProvider);
       final id = widget.teamId ?? widget.team?.id;
+      // organizationId é obrigatório no backend (@NotNull) e o validador do
+      // dropdown garante que esteja preenchido.
       if (id == null) {
         await api.create(
+          organizationId: _organizationId!,
           competitionId: _competitionId ?? '',
           divisionId: _divisionId,
           name: _name.text.trim(),
@@ -84,6 +89,7 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
       } else {
         await api.update(
           id,
+          organizationId: _organizationId!,
           competitionId: _competitionId ?? '',
           divisionId: _divisionId,
           name: _name.text.trim(),
@@ -128,6 +134,7 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
   @override
   Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
+    final organizations = ref.watch(organizationsProvider);
     final compItems = competitions.valueOrNull ?? const [];
     final effectiveComp =
         _competitionId ??
@@ -147,6 +154,51 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                organizations.when(
+                  loading: () => const LinearProgressIndicator(),
+                  error: (e, s) =>
+                      const Text('Erro ao carregar organizações'),
+                  data: (orgs) {
+                    // Ao editar, a organização atual pode não estar na lista
+                    // (ex.: desativada); mantém como opção para o dropdown
+                    // pré-selecionar sem quebrar.
+                    final items = orgs
+                        .map(
+                          (o) => DropdownMenuItem(
+                            value: o.id,
+                            child: Text(o.tradeName),
+                          ),
+                        )
+                        .toList();
+                    final currentId = _organizationId;
+                    if (currentId != null &&
+                        currentId.isNotEmpty &&
+                        !orgs.any((o) => o.id == currentId)) {
+                      items.insert(
+                        0,
+                        DropdownMenuItem(
+                          value: currentId,
+                          child:
+                              const Text('Organização atual (indisponível)'),
+                        ),
+                      );
+                    }
+                    return DropdownButtonFormField<String>(
+                      initialValue: _organizationId,
+                      decoration: const InputDecoration(
+                        labelText: 'Organização (clube)',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: items,
+                      onChanged: (value) =>
+                          setState(() => _organizationId = value),
+                      validator: (value) => (value == null || value.isEmpty)
+                          ? 'Selecione a organização'
+                          : null,
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: effectiveComp,
                   decoration: const InputDecoration(

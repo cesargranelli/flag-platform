@@ -2,9 +2,13 @@ import '../enums/document_type.dart';
 
 /// Time de uma competição.
 ///
-/// Shape de `/api/v1/competitions/{competitionId}/teams`.
+/// Shape de `/api/v1/teams` e de
+/// `/api/v1/competitions/{competitionId}/teams`.
 class Team {
   final String id;
+
+  /// Organização (clube) inscrita — obrigatória no backend ao criar/atualizar.
+  final String? organizationId;
   final String competitionId;
   final String? divisionId;
   final String name;
@@ -19,6 +23,7 @@ class Team {
 
   const Team({
     required this.id,
+    this.organizationId,
     required this.competitionId,
     this.divisionId,
     required this.name,
@@ -34,6 +39,7 @@ class Team {
 
   factory Team.fromJson(Map<String, dynamic> json) => Team(
     id: json['id'] as String,
+    organizationId: json['organizationId'] as String?,
     competitionId: json['competitionId'] as String,
     divisionId: json['divisionId'] as String?,
     name: json['name'] as String,
@@ -54,7 +60,11 @@ class Team {
   );
 
   /// Corpo de criação/atualização (`POST/PUT /api/v1/teams`).
+  ///
+  /// `organizationId` e `competitionId` são obrigatórios no backend
+  /// (`@NotNull`); os demais são opcionais.
   Map<String, dynamic> toJson() => {
+    'organizationId': organizationId,
     'competitionId': competitionId,
     if (divisionId != null) 'divisionId': divisionId,
     'name': name,
