@@ -107,14 +107,24 @@ class CompetitionDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: () => context.push(
-                        '/competitions/${comp.id}/edit',
-                        extra: comp,
+                    // V250: edição permitida apenas enquanto rascunho.
+                    if (comp.status == CompetitionStatus.draft)
+                      FilledButton.icon(
+                        onPressed: () => context.push(
+                          '/competitions/${comp.id}/edit',
+                          extra: comp,
+                        ),
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Editar campeonato'),
+                      )
+                    else
+                      Text(
+                        'Campeonato publicado — não é mais editável.',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Editar campeonato'),
-                    ),
                   ],
                 ),
               ),

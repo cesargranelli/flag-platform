@@ -9,11 +9,12 @@ import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 
 /// Formulário de criação/edição de organização em etapas (wizard).
+/// Formulário de criação de organização.
+///
+/// V250: organizações não são editáveis após a criação — este formulário
+/// apenas cria. Alterações de cadastro não são suportadas.
 class OrganizationFormScreen extends ConsumerStatefulWidget {
-  const OrganizationFormScreen({super.key, this.organizationId, this.organization});
-
-  final String? organizationId;
-  final Organization? organization;
+  const OrganizationFormScreen({super.key});
 
   @override
   ConsumerState<OrganizationFormScreen> createState() =>
@@ -61,12 +62,10 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     'Identidade',
   ];
 
-  bool get _isEditing => widget.organizationId != null || widget.organization != null;
-
   @override
   void initState() {
     super.initState();
-    final org = widget.organization;
+    final Organization? org = null;
     _tradeName = TextEditingController(text: org?.tradeName ?? '');
     _legalName = TextEditingController(text: org?.legalName ?? '');
     _abbreviation = TextEditingController(text: org?.abbreviation ?? '');
@@ -162,24 +161,16 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     try {
       final api = ref.read(organizationApiProvider);
       final body = _buildBody();
-      final id = widget.organizationId ?? widget.organization?.id;
-      if (id == null) {
-        await api.create(body);
-      } else {
-        await api.update(id, body);
-      }
+      // V250: organizações não são editáveis — o form apenas cria.
+      final created = await api.create(body);
       _saved = true;
       ref.invalidate(organizationsProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Organização salva com sucesso')),
       );
-      if (id != null) {
-        // Volta para o detalhe recarregado (busca fresca via provider).
-        context.go('/organizations/$id');
-      } else {
-        context.pop();
-      }
+      // Vai para o detalhe da organização recém-criada.
+      context.go('/organizations/${created.id}');
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (_) {
@@ -238,10 +229,6 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
 
   @override
   Widget build(BuildContext context) {
-    final orgFuture = widget.organizationId != null && widget.organization == null
-        ? ref.watch(organizationProvider(widget.organizationId!))
-        : null;
-
     return PopScope(
       canPop: !_hasChanges || _submitting || _saved,
       onPopInvokedWithResult: (didPop, result) {
@@ -249,17 +236,10 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_isEditing ? 'Editar organização' : 'Nova organização'),
+          title: const Text('Nova organização'),
           leading: BackButton(onPressed: _handleBack),
         ),
-        body: orgFuture == null
-            ? _buildWizard(context)
-            : orgFuture.when(
-                loading: () => const AppLoading(message: 'Carregando organização...'),
-                error: (error, stackTrace) =>
-                    const Center(child: Text('Não foi possível carregar a organização.')),
-                data: (_) => _buildWizard(context),
-              ),
+        body: _buildWizard(context),
       ),
     );
   }
