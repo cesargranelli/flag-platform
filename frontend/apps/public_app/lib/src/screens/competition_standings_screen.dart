@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
+import 'team_detail_screen.dart';
 
 /// Tela de classificação de um campeonato (issue #27).
 ///
-/// Exibe a tabela (posição, time, PJ, V, D, SG, PTS) do campeonato, com
-/// destaque para o líder e atualização via pull to refresh. No fluxo único
-/// (migração V24) a classificação é por campeonato — não há mais categorias.
+/// Exibe a tabela (posição, time, PJ, V, D, SG, PTS) do campeonato no
+/// padrão live score: posição em chip destacado, pontos em evidência e
+/// linhas tocáveis que abrem a página do time (issue #124). Atualização
+/// via pull to refresh. No fluxo único (migração V24) a classificação é
+/// por campeonato — não há mais categorias.
 class CompetitionStandingsScreen extends ConsumerWidget {
   final String competitionId;
   final String competitionName;
@@ -110,22 +113,29 @@ class _TableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.08),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
       ),
       child: const Row(
         children: [
-          SizedBox(width: 16),
-          SizedBox(width: 28, child: Text('Pos', style: _headerStyle)),
+          SizedBox(
+            width: 28,
+            child: Text(
+              'Pos',
+              style: _headerStyle,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          SizedBox(width: 10),
           Expanded(child: Text('Time', style: _headerStyle)),
-          SizedBox(width: 40, child: _HeaderCell('PJ')),
-          SizedBox(width: 40, child: _HeaderCell('V')),
-          SizedBox(width: 40, child: _HeaderCell('D')),
-          SizedBox(width: 48, child: _HeaderCell('SG')),
+          SizedBox(width: 36, child: _HeaderCell('PJ')),
+          SizedBox(width: 36, child: _HeaderCell('V')),
+          SizedBox(width: 36, child: _HeaderCell('D')),
+          SizedBox(width: 44, child: _HeaderCell('SG')),
+          SizedBox(width: 8),
           SizedBox(width: 48, child: _HeaderCell('PTS')),
-          SizedBox(width: 12),
         ],
       ),
     );
@@ -149,7 +159,8 @@ class _HeaderCell extends StatelessWidget {
   }
 }
 
-/// Linha de uma posição na tabela; o líder ganha destaque visual.
+/// Linha de uma posição na tabela; o líder ganha destaque visual e cada
+/// linha abre a página do time ao ser tocada.
 class _StandingRow extends StatelessWidget {
   final Standing standing;
 
@@ -165,78 +176,131 @@ class _StandingRow extends StatelessWidget {
         ? '+${standing.goalDifference}'
         : '${standing.goalDifference}';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isLeader ? AppColors.primary.withValues(alpha: 0.06) : null,
-        border: Border(
-          top: BorderSide(
-            color: AppColors.textSecondary.withValues(alpha: 0.15),
+    return InkWell(
+      onTap: () => openTeamDetail(
+        context,
+        teamId: standing.teamId,
+        teamName: standing.teamName,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isLeader ? AppColors.primary.withValues(alpha: 0.04) : null,
+          border: Border(
+            top: BorderSide(
+              color: AppColors.textSecondary.withValues(alpha: 0.15),
+            ),
           ),
         ),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          const SizedBox(width: 16),
-          SizedBox(
-            width: 28,
-            child: isLeader
-                ? const Icon(
-                    Icons.emoji_events,
-                    size: 18,
-                    color: AppColors.primary,
-                  )
-                : Text(
-                    '${standing.position}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: Row(
+          children: [
+            _PositionChip(position: standing.position),
+            const SizedBox(width: 10),
+            Expanded(
+              child: SizedBox(
+                height: 48,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    teamLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isLeader ? FontWeight.w800 : FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-          ),
-          Expanded(
-            child: Text(
-              teamLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: isLeader ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ),
+            SizedBox(width: 36, child: _ValueCell('${standing.played}')),
+            SizedBox(width: 36, child: _ValueCell('${standing.wins}')),
+            SizedBox(width: 36, child: _ValueCell('${standing.losses}')),
+            SizedBox(width: 44, child: _ValueCell(goalDifference)),
+            const SizedBox(width: 8),
+            _PointsCell(points: standing.points),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Chip circular da posição: líder em destaque primário, demais neutros.
+class _PositionChip extends StatelessWidget {
+  final int position;
+
+  const _PositionChip({required this.position});
+
+  @override
+  Widget build(BuildContext context) {
+    final isLeader = position == 1;
+    return Container(
+      width: 28,
+      height: 28,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: isLeader ? AppColors.primary : AppColors.grayFill,
+        shape: BoxShape.circle,
+      ),
+      child: isLeader
+          ? const Icon(Icons.emoji_events, size: 16, color: Colors.white)
+          : Text(
+              '$position',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
-          ),
-          SizedBox(width: 40, child: _ValueCell('${standing.played}')),
-          SizedBox(width: 40, child: _ValueCell('${standing.wins}')),
-          SizedBox(width: 40, child: _ValueCell('${standing.losses}')),
-          SizedBox(width: 48, child: _ValueCell(goalDifference)),
-          SizedBox(
-            width: 48,
-            child: _ValueCell('${standing.points}', bold: isLeader),
-          ),
-          const SizedBox(width: 12),
-        ],
-      ),
     );
   }
 }
 
 class _ValueCell extends StatelessWidget {
   final String value;
-  final bool bold;
 
-  const _ValueCell(this.value, {this.bold = false});
+  const _ValueCell(this.value);
 
   @override
   Widget build(BuildContext context) {
     return Text(
       value,
       textAlign: TextAlign.center,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 13,
-        fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textSecondary,
+      ),
+    );
+  }
+}
+
+/// Pontos em evidência: pílula neutra com número grande e bold.
+class _PointsCell extends StatelessWidget {
+  final int points;
+
+  const _PointsCell({required this.points});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 48),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.grayFill,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '$points',
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w800,
+          color: AppColors.textPrimary,
+        ),
       ),
     );
   }
