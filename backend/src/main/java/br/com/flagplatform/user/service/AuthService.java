@@ -102,6 +102,13 @@ public class AuthService implements UserLookup {
                 .getId();
     }
 
+    @Override
+    public boolean isAdminByEmail(String email) {
+        return userRepository.findByEmailIgnoreCase(normalize(email))
+                .map(user -> user.getRole() == UserRole.ADMIN)
+                .orElse(false);
+    }
+
     @Transactional
     public UserResponse createUser(CreateUserRequest request) {
         String email = normalize(request.email());
