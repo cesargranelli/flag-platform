@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../widgets/edit_restriction_note.dart';
 
 /// Gestão de elencos (roster): inscreve e remove atletas de um time.
 ///
@@ -24,12 +26,22 @@ class RostersScreen extends ConsumerWidget {
         selectedCompetition ??
         (compItems.isNotEmpty ? compItems.first.id : null);
 
+    // Issue #261: inscrição/importação de elenco exige ser criador do
+    // campeonato ou ADMIN (o backend já bloqueia as escritas).
+    final selectedCompetitionObj = compItems
+        .where((c) => c.id == effectiveComp)
+        .firstOrNull;
+    final canEdit = canEditCompetition(
+      ref.watch(authControllerProvider).state.user,
+      selectedCompetitionObj,
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Elenco'),
         leading: BackButton(onPressed: () => context.go('/')),
         actions: [
-          if (effectiveComp != null)
+          if (effectiveComp != null && canEdit)
             IconButton(
               tooltip: 'Importar CSV',
               icon: const Icon(Icons.upload_file),
@@ -38,16 +50,17 @@ class RostersScreen extends ConsumerWidget {
             ),
         ],
       ),
-      floatingActionButton: effectiveComp != null
-          ? FloatingActionButton(
-              tooltip: 'Inscrever atleta',
-              onPressed: () => context.push(
-                '/teams/new',
-                extra: (competitionId: effectiveComp),
-              ),
-              child: const Icon(Icons.person_add_alt_1),
-            )
-          : null,
+      floatingActionButton:
+          effectiveComp != null && canEdit
+              ? FloatingActionButton(
+                  tooltip: 'Inscrever atleta',
+                  onPressed: () => context.push(
+                    '/teams/new',
+                    extra: (competitionId: effectiveComp),
+                  ),
+                  child: const Icon(Icons.person_add_alt_1),
+                )
+              : null,
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -91,6 +104,12 @@ class RostersScreen extends ConsumerWidget {
                           ref.read(selectedTeamProvider.notifier).state = null;
                         },
                       ),
+                      if (!canEdit)
+                        const EditRestrictionNote(
+                          message:
+                              'Apenas o criador do campeonato pode '
+                              'gerenciar o elenco.',
+                        ),
                     ],
                   ),
                 ),

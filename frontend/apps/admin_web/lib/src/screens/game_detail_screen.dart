@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/edit_restriction_note.dart';
 
 /// Detalhe de um jogo: confronto, placar, status e informações.
 class GameDetailScreen extends ConsumerWidget {
@@ -46,6 +48,14 @@ class GameDetailScreen extends ConsumerWidget {
             .map((c) => c.name)
             .firstOrNull ??
         '';
+    // Issue #261: edição do jogo exige ser criador do campeonato ou ADMIN.
+    final competition = competitions.valueOrNull
+        ?.where((c) => c.id == game.competitionId)
+        .firstOrNull;
+    final canEdit = canEditCompetition(
+      ref.watch(authControllerProvider).state.user,
+      competition,
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -79,14 +89,21 @@ class GameDetailScreen extends ConsumerWidget {
                             fontSize: 18, fontWeight: FontWeight.w600),
                         ),
                     const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: () => context.push(
-                        '/games/${game.id}/edit',
-                        extra: (roundId: game.roundId, game: game),
+                    if (canEdit)
+                      FilledButton.icon(
+                        onPressed: () => context.push(
+                          '/games/${game.id}/edit',
+                          extra: (roundId: game.roundId, game: game),
+                        ),
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Editar dados'),
+                      )
+                    else
+                      const EditRestrictionNote(
+                        message:
+                            'Apenas o criador do campeonato pode editar '
+                            'este jogo.',
                       ),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Editar dados'),
-                    ),
                   ],
                 ),
               ),

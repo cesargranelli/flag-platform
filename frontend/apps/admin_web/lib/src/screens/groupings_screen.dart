@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/edit_restriction_note.dart';
 import 'division_form_screen.dart';
 
 /// GestÃ£o de conferÃªncias e divisÃµes por campeonato.
@@ -68,16 +70,28 @@ class _GroupingsBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final conferences = ref.watch(conferencesProvider(competition.id));
     final divisions = ref.watch(divisionsProvider(competition.id));
+    // Issue #261: criação/edição de conferências e divisões exige ser
+    // criador do campeonato ou ADMIN (o backend já bloqueia as escritas).
+    final canEdit = canEditCompetition(
+      ref.watch(authControllerProvider).state.user,
+      competition,
+    );
 
     return AppLayout.content(
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _contextHeader(context, ref, conferences, divisions),
+          if (!canEdit)
+            const EditRestrictionNote(
+              message:
+                  'Apenas o criador do campeonato pode gerenciar '
+                  'conferências e divisões.',
+            ),
           const SizedBox(height: 24),
-          _conferencesSection(context, ref, conferences, divisions),
+          _conferencesSection(context, ref, conferences, divisions, canEdit),
           const SizedBox(height: 24),
-          _standaloneDivisionsSection(context, ref, divisions),
+          _standaloneDivisionsSection(context, ref, divisions, canEdit),
         ],
       ),
     );
@@ -175,6 +189,7 @@ class _GroupingsBody extends ConsumerWidget {
     WidgetRef ref,
     AsyncValue<List<Conference>> conferences,
     AsyncValue<List<Division>> divisions,
+    bool canEdit,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -187,12 +202,13 @@ class _GroupingsBody extends ConsumerWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-            FilledButton.icon(
-              onPressed: () =>
-                  context.push('/conferences/new', extra: competition.id),
-              icon: const Icon(Icons.add),
-              label: const Text('Nova conferÃªncia'),
-            ),
+            if (canEdit)
+              FilledButton.icon(
+                onPressed: () =>
+                    context.push('/conferences/new', extra: competition.id),
+                icon: const Icon(Icons.add),
+                label: const Text('Nova conferÃªncia'),
+              ),
           ],
         ),
         const SizedBox(height: 12),
@@ -227,6 +243,7 @@ class _GroupingsBody extends ConsumerWidget {
                     // imediato da estrutura (critÃ©rio da issue #218).
                     initiallyExpanded: confItems.length == 1,
                     competitionId: competition.id,
+                    canEdit: canEdit,
                   ),
               ],
             );
@@ -241,6 +258,7 @@ class _GroupingsBody extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     AsyncValue<List<Division>> divisions,
+    bool canEdit,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -253,14 +271,15 @@ class _GroupingsBody extends ConsumerWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-            TextButton.icon(
-              onPressed: () => context.push(
-                '/divisions/new',
-                extra: DivisionFormArgs(competitionId: competition.id),
+            if (canEdit)
+              TextButton.icon(
+                onPressed: () => context.push(
+                  '/divisions/new',
+                  extra: DivisionFormArgs(competitionId: competition.id),
+                ),
+                icon: const Icon(Icons.add),
+                label: const Text('Adicionar divisÃ£o'),
               ),
-              icon: const Icon(Icons.add),
-              label: const Text('Adicionar divisÃ£o'),
-            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -290,7 +309,7 @@ class _GroupingsBody extends ConsumerWidget {
                 return Column(
                   children: [
                     for (final division in standalone)
-                      _divisionRow(context, division),
+                      _divisionRow(context, division, canEdit: canEdit),
                   ],
                 );
               },
@@ -364,6 +383,7 @@ class _ConferenceCard extends StatefulWidget {
     required this.divisionsFailed,
     required this.initiallyExpanded,
     required this.competitionId,
+    required this.canEdit,
   });
 
   final Conference conference;
@@ -372,6 +392,10 @@ class _ConferenceCard extends StatefulWidget {
   final bool divisionsFailed;
   final bool initiallyExpanded;
   final String competitionId;
+
+  /// Issue #261: oculta ações de edição quando o usuário não é o criador
+  /// do campeonato nem ADMIN.
+  final bool canEdit;
 
   @override
   State<_ConferenceCard> createState() => _ConferenceCardState();
@@ -411,14 +435,15 @@ class _ConferenceCardState extends State<_ConferenceCard> {
                   ),
                   const SizedBox(width: 8),
                   _divisionsMeta(context),
-                  IconButton(
-                    tooltip: 'Editar conferÃªncia',
-                    icon: const Icon(Icons.edit_outlined, size: 20),
-                    onPressed: () => context.push(
-                      '/conferences/${conference.id}/edit',
-                      extra: conference,
+                  if (widget.canEdit)
+                    IconButton(
+                      tooltip: 'Editar conferÃªncia',
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      onPressed: () => context.push(
+                        '/conferences/${conference.id}/edit',
+                        extra: conference,
+                      ),
                     ),
-                  ),
                   AnimatedRotation(
                     turns: _expanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 200),
@@ -455,21 +480,26 @@ class _ConferenceCardState extends State<_ConferenceCard> {
                         )
                       else
                         for (final division in widget.divisions)
-                          _divisionRow(context, division),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: () => context.push(
-                            '/divisions/new',
-                            extra: DivisionFormArgs(
-                              competitionId: widget.competitionId,
-                              conferenceId: conference.id,
-                            ),
+                          _divisionRow(
+                            context,
+                            division,
+                            canEdit: widget.canEdit,
                           ),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Adicionar divisÃ£o'),
+                      if (widget.canEdit)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () => context.push(
+                              '/divisions/new',
+                              extra: DivisionFormArgs(
+                                competitionId: widget.competitionId,
+                                conferenceId: conference.id,
+                              ),
+                            ),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Adicionar divisÃ£o'),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -515,7 +545,11 @@ class _ConferenceCardState extends State<_ConferenceCard> {
 }
 
 /// Linha de divisÃ£o com Ã­cone de hierarquia e aÃ§Ã£o de ediÃ§Ã£o.
-Widget _divisionRow(BuildContext context, Division division) {
+Widget _divisionRow(
+  BuildContext context,
+  Division division, {
+  required bool canEdit,
+}) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 4),
     child: Row(
@@ -533,12 +567,13 @@ Widget _divisionRow(BuildContext context, Division division) {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
-        IconButton(
-          tooltip: 'Editar divisÃ£o',
-          icon: const Icon(Icons.edit_outlined, size: 20),
-          onPressed: () =>
-              context.push('/divisions/${division.id}/edit', extra: division),
-        ),
+        if (canEdit)
+          IconButton(
+            tooltip: 'Editar divisÃ£o',
+            icon: const Icon(Icons.edit_outlined, size: 20),
+            onPressed: () =>
+                context.push('/divisions/${division.id}/edit', extra: division),
+          ),
       ],
     ),
   );

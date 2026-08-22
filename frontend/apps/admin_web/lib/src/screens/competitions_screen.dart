@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 
 /// Gestão de campeonatos: cards de acesso e navegação para o detalhe.
@@ -20,9 +21,6 @@ class CompetitionsScreen extends ConsumerStatefulWidget {
 
 class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
   bool _showDisabled = false;
-
-  bool get _isAdmin =>
-      ref.read(authControllerProvider).state.user?.role == 'ADMIN';
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +197,12 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
                   ],
                 ),
               ),
-              if (_isAdmin)
+              // Issue #261: ações de gestão (desativar/reativar) exigem
+              // ser criador do campeonato ou ADMIN — o backend já bloqueia.
+              if (canEditCompetition(
+                ref.watch(authControllerProvider).state.user,
+                competition,
+              ))
                 PopupMenuButton<String>(
                   tooltip: 'Ações',
                   onSelected: (value) async {

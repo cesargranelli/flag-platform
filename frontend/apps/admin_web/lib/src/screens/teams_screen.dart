@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../widgets/edit_restriction_note.dart';
 
 /// Gestão de times: lista por campeonato e acesso ao detalhe.
 ///
@@ -24,18 +26,30 @@ class TeamsScreen extends ConsumerWidget {
         selectedCompetition ??
         (compItems.isNotEmpty ? compItems.first.id : null);
 
+    // Issue #261: inscrição de times exige ser criador do campeonato
+    // ou ADMIN (o backend já bloqueia as escritas).
+    final selectedCompetitionObj = compItems
+        .where((c) => c.id == effectiveComp)
+        .firstOrNull;
+    final canEdit = canEditCompetition(
+      ref.watch(authControllerProvider).state.user,
+      selectedCompetitionObj,
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Times'),
         leading: BackButton(onPressed: () => context.go('/')),
       ),
-      floatingActionButton: effectiveComp != null
-          ? FloatingActionButton(
-              tooltip: 'Novo time',
-              onPressed: () => context.push('/teams/new', extra: effectiveComp),
-              child: const Icon(Icons.add),
-            )
-          : null,
+      floatingActionButton:
+          effectiveComp != null && canEdit
+              ? FloatingActionButton(
+                  tooltip: 'Novo time',
+                  onPressed: () =>
+                      context.push('/teams/new', extra: effectiveComp),
+                  child: const Icon(Icons.add),
+                )
+              : null,
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -77,6 +91,12 @@ class TeamsScreen extends ConsumerWidget {
                               value;
                         },
                       ),
+                      if (!canEdit)
+                        const EditRestrictionNote(
+                          message:
+                              'Apenas o criador do campeonato pode '
+                              'inscrever times.',
+                        ),
                     ],
                   ),
                 ),

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../widgets/edit_restriction_note.dart';
 
 /// Gestão de jogos: lista por rodada e acesso ao detalhe.
 ///
@@ -25,12 +27,22 @@ class GamesScreen extends ConsumerWidget {
         selectedCompetition ??
         (compItems.isNotEmpty ? compItems.first.id : null);
 
+    // Issue #261: criação/edição de jogos (incluída a importação CSV)
+    // exige ser criador do campeonato ou ADMIN.
+    final selectedCompetitionObj = compItems
+        .where((c) => c.id == effectiveComp)
+        .firstOrNull;
+    final canEdit = canEditCompetition(
+      ref.watch(authControllerProvider).state.user,
+      selectedCompetitionObj,
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Jogos'),
         leading: BackButton(onPressed: () => context.go('/')),
         actions: [
-          if (selectedRound != null)
+          if (selectedRound != null && canEdit)
             IconButton(
               tooltip: 'Importar CSV',
               icon: const Icon(Icons.upload_file),
@@ -39,20 +51,21 @@ class GamesScreen extends ConsumerWidget {
             ),
         ],
       ),
-      floatingActionButton: effectiveComp != null
-          ? FloatingActionButton(
-              tooltip: 'Novo jogo',
-              onPressed: () => context.push(
-                '/games/new',
-                extra: (
-                  competitionId: effectiveComp,
-                  roundId: selectedRound,
-                  game: null,
-                ),
-              ),
-              child: const Icon(Icons.add),
-            )
-          : null,
+      floatingActionButton:
+          effectiveComp != null && canEdit
+              ? FloatingActionButton(
+                  tooltip: 'Novo jogo',
+                  onPressed: () => context.push(
+                    '/games/new',
+                    extra: (
+                      competitionId: effectiveComp,
+                      roundId: selectedRound,
+                      game: null,
+                    ),
+                  ),
+                  child: const Icon(Icons.add),
+                )
+              : null,
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -141,6 +154,12 @@ class GamesScreen extends ConsumerWidget {
                                       ),
                                 )
                           : const LinearProgressIndicator(),
+                      if (!canEdit)
+                        const EditRestrictionNote(
+                          message:
+                              'Apenas o criador do campeonato pode '
+                              'gerenciar jogos.',
+                        ),
                     ],
                   ),
                 ),

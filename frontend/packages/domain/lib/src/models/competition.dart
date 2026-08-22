@@ -6,7 +6,7 @@ import '../enums/modality.dart';
 /// Aceita os dois shapes retornados pela API:
 /// - resumo (`GET /api/v1/competitions`): id, name, organizationName, status;
 /// - completo (`GET /api/v1/competitions/{id}`): id, organizationId, name,
-///   description, startDate, endDate, status, createdAt, updatedAt.
+///   description, startDate, endDate, status, createdBy, createdAt, updatedAt.
 class Competition {
   /// Identificador UUID do campeonato.
   final String id;
@@ -33,6 +33,10 @@ class Competition {
 
   final String? ageGroup;
 
+  /// UUID do usuário criador do campeonato (base da regra de edição
+  /// restrita ao criador ou ADMIN). Nulo em registros legados.
+  final String? createdBy;
+
   const Competition({
     required this.id,
     required this.name,
@@ -45,6 +49,7 @@ class Competition {
     this.modality,
     this.gender,
     this.ageGroup,
+    this.createdBy,
   });
 
   factory Competition.fromJson(Map<String, dynamic> json) => Competition(
@@ -61,6 +66,7 @@ class Competition {
             : Modality.fromJson(json['modality'] as String),
         gender: json['gender'] as String?,
         ageGroup: json['ageGroup'] as String?,
+        createdBy: json['createdBy'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -75,6 +81,7 @@ class Competition {
         if (modality != null) 'modality': modality!.toJson(),
         if (gender != null) 'gender': gender,
         if (ageGroup != null) 'ageGroup': ageGroup,
+        if (createdBy != null) 'createdBy': createdBy,
       };
 }
 

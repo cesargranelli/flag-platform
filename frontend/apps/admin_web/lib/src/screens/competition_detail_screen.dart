@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
 
@@ -48,6 +49,11 @@ class CompetitionDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildDetail(BuildContext context, WidgetRef ref, Competition comp) {
+    // Issue #261: edição exige ser criador do campeonato ou ADMIN.
+    final canEdit = canEditCompetition(
+      ref.watch(authControllerProvider).state.user,
+      comp,
+    );
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: AppLayout.detail(
@@ -108,7 +114,8 @@ class CompetitionDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     // V250: edição permitida apenas enquanto rascunho.
-                    if (comp.status == CompetitionStatus.draft)
+                    // Issue #261: e apenas pelo criador do campeonato ou ADMIN.
+                    if (comp.status == CompetitionStatus.draft && canEdit)
                       FilledButton.icon(
                         onPressed: () => context.push(
                           '/competitions/${comp.id}/edit',
@@ -119,7 +126,9 @@ class CompetitionDetailScreen extends ConsumerWidget {
                       )
                     else
                       Text(
-                        'Campeonato publicado — não é mais editável.',
+                        comp.status == CompetitionStatus.draft
+                            ? 'Apenas o criador do campeonato pode editá-lo.'
+                            : 'Campeonato publicado — não é mais editável.',
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,

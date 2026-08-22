@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/edit_restriction_note.dart';
 
 /// Detalhe de uma rodada: apresenta os dados e oferece a edição.
 class RoundDetailScreen extends ConsumerWidget {
@@ -43,6 +45,14 @@ class RoundDetailScreen extends ConsumerWidget {
             .map((c) => c.name)
             .firstOrNull ??
         '';
+    // Issue #261: edição da rodada exige ser criador do campeonato ou ADMIN.
+    final competition = competitions.valueOrNull
+        ?.where((c) => c.id == round.competitionId)
+        .firstOrNull;
+    final canEdit = canEditCompetition(
+      ref.watch(authControllerProvider).state.user,
+      competition,
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -98,14 +108,21 @@ class RoundDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: () => context.push(
-                        '/rounds/${round.id}/edit',
-                        extra: round,
+                    if (canEdit)
+                      FilledButton.icon(
+                        onPressed: () => context.push(
+                          '/rounds/${round.id}/edit',
+                          extra: round,
+                        ),
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Editar dados'),
+                      )
+                    else
+                      const EditRestrictionNote(
+                        message:
+                            'Apenas o criador do campeonato pode editar '
+                            'esta rodada.',
                       ),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Editar dados'),
-                    ),
                   ],
                 ),
               ),

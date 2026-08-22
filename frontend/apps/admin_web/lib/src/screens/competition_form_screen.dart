@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
 
@@ -188,6 +189,23 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
           ),
         ),
         data: (competition) {
+          // Issue #261: proteção contra acesso direto pela URL — sem
+          // permissão (criador/ADMIN), exibe estado informativo em vez
+          // de renderizar o formulário.
+          final user = ref.watch(authControllerProvider).state.user;
+          if (!canEditCompetition(user, competition)) {
+            return Scaffold(
+              appBar: AppBar(
+                title: const Text('Editar campeonato'),
+                leading: AppBackButton(fallbackRoute: '/competitions'),
+              ),
+              body: const AppEmptyState(
+                message:
+                    'Você não tem permissão para editar este campeonato.',
+                icon: Icons.lock_outline,
+              ),
+            );
+          }
           _applyCompetition(competition);
           return _buildForm(context, organizations);
         },
