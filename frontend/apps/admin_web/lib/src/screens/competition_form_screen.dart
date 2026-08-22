@@ -316,6 +316,26 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
               ),
             );
           }
+          // Issue #257 (M4): apenas RASCUNHO é editável. Campeonatos
+          // publicados/encerrados/desativados acessados por URL direta
+          // recebem estado informativo em vez de um formulário que falharia
+          // no save (o backend bloqueia o update).
+          if (competition.status != CompetitionStatus.draft) {
+            return Scaffold(
+              appBar: AppBar(
+                title: const Text('Editar campeonato'),
+                leading: AppBackButton(fallbackRoute: '/competitions'),
+              ),
+              body: AppEmptyState(
+                message: competition.status == CompetitionStatus.published
+                    ? 'Campeonato publicado — não é mais editável.'
+                    : 'Campeonato '
+                        '${_statusLabel(competition.status).toLowerCase()} — '
+                        'não é mais editável.',
+                icon: Icons.lock,
+              ),
+            );
+          }
           _applyCompetition(competition);
           return _buildForm(context, organizations);
         },
