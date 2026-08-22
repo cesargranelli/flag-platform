@@ -14,14 +14,20 @@ class AppBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BackButton(
-      onPressed: () {
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go(fallbackRoute);
-        }
-      },
+    // Caixa 40×40: reduz o círculo de hover/ripple do IconButton padrão
+    // (48×48), mantendo alvo de toque acessível e efeito consistente.
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: BackButton(
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go(fallbackRoute);
+          }
+        },
+      ),
     );
   }
 }
