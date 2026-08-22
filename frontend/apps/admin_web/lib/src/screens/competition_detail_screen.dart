@@ -134,6 +134,24 @@ class CompetitionDetailScreen extends ConsumerWidget {
                           color: AppColors.textSecondary,
                         ),
                       ),
+                    // Issue #259: atalho para gerenciar rodadas já no
+                    // contexto deste campeonato. Segue a mesma regra de
+                    // permissão da edição (criador ou ADMIN), sem restrição
+                    // de status — rodadas também são geridas após publicar.
+                    if (canEdit) ...[
+                      const SizedBox(height: 12),
+                      FilledButton.icon(
+                        onPressed: () {
+                          ref
+                                  .read(selectedCompetitionProvider.notifier)
+                                  .state =
+                              comp.id;
+                          context.push('/rounds');
+                        },
+                        icon: const Icon(Icons.format_list_numbered),
+                        label: const Text('Adicionar rodadas'),
+                      ),
+                    ],
                   ],
                 ),
               ),
