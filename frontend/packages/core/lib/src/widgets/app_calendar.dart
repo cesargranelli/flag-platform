@@ -329,7 +329,9 @@ class _AppCalendarState extends State<AppCalendar> {
     }
 
     return InkWell(
-      onTap: enabled ? () => _select(date) : null,
+      // Dias de outros meses são decorativos: navegação de mês somente
+      // pelos botões ‹ › do header.
+      onTap: enabled && inMonth ? () => _select(date) : null,
       customBorder: const CircleBorder(),
       child: cell,
     );
