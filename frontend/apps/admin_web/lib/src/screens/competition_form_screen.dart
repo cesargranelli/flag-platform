@@ -265,6 +265,10 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Issue #257 (M2): erro de servidor renderizado no TOPO do
+                // formulário, garantindo visibilidade mesmo com a página
+                // rolada até os campos finais.
+                if (_errorMessage != null) _errorBanner(_errorMessage!),
                 organizations.when(
                   // Issue #257 (M1): durante o carregamento o campo permanece
                   // visível (desabilitado, com hint) — sem o salto de layout
@@ -571,17 +575,8 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
                       ),
                     ),
                   ),
-                ],
-                if (_errorMessage != null) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    _errorMessage!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 24),
+                 ],
+                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: _submitting ? null : _save,
                   child: _submitting
@@ -596,6 +591,32 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Issue #257 (M2): banner de erro de servidor (padrão do
+  /// organization_form_screen — tint danger + borda).
+  Widget _errorBanner(String message) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.danger),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.danger),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
       ),
     );
   }
