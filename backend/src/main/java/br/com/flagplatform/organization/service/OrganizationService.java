@@ -8,7 +8,6 @@ import br.com.flagplatform.common.pagination.PagedResponse;
 import br.com.flagplatform.common.validation.DocumentValidator;
 import br.com.flagplatform.organization.OrganizationLookup;
 import br.com.flagplatform.organization.dto.request.CreateOrganizationRequest;
-import br.com.flagplatform.organization.dto.request.UpdateOrganizationRequest;
 import br.com.flagplatform.organization.dto.response.OrganizationCreatedResponse;
 import br.com.flagplatform.organization.dto.response.OrganizationResponse;
 import br.com.flagplatform.organization.entity.OrganizationEntity;
