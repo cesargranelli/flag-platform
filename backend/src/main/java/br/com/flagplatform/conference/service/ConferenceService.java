@@ -28,8 +28,9 @@ public class ConferenceService implements ConferenceLookup {
     private final CompetitionLookup competitionLookup;
 
     @Transactional
-    public ConferenceResponse create(UUID competitionId, CreateConferenceRequest request) {
-        competitionLookup.assertExists(competitionId);
+    public ConferenceResponse create(UUID competitionId, CreateConferenceRequest request, String currentUserEmail) {
+        // V260: apenas o criador do campeonato (ou ADMIN) gerencia o campeonato.
+        competitionLookup.assertManagedBy(competitionId, currentUserEmail);
 
         if (repository.existsByCompetitionIdAndNameIgnoreCase(competitionId, request.name())) {
             throw new DuplicateConferenceNameException(request.name());
@@ -47,8 +48,10 @@ public class ConferenceService implements ConferenceLookup {
     }
 
     @Transactional
-    public ConferenceResponse update(UUID id, UpdateConferenceRequest request) {
+    public ConferenceResponse update(UUID id, UpdateConferenceRequest request, String currentUserEmail) {
         ConferenceEntity entity = findEntityById(id);
+
+        competitionLookup.assertManagedBy(entity.getCompetitionId(), currentUserEmail);
 
         if (repository.existsByCompetitionIdAndNameIgnoreCaseAndIdNot(
                 entity.getCompetitionId(), request.name(), id)) {

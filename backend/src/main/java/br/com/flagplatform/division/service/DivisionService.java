@@ -31,8 +31,10 @@ public class DivisionService implements DivisionLookup {
     private final ConferenceLookup conferenceLookup;
 
     @Transactional
-    public DivisionResponse create(UUID competitionId, CreateDivisionRequest request) {
-        competitionLookup.assertExists(competitionId);
+    public DivisionResponse create(UUID competitionId, CreateDivisionRequest request, String currentUserEmail) {
+        // V260: apenas o criador do campeonato (ou ADMIN) gerencia o campeonato.
+        competitionLookup.assertManagedBy(competitionId, currentUserEmail);
+
         validateConference(request.conferenceId(), competitionId);
         ensureUniqueName(competitionId, request.conferenceId(), request.name(), null);
 
@@ -48,8 +50,11 @@ public class DivisionService implements DivisionLookup {
     }
 
     @Transactional
-    public DivisionResponse update(UUID id, UpdateDivisionRequest request) {
+    public DivisionResponse update(UUID id, UpdateDivisionRequest request, String currentUserEmail) {
         DivisionEntity entity = findEntityById(id);
+
+        competitionLookup.assertManagedBy(entity.getCompetitionId(), currentUserEmail);
+
         validateConference(request.conferenceId(), entity.getCompetitionId());
         ensureUniqueName(entity.getCompetitionId(), request.conferenceId(), request.name(), id);
 
