@@ -1,6 +1,8 @@
 package br.com.flagplatform.competition.dto.request;
 
+import br.com.flagplatform.common.enums.AgeGroup;
 import br.com.flagplatform.common.enums.CompetitionStatus;
+import br.com.flagplatform.common.enums.Gender;
 import br.com.flagplatform.common.enums.Modality;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,6 +17,10 @@ public record CreateCompetitionRequest(
 
         @NotNull
         Modality modality,
+
+        Gender gender,
+
+        AgeGroup ageGroup,
 
         @NotBlank
         @Size(max = 100)
