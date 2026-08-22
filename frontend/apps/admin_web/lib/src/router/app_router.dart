@@ -116,19 +116,6 @@ class AppRouter {
         },
       ),
       GoRoute(
-        path: '/organizations/:id/edit',
-        name: 'organizationEdit',
-        builder: (context, state) {
-          final org = state.extra is Organization
-              ? state.extra as Organization
-              : null;
-          return OrganizationFormScreen(
-            organizationId: state.pathParameters['id'],
-            organization: org,
-          );
-        },
-      ),
-      GoRoute(
         path: '/competitions',
         name: 'competitions',
         builder: (context, state) => const CompetitionsScreen(),

@@ -1,16 +1,15 @@
-import 'package:flag_core/flag_core.dart';
+﻿import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
 
-/// Detalhe de uma organização: apresenta os dados e oferece a edição.
+/// Detalhe de uma organizaÃ§Ã£o: apresenta os dados e oferece a ediÃ§Ã£o.
 ///
-/// A navegação para esta tela NÃO abre o formulário de edição diretamente;
-/// a edição é uma ação explícita na tela.
+/// A navegaÃ§Ã£o para esta tela NÃƒO abre o formulÃ¡rio de ediÃ§Ã£o diretamente;
+/// a ediÃ§Ã£o Ã© uma aÃ§Ã£o explÃ­cita na tela.
 class OrganizationDetailScreen extends ConsumerWidget {
   const OrganizationDetailScreen({super.key, this.organizationId, this.organization});
 
@@ -25,15 +24,15 @@ class OrganizationDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(organization?.tradeName ?? 'Organização'),
+        title: Text(organization?.tradeName ?? 'OrganizaÃ§Ã£o'),
         leading: AppBackButton(fallbackRoute: '/organizations'),
       ),
       body: orgFuture == null
           ? _buildDetail(context, organization!)
           : orgFuture.when(
-              loading: () => const AppLoading(message: 'Carregando organização...'),
+              loading: () => const AppLoading(message: 'Carregando organizaÃ§Ã£o...'),
               error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar a organização',
+                message: 'NÃ£o foi possÃ­vel carregar a organizaÃ§Ã£o',
                 onRetry: () =>
                     ref.invalidate(organizationProvider(organizationId!)),
               ),
@@ -88,32 +87,25 @@ class OrganizationDetailScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    onPressed: () => context.push(
-                      '/organizations/${org.id}/edit',
-                      extra: org,
-                    ),
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Editar dados'),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    // V250: organizaÃ§Ãµes nÃ£o sÃ£o editÃ¡veis apÃ³s a criaÃ§Ã£o.
+                  ],
               ),
             ),
           ),
           const SizedBox(height: 16),
           _infoCard(
-            'Identificação',
+            'IdentificaÃ§Ã£o',
             [
               _row('Nome fantasia', org.tradeName),
-              _row('Razão social', org.legalName),
+              _row('RazÃ£o social', org.legalName),
               if (org.abbreviation != null && org.abbreviation!.isNotEmpty)
                 _row('Sigla', org.abbreviation!),
               if (org.organizationType != null)
                 _row('Tipo', org.organizationType!.label),
               if (org.document != null && org.document!.isNotEmpty)
                 _row('CNPJ', org.document!),
-              _row('País', org.country),
+              _row('PaÃ­s', org.country),
               if (org.state != null && org.state!.isNotEmpty) _row('Estado', org.state!),
               if (org.city != null && org.city!.isNotEmpty) _row('Cidade', org.city!),
             ],
@@ -148,14 +140,14 @@ class OrganizationDetailScreen extends ConsumerWidget {
             [
               if (org.locale.isNotEmpty) _row('Locale', org.locale),
               if (org.primaryColor != null && org.primaryColor!.isNotEmpty)
-                _colorRow('Cor primária', org.primaryColor!),
+                _colorRow('Cor primÃ¡ria', org.primaryColor!),
               if (org.secondaryColor != null && org.secondaryColor!.isNotEmpty)
-                _colorRow('Cor secundária', org.secondaryColor!),
+                _colorRow('Cor secundÃ¡ria', org.secondaryColor!),
               if (org.tertiaryColor != null && org.tertiaryColor!.isNotEmpty)
-                _colorRow('Cor terciária', org.tertiaryColor!),
+                _colorRow('Cor terciÃ¡ria', org.tertiaryColor!),
               if (org.quaternaryColor != null &&
                   org.quaternaryColor!.isNotEmpty)
-                _colorRow('Cor quaternária', org.quaternaryColor!),
+                _colorRow('Cor quaternÃ¡ria', org.quaternaryColor!),
               if (org.logoUrl != null && org.logoUrl!.isNotEmpty)
                 _row('Logo', org.logoUrl!),
             ],
@@ -215,7 +207,7 @@ class OrganizationDetailScreen extends ConsumerWidget {
     );
   }
 
-  /// Linha de cor: swatch arredondado preenchido + valor hex legível.
+  /// Linha de cor: swatch arredondado preenchido + valor hex legÃ­vel.
   Widget _colorRow(String label, String hex) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -251,7 +243,7 @@ class OrganizationDetailScreen extends ConsumerWidget {
     );
   }
 
-  /// Aceita "#RRGGBB" ou "RRGGBB"; retorna null se inválido.
+  /// Aceita "#RRGGBB" ou "RRGGBB"; retorna null se invÃ¡lido.
   Color? _parseHex(String? hex) {
     if (hex == null || hex.isEmpty) return null;
     final clean = hex.replaceAll('#', '').trim();

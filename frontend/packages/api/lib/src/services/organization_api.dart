@@ -35,7 +35,4 @@ class OrganizationApi {
     );
     return getById(id);
   }
-
-  Future<Organization> update(String id, Map<String, dynamic> body) =>
-      _client.put('/api/v1/organizations/$id', body, Organization.fromJson);
 }
