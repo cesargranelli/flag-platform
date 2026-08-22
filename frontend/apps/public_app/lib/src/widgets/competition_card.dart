@@ -68,6 +68,7 @@ class _StatusBadge extends StatelessWidget {
       CompetitionStatus.draft => ('Rascunho', AppColors.textSecondary, Colors.white),
       CompetitionStatus.published => ('Em andamento', AppColors.success, Colors.white),
       CompetitionStatus.finished => ('Encerrado', AppColors.primary, Colors.white),
+      CompetitionStatus.disabled => ('Desativado', AppColors.textSecondary, Colors.white),
     };
 
     return Container(

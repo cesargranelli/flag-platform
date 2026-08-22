@@ -48,6 +48,14 @@ final organizationsProvider = FutureProvider<List<Organization>>(
   (ref) => ref.watch(organizationApiProvider).list(),
 );
 
+/// Listagem para ADMIN: inclui desativadas quando [includeDisabled].
+final organizationsAdminProvider =
+    FutureProvider.family<List<Organization>, bool>(
+  (ref, includeDisabled) => ref
+      .watch(organizationApiProvider)
+      .list(includeDisabled: includeDisabled),
+);
+
 /// Detalhe de uma organização por id.
 final organizationProvider = FutureProvider.family<Organization, String>(
   (ref, id) => ref.watch(organizationApiProvider).getById(id),
@@ -61,6 +69,14 @@ final competitionApiProvider = Provider<CompetitionApi>(
 /// Lista de campeonatos da tela de gestão.
 final competitionsProvider = FutureProvider<List<Competition>>(
   (ref) => ref.watch(competitionApiProvider).listAll(),
+);
+
+/// Listagem para ADMIN: inclui desativados quando [includeDisabled].
+final competitionsAdminProvider =
+    FutureProvider.family<List<Competition>, bool>(
+  (ref, includeDisabled) => ref
+      .watch(competitionApiProvider)
+      .listAll(includeDisabled: includeDisabled),
 );
 
 /// Detalhe de um campeonato por id.

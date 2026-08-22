@@ -20,10 +20,18 @@ class OrganizationsScreen extends ConsumerStatefulWidget {
 
 class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   OrganizationType? _typeFilter;
+  bool _showDisabled = false;
+
+  bool get _isAdmin =>
+      ref.read(authControllerProvider).state.user?.role == 'ADMIN';
 
   @override
   Widget build(BuildContext context) {
-    final organizations = ref.watch(organizationsProvider);
+    final isAdmin = ref.watch(authControllerProvider).state.user?.role == 'ADMIN';
+    final showDisabled = isAdmin && _showDisabled;
+    final organizations = showDisabled
+        ? ref.watch(organizationsAdminProvider(true))
+        : ref.watch(organizationsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -39,7 +47,9 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
         loading: () => const AppLoading(message: 'Carregando organizações...'),
         error: (error, stackTrace) => AppErrorState(
           message: 'Não foi possível carregar as organizações',
-          onRetry: () => ref.invalidate(organizationsProvider),
+          onRetry: () => showDisabled
+              ? ref.invalidate(organizationsAdminProvider(true))
+              : ref.invalidate(organizationsProvider),
         ),
         data: (items) {
           if (items.isEmpty) {
@@ -69,6 +79,19 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                         ),
                       ),
                       const Spacer(),
+                      if (isAdmin)
+                        Tooltip(
+                          message: 'Exibir organizações desativadas',
+                          child: IconButton(
+                            isSelected: _showDisabled,
+                            selectedIcon: const Icon(Icons.visibility),
+                            icon: const Icon(Icons.visibility_off_outlined),
+                            tooltip: 'Desativadas',
+                            onPressed: () => setState(
+                                () => _showDisabled = !_showDisabled),
+                          ),
+                        ),
+                      const SizedBox(width: 8),
                       SizedBox(
                         width: 260,
                         child: DropdownButtonFormField<OrganizationType?>(
@@ -134,6 +157,7 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   }
 
   Widget _organizationCard(BuildContext context, Organization organization) {
+    final isDisabled = organization.status == OrganizationStatus.inactive;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -168,8 +192,15 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                           organization.tradeName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: isDisabled
+                                ? AppColors.textSecondary
+                                : AppColors.textPrimary,
+                            decoration:
+                                isDisabled ? TextDecoration.lineThrough : null,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -182,6 +213,36 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                       ],
                     ),
                   ),
+                  if (isDisabled) _disabledBadge(),
+                  if (_isAdmin)
+                    PopupMenuButton<String>(
+                      tooltip: 'Ações',
+                      onSelected: (value) async {
+                        if (value == 'deactivate') {
+                          final ok = await _confirm(
+                            context,
+                            'Desativar organização',
+                            '"${organization.tradeName}" ficará invisível '
+                                'para os demais usuários até ser reativada.',
+                          );
+                          if (ok == true) await _deactivate(organization);
+                        } else if (value == 'reactivate') {
+                          await _reactivate(organization);
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        if (!isDisabled)
+                          const PopupMenuItem(
+                            value: 'deactivate',
+                            child: Text('Desativar'),
+                          ),
+                        if (isDisabled)
+                          const PopupMenuItem(
+                            value: 'reactivate',
+                            child: Text('Reativar'),
+                          ),
+                      ],
+                    ),
                 ],
               ),
             ],
@@ -189,5 +250,86 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _disabledBadge() {
+    return Container(
+      margin: const EdgeInsets.only(right: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: const Text(
+        'Desativada',
+        style: TextStyle(fontSize: 12, color: AppColors.danger),
+      ),
+    );
+  }
+
+  Future<bool?> _confirm(BuildContext context, String title, String message) {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.danger,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Desativar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _invalidateLists() {
+    ref.invalidate(organizationsProvider);
+    ref.invalidate(organizationsAdminProvider(true));
+  }
+
+  Future<void> _deactivate(Organization organization) async {
+    try {
+      await ref.read(organizationApiProvider).deactivate(organization.id);
+      _invalidateLists();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${organization.tradeName} desativada.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Não foi possível desativar a organização.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _reactivate(Organization organization) async {
+    try {
+      await ref.read(organizationApiProvider).reactivate(organization.id);
+      _invalidateLists();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${organization.tradeName} reativada.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Não foi possível reativar a organização.')),
+        );
+      }
+    }
   }
 }

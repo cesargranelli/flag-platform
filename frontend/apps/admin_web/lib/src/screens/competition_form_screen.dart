@@ -398,5 +398,6 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
     CompetitionStatus.draft => 'Rascunho',
     CompetitionStatus.published => 'Publicado',
     CompetitionStatus.finished => 'Encerrado',
+    CompetitionStatus.disabled => 'Desativado',
   };
 }
