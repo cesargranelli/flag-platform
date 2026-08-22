@@ -95,8 +95,10 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
 
   Future<void> _pickDate(TextEditingController controller) async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
+    // Issue #256: calendário do design system (spec Figma) no lugar do
+    // showDatePicker padrão. Cancelamento continua retornando null.
+    final picked = await showAppCalendarDialog(
+      context,
       initialDate: DateTime.tryParse(controller.text) ?? now,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
