@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/edit_restriction_note.dart';
 
 /// Detalhe de um time: apresenta os dados e oferece a edição.
 class TeamDetailScreen extends ConsumerWidget {
@@ -51,6 +53,14 @@ class TeamDetailScreen extends ConsumerWidget {
             .map((d) => d.name)
             .firstOrNull ??
         '';
+    // Issue #261: edição do time exige ser criador do campeonato ou ADMIN.
+    final competition = competitions.valueOrNull
+        ?.where((c) => c.id == team.competitionId)
+        .firstOrNull;
+    final canEdit = canEditCompetition(
+      ref.watch(authControllerProvider).state.user,
+      competition,
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -95,12 +105,19 @@ class TeamDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: () =>
-                          context.push('/teams/${team.id}/edit', extra: team),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Editar dados'),
-                    ),
+                    if (canEdit)
+                      FilledButton.icon(
+                        onPressed: () =>
+                            context.push('/teams/${team.id}/edit', extra: team),
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Editar dados'),
+                      )
+                    else
+                      const EditRestrictionNote(
+                        message:
+                            'Apenas o criador do campeonato pode editar '
+                            'este time.',
+                      ),
                   ],
                 ),
               ),
