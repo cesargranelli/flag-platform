@@ -65,6 +65,12 @@ public record UpdateOrganizationRequest(
         @Size(max = 7)
         String secondaryColor,
 
+        @Size(max = 7)
+        String tertiaryColor,
+
+        @Size(max = 7)
+        String quaternaryColor,
+
         @NotBlank
         String timezone,
 

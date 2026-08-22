@@ -1,10 +1,10 @@
-import '../enums/document_type.dart';
+﻿import '../enums/document_type.dart';
 import '../enums/organization_status.dart';
 import '../enums/organization_type.dart';
 
-/// Organização esportiva do Flag Platform.
+/// OrganizaÃ§Ã£o esportiva do Flag Platform.
 ///
-/// Shape de `GET /api/v1/organizations` (lista, detalhe e atualização).
+/// Shape de `GET /api/v1/organizations` (lista, detalhe e atualizaÃ§Ã£o).
 class Organization {
   final String id;
   final String legalName;
@@ -25,6 +25,8 @@ class Organization {
   final String? logoUrl;
   final String? primaryColor;
   final String? secondaryColor;
+  final String? tertiaryColor;
+  final String? quaternaryColor;
   final String timezone;
   final String locale;
   final OrganizationStatus? status;
@@ -53,6 +55,8 @@ class Organization {
     this.logoUrl,
     this.primaryColor,
     this.secondaryColor,
+    this.tertiaryColor,
+    this.quaternaryColor,
     this.status,
     this.createdAt,
     this.updatedAt,
@@ -82,6 +86,8 @@ class Organization {
         logoUrl: json['logoUrl'] as String?,
         primaryColor: json['primaryColor'] as String?,
         secondaryColor: json['secondaryColor'] as String?,
+        tertiaryColor: json['tertiaryColor'] as String?,
+        quaternaryColor: json['quaternaryColor'] as String?,
         timezone: json['timezone'] as String,
         locale: json['locale'] as String,
         status: json['status'] is String
@@ -91,7 +97,7 @@ class Organization {
         updatedAt: _tryParseDate(json['updatedAt']),
       );
 
-  /// Corpo de criação/atualização (`POST/PUT /api/v1/organizations`).
+  /// Corpo de criaÃ§Ã£o/atualizaÃ§Ã£o (`POST/PUT /api/v1/organizations`).
   Map<String, dynamic> toJson() => {
         'legalName': legalName,
         'tradeName': tradeName,
@@ -111,6 +117,8 @@ class Organization {
         if (logoUrl != null) 'logoUrl': logoUrl,
         if (primaryColor != null) 'primaryColor': primaryColor,
         if (secondaryColor != null) 'secondaryColor': secondaryColor,
+        if (tertiaryColor != null) 'tertiaryColor': tertiaryColor,
+        if (quaternaryColor != null) 'quaternaryColor': quaternaryColor,
         'timezone': timezone,
         'locale': locale,
       };
