@@ -1,4 +1,4 @@
-import 'package:flag_core/flag_core.dart';
+﻿import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,10 +7,10 @@ import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
 
-/// Detalhe de um campeonato: apresenta os dados e oferece a edição.
+/// Detalhe de um campeonato: apresenta os dados e oferece a ediÃ§Ã£o.
 ///
-/// A navegação para esta tela NÃO abre o formulário de edição diretamente;
-/// a edição é uma ação explícita na tela.
+/// A navegaÃ§Ã£o para esta tela NÃƒO abre o formulÃ¡rio de ediÃ§Ã£o diretamente;
+/// a ediÃ§Ã£o Ã© uma aÃ§Ã£o explÃ­cita na tela.
 class CompetitionDetailScreen extends ConsumerWidget {
   const CompetitionDetailScreen({
     super.key,
@@ -38,7 +38,7 @@ class CompetitionDetailScreen extends ConsumerWidget {
               loading: () =>
                   const AppLoading(message: 'Carregando campeonato...'),
               error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar o campeonato',
+                message: 'NÃ£o foi possÃ­vel carregar o campeonato',
                 onRetry: () =>
                     ref.invalidate(competitionProvider(competitionId!)),
               ),
@@ -54,7 +54,7 @@ class CompetitionDetailScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Identidade: cabeçalho do campeonato com edição explícita.
+            // Identidade: cabeÃ§alho do campeonato com ediÃ§Ã£o explÃ­cita.
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -92,7 +92,7 @@ class CompetitionDetailScreen extends ConsumerWidget {
                               Text(
                                 comp.organizationName ??
                                     (comp.organizationId != null
-                                        ? 'Organização #${comp.organizationId}'
+                                        ? 'OrganizaÃ§Ã£o #${comp.organizationId}'
                                         : ''),
                                 style: const TextStyle(
                                   fontSize: 14,
@@ -121,38 +121,38 @@ class CompetitionDetailScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
 
-            // Atributos da competição.
+            // Atributos da competiÃ§Ã£o.
             _infoCard('Atributos', [
-              _row('Modalidade', comp.modality?.label ?? 'Não definido'),
-              _row('Gênero', _genderLabel(comp.gender)),
-              _row('Faixa Etária', _ageGroupLabel(comp.ageGroup)),
+              _row('Modalidade', comp.modality?.label ?? 'NÃ£o definido'),
+              _row('GÃªnero', _genderLabel(comp.gender)),
+              _row('Faixa EtÃ¡ria', _ageGroupLabel(comp.ageGroup)),
             ]),
             const SizedBox(height: 12),
 
-            // Período de realização.
-            _infoCard('Período', [
+            // PerÃ­odo de realizaÃ§Ã£o.
+            _infoCard('PerÃ­odo', [
               if (comp.startDate != null)
-                _row('Início', _formatDate(comp.startDate!)),
+                _row('InÃ­cio', _formatDate(comp.startDate!)),
               if (comp.endDate != null) _row('Fim', _formatDate(comp.endDate!)),
               if (comp.startDate == null && comp.endDate == null)
-                _row('Período', 'Não definido'),
+                _row('PerÃ­odo', 'NÃ£o definido'),
             ]),
             const SizedBox(height: 12),
 
-            // Descrição opcional.
+            // DescriÃ§Ã£o opcional.
             if (comp.description != null && comp.description!.isNotEmpty) ...[
-              _infoCard('Descrição', [
-                _row('Descrição', comp.description!),
+              _infoCard('DescriÃ§Ã£o', [
+                _row('DescriÃ§Ã£o', comp.description!),
               ]),
               const SizedBox(height: 12),
             ],
 
-            // Ações dentro do campeonato.
-            _infoCard('Ações do campeonato', [
+            // AÃ§Ãµes dentro do campeonato.
+            _infoCard('AÃ§Ãµes do campeonato', [
               _actionRowButton(
                 context,
                 icon: Icons.account_tree_outlined,
-                label: 'Gerenciar Conferências e Divisões',
+                label: 'Gerenciar ConferÃªncias e DivisÃµes',
                 onTap: () {
                   ref.read(selectedCompetitionProvider.notifier).state =
                       comp.id;
@@ -252,6 +252,7 @@ class CompetitionDetailScreen extends ConsumerWidget {
       CompetitionStatus.draft => AppColors.textSecondary,
       CompetitionStatus.published => AppColors.success,
       CompetitionStatus.finished => AppColors.danger,
+      CompetitionStatus.disabled => AppColors.textSecondary,
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -270,13 +271,14 @@ class CompetitionDetailScreen extends ConsumerWidget {
     CompetitionStatus.draft => 'Rascunho',
     CompetitionStatus.published => 'Publicado',
     CompetitionStatus.finished => 'Encerrado',
+    CompetitionStatus.disabled => 'Desativado',
   };
 
   String _genderLabel(String? gender) => switch (gender) {
     'MALE' => 'Masculino',
     'FEMALE' => 'Feminino',
     'MIXED' => 'Misto',
-    _ => 'Não definido',
+    _ => 'NÃ£o definido',
   };
 
   String _ageGroupLabel(String? ageGroup) => switch (ageGroup) {
@@ -289,7 +291,7 @@ class CompetitionDetailScreen extends ConsumerWidget {
     'ADULT' => 'Adulto',
     'MASTER' => 'Master',
     'OPEN' => 'Livre',
-    _ => 'Não definido',
+    _ => 'NÃ£o definido',
   };
 
   String _formatDate(DateTime value) {

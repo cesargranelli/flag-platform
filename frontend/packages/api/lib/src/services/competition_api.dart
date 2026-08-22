@@ -9,8 +9,12 @@ class CompetitionApi {
   CompetitionApi(this._client);
 
   /// Lista todos os campeonatos (endpoint público, ordenado por nome).
-  Future<List<Competition>> listAll() =>
-      _client.getList('/api/v1/competitions', Competition.fromJson);
+  /// ADMIN pode passar includeDisabled para receber também os desativados.
+  Future<List<Competition>> listAll({bool includeDisabled = false}) =>
+      _client.getList(
+        '/api/v1/competitions?includeDisabled=$includeDisabled',
+        Competition.fromJson,
+      );
 
   Future<List<Competition>> listByOrganization(String organizationId) =>
       _client.getList(
@@ -20,6 +24,15 @@ class CompetitionApi {
 
   Future<Competition> getById(String id) =>
       _client.getOne('/api/v1/competitions/$id', Competition.fromJson);
+
+  /// Exclusão lógica: marca o campeonato como desativado (DISABLED).
+  Future<void> deactivate(String id) =>
+      _client.delete('/api/v1/competitions/$id');
+
+  /// Reativa o campeonato (exclusivo ADMIN), voltando para DRAFT.
+  Future<void> reactivate(String id) =>
+      _client.post('/api/v1/competitions/$id/reactivate', <String, dynamic>{},
+          (json) => json);
 
   Future<Competition> create({
     required String organizationId,
