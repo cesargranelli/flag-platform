@@ -8,6 +8,8 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/providers.dart';
+import '../widgets/match_score_card.dart';
+import 'team_detail_screen.dart';
 
 /// Argumentos de navegação do detalhe do jogo (rota `/game/:id`).
 ///
@@ -89,7 +91,31 @@ class _GameDetailScreenState extends ConsumerState<GameDetailScreen> {
   }
 }
 
-/// Conteúdo do detalhe do jogo: times, horário, status, placar e campo.
+/// Junta o jogo buscado por id com os dados vindos da listagem (`extra`),
+/// priorizando nomes/ids/campo do `extra` quando disponíveis.
+Game _mergeDisplay(Game base, Game? names) {
+  if (names == null) return base;
+  return Game(
+    id: base.id,
+    roundId: base.roundId,
+    competitionId: names.competitionId ?? base.competitionId,
+    homeTeamId: names.homeTeamId ?? base.homeTeamId,
+    awayTeamId: names.awayTeamId ?? base.awayTeamId,
+    roundNumber: base.roundNumber ?? names.roundNumber,
+    homeTeamName: names.homeTeamName ?? base.homeTeamName,
+    awayTeamName: names.awayTeamName ?? base.awayTeamName,
+    venueId: names.venueId ?? base.venueId,
+    venueName: names.venueName ?? base.venueName,
+    venueAddress: names.venueAddress ?? base.venueAddress,
+    venueMapsUrl: names.venueMapsUrl ?? base.venueMapsUrl,
+    scheduledAt: base.scheduledAt,
+    status: base.status,
+    homeScore: base.homeScore,
+    awayScore: base.awayScore,
+  );
+}
+
+/// Conteúdo do detalhe do jogo: header de confronto, horário e campo.
 class _GameDetailContent extends StatelessWidget {
   final Game game;
   final Game? namesFrom;
@@ -105,18 +131,15 @@ class _GameDetailContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final names = namesFrom ?? game;
-    final home = names.homeTeamName?.trim();
-    final away = names.awayTeamName?.trim();
-    final homeLabel = (home == null || home.isEmpty) ? 'Casa a definir' : home;
-    final awayLabel = (away == null || away.isEmpty)
-        ? 'Visitante a definir'
-        : away;
-    final dateLabel = DateFormat('dd/MM/yyyy \'às\' HH:mm').format(
-      game.scheduledAt,
-    );
-    final venueName = names.venueName?.trim();
-    final venueAddress = names.venueAddress?.trim();
+    final display = _mergeDisplay(game, namesFrom);
+    final dateLabel = DateFormat(
+      'dd/MM/yyyy \'às\' HH:mm',
+    ).format(game.scheduledAt);
+    final metaLabel = game.roundNumber != null
+        ? 'Rodada ${game.roundNumber} · $dateLabel'
+        : dateLabel;
+    final venueName = display.venueName?.trim();
+    final venueAddress = display.venueAddress?.trim();
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -146,62 +169,42 @@ class _GameDetailContent extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ],
-        Text(
-          '$homeLabel × $awayLabel',
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+        MatchScoreCard(
+          game: display,
+          onHomeTeamTap: () => openTeamDetail(
+            context,
+            teamId: display.homeTeamId,
+            teamName: display.homeTeamName,
+          ),
+          onAwayTeamTap: () => openTeamDetail(
+            context,
+            teamId: display.awayTeamId,
+            teamName: display.awayTeamName,
           ),
         ),
-        if (game.roundNumber != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            'Rodada ${game.roundNumber}',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.schedule, size: 16, color: AppColors.textSecondary),
+            const Icon(
+              Icons.schedule,
+              size: 16,
+              color: AppColors.textSecondary,
+            ),
             const SizedBox(width: 4),
-            Text(
-              dateLabel,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
+            Flexible(
+              child: Text(
+                metaLabel,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        if ((game.status == GameStatus.inProgress ||
-                game.status == GameStatus.finished) &&
-            game.homeScore != null &&
-            game.awayScore != null) ...[
-          _InfoCard(
-            icon: Icons.sports_score,
-            title: game.status == GameStatus.inProgress
-                ? 'Placar ao vivo'
-                : 'Placar final',
-            child: Text(
-              '${game.homeScore} × ${game.awayScore}',
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: AppColors.success,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
         if (events.isNotEmpty) ...[
           _InfoCard(
             icon: Icons.timeline,
@@ -210,19 +213,6 @@ class _GameDetailContent extends StatelessWidget {
           ),
           const SizedBox(height: 12),
         ],
-        _InfoCard(
-          icon: Icons.sports_soccer,
-          title: 'Status',
-          child: Text(
-            _statusLabel(game.status),
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: _statusColor(game.status),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
         _InfoCard(
           icon: Icons.stadium_outlined,
           title: 'Local',
@@ -249,10 +239,11 @@ class _GameDetailContent extends StatelessWidget {
                   ),
                 ),
               ],
-              if (game.venueMapsUrl != null && game.venueMapsUrl!.isNotEmpty) ...[
+              if (display.venueMapsUrl != null &&
+                  display.venueMapsUrl!.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
-                  onPressed: () => _openMap(context, game.venueMapsUrl!),
+                  onPressed: () => _openMap(context, display.venueMapsUrl!),
                   icon: const Icon(Icons.map_outlined),
                   label: const Text('Abrir no mapa'),
                 ),
@@ -270,9 +261,9 @@ class _GameDetailContent extends StatelessWidget {
     if (uri == null) return;
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Não foi possível abrir o mapa')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível abrir o mapa')),
+      );
     }
   }
 }
@@ -323,17 +314,3 @@ class _InfoCard extends StatelessWidget {
     );
   }
 }
-
-String _statusLabel(GameStatus status) => switch (status) {
-  GameStatus.scheduled => 'Agendado',
-  GameStatus.inProgress => 'Ao vivo',
-  GameStatus.finished => 'Encerrado',
-  GameStatus.cancelled => 'Cancelado',
-};
-
-Color _statusColor(GameStatus status) => switch (status) {
-  GameStatus.scheduled => AppColors.textSecondary,
-  GameStatus.inProgress => AppColors.danger,
-  GameStatus.finished => AppColors.success,
-  GameStatus.cancelled => AppColors.textSecondary,
-};

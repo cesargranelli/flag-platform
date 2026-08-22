@@ -5,8 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/game_card.dart';
+import '../widgets/match_score_card.dart';
 import 'game_detail_screen.dart';
+import 'team_detail_screen.dart';
 
 /// Tela de calendário de jogos de um campeonato (issue #25).
 ///
@@ -113,10 +114,22 @@ class _GamesView extends StatelessWidget {
           ...upcoming.map(
             (game) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: GameCard(
+              child: MatchScoreCard(
                 game: game,
                 highlighted: true,
+                showMeta: true,
+                showVenue: true,
                 onTap: () => _openGameDetail(context, game),
+                onHomeTeamTap: () => openTeamDetail(
+                  context,
+                  teamId: game.homeTeamId,
+                  teamName: game.homeTeamName,
+                ),
+                onAwayTeamTap: () => openTeamDetail(
+                  context,
+                  teamId: game.awayTeamId,
+                  teamName: game.awayTeamName,
+                ),
               ),
             ),
           ),
@@ -137,9 +150,21 @@ class _GamesView extends StatelessWidget {
           ...visibleGames.map(
             (game) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: GameCard(
+              child: MatchScoreCard(
                 game: game,
+                showMeta: true,
+                showVenue: true,
                 onTap: () => _openGameDetail(context, game),
+                onHomeTeamTap: () => openTeamDetail(
+                  context,
+                  teamId: game.homeTeamId,
+                  teamName: game.homeTeamName,
+                ),
+                onAwayTeamTap: () => openTeamDetail(
+                  context,
+                  teamId: game.awayTeamId,
+                  teamName: game.awayTeamName,
+                ),
               ),
             ),
           ),

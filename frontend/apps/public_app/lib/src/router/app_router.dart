@@ -6,6 +6,7 @@ import '../screens/competition_results_screen.dart';
 import '../screens/competition_standings_screen.dart';
 import '../screens/game_detail_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/team_detail_screen.dart';
 
 /// Rotas do Public App.
 class AppRouter {
@@ -71,6 +72,21 @@ class AppRouter {
             gameId: args?.gameId ?? state.pathParameters['id']!,
             game: args?.game,
             competitionName: args?.competitionName ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/teams/:id',
+        name: 'teamDetail',
+        builder: (context, state) {
+          // O nome do time pode vir via `extra` (TeamDetailArgs) para
+          // exibição imediata; em deep links a tela busca o time por id.
+          final args = state.extra is TeamDetailArgs
+              ? state.extra as TeamDetailArgs
+              : null;
+          return TeamDetailScreen(
+            teamId: args?.teamId ?? state.pathParameters['id']!,
+            teamName: args?.teamName ?? '',
           );
         },
       ),
