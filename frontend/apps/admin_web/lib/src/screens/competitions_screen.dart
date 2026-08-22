@@ -51,7 +51,11 @@ class CompetitionsScreen extends ConsumerWidget {
                     crossAxisCount: columns,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
-                    mainAxisExtent: 140,
+                    // 156: margem do Card (8) + padding (32) + 4 linhas de
+                    // conteúdo (nome ~19 + org ~16 + badges ~18–42 com quebra
+                    // do Wrap + status ~18) + gaps (12) + folga p/ métricas
+                    // de fonte. Extent fixo mantido pela performance do grid.
+                    mainAxisExtent: 156,
                   ),
                   itemBuilder: (context, index) {
                     final competition = items[index];
@@ -67,6 +71,12 @@ class CompetitionsScreen extends ConsumerWidget {
   }
 
   Widget _competitionCard(BuildContext context, Competition competition) {
+    final badges = <String>[
+      if (competition.modality != null) competition.modality!.label,
+      if (competition.gender != null) _genderLabel(competition.gender!),
+      // Null-aware: valor ausente/desconhecido simplesmente omite a badge.
+      ?_ageGroupLabel(competition.ageGroup),
+    ];
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -104,27 +114,29 @@ class CompetitionsScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      competition.organizationName ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
+                    if (competition.organizationName?.isNotEmpty ?? false) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        competition.organizationName!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        if (competition.modality != null)
-                          _modalityChip(competition.modality!),
-                        const SizedBox(width: 4),
-                        if (competition.gender != null)
-                          _genderChip(competition.gender!),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
+                    ],
+                    const SizedBox(height: 6),
+                    if (badges.isNotEmpty) ...[
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: [
+                          for (final label in badges) _attributeBadge(label),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                    ],
                     _statusChip(competition.status),
                   ],
                 ),
@@ -136,27 +148,44 @@ class CompetitionsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _modalityChip(Modality modality) {
-    return Chip(
-      label: Text(modality.label),
-      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+  /// Badge leve de atributo (modalidade, gênero, faixa etária), no mesmo
+  /// padrão estrutural do [_statusChip] (Container + BoxDecoration raio 10).
+  /// Substitui o widget Material `Chip`, cuja altura mínima e largura
+  /// intrínseca causavam overflow nos cards estreitos do grid.
+  Widget _attributeBadge(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, color: AppColors.primary),
+      ),
     );
   }
 
-  Widget _genderChip(String gender) {
-    return Chip(
-      label: Text(
-        gender == 'MALE'
-            ? 'Masculino'
-            : gender == 'FEMALE'
-            ? 'Feminino'
-            : 'Misto',
-      ),
-      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-    );
-  }
+  String _genderLabel(String gender) => switch (gender) {
+        'MALE' => 'Masculino',
+        'FEMALE' => 'Feminino',
+        _ => 'Misto',
+      };
+
+  /// Mapeamento tolerante: valor desconhecido vindo da API apenas omite a
+  /// badge (o enum `AgeGroup.fromJson` lançaria exceção e derrubaria a lista).
+  String? _ageGroupLabel(String? ageGroup) => switch (ageGroup) {
+        'SUB11' => 'Sub-11',
+        'SUB13' => 'Sub-13',
+        'SUB14' => 'Sub-14',
+        'SUB15' => 'Sub-15',
+        'SUB17' => 'Sub-17',
+        'SUB20' => 'Sub-20',
+        'ADULT' => 'Adulto',
+        'MASTER' => 'Master',
+        'OPEN' => 'Livre',
+        _ => null,
+      };
 
   Widget _statusChip(CompetitionStatus status) {
     final (label, color) = switch (status) {
