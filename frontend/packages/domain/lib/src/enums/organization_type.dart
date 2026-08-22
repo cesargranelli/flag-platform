@@ -1,4 +1,4 @@
-enum OrganizationType {
+﻿enum OrganizationType {
   federation,
   league,
   association,
@@ -23,5 +23,15 @@ enum OrganizationType {
         OrganizationType.university => 'UNIVERSITY',
         OrganizationType.club => 'CLUB',
         OrganizationType.other => 'OTHER',
+      };
+
+  /// Nome amigável em português para exibição.
+  String get label => switch (this) {
+        OrganizationType.federation => 'Federação',
+        OrganizationType.league => 'Liga',
+        OrganizationType.association => 'Associação',
+        OrganizationType.university => 'Universitário',
+        OrganizationType.club => 'Clube',
+        OrganizationType.other => 'Outro',
       };
 }

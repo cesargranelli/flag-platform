@@ -8,13 +8,21 @@ import '../providers/providers.dart';
 
 /// Gestão de organizações: cards de acesso e navegação para o detalhe.
 ///
-/// Listagem em grid de cards (padrão web); clicar navega para a tela de
-/// detalhe da organização.
-class OrganizationsScreen extends ConsumerWidget {
+/// Listagem em grid de cards (padrão web) com filtro por tipo;
+/// clicar navega para a tela de detalhe da organização.
+class OrganizationsScreen extends ConsumerStatefulWidget {
   const OrganizationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OrganizationsScreen> createState() =>
+      _OrganizationsScreenState();
+}
+
+class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
+  OrganizationType? _typeFilter;
+
+  @override
+  Widget build(BuildContext context) {
     final organizations = ref.watch(organizationsProvider);
 
     return Scaffold(
@@ -40,25 +48,84 @@ class OrganizationsScreen extends ConsumerWidget {
               icon: Icons.business,
             );
           }
+          final filtered = _typeFilter == null
+              ? items
+              : items
+                  .where((o) => o.organizationType == _typeFilter)
+                  .toList(growable: false);
+
           return AppLayout.content(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: items.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    mainAxisExtent: 96,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Row(
+                    children: [
+                      Text(
+                        '${filtered.length} de ${items.length}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const Spacer(),
+                      SizedBox(
+                        width: 260,
+                        child: DropdownButtonFormField<OrganizationType?>(
+                          initialValue: _typeFilter,
+                          isDense: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Filtrar por tipo',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: [
+                            const DropdownMenuItem<OrganizationType?>(
+                              value: null,
+                              child: Text('Todas as organizações'),
+                            ),
+                            ...OrganizationType.values.map(
+                              (t) => DropdownMenuItem<OrganizationType?>(
+                                value: t,
+                                child: Text(t.label),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _typeFilter = value),
+                        ),
+                      ),
+                    ],
                   ),
-                  itemBuilder: (context, index) {
-                    final organization = items[index];
-                    return _organizationCard(context, organization);
-                  },
-                );
-              },
+                ),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? const AppEmptyState(
+                          message: 'Nenhuma organização neste tipo',
+                          icon: Icons.filter_alt_off_outlined,
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final columns = constraints.maxWidth >= 600 ? 2 : 1;
+                            return GridView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: filtered.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columns,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                mainAxisExtent: 96,
+                              ),
+                              itemBuilder: (context, index) {
+                                final organization = filtered[index];
+                                return _organizationCard(
+                                    context, organization);
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
           );
         },

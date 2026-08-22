@@ -110,7 +110,7 @@ class OrganizationDetailScreen extends ConsumerWidget {
               if (org.abbreviation != null && org.abbreviation!.isNotEmpty)
                 _row('Sigla', org.abbreviation!),
               if (org.organizationType != null)
-                _row('Tipo', _typeLabel(org.organizationType!)),
+                _row('Tipo', org.organizationType!.label),
               if (org.document != null && org.document!.isNotEmpty)
                 _row('CNPJ', org.document!),
               _row('País', org.country),
@@ -250,15 +250,6 @@ class OrganizationDetailScreen extends ConsumerWidget {
       ),
     );
   }
-
-  String _typeLabel(OrganizationType type) => switch (type) {
-        OrganizationType.federation => 'Federação',
-        OrganizationType.league => 'Liga',
-        OrganizationType.association => 'Associação',
-        OrganizationType.university => 'Universitário',
-        OrganizationType.club => 'Clube',
-        OrganizationType.other => 'Outro',
-      };
 
   /// Aceita "#RRGGBB" ou "RRGGBB"; retorna null se inválido.
   Color? _parseHex(String? hex) {
