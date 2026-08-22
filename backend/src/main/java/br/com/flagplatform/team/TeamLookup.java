@@ -21,4 +21,6 @@ public interface TeamLookup {
 
     TeamInfo findTeamInfoById(UUID id);
 
+    UUID findCompetitionIdByTeamId(UUID teamId);
+
 }

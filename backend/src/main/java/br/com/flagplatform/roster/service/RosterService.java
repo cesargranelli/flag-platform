@@ -3,6 +3,7 @@ package br.com.flagplatform.roster.service;
 import br.com.flagplatform.athlete.AthleteInfo;
 import br.com.flagplatform.athlete.AthleteLookup;
 import br.com.flagplatform.common.enums.RosterStatus;
+import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.roster.RosterLookup;
 import br.com.flagplatform.roster.dto.request.AddRosterEntryRequest;
 import br.com.flagplatform.roster.dto.request.RosterBatchItem;
@@ -34,10 +35,11 @@ public class RosterService implements RosterLookup {
     private final RosterEntryRepository repository;
     private final TeamLookup teamLookup;
     private final AthleteLookup athleteLookup;
+    private final CompetitionLookup competitionLookup;
 
     @Transactional
-    public RosterEntryResponse add(UUID teamId, AddRosterEntryRequest request) {
-        teamLookup.assertExists(teamId);
+    public RosterEntryResponse add(UUID teamId, AddRosterEntryRequest request, String currentUserEmail) {
+        assertTeamManagedBy(teamId, currentUserEmail);
         athleteLookup.assertExists(request.athleteId());
 
         if (repository.existsByTeamIdAndAthleteId(teamId, request.athleteId())) {
@@ -59,8 +61,8 @@ public class RosterService implements RosterLookup {
      * reportados sem abortar as demais linhas.
      */
     @Transactional
-    public RosterBatchResponse createBatch(UUID teamId, RosterBatchRequest request) {
-        teamLookup.assertExists(teamId);
+    public RosterBatchResponse createBatch(UUID teamId, RosterBatchRequest request, String currentUserEmail) {
+        assertTeamManagedBy(teamId, currentUserEmail);
 
         List<RosterBatchLineResult> lines = new ArrayList<>();
         int imported = 0;
@@ -103,11 +105,21 @@ public class RosterService implements RosterLookup {
     }
 
     @Transactional
-    public void remove(UUID teamId, UUID athleteId) {
+    public void remove(UUID teamId, UUID athleteId, String currentUserEmail) {
+        assertTeamManagedBy(teamId, currentUserEmail);
+
         RosterEntryEntity entity = repository.findByTeamIdAndAthleteId(teamId, athleteId)
                 .orElseThrow(() -> new RosterEntryNotFoundException(teamId, athleteId));
 
         repository.delete(entity);
+    }
+
+    /**
+     * V260: gerenciar elenco exige ser criador do campeonato do time (ou ADMIN).
+     * Também cobre a existência do time (404 vem do lookup).
+     */
+    private void assertTeamManagedBy(UUID teamId, String currentUserEmail) {
+        competitionLookup.assertManagedBy(teamLookup.findCompetitionIdByTeamId(teamId), currentUserEmail);
     }
 
     @Override
