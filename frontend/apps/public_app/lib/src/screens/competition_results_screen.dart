@@ -5,8 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/game_card.dart';
+import '../widgets/match_score_card.dart';
 import 'game_detail_screen.dart';
+import 'team_detail_screen.dart';
 
 /// Tela de resultados de um campeonato (issue #26).
 ///
@@ -24,9 +25,7 @@ class CompetitionResultsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final gamesAsync = ref.watch(
-      competitionGamesProvider(competitionId),
-    );
+    final gamesAsync = ref.watch(competitionGamesProvider(competitionId));
     final title = competitionName.isEmpty ? 'Resultados' : competitionName;
 
     return Scaffold(
@@ -52,9 +51,11 @@ class CompetitionResultsScreen extends ConsumerWidget {
               for (final game in results)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: GameCard(
+                  child: MatchScoreCard(
                     game: game,
+                    showMeta: true,
                     showRound: true,
+                    showVenue: true,
                     onTap: () => context.push(
                       '/game/${game.id}',
                       extra: GameDetailArgs(
@@ -62,6 +63,16 @@ class CompetitionResultsScreen extends ConsumerWidget {
                         game: game,
                         competitionName: competitionName,
                       ),
+                    ),
+                    onHomeTeamTap: () => openTeamDetail(
+                      context,
+                      teamId: game.homeTeamId,
+                      teamName: game.homeTeamName,
+                    ),
+                    onAwayTeamTap: () => openTeamDetail(
+                      context,
+                      teamId: game.awayTeamId,
+                      teamName: game.awayTeamName,
                     ),
                   ),
                 ),
@@ -74,10 +85,9 @@ class CompetitionResultsScreen extends ConsumerWidget {
 
   /// Jogos encerrados, do mais recente para o mais antigo.
   List<Game> _finishedResults(List<Game> games) {
-    final results = games
-        .where((game) => game.status == GameStatus.finished)
-        .toList()
-      ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+    final results =
+        games.where((game) => game.status == GameStatus.finished).toList()
+          ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
     return results;
   }
 }
