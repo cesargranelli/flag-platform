@@ -1,6 +1,9 @@
 package br.com.flagplatform.organization.repository;
 
+import br.com.flagplatform.common.enums.OrganizationStatus;
 import br.com.flagplatform.organization.entity.OrganizationEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -22,5 +25,7 @@ public interface OrganizationRepository extends JpaRepository<OrganizationEntity
     Optional<OrganizationEntity> findByTradeNameIgnoreCase(String tradeName);
 
     List<OrganizationEntity> findAllByOrderByTradeNameAsc();
+
+    Page<OrganizationEntity> findAllByStatus(OrganizationStatus status, Pageable pageable);
 
 }

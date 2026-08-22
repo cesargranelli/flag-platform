@@ -1,9 +1,6 @@
 package br.com.flagplatform.organization.controller;
 
-import br.com.flagplatform.organization.dto.request.CreateOrganizationRequest;
-import br.com.flagplatform.organization.dto.request.UpdateOrganizationRequest;
-import br.com.flagplatform.organization.dto.response.OrganizationCreatedResponse;
-import br.com.flagplatform.organization.dto.response.OrganizationResponse;
+import br.com.flagplatform.common.security.CurrentUser;
 import br.com.flagplatform.common.security.SecurityExpressions;
 import br.com.flagplatform.organization.dto.request.CreateOrganizationRequest;
 import br.com.flagplatform.organization.dto.request.UpdateOrganizationRequest;
@@ -18,6 +15,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,26 +51,52 @@ public class OrganizationController {
 
     @Operation(
             summary = "Listar organizações",
-            description = "Lista as organizações esportivas cadastradas, com paginação (page/size) e total no header X-Total-Count. Acesso público."
+            description = "Lista as organizações esportivas ativas, com paginação (page/size) e total no header X-Total-Count. "
+                    + "Com includeDisabled=true e role ADMIN, inclui também as desativadas. Acesso público."
     )
     @GetMapping
     public List<OrganizationResponse> list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size,
+            @RequestParam(defaultValue = "false") boolean includeDisabled,
+            Authentication authentication,
             HttpServletResponse response) {
-        var result = service.findAll(page, size);
+        var result = service.findAll(page, size, includeDisabled, CurrentUser.isAdmin(authentication));
         response.setHeader("X-Total-Count", String.valueOf(result.total()));
         return result.items();
     }
 
     @Operation(
             summary = "Buscar organização por id",
-            description = "Retorna o detalhe de uma organização esportiva. Acesso público."
+            description = "Retorna o detalhe de uma organização esportiva. Organizações desativadas são visíveis apenas ao ADMIN. Acesso público."
     )
     @GetMapping("/{id}")
     public OrganizationResponse getById(
+            @Parameter(description = "Id da organização") @PathVariable UUID id,
+            Authentication authentication) {
+        return service.findById(id, CurrentUser.isAdmin(authentication));
+    }
+
+    @Operation(
+            summary = "Desativar organização",
+            description = "Exclusão lógica: marca a organização como INACTIVE. Ela deixa de aparecer nas listagens e só o ADMIN pode reativar."
+    )
+    @DeleteMapping("/{id}")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public void deactivate(
             @Parameter(description = "Id da organização") @PathVariable UUID id) {
-        return service.findById(id);
+        service.deactivate(id);
+    }
+
+    @Operation(
+            summary = "Reativar organização",
+            description = "Reverte a desativação lógica, voltando a organização para ACTIVE. Exclusivo do ADMIN."
+    )
+    @PostMapping("/{id}/reactivate")
+    @PreAuthorize(SecurityExpressions.ADMIN)
+    public void reactivate(
+            @Parameter(description = "Id da organização") @PathVariable UUID id) {
+        service.reactivate(id);
     }
 
     @Operation(

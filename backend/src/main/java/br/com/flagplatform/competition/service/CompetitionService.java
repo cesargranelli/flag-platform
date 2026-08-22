@@ -48,31 +48,54 @@ public class CompetitionService implements CompetitionLookup {
         return toResponse(repository.save(entity));
     }
 
-    public CompetitionResponse findById(UUID id) {
-        return toResponse(findEntityById(id));
+    public CompetitionResponse findById(UUID id, boolean isAdmin) {
+        CompetitionEntity entity = findEntityById(id);
+        if (entity.getStatus() == CompetitionStatus.DISABLED && !isAdmin) {
+            // Desativado é visível apenas ao ADMIN (V246).
+            throw new CompetitionNotFoundException(id);
+        }
+        return toResponse(entity);
     }
 
-    public List<CompetitionResponse> findByOrganizationId(UUID organizationId) {
+    public List<CompetitionResponse> findByOrganizationId(
+            UUID organizationId, boolean includeDisabled, boolean isAdmin) {
+        boolean showAll = includeDisabled && isAdmin;
         return repository.findAllByOrganizationIdOrderByNameAsc(organizationId).stream()
+                .filter(entity -> showAll || entity.getStatus() != CompetitionStatus.DISABLED)
                 .map(this::toResponse)
                 .toList();
     }
 
-    public PagedResponse<CompetitionSummaryResponse> listAllPublic(int page, int size) {
-        Page<CompetitionEntity> result = repository.findAll(
-                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name")));
+    public PagedResponse<CompetitionSummaryResponse> listAllPublic(
+            int page, int size, boolean includeDisabled, boolean isAdmin) {
+        boolean showAll = includeDisabled && isAdmin;
+
+        Page<CompetitionEntity> result = showAll
+                ? repository.findAll(
+                        PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name")))
+                : repository.findAllByStatusNot(
+                        CompetitionStatus.DISABLED,
+                        PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "name")));
+
         return new PagedResponse<>(
                 result.getContent().stream()
-                        .map(entity -> new CompetitionSummaryResponse(
-                                entity.getId(),
-                                entity.getName(),
-                                organizationLookup.findTradeNameById(entity.getOrganizationId()),
-                                entity.getStatus(),
-                                entity.getModality(),
-                                entity.getGender(),
-                                entity.getAgeGroup()))
+                        .map(this::toSummary)
                         .toList(),
                 result.getTotalElements());
+    }
+
+    @Transactional
+    public void deactivate(UUID id) {
+        CompetitionEntity entity = findEntityById(id);
+        entity.setStatus(CompetitionStatus.DISABLED);
+        repository.save(entity);
+    }
+
+    @Transactional
+    public void reactivate(UUID id) {
+        CompetitionEntity entity = findEntityById(id);
+        entity.setStatus(CompetitionStatus.DRAFT);
+        repository.save(entity);
     }
 
     @Transactional
@@ -98,6 +121,21 @@ public class CompetitionService implements CompetitionLookup {
     private CompetitionEntity findEntityById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new CompetitionNotFoundException(id));
+    }
+
+    /**
+     * Monta a response de resumo resolvendo o nome da organização
+     * (trade name) via lookup — isolamento de modulith.
+     */
+    private CompetitionSummaryResponse toSummary(CompetitionEntity entity) {
+        return new CompetitionSummaryResponse(
+                entity.getId(),
+                entity.getName(),
+                organizationLookup.findTradeNameById(entity.getOrganizationId()),
+                entity.getStatus(),
+                entity.getModality(),
+                entity.getGender(),
+                entity.getAgeGroup());
     }
 
     /**

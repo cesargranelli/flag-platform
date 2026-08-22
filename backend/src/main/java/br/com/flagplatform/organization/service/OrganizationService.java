@@ -52,16 +52,43 @@ public class OrganizationService implements OrganizationLookup {
         return mapper.toResponse(saved);
     }
 
-    public PagedResponse<OrganizationResponse> findAll(int page, int size) {
-        Page<OrganizationEntity> result = repository.findAll(
-                PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "tradeName")));
+    public PagedResponse<OrganizationResponse> findAll(
+            int page, int size, boolean includeDisabled, boolean isAdmin) {
+        boolean showAll = includeDisabled && isAdmin;
+
+        Page<OrganizationEntity> result = showAll
+                ? repository.findAll(
+                        PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "tradeName")))
+                : repository.findAllByStatus(
+                        OrganizationStatus.ACTIVE,
+                        PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "tradeName")));
+
         return new PagedResponse<>(
                 mapper.toDetailResponseList(result.getContent()),
                 result.getTotalElements());
     }
 
-    public OrganizationResponse findById(UUID id) {
-        return mapper.toDetailResponse(findEntityById(id));
+    public OrganizationResponse findById(UUID id, boolean isAdmin) {
+        OrganizationEntity entity = findEntityById(id);
+        if (entity.getStatus() == OrganizationStatus.INACTIVE && !isAdmin) {
+            // Desativada é visível apenas ao ADMIN (V246).
+            throw new OrganizationNotFoundException(id);
+        }
+        return mapper.toDetailResponse(entity);
+    }
+
+    @Transactional
+    public void deactivate(UUID id) {
+        OrganizationEntity entity = findEntityById(id);
+        entity.setStatus(OrganizationStatus.INACTIVE);
+        repository.save(entity);
+    }
+
+    @Transactional
+    public void reactivate(UUID id) {
+        OrganizationEntity entity = findEntityById(id);
+        entity.setStatus(OrganizationStatus.ACTIVE);
+        repository.save(entity);
     }
 
     @Transactional
