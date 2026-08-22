@@ -10,10 +10,12 @@ import br.com.flagplatform.competition.dto.response.CompetitionSummaryResponse;
 import br.com.flagplatform.competition.entity.CompetitionEntity;
 import br.com.flagplatform.competition.exception.CompetitionNotFoundException;
 import br.com.flagplatform.competition.exception.CompetitionNotEditableException;
+import br.com.flagplatform.competition.exception.CompetitionNotOwnedByCreatorException;
 import br.com.flagplatform.competition.exception.DuplicateCompetitionNameException;
 import br.com.flagplatform.competition.mapper.CompetitionMapper;
 import br.com.flagplatform.competition.repository.CompetitionRepository;
 import br.com.flagplatform.organization.OrganizationLookup;
+import br.com.flagplatform.user.UserLookup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,9 +34,10 @@ public class CompetitionService implements CompetitionLookup {
     private final CompetitionMapper mapper;
     private final CompetitionRepository repository;
     private final OrganizationLookup organizationLookup;
+    private final UserLookup userLookup;
 
     @Transactional
-    public CompetitionResponse create(CreateCompetitionRequest request) {
+    public CompetitionResponse create(CreateCompetitionRequest request, String creatorEmail) {
         organizationLookup.assertExists(request.organizationId());
 
         if (repository.existsByOrganizationIdAndNameIgnoreCase(request.organizationId(), request.name())) {
@@ -45,6 +48,9 @@ public class CompetitionService implements CompetitionLookup {
         if (entity.getStatus() == null) {
             entity.setStatus(CompetitionStatus.DRAFT);
         }
+        // V260: registra quem criou o campeonato — base da regra de
+        // edição restrita ao criador (ou ADMIN).
+        entity.setCreatedBy(userLookup.findUserIdByEmail(creatorEmail));
 
         return toResponse(repository.save(entity));
     }
@@ -86,7 +92,9 @@ public class CompetitionService implements CompetitionLookup {
     }
 
     @Transactional
-    public void deactivate(UUID id) {
+    public void deactivate(UUID id, String currentUserEmail) {
+        assertManagedBy(id, currentUserEmail);
+
         CompetitionEntity entity = findEntityById(id);
         entity.setStatus(CompetitionStatus.DISABLED);
         repository.save(entity);
@@ -100,7 +108,10 @@ public class CompetitionService implements CompetitionLookup {
     }
 
     @Transactional
-    public CompetitionResponse update(UUID id, UpdateCompetitionRequest request) {
+    public CompetitionResponse update(UUID id, UpdateCompetitionRequest request, String currentUserEmail) {
+        // V260: apenas o criador do campeonato (ou ADMIN) pode editar.
+        assertManagedBy(id, currentUserEmail);
+
         CompetitionEntity entity = findEntityById(id);
 
         // V250: edição permitida apenas enquanto rascunho — publicado,
@@ -126,6 +137,20 @@ public class CompetitionService implements CompetitionLookup {
         findEntityById(id);
     }
 
+    @Override
+    public void assertManagedBy(UUID competitionId, String currentUserEmail) {
+        if (userLookup.isAdminByEmail(currentUserEmail)) {
+            return;
+        }
+
+        CompetitionEntity entity = findEntityById(competitionId);
+        UUID createdBy = entity.getCreatedBy();
+        // Legado sem criador conhecido (created_by nulo): restrito ao ADMIN.
+        if (createdBy == null || !createdBy.equals(userLookup.findUserIdByEmail(currentUserEmail))) {
+            throw new CompetitionNotOwnedByCreatorException();
+        }
+    }
+
     private CompetitionEntity findEntityById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new CompetitionNotFoundException(id));
@@ -143,7 +168,8 @@ public class CompetitionService implements CompetitionLookup {
                 entity.getStatus(),
                 entity.getModality(),
                 entity.getGender(),
-                entity.getAgeGroup());
+                entity.getAgeGroup(),
+                entity.getCreatedBy());
     }
 
     /**
@@ -165,6 +191,7 @@ public class CompetitionService implements CompetitionLookup {
                 base.startDate(),
                 base.endDate(),
                 base.status(),
+                base.createdBy(),
                 base.createdAt(),
                 base.updatedAt());
     }

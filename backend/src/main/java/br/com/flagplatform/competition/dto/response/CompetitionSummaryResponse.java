@@ -14,6 +14,7 @@ public record CompetitionSummaryResponse(
         CompetitionStatus status,
         Modality modality,
         Gender gender,
-        AgeGroup ageGroup
+        AgeGroup ageGroup,
+        UUID createdBy
 ) {
 }

@@ -4,6 +4,7 @@ import br.com.flagplatform.common.enums.DocumentType;
 import br.com.flagplatform.common.exception.DuplicateDocumentException;
 import br.com.flagplatform.common.exception.InvalidDocumentException;
 import br.com.flagplatform.common.validation.DocumentValidator;
+import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.division.DivisionLookup;
 import br.com.flagplatform.division.exception.DivisionCompetitionMismatchException;
 import br.com.flagplatform.organization.OrganizationLookup;
@@ -34,9 +35,13 @@ public class TeamService implements TeamLookup {
     private final TeamRepository repository;
     private final OrganizationLookup organizationLookup;
     private final DivisionLookup divisionLookup;
+    private final CompetitionLookup competitionLookup;
 
     @Transactional
-    public TeamResponse create(CreateTeamRequest request) {
+    public TeamResponse create(CreateTeamRequest request, String currentUserEmail) {
+        // V260: apenas o criador do campeonato (ou ADMIN) gerencia o campeonato.
+        competitionLookup.assertManagedBy(request.competitionId(), currentUserEmail);
+
         organizationLookup.assertExists(request.organizationId());
         validateDivision(request.divisionId(), request.competitionId());
 
@@ -65,8 +70,16 @@ public class TeamService implements TeamLookup {
     }
 
     @Transactional
-    public TeamResponse update(UUID id, UpdateTeamRequest request) {
+    public TeamResponse update(UUID id, UpdateTeamRequest request, String currentUserEmail) {
         TeamEntity entity = findEntityById(id);
+
+        // V260: valida o campeonato atual do time e, se houver transferência,
+        // também o campeonato de destino.
+        competitionLookup.assertManagedBy(entity.getCompetitionId(), currentUserEmail);
+        if (!entity.getCompetitionId().equals(request.competitionId())) {
+            competitionLookup.assertManagedBy(request.competitionId(), currentUserEmail);
+        }
+
         organizationLookup.assertExists(request.organizationId());
         validateDivision(request.divisionId(), request.competitionId());
 
@@ -161,6 +174,11 @@ public class TeamService implements TeamLookup {
     public TeamInfo findTeamInfoById(UUID id) {
         TeamEntity entity = findEntityById(id);
         return new TeamInfo(entity.getId(), entity.getName());
+    }
+
+    @Override
+    public UUID findCompetitionIdByTeamId(UUID teamId) {
+        return findEntityById(teamId).getCompetitionId();
     }
 
 }

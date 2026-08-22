@@ -21,6 +21,7 @@ public record CompetitionResponse(
         LocalDate startDate,
         LocalDate endDate,
         CompetitionStatus status,
+        UUID createdBy,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

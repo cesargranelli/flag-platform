@@ -7,11 +7,13 @@ import br.com.flagplatform.round.dto.response.RoundResponse;
 import br.com.flagplatform.round.service.RoundService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,13 +34,14 @@ public class RoundController {
 
     @Operation(
             summary = "Criar rodada",
-            description = "Cria uma nova rodada em um campeonato. Requer autenticação."
+            description = "Cria uma nova rodada em um campeonato. Permitido apenas ao criador do campeonato ou ADMIN."
     )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
     @PostMapping("/api/v1/rounds")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
-    public RoundResponse create(@Valid @RequestBody CreateRoundRequest request) {
-        return service.create(request);
+    public RoundResponse create(@Valid @RequestBody CreateRoundRequest request, Authentication authentication) {
+        return service.create(request, authentication.getName());
     }
 
     @Operation(
@@ -63,14 +66,16 @@ public class RoundController {
 
     @Operation(
             summary = "Atualizar rodada",
-            description = "Atualiza uma rodada existente. Requer autenticação."
+            description = "Atualiza uma rodada existente. Permitido apenas ao criador do campeonato ou ADMIN."
     )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
     @PutMapping("/api/v1/rounds/{id}")
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public RoundResponse update(
             @Parameter(description = "Id da rodada") @PathVariable UUID id,
-            @Valid @RequestBody UpdateRoundRequest request) {
-        return service.update(id, request);
+            @Valid @RequestBody UpdateRoundRequest request,
+            Authentication authentication) {
+        return service.update(id, request, authentication.getName());
     }
 
 }

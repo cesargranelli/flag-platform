@@ -15,11 +15,13 @@ import br.com.flagplatform.game.dto.response.ScoreEventResponse;
 import br.com.flagplatform.game.service.GameService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,26 +43,29 @@ public class GameController {
 
     @Operation(
             summary = "Criar jogo",
-            description = "Cria um novo jogo em uma rodada. Requer autenticação."
+            description = "Cria um novo jogo em uma rodada. Permitido apenas ao criador do campeonato ou ADMIN."
     )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
     @PostMapping("/api/v1/games")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
-    public GameResponse create(@Valid @RequestBody CreateGameRequest request) {
-        return service.create(request);
+    public GameResponse create(@Valid @RequestBody CreateGameRequest request, Authentication authentication) {
+        return service.create(request, authentication.getName());
     }
 
     @Operation(
             summary = "Importar jogos em lote",
-            description = "Cria varios jogos de uma rodada de uma vez. Linhas invalidas/duplicadas nao abortam as validas."
+            description = "Cria varios jogos de uma rodada de uma vez. Linhas invalidas/duplicadas nao abortam as validas. Permitido apenas ao criador do campeonato ou ADMIN."
     )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
     @PostMapping("/api/v1/rounds/{roundId}/games/batch")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public GameBatchResponse createBatch(
             @Parameter(description = "Id da rodada") @PathVariable UUID roundId,
-            @Valid @RequestBody GameBatchRequest request) {
-        return service.createBatch(roundId, request);
+            @Valid @RequestBody GameBatchRequest request,
+            Authentication authentication) {
+        return service.createBatch(roundId, request, authentication.getName());
     }
 
     @Operation(
@@ -95,14 +100,16 @@ public class GameController {
 
     @Operation(
             summary = "Atualizar jogo",
-            description = "Atualiza horário ou campo de um jogo existente. Requer autenticação."
+            description = "Atualiza horário, campo ou rodada de um jogo existente. Permitido apenas ao criador do campeonato ou ADMIN."
     )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
     @PutMapping("/api/v1/games/{id}")
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public GameResponse update(
             @Parameter(description = "Id do jogo") @PathVariable UUID id,
-            @Valid @RequestBody UpdateGameRequest request) {
-        return service.update(id, request);
+            @Valid @RequestBody UpdateGameRequest request,
+            Authentication authentication) {
+        return service.update(id, request, authentication.getName());
     }
 
     @Operation(

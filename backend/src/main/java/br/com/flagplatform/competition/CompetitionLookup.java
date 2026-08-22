@@ -12,4 +12,11 @@ public interface CompetitionLookup {
 
     void assertExists(UUID id);
 
+    /**
+     * Garante que o usuário autenticado (identificado pelo e-mail do JWT)
+     * é o criador do campeonato ou ADMIN. Caso contrário, lança 403.
+     * Campeonatos legados sem criador conhecido ficam restritos ao ADMIN.
+     */
+    void assertManagedBy(UUID competitionId, String currentUserEmail);
+
 }

@@ -7,11 +7,13 @@ import br.com.flagplatform.team.dto.response.TeamResponse;
 import br.com.flagplatform.team.service.TeamService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,13 +34,14 @@ public class TeamController {
 
     @Operation(
             summary = "Criar time",
-            description = "Cria a inscrição de uma organização (clube) no campeonato. Requer autenticação."
+            description = "Cria a inscrição de uma organização (clube) no campeonato. Permitido apenas ao criador do campeonato ou ADMIN."
     )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
     @PostMapping("/api/v1/teams")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
-    public TeamResponse create(@Valid @RequestBody CreateTeamRequest request) {
-        return service.create(request);
+    public TeamResponse create(@Valid @RequestBody CreateTeamRequest request, Authentication authentication) {
+        return service.create(request, authentication.getName());
     }
 
     @Operation(
@@ -63,14 +66,16 @@ public class TeamController {
 
     @Operation(
             summary = "Atualizar time",
-            description = "Atualiza um time existente. Requer autenticação."
+            description = "Atualiza um time existente. Permitido apenas ao criador do campeonato ou ADMIN."
     )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
     @PutMapping("/api/v1/teams/{id}")
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public TeamResponse update(
             @Parameter(description = "Id do time") @PathVariable UUID id,
-            @Valid @RequestBody UpdateTeamRequest request) {
-        return service.update(id, request);
+            @Valid @RequestBody UpdateTeamRequest request,
+            Authentication authentication) {
+        return service.update(id, request, authentication.getName());
     }
 
 }

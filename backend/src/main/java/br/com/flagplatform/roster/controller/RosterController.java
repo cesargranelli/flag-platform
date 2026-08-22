@@ -8,11 +8,13 @@ import br.com.flagplatform.roster.dto.response.RosterBatchResponse;
 import br.com.flagplatform.roster.service.RosterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,28 +35,32 @@ public class RosterController {
 
     @Operation(
             summary = "Inscrever atleta no time",
-            description = "Adiciona um atleta ao elenco de um time. Requer autenticação."
+            description = "Adiciona um atleta ao elenco de um time. Permitido apenas ao criador do campeonato ou ADMIN."
     )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
     @PostMapping("/api/v1/teams/{teamId}/roster")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public RosterEntryResponse add(
             @Parameter(description = "Id do time") @PathVariable UUID teamId,
-            @Valid @RequestBody AddRosterEntryRequest request) {
-        return service.add(teamId, request);
+            @Valid @RequestBody AddRosterEntryRequest request,
+            Authentication authentication) {
+        return service.add(teamId, request, authentication.getName());
     }
 
     @Operation(
             summary = "Importar elenco em lote",
-            description = "Inscreve varios atletas em um time de uma vez. Atletas ja inscritos sao pulados."
+            description = "Inscreve varios atletas em um time de uma vez. Atletas ja inscritos sao pulados. Permitido apenas ao criador do campeonato ou ADMIN."
     )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
     @PostMapping("/api/v1/teams/{teamId}/roster/batch")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public RosterBatchResponse createBatch(
             @Parameter(description = "Id do time") @PathVariable UUID teamId,
-            @Valid @RequestBody RosterBatchRequest request) {
-        return service.createBatch(teamId, request);
+            @Valid @RequestBody RosterBatchRequest request,
+            Authentication authentication) {
+        return service.createBatch(teamId, request, authentication.getName());
     }
 
     @Operation(
@@ -69,15 +75,17 @@ public class RosterController {
 
     @Operation(
             summary = "Remover atleta do time",
-            description = "Remove um atleta do elenco de um time. Requer autenticação."
+            description = "Remove um atleta do elenco de um time. Permitido apenas ao criador do campeonato ou ADMIN."
     )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
     @DeleteMapping("/api/v1/teams/{teamId}/roster/{athleteId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public void remove(
             @Parameter(description = "Id do time") @PathVariable UUID teamId,
-            @Parameter(description = "Id do atleta") @PathVariable UUID athleteId) {
-        service.remove(teamId, athleteId);
+            @Parameter(description = "Id do atleta") @PathVariable UUID athleteId,
+            Authentication authentication) {
+        service.remove(teamId, athleteId, authentication.getName());
     }
 
 }

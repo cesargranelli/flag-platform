@@ -12,4 +12,6 @@ public interface UserLookup {
 
     UUID findUserIdByEmail(String email);
 
+    boolean isAdminByEmail(String email);
+
 }
