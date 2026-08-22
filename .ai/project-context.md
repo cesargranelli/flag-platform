@@ -140,6 +140,8 @@ Regras obrigatórias para toda issue criada no repositório `cesargranelli/flag-
 1. **Assinatura da issue**: toda issue deve ser atribuída (assignee) ao usuário **`cesargranellidev`**.
 2. **Separação por subagente**: quando o escopo envolver mais de uma frente (backend, frontend/app, devops), criar **uma issue separada por subagente executor** — nunca uma issue única misturando escopos. Cada issue recebe os labels do seu escopo (`backend`, `frontend`, `app`, `admin-web`, etc.).
 3. **Associação issue ↔ branch-feature**: o corpo de cada issue deve referenciar explicitamente a branch-feature em execução para aquela issue (ex.: `**Branch:** \`issue-{n}-{slug}\``). Uma branch por issue; a issue só é fechada após o merge da sua branch.
+4. **Merge exclusivamente via GitHub (PR)**: nunca fazer merge localmente (`git merge` na main local). O fluxo é: push da branch → abrir PR → **o próprio agente tech-lead revisa e aprova o PR** → merge via GitHub (`gh pr merge`). A main local apenas sincroniza com `origin/main` após o merge.
+5. **Autonomia em comandos locais**: atuando no projeto flag-platform, **não é necessário pedir permissão/autorização** para executar comandos locais (compilar, analisar, testar, git status/add/commit/push em branch-feature, criar issues/PRs via gh, etc.). Perguntar apenas quando a ação sair do diretório do projeto ou afetar configuração global/externa.
 
 ## Pergunta Principal
 
