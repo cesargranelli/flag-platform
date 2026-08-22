@@ -93,6 +93,20 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
       ? ''
       : '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
+  /// Issue #257 (D): em modo CRIAÇÃO, quando o organizador possui exatamente
+  /// 1 organização disponível, pré-seleciona-a automaticamente — elimina a
+  /// dúvida central da história sem adicionar etapas ao fluxo.
+  void _maybePreselectOrganization(List<Organization> orgs) {
+    if (_isEditing || _organizationId.text.isNotEmpty || orgs.length != 1) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _organizationId.text.isNotEmpty) return;
+      setState(() => _organizationId.text = orgs.single.id);
+    });
+  }
+
+
   Future<void> _pickDate(TextEditingController controller) async {
     final now = DateTime.now();
     // Issue #256: calendário do design system (spec Figma) no lugar do
@@ -245,30 +259,116 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 organizations.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (e, s) => const Text('Erro ao carregar organizações'),
-                  data: (orgs) => DropdownButtonFormField<String>(
-                    initialValue: _organizationId.text.isEmpty
-                        ? null
-                        : _organizationId.text,
+                  // Issue #257 (M1): durante o carregamento o campo permanece
+                  // visível (desabilitado, com hint) — sem o salto de layout
+                  // causado pela substituição por LinearProgressIndicator.
+                  loading: () => DropdownButtonFormField<String>(
+                    items: const <DropdownMenuItem<String>>[],
+                    onChanged: null,
                     decoration: const InputDecoration(
                       labelText: 'Organização',
+                      hintText: 'Carregando organizações…',
                       border: OutlineInputBorder(),
                     ),
-                    items: orgs
-                        .map(
-                          (o) => DropdownMenuItem(
-                            value: o.id,
-                            child: Text(o.tradeName),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) =>
-                        setState(() => _organizationId.text = value ?? ''),
-                    validator: (value) => (value == null || value.isEmpty)
-                        ? 'Selecione a organização'
-                        : null,
                   ),
+                  // Issue #257 (A1): falha de carga ganha ação de recuperação
+                  // (retry), mesmo padrão do venue_form_screen.
+                  error: (e, s) => Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.danger.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: AppColors.danger),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 20,
+                          color: AppColors.danger,
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Erro ao carregar organizações',
+                            style: TextStyle(color: AppColors.danger),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () =>
+                              ref.invalidate(organizationsProvider),
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: const Text('Tentar novamente'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  data: (orgs) {
+                    _maybePreselectOrganization(orgs);
+                    if (orgs.isEmpty) {
+                      // Issue #257: sem organizações o cadastro não pode ser
+                      // concluído — mensagem orientadora sem travar o layout.
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color:
+                                AppColors.textSecondary.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.business_outlined,
+                              color: AppColors.textSecondary,
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Nenhuma organização disponível',
+                                style: TextStyle(color: AppColors.textSecondary),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return DropdownButtonFormField<String>(
+                      // Issue #257 (D): chave derivada da seleção — o valor
+                      // definido fora do dropdown (pré-seleção automática)
+                      // precisa recriar o FormField porque initialValue só é
+                      // lido na criação do estado.
+                      key: ValueKey(
+                        '${_isEditing ? 'edit' : 'create'}-${_organizationId.text}',
+                      ),
+                      initialValue: _organizationId.text.isEmpty
+                          ? null
+                          : _organizationId.text,
+                      decoration: const InputDecoration(
+                        labelText: 'Organização',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: orgs
+                          .map(
+                            (o) => DropdownMenuItem(
+                              value: o.id,
+                              child: Text(o.tradeName),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => _organizationId.text = value ?? ''),
+                      validator: (value) => (value == null || value.isEmpty)
+                          ? 'Selecione a organização'
+                          : null,
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
