@@ -144,14 +144,25 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
     });
   }
 
-  Future<void> _pickDate(TextEditingController controller) async {
+  /// Issue #257 (B3): [minDate] restringe o calendário à data de início
+  /// informada no campo Fim (quando preenchida), evitando seleção de um
+  /// intervalo inválido. Sem data inicial, mantém o limite padrão (2000).
+  Future<void> _pickDate(
+    TextEditingController controller, {
+    DateTime? minDate,
+  }) async {
     final now = DateTime.now();
     // Issue #256: calendário do design system (spec Figma) no lugar do
     // showDatePicker padrão. Cancelamento continua retornando null.
+    final firstDate = minDate ?? DateTime(2000);
+    final parsed = DateTime.tryParse(controller.text);
+    var initialDate = parsed ?? now;
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+    if (initialDate.isAfter(DateTime(2100))) initialDate = DateTime(2100);
     final picked = await showAppCalendarDialog(
       context,
-      initialDate: DateTime.tryParse(controller.text) ?? now,
-      firstDate: DateTime(2000),
+      initialDate: initialDate,
+      firstDate: firstDate,
       lastDate: DateTime(2100),
     );
     if (picked != null && mounted) {
@@ -159,6 +170,8 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
       controller.text = _formatDate(picked);
     }
   }
+
+  DateTime? get _parsedStartDate => DateTime.tryParse(_startDate.text.trim());
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -597,35 +610,51 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
                         : null,
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _startDate,
-                          readOnly: true,
-                          onTap: () => _pickDate(_startDate),
-                          decoration: const InputDecoration(
-                            labelText: 'Início',
-                            suffixIcon: Icon(Icons.calendar_today),
-                            border: OutlineInputBorder(),
-                          ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _startDate,
+                        readOnly: true,
+                        onTap: () => _pickDate(_startDate),
+                        decoration: const InputDecoration(
+                          labelText: 'Início',
+                          suffixIcon: Icon(Icons.calendar_today),
+                          border: OutlineInputBorder(),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _endDate,
-                          readOnly: true,
-                          onTap: () => _pickDate(_endDate),
-                          decoration: const InputDecoration(
-                            labelText: 'Fim',
-                            suffixIcon: Icon(Icons.calendar_today),
-                            border: OutlineInputBorder(),
-                          ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _endDate,
+                        readOnly: true,
+                        // Issue #257 (B3): calendário do Fim começa na data
+                        // de início informada (sem quebrar início vazio).
+                        onTap: () =>
+                            _pickDate(_endDate, minDate: _parsedStartDate),
+                        decoration: const InputDecoration(
+                          labelText: 'Fim',
+                          suffixIcon: Icon(Icons.calendar_today),
+                          border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          final start = _parsedStartDate;
+                          final end = value == null || value.isEmpty
+                              ? null
+                              : DateTime.tryParse(value);
+                          if (start != null &&
+                              end != null &&
+                              end.isBefore(start)) {
+                            return 'Data final deve ser maior ou igual à '
+                                'data inicial';
+                          }
+                          return null;
+                        },
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
                   if (canConfigureStructure) ...[
                     const SizedBox(height: 24),
                     Card(
