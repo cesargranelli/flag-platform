@@ -58,3 +58,23 @@ final competitionStandingsProvider =
       (ref, competitionId) =>
           ref.watch(standingApiProvider).listByCompetition(competitionId),
     );
+
+/// Serviço de times.
+final teamApiProvider = Provider<TeamApi>(
+  (ref) => TeamApi(ref.watch(apiClientProvider)),
+);
+
+/// Detalhe público de um time por id (`GET /api/v1/teams/{id}`).
+final teamDetailProvider = FutureProvider.family<Team, String>(
+  (ref, teamId) => ref.watch(teamApiProvider).getById(teamId),
+);
+
+/// Serviço de elencos (roster) de times.
+final rosterApiProvider = Provider<RosterApi>(
+  (ref) => RosterApi(ref.watch(apiClientProvider)),
+);
+
+/// Elenco público de um time (`GET /api/v1/teams/{teamId}/roster`).
+final teamRosterProvider = FutureProvider.family<List<RosterEntry>, String>(
+  (ref, teamId) => ref.watch(rosterApiProvider).listByTeam(teamId),
+);
