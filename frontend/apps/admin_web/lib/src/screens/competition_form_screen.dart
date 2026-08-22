@@ -40,26 +40,38 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
   bool _submitting = false;
   String? _errorMessage;
 
-  bool get _isEditing =>
-      widget.competitionId != null || widget.competition != null;
+  /// Modo edição busca SEMPRE a competição completa por id: o objeto vindo
+  /// da listagem (extra) é shape de resumo e não tem organizationId/datas.
+  bool _appliedRemote = false;
+
+  bool get _isEditing => widget.competitionId != null;
 
   @override
   void initState() {
     super.initState();
-    final competition = widget.competition;
-    _name = TextEditingController(text: competition?.name ?? '');
-    _description = TextEditingController(text: competition?.description ?? '');
-    _organizationId = TextEditingController(
-      text: competition?.organizationId ?? '',
-    );
-    _startDate = TextEditingController(
-      text: _formatDate(competition?.startDate),
-    );
-    _endDate = TextEditingController(text: _formatDate(competition?.endDate));
-    _modality = competition?.modality;
-    _gender = competition?.gender;
-    _ageGroup = competition?.ageGroup;
-    _status = competition?.status;
+    _name = TextEditingController();
+    _description = TextEditingController();
+    _organizationId = TextEditingController();
+    _startDate = TextEditingController();
+    _endDate = TextEditingController();
+    _modality = null;
+    _gender = null;
+    _ageGroup = null;
+    _status = null;
+  }
+
+  /// Popula o formulário uma única vez com a competição carregada da API.
+  void _applyCompetition(Competition competition) {
+    _name.text = competition.name;
+    _description.text = competition.description ?? '';
+    _organizationId.text = competition.organizationId ?? '';
+    _startDate.text = _formatDate(competition.startDate);
+    _endDate.text = _formatDate(competition.endDate);
+    _modality = competition.modality;
+    _gender = competition.gender;
+    _ageGroup = competition.ageGroup;
+    _status = competition.status;
+    _appliedRemote = true;
   }
 
   @override
@@ -105,7 +117,7 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
       final api = ref.read(competitionApiProvider);
       final orgId = _organizationId.text.trim();
 
-      final id = widget.competitionId ?? widget.competition?.id;
+      final id = widget.competitionId;
       if (id == null) {
         await api.create(
           organizationId: orgId,
@@ -131,10 +143,13 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
           gender: _gender,
           ageGroup: _ageGroup,
         );
+        ref.invalidate(competitionProvider(id));
       }
       ref.invalidate(competitionsProvider);
+
+      // Decisão do usuário: após salvar, voltar sempre para a LISTA.
       if (mounted) {
-        context.go('/competitions/$id');
+        context.go('/competitions');
       }
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
@@ -149,6 +164,43 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
   Widget build(BuildContext context) {
     final organizations = ref.watch(organizationsProvider);
 
+    // Modo edição: carrega a competição completa antes de renderizar o form.
+    if (_isEditing && !_appliedRemote) {
+      final asyncComp = ref.watch(competitionProvider(widget.competitionId!));
+      return asyncComp.when(
+        loading: () => Scaffold(
+          appBar: AppBar(
+            title: const Text('Editar campeonato'),
+            leading: AppBackButton(fallbackRoute: '/competitions'),
+          ),
+          body: const AppLoading(message: 'Carregando campeonato...'),
+        ),
+        error: (error, stackTrace) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Editar campeonato'),
+            leading: AppBackButton(fallbackRoute: '/competitions'),
+          ),
+          body: AppErrorState(
+            message: 'Não foi possível carregar o campeonato',
+            onRetry: () => ref.invalidate(
+              competitionProvider(widget.competitionId!),
+            ),
+          ),
+        ),
+        data: (competition) {
+          _applyCompetition(competition);
+          return _buildForm(context, organizations);
+        },
+      );
+    }
+
+    return _buildForm(context, organizations);
+  }
+
+  Widget _buildForm(
+    BuildContext context,
+    AsyncValue<List<Organization>> organizations,
+  ) {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar campeonato' : 'Novo campeonato'),
