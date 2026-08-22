@@ -45,15 +45,17 @@ public class CompetitionService implements CompetitionLookup {
             entity.setStatus(CompetitionStatus.DRAFT);
         }
 
-        return mapper.toResponse(repository.save(entity));
+        return toResponse(repository.save(entity));
     }
 
     public CompetitionResponse findById(UUID id) {
-        return mapper.toResponse(findEntityById(id));
+        return toResponse(findEntityById(id));
     }
 
     public List<CompetitionResponse> findByOrganizationId(UUID organizationId) {
-        return mapper.toResponseList(repository.findAllByOrganizationIdOrderByNameAsc(organizationId));
+        return repository.findAllByOrganizationIdOrderByNameAsc(organizationId).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     public PagedResponse<CompetitionSummaryResponse> listAllPublic(int page, int size) {
@@ -65,7 +67,10 @@ public class CompetitionService implements CompetitionLookup {
                                 entity.getId(),
                                 entity.getName(),
                                 organizationLookup.findTradeNameById(entity.getOrganizationId()),
-                                entity.getStatus()))
+                                entity.getStatus(),
+                                entity.getModality(),
+                                entity.getGender(),
+                                entity.getAgeGroup()))
                         .toList(),
                 result.getTotalElements());
     }
@@ -82,7 +87,7 @@ public class CompetitionService implements CompetitionLookup {
 
         mapper.updateEntity(entity, request);
 
-        return mapper.toResponse(repository.save(entity));
+        return toResponse(repository.save(entity));
     }
 
     @Override
@@ -93,6 +98,29 @@ public class CompetitionService implements CompetitionLookup {
     private CompetitionEntity findEntityById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new CompetitionNotFoundException(id));
+    }
+
+    /**
+     * Monta a response completa resolvendo o nome da organização
+     * (trade name) a partir do lookup — o mapper não tem acesso ao módulo
+     * de organizações (isolamento de modulith).
+     */
+    private CompetitionResponse toResponse(CompetitionEntity entity) {
+        CompetitionResponse base = mapper.toResponse(entity);
+        return new CompetitionResponse(
+                base.id(),
+                base.organizationId(),
+                organizationLookup.findTradeNameById(entity.getOrganizationId()),
+                base.modality(),
+                base.gender(),
+                base.ageGroup(),
+                base.name(),
+                base.description(),
+                base.startDate(),
+                base.endDate(),
+                base.status(),
+                base.createdAt(),
+                base.updatedAt());
     }
 
 }
