@@ -28,8 +28,9 @@ public class RoundService implements RoundLookup {
     private final CompetitionLookup competitionLookup;
 
     @Transactional
-    public RoundResponse create(CreateRoundRequest request) {
-        competitionLookup.assertExists(request.competitionId());
+    public RoundResponse create(CreateRoundRequest request, String currentUserEmail) {
+        // V260: apenas o criador do campeonato (ou ADMIN) gerencia o campeonato.
+        competitionLookup.assertManagedBy(request.competitionId(), currentUserEmail);
 
         if (repository.existsByCompetitionIdAndNumber(request.competitionId(), request.number())) {
             throw new DuplicateRoundNumberException(request.number());
@@ -47,9 +48,15 @@ public class RoundService implements RoundLookup {
     }
 
     @Transactional
-    public RoundResponse update(UUID id, UpdateRoundRequest request) {
+    public RoundResponse update(UUID id, UpdateRoundRequest request, String currentUserEmail) {
         RoundEntity entity = findEntityById(id);
-        competitionLookup.assertExists(request.competitionId());
+
+        // V260: valida o campeonato atual da rodada e, se houver mudança,
+        // também o campeonato de destino.
+        competitionLookup.assertManagedBy(entity.getCompetitionId(), currentUserEmail);
+        if (!entity.getCompetitionId().equals(request.competitionId())) {
+            competitionLookup.assertManagedBy(request.competitionId(), currentUserEmail);
+        }
 
         if (repository.existsByCompetitionIdAndNumberAndIdNot(
                 request.competitionId(), request.number(), id)) {

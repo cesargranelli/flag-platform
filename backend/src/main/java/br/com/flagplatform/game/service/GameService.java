@@ -60,7 +60,10 @@ public class GameService implements GameLookup {
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
-    public GameResponse create(CreateGameRequest request) {
+    public GameResponse create(CreateGameRequest request, String currentUserEmail) {
+        // V260: apenas o criador do campeonato (ou ADMIN) gerencia o campeonato.
+        competitionLookup.assertManagedBy(roundLookup.findCompetitionId(request.roundId()), currentUserEmail);
+
         validateReferences(request.roundId(), request.homeTeamId(), request.awayTeamId(), request.venueId());
 
         GameEntity entity = mapper.toEntity(request);
@@ -77,8 +80,9 @@ public class GameService implements GameLookup {
      * sem abortar as demais.
      */
     @Transactional
-    public GameBatchResponse createBatch(UUID roundId, GameBatchRequest request) {
-        roundLookup.assertExists(roundId);
+    public GameBatchResponse createBatch(UUID roundId, GameBatchRequest request, String currentUserEmail) {
+        // V260: apenas o criador do campeonato (ou ADMIN) gerencia o campeonato.
+        competitionLookup.assertManagedBy(roundLookup.findCompetitionId(roundId), currentUserEmail);
 
         List<GameBatchLineResult> lines = new ArrayList<>();
         int imported = 0;
@@ -193,8 +197,16 @@ public class GameService implements GameLookup {
     }
 
     @Transactional
-    public GameResponse update(UUID id, UpdateGameRequest request) {
+    public GameResponse update(UUID id, UpdateGameRequest request, String currentUserEmail) {
         GameEntity entity = findEntityById(id);
+
+        // V260: valida o campeonato da rodada atual do jogo e, se houver mudança,
+        // também o campeonato da nova rodada.
+        competitionLookup.assertManagedBy(roundLookup.findCompetitionId(entity.getRoundId()), currentUserEmail);
+        if (!entity.getRoundId().equals(request.roundId())) {
+            competitionLookup.assertManagedBy(roundLookup.findCompetitionId(request.roundId()), currentUserEmail);
+        }
+
         validateReferences(request.roundId(), request.homeTeamId(), request.awayTeamId(), request.venueId());
 
         mapper.updateEntity(entity, request);
