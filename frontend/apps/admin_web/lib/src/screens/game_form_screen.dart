@@ -47,8 +47,10 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
 
   Future<void> _pickSchedule() async {
     final now = DateTime.now();
-    final date = await showDatePicker(
-      context: context,
+    // Issue #256: calendário do design system (spec Figma) no lugar do
+    // showDatePicker padrão. TimePicker permanece inalterado logo após.
+    final date = await showAppCalendarDialog(
+      context,
       initialDate: _scheduledAt ?? now,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
