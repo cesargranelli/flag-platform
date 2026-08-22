@@ -2,20 +2,24 @@
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/club_assignment_modal.dart';
+import '../widgets/conference_form_modal.dart';
+import '../widgets/division_form_modal.dart';
 import '../widgets/edit_restriction_note.dart';
-import 'division_form_screen.dart';
 
-/// GestÃ£o de conferÃªncias e divisÃµes por campeonato.
+/// Gestão de conferências e divisões por campeonato.
 ///
-/// Redesign da issue #218: cabeÃ§alho de contexto (campeonato selecionado,
-/// status, contadores e seletor), conferÃªncias como cards expansÃ­veis com
-/// suas divisÃµes e aÃ§Ãµes de criaÃ§Ã£o unificadas nos cabeÃ§alhos de seÃ§Ã£o.
-/// O fluxo continua: campeonato â†’ conferÃªncias â†’ divisÃµes (migraÃ§Ã£o V24).
+/// Redesign da issue #218: cabeçalho de contexto (campeonato selecionado,
+/// status, contadores e seletor), conferências como cards expansíveis com
+/// suas divisões e ações de criação unificadas nos cabeçalhos de seção.
+/// O fluxo continua: campeonato → conferências → divisões (migração V24).
+///
+/// Issue #258: criação/edição de conferências/divisões e associação de
+/// clubes acontecem em modais (sem rotas dedicadas).
 class GroupingsScreen extends ConsumerWidget {
   const GroupingsScreen({super.key});
 
@@ -26,25 +30,25 @@ class GroupingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ConferÃªncias e divisÃµes'),
+        title: const Text('Conferências e divisões'),
         leading: const AppBackButton(fallbackRoute: '/'),
       ),
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
-          message: 'NÃ£o foi possÃ­vel carregar os campeonatos',
+          message: 'Não foi possível carregar os campeonatos',
           onRetry: () => ref.invalidate(competitionsProvider),
         ),
         data: (compItems) {
           if (compItems.isEmpty) {
             return const AppEmptyState(
               message: 'Nenhum campeonato cadastrado. '
-                  'Crie um campeonato para organizar conferÃªncias e divisÃµes.',
+                  'Crie um campeonato para organizar conferências e divisões.',
               icon: Icons.emoji_events_outlined,
             );
           }
           // O id selecionado pode estar obsoleto (ex.: campeonato removido
-          // em outra sessÃ£o); nesse caso cai para o primeiro disponÃ­vel.
+          // em outra sessão); nesse caso cai para o primeiro disponível.
           var selected = compItems.first;
           for (final c in compItems) {
             if (c.id == selectedCompetitionId) {
@@ -97,7 +101,7 @@ class _GroupingsBody extends ConsumerWidget {
     );
   }
 
-  /// CabeÃ§alho de contexto: campeonato, status, contadores e seletor.
+  /// Cabeçalho de contexto: campeonato, status, contadores e seletor.
   Widget _contextHeader(
     BuildContext context,
     WidgetRef ref,
@@ -183,7 +187,7 @@ class _GroupingsBody extends ConsumerWidget {
     );
   }
 
-  /// SeÃ§Ã£o de conferÃªncias: tÃ­tulo, aÃ§Ã£o primÃ¡ria e lista expansÃ­vel.
+  /// Seção de conferências: título, ação primária e lista expansível.
   Widget _conferencesSection(
     BuildContext context,
     WidgetRef ref,
@@ -198,31 +202,33 @@ class _GroupingsBody extends ConsumerWidget {
           children: [
             Expanded(
               child: Text(
-                'ConferÃªncias',
+                'Conferências',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
             if (canEdit)
               FilledButton.icon(
-                onPressed: () =>
-                    context.push('/conferences/new', extra: competition.id),
+                onPressed: () => showConferenceFormModal(
+                  context,
+                  competitionId: competition.id,
+                ),
                 icon: const Icon(Icons.add),
-                label: const Text('Nova conferÃªncia'),
+                label: const Text('Nova conferência'),
               ),
           ],
         ),
         const SizedBox(height: 12),
         conferences.when(
           loading: () =>
-              const AppLoading(message: 'Carregando conferÃªncias...'),
+              const AppLoading(message: 'Carregando conferências...'),
           error: (error, stackTrace) => AppErrorState(
-            message: 'NÃ£o foi possÃ­vel carregar as conferÃªncias',
+            message: 'Não foi possível carregar as conferências',
             onRetry: () => ref.invalidate(conferencesProvider(competition.id)),
           ),
           data: (confItems) {
             if (confItems.isEmpty) {
               return const AppEmptyState(
-                message: 'Nenhuma conferÃªncia criada. '
+                message: 'Nenhuma conferência criada. '
                     'Crie a primeira para organizar seu campeonato.',
                 icon: Icons.account_tree_outlined,
               );
@@ -239,8 +245,8 @@ class _GroupingsBody extends ConsumerWidget {
                         .toList(),
                     divisionsLoading: divisions.isLoading,
                     divisionsFailed: divisions.hasError,
-                    // Com uma Ãºnica conferÃªncia, abre-a para dar contexto
-                    // imediato da estrutura (critÃ©rio da issue #218).
+                    // Com uma única conferência, abre-a para dar contexto
+                    // imediato da estrutura (critério da issue #218).
                     initiallyExpanded: confItems.length == 1,
                     competitionId: competition.id,
                     canEdit: canEdit,
@@ -253,7 +259,7 @@ class _GroupingsBody extends ConsumerWidget {
     );
   }
 
-  /// SeÃ§Ã£o de divisÃµes sem conferÃªncia vinculada.
+  /// Seção de divisões sem conferência vinculada.
   Widget _standaloneDivisionsSection(
     BuildContext context,
     WidgetRef ref,
@@ -267,18 +273,18 @@ class _GroupingsBody extends ConsumerWidget {
           children: [
             Expanded(
               child: Text(
-                'DivisÃµes sem conferÃªncia',
+                'Divisões sem conferência',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
             if (canEdit)
               TextButton.icon(
-                onPressed: () => context.push(
-                  '/divisions/new',
-                  extra: DivisionFormArgs(competitionId: competition.id),
+                onPressed: () => showDivisionFormModal(
+                  context,
+                  competitionId: competition.id,
                 ),
                 icon: const Icon(Icons.add),
-                label: const Text('Adicionar divisÃ£o'),
+                label: const Text('Adicionar divisão'),
               ),
           ],
         ),
@@ -289,9 +295,9 @@ class _GroupingsBody extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             child: divisions.when(
               loading: () =>
-                  const AppLoading(message: 'Carregando divisÃµes...'),
+                  const AppLoading(message: 'Carregando divisões...'),
               error: (error, stackTrace) => AppErrorState(
-                message: 'NÃ£o foi possÃ­vel carregar as divisÃµes',
+                message: 'Não foi possível carregar as divisões',
                 onRetry: () =>
                     ref.invalidate(divisionsProvider(competition.id)),
               ),
@@ -301,15 +307,20 @@ class _GroupingsBody extends ConsumerWidget {
                     .toList();
                 if (standalone.isEmpty) {
                   return const AppEmptyState(
-                    message: 'Nenhuma divisÃ£o sem conferÃªncia. '
-                        'Use "Adicionar divisÃ£o" para criar uma.',
+                    message: 'Nenhuma divisão sem conferência. '
+                        'Use "Adicionar divisão" para criar uma.',
                     icon: Icons.subdirectory_arrow_right,
                   );
                 }
                 return Column(
                   children: [
                     for (final division in standalone)
-                      _divisionRow(context, division, canEdit: canEdit),
+                      _divisionRow(
+                        context,
+                        division,
+                        competitionId: competition.id,
+                        canEdit: canEdit,
+                      ),
                   ],
                 );
               },
@@ -320,7 +331,7 @@ class _GroupingsBody extends ConsumerWidget {
     );
   }
 
-  /// Chip de status do campeonato (mesmo padrÃ£o da tela de detalhe).
+  /// Chip de status do campeonato (mesmo padrão da tela de detalhe).
   Widget _statusChip(CompetitionStatus status) {
     final color = switch (status) {
       CompetitionStatus.draft => AppColors.textSecondary,
@@ -348,7 +359,7 @@ class _GroupingsBody extends ConsumerWidget {
     CompetitionStatus.disabled => 'Desativado',
   };
 
-  /// RÃ³tulo de contadores do cabeÃ§alho ("X conferÃªncias Â· Y divisÃµes").
+  /// Rótulo de contadores do cabeçalho ("X conferências · Y divisões").
   String _countersLabel(
     AsyncValue<List<Conference>> conferences,
     AsyncValue<List<Division>> divisions,
@@ -358,22 +369,22 @@ class _GroupingsBody extends ConsumerWidget {
     }
     final confPart = _countPart(
       conferences.valueOrNull?.length,
-      'conferÃªncia',
-      'conferÃªncias',
+      'conferência',
+      'conferências',
     );
     final divPart = _countPart(
       divisions.valueOrNull?.length,
-      'divisÃ£o',
-      'divisÃµes',
+      'divisão',
+      'divisões',
     );
-    return '$confPart Â· $divPart';
+    return '$confPart · $divPart';
   }
 }
 
-/// Card expansÃ­vel de uma conferÃªncia com suas divisÃµes.
+/// Card expansível de uma conferência com suas divisões.
 ///
-/// O estado de expansÃ£o vive aqui (chaveada pelo id da conferÃªncia), entÃ£o
-/// sobrevive a refetches dos providers sem resetar o que o usuÃ¡rio abriu.
+/// O estado de expansão vive aqui (chaveada pelo id da conferência), então
+/// sobrevive a refetches dos providers sem resetar o que o usuário abriu.
 class _ConferenceCard extends StatefulWidget {
   const _ConferenceCard({
     super.key,
@@ -415,7 +426,7 @@ class _ConferenceCardState extends State<_ConferenceCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // CabeÃ§alho clicÃ¡vel: expande/recolhe as divisÃµes.
+          // Cabeçalho clicável: expande/recolhe as divisões.
           InkWell(
             onTap: _toggle,
             child: Padding(
@@ -437,11 +448,12 @@ class _ConferenceCardState extends State<_ConferenceCard> {
                   _divisionsMeta(context),
                   if (widget.canEdit)
                     IconButton(
-                      tooltip: 'Editar conferÃªncia',
+                      tooltip: 'Editar conferência',
                       icon: const Icon(Icons.edit_outlined, size: 20),
-                      onPressed: () => context.push(
-                        '/conferences/${conference.id}/edit',
-                        extra: conference,
+                      onPressed: () => showConferenceFormModal(
+                        context,
+                        competitionId: widget.competitionId,
+                        conference: conference,
                       ),
                     ),
                   AnimatedRotation(
@@ -473,7 +485,7 @@ class _ConferenceCardState extends State<_ConferenceCard> {
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Text(
-                            'Nenhuma divisÃ£o nesta conferÃªncia.',
+                            'Nenhuma divisão nesta conferência.',
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(color: AppColors.textSecondary),
                           ),
@@ -483,21 +495,20 @@ class _ConferenceCardState extends State<_ConferenceCard> {
                           _divisionRow(
                             context,
                             division,
+                            competitionId: widget.competitionId,
                             canEdit: widget.canEdit,
                           ),
                       if (widget.canEdit)
                         Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton.icon(
-                            onPressed: () => context.push(
-                              '/divisions/new',
-                              extra: DivisionFormArgs(
-                                competitionId: widget.competitionId,
-                                conferenceId: conference.id,
-                              ),
+                            onPressed: () => showDivisionFormModal(
+                              context,
+                              competitionId: widget.competitionId,
+                              initialConferenceId: conference.id,
                             ),
                             icon: const Icon(Icons.add),
-                            label: const Text('Adicionar divisÃ£o'),
+                            label: const Text('Adicionar divisão'),
                           ),
                         ),
                     ],
@@ -511,7 +522,7 @@ class _ConferenceCardState extends State<_ConferenceCard> {
     );
   }
 
-  /// Contagem de divisÃµes como chip/meta no cabeÃ§alho do card.
+  /// Contagem de divisões como chip/meta no cabeçalho do card.
   Widget _divisionsMeta(BuildContext context) {
     if (widget.divisionsLoading) {
       return const SizedBox(
@@ -522,11 +533,11 @@ class _ConferenceCardState extends State<_ConferenceCard> {
     }
     final String label;
     if (widget.divisionsFailed) {
-      label = 'â€”';
+      label = '—';
     } else if (widget.divisions.isEmpty) {
-      label = 'Sem divisÃµes';
+      label = 'Sem divisões';
     } else {
-      label = _plural(widget.divisions.length, 'divisÃ£o', 'divisÃµes');
+      label = _plural(widget.divisions.length, 'divisão', 'divisões');
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -544,10 +555,11 @@ class _ConferenceCardState extends State<_ConferenceCard> {
   }
 }
 
-/// Linha de divisÃ£o com Ã­cone de hierarquia e aÃ§Ã£o de ediÃ§Ã£o.
+/// Linha de divisão com ícone de hierarquia e ações de edição/associação.
 Widget _divisionRow(
   BuildContext context,
   Division division, {
+  required String competitionId,
   required bool canEdit,
 }) {
   return Padding(
@@ -567,22 +579,35 @@ Widget _divisionRow(
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
-        if (canEdit)
+        if (canEdit) ...[
           IconButton(
-            tooltip: 'Editar divisÃ£o',
-            icon: const Icon(Icons.edit_outlined, size: 20),
-            onPressed: () =>
-                context.push('/divisions/${division.id}/edit', extra: division),
+            tooltip: 'Associar clubes',
+            icon: const Icon(Icons.group_add_outlined, size: 20),
+            onPressed: () => showClubAssignmentModal(
+              context,
+              competitionId: competitionId,
+              division: division,
+            ),
           ),
+          IconButton(
+            tooltip: 'Editar divisão',
+            icon: const Icon(Icons.edit_outlined, size: 20),
+            onPressed: () => showDivisionFormModal(
+              context,
+              competitionId: competitionId,
+              division: division,
+            ),
+          ),
+        ],
       ],
     ),
   );
 }
 
-/// Contagem com plural correto em portuguÃªs.
+/// Contagem com plural correto em português.
 String _plural(int count, String singular, String plural) =>
     '$count ${count == 1 ? singular : plural}';
 
-/// Parte do rÃ³tulo de contadores; [count] nulo indica falha de carregamento.
+/// Parte do rótulo de contadores; [count] nulo indica falha de carregamento.
 String _countPart(int? count, String singular, String plural) =>
-    count == null ? '$plural indisponÃ­veis' : _plural(count, singular, plural);
+    count == null ? '$plural indisponíveis' : _plural(count, singular, plural);

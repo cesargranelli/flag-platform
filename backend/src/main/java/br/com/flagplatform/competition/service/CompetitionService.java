@@ -14,9 +14,11 @@ import br.com.flagplatform.competition.exception.CompetitionNotOwnedByCreatorExc
 import br.com.flagplatform.competition.exception.DuplicateCompetitionNameException;
 import br.com.flagplatform.competition.mapper.CompetitionMapper;
 import br.com.flagplatform.competition.repository.CompetitionRepository;
+import br.com.flagplatform.competition.CompetitionCreatedEvent;
 import br.com.flagplatform.organization.OrganizationLookup;
 import br.com.flagplatform.user.UserLookup;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -35,6 +37,7 @@ public class CompetitionService implements CompetitionLookup {
     private final CompetitionRepository repository;
     private final OrganizationLookup organizationLookup;
     private final UserLookup userLookup;
+    private final ApplicationEventPublisher events;
 
     @Transactional
     public CompetitionResponse create(CreateCompetitionRequest request, String creatorEmail) {
@@ -52,7 +55,11 @@ public class CompetitionService implements CompetitionLookup {
         // edição restrita ao criador (ou ADMIN).
         entity.setCreatedBy(userLookup.findUserIdByEmail(creatorEmail));
 
-        return toResponse(repository.save(entity));
+        CompetitionEntity saved = repository.save(entity);
+        // V258: módulos filhos semeiam conferência/divisão padrão a partir do evento.
+        events.publishEvent(new CompetitionCreatedEvent(saved.getId()));
+
+        return toResponse(saved);
     }
 
     public CompetitionResponse findById(UUID id, boolean isAdmin) {

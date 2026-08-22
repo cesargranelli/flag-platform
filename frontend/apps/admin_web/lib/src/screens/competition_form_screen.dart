@@ -219,6 +219,16 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
     BuildContext context,
     AsyncValue<List<Organization>> organizations,
   ) {
+    // Issue #258: configuração de estrutura só aparece em modo EDIÇÃO e
+    // para quem pode editar o campeonato. O form de criação NÃO oferece
+    // configuração de conferências/divisões (critério da issue).
+    final user = ref.watch(authControllerProvider).state.user;
+    final loadedCompetition = _isEditing
+        ? ref.watch(competitionProvider(widget.competitionId!)).valueOrNull
+        : null;
+    final canConfigureStructure =
+        _isEditing && canEditCompetition(user, loadedCompetition);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Editar campeonato' : 'Novo campeonato'),
@@ -384,6 +394,57 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
                     ),
                   ],
                 ),
+                if (canConfigureStructure) ...[
+                  const SizedBox(height: 24),
+                  Card(
+                    margin: EdgeInsets.zero,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.account_tree_outlined,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Estrutura do campeonato',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Configure conferências, divisões e associe clubes '
+                            'às divisões.',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              ref
+                                  .read(selectedCompetitionProvider.notifier)
+                                  .state = widget.competitionId!;
+                              context.push('/groupings');
+                            },
+                            icon: const Icon(Icons.settings_outlined),
+                            label: const Text(
+                              'Configurar conferências e divisões',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 16),
                   Text(
