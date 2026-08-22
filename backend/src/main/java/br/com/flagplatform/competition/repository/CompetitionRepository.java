@@ -1,6 +1,9 @@
 package br.com.flagplatform.competition.repository;
 
+import br.com.flagplatform.common.enums.CompetitionStatus;
 import br.com.flagplatform.competition.entity.CompetitionEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,6 +16,8 @@ public interface CompetitionRepository extends JpaRepository<CompetitionEntity, 
     List<CompetitionEntity> findAllByOrganizationIdOrderByNameAsc(UUID organizationId);
 
     List<CompetitionEntity> findAllByOrderByNameAsc();
+
+    Page<CompetitionEntity> findAllByStatusNot(CompetitionStatus status, Pageable pageable);
 
     boolean existsByOrganizationIdAndNameIgnoreCase(UUID organizationId, String name);
 

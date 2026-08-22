@@ -4,6 +4,7 @@ import br.com.flagplatform.competition.dto.request.CreateCompetitionRequest;
 import br.com.flagplatform.competition.dto.request.UpdateCompetitionRequest;
 import br.com.flagplatform.competition.dto.response.CompetitionResponse;
 import br.com.flagplatform.competition.dto.response.CompetitionSummaryResponse;
+import br.com.flagplatform.common.security.CurrentUser;
 import br.com.flagplatform.common.security.SecurityExpressions;
 import br.com.flagplatform.competition.service.CompetitionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +15,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,36 +49,65 @@ public class CompetitionController {
 
     @Operation(
             summary = "Listar campeonatos",
-            description = "Lista todos os campeonatos, com nome da organização. Acesso público."
+            description = "Lista os campeonatos publicáveis (DRAFT/PUBLISHED/FINISHED), com nome da organização. "
+                    + "Com includeDisabled=true e role ADMIN, inclui também os desativados. Acesso público."
     )
     @GetMapping("/api/v1/competitions")
     public List<CompetitionSummaryResponse> listAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "100") int size,
+            @RequestParam(defaultValue = "false") boolean includeDisabled,
+            Authentication authentication,
             HttpServletResponse response) {
-        var result = service.listAllPublic(page, size);
+        var result = service.listAllPublic(page, size, includeDisabled, CurrentUser.isAdmin(authentication));
         response.setHeader("X-Total-Count", String.valueOf(result.total()));
         return result.items();
     }
 
     @Operation(
             summary = "Buscar campeonato por id",
-            description = "Retorna o detalhe de um campeonato. Acesso público."
+            description = "Retorna o detalhe de um campeonato. Desativados são visíveis apenas ao ADMIN. Acesso público."
     )
     @GetMapping("/api/v1/competitions/{id}")
     public CompetitionResponse getById(
+            @Parameter(description = "Id do campeonato") @PathVariable UUID id,
+            Authentication authentication) {
+        return service.findById(id, CurrentUser.isAdmin(authentication));
+    }
+
+    @Operation(
+            summary = "Desativar campeonato",
+            description = "Exclusão lógica: marca o campeonato como DISABLED. Ele deixa de aparecer nas listagens e só o ADMIN pode reativar."
+    )
+    @DeleteMapping("/api/v1/competitions/{id}")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public void deactivate(
             @Parameter(description = "Id do campeonato") @PathVariable UUID id) {
-        return service.findById(id);
+        service.deactivate(id);
+    }
+
+    @Operation(
+            summary = "Reativar campeonato",
+            description = "Reverte a desativação lógica, voltando o campeonato para DRAFT. Exclusivo do ADMIN."
+    )
+    @PostMapping("/api/v1/competitions/{id}/reactivate")
+    @PreAuthorize(SecurityExpressions.ADMIN)
+    public void reactivate(
+            @Parameter(description = "Id do campeonato") @PathVariable UUID id) {
+        service.reactivate(id);
     }
 
     @Operation(
             summary = "Listar campeonatos por organização",
-            description = "Lista os campeonatos de uma organização, ordenados por nome. Acesso público."
+            description = "Lista os campeonatos de uma organização, ordenados por nome. Desativados só aparecem para ADMIN com includeDisabled=true. Acesso público."
     )
     @GetMapping("/api/v1/organizations/{organizationId}/competitions")
     public List<CompetitionResponse> findByOrganizationId(
-            @Parameter(description = "Id da organização") @PathVariable UUID organizationId) {
-        return service.findByOrganizationId(organizationId);
+            @Parameter(description = "Id da organização") @PathVariable UUID organizationId,
+            @RequestParam(defaultValue = "false") boolean includeDisabled,
+            Authentication authentication) {
+        return service.findByOrganizationId(
+                organizationId, includeDisabled, CurrentUser.isAdmin(authentication));
     }
 
     @Operation(
