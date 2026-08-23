@@ -19,5 +19,15 @@ class AppColors {
   static const Color disabled = Color(0xFFD9D9D9);
   static const Color grayFill = Color(0xFFF4F5F7);
 
+  // Auxiliares do UI Kit Shifty (spec tela de login).
+  /// Texto secundário/rodapé — rgba(0,0,0,.5).
+  static const Color textMuted = Color(0x80000000);
+
+  /// Gray/G100 — labels curtas em caixa alta (divisor "OU").
+  static const Color grayLabel = Color(0xFF8F92A1);
+
+  /// Superfície neutra — fundo de botões sociais.
+  static const Color surfaceMuted = Color(0xFFF3F6F8);
+
   const AppColors._();
 }
