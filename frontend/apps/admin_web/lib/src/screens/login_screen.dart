@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +9,10 @@ import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 
 /// Tela de login do Admin Web (tema claro Shifty, layout split).
+///
+/// Formulário conforme spec do Figma (UI Kit Shifty): coluna alinhada à
+/// esquerda com marca compacta, H1, subtítulo, campos, divisor "OU" e ação
+/// social desabilitada (backend ainda sem OAuth — follow-up registrado).
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -90,41 +96,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (_errorMessage != null) ...[
+                _errorBanner(_errorMessage!),
+                const SizedBox(height: 16),
+              ],
               const SizedBox(height: 24),
+              // Marca compacta no topo.
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.sports, color: AppColors.primary),
+                  const Icon(Icons.sports, color: AppColors.primary, size: 20),
                   const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      AppStrings.loginTitle,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  Text(
+                    'Flag Platform',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 48),
-              const Text(
-                'Acesse sua conta',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+              const SizedBox(height: 40),
+              const Text('Acesse sua conta', style: AppTextStyles.headline1),
               const SizedBox(height: 8),
-              Text(
-                AppStrings.loginSubtitle,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 14),
-              ),
+              Text(AppStrings.loginSubtitle, style: AppTextStyles.subtitle),
               const SizedBox(height: 32),
               TextFormField(
                 controller: _emailController,
@@ -165,11 +161,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onFieldSubmitted: (_) => _submit(),
               ),
               const SizedBox(height: 8),
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                runSpacing: 4,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     mainAxisSize: MainAxisSize.min,
@@ -179,20 +172,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onChanged: (value) =>
                             setState(() => _keepConnected = value ?? false),
                       ),
-                      const Text(
+                      Text(
                         'Manter conectado',
-                        style:
-                            TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                        style: AppTextStyles.labelMedium
+                            .copyWith(color: AppColors.textPrimary),
                       ),
                     ],
                   ),
                   TextButton(
                     onPressed: () => context.go('/forgot-password'),
-                    child: const Text('Esqueci a senha'),
+                    child: Text(
+                      'Esqueci a senha',
+                      style: AppTextStyles.labelMedium
+                          .copyWith(color: AppColors.primary),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               FilledButton(
                 onPressed: _submitting ? null : _submit,
                 child: _submitting
@@ -201,35 +198,114 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text(AppStrings.loginSubmit),
+                    : const Text(AppStrings.loginSubmit,
+                        style: AppTextStyles.buttonText),
               ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _errorMessage!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.error, fontSize: 14),
-                ),
-              ],
               const SizedBox(height: 24),
+              _buildDivider(),
+              const SizedBox(height: 16),
+              _buildGoogleButton(context),
+              const SizedBox(height: 32),
               Wrap(
                 alignment: WrapAlignment.center,
                 crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 4,
                 children: [
-                  const Text(
-                    'Não tem conta?',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
+                  const Text('Não tem conta?', style: AppTextStyles.footerLink),
                   TextButton(
                     onPressed: () => context.go('/signup'),
-                    child: const Text('Criar conta'),
+                    child: Text(
+                      'Criar conta',
+                      style: AppTextStyles.footerLink.copyWith(
+                        color: AppColors.primary,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Divisor "OU": linhas finas 1px (`disabled`) + overline em `grayLabel`.
+  Widget _buildDivider() {
+    return const Row(
+      children: [
+        Expanded(
+          child: Divider(color: AppColors.disabled, thickness: 1, height: 1),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Text('OU', style: AppTextStyles.overlineLabel),
+        ),
+        Expanded(
+          child: Divider(color: AppColors.disabled, thickness: 1, height: 1),
+        ),
+      ],
+    );
+  }
+
+  /// Botão social desabilitado (backend sem OAuth): fundo `surfaceMuted`,
+  /// ícone G multicolor via CustomPaint e tooltip explicativo.
+  Widget _buildGoogleButton(BuildContext context) {
+    return Tooltip(
+      message: 'Login com Google em breve',
+      child: Semantics(
+        button: true,
+        enabled: false,
+        child: Container(
+          height: 56,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceMuted,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          alignment: Alignment.center,
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CustomPaint(painter: _GoogleLogoPainter(), size: Size(22, 22)),
+              SizedBox(width: 12),
+              Text(
+                'Continuar com Google',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.4,
+                  color: Color(0xFF171717),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Banner de erro no topo do formulário (padrão danger tint de
+  /// competition_form_screen._errorBanner).
+  Widget _errorBanner(String message) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.danger),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.danger, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style:
+                  AppTextStyles.paragraph.copyWith(color: AppColors.danger),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -296,4 +372,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
   }
+}
+
+/// Desenha o "G" do Google com quatro arcos + barra horizontal.
+/// Aproximação da marca (cores oficiais) sem depender de asset.
+class _GoogleLogoPainter extends CustomPainter {
+  const _GoogleLogoPainter();
+
+  static const Color _blue = Color(0xFF4285F4);
+  static const Color _red = Color(0xFFEA4335);
+  static const Color _yellow = Color(0xFFFBBC05);
+  static const Color _green = Color(0xFF34A853);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = size.shortestSide * 0.2;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.shortestSide - stroke) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    double rad(double deg) => deg * math.pi / 180;
+
+    // Vermelho — arco superior.
+    paint.color = _red;
+    canvas.drawArc(rect, rad(206), rad(124), false, paint);
+
+    // Amarelo — quadrante inferior esquerdo.
+    paint.color = _yellow;
+    canvas.drawArc(rect, rad(102), rad(49), false, paint);
+
+    // Verde — base até a abertura inferior direita.
+    paint.color = _green;
+    canvas.drawArc(rect, rad(61), rad(42), false, paint);
+
+    // Azul — lado esquerdo + barra horizontal do "G".
+    paint.color = _blue;
+    canvas.drawArc(rect, rad(150), rad(57), false, paint);
+    canvas.drawLine(
+      Offset(center.dx, center.dy),
+      Offset(size.width - stroke / 2, center.dy),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
