@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
+import 'app_text_styles.dart';
 
 /// Tema Material 3 padrão do Flag Platform.
 ///
@@ -17,9 +19,10 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.background,
-      // DM Sans é a tipografia da marca; o bundle da fonte será adicionado em
-      // tarefa futura (Google Fonts). Até lá, o Flutter usa a fonte padrão.
-      fontFamily: 'DM Sans',
+      // DM Sans (tipografia da marca) aplicada via google_fonts no textTheme
+      // abaixo. O pacote busca a fonte em runtime com cache HTTP; sem rede,
+      // o app cai na fonte padrão da plataforma sem quebrar nada. Bundle
+      // local da fonte segue como opção futura, se necessário.
     );
     return base.copyWith(
       appBarTheme: const AppBarTheme(
@@ -31,7 +34,7 @@ class AppTheme {
         centerTitle: true,
         iconTheme: IconThemeData(color: Colors.white, size: 24),
       ),
-      textTheme: _textTheme(base.textTheme),
+      textTheme: _textTheme(GoogleFonts.dmSansTextTheme(base.textTheme)),
       cardTheme: const CardThemeData(
         color: AppColors.surface,
         elevation: 1,
@@ -44,8 +47,13 @@ class AppTheme {
         fillColor: AppColors.surface,
         floatingLabelBehavior: FloatingLabelBehavior.always,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        border: _inputBorder(AppColors.textSecondary),
-        enabledBorder: _inputBorder(AppColors.textSecondary.withValues(alpha: 0.5)),
+        // Rótulo flutuante 12/16 ls−0.2 com opacidade @40% da spec (fieldLabel).
+        labelStyle: AppTextStyles.fieldLabel.copyWith(
+          color: AppColors.textPrimary.withValues(alpha: 0.4),
+        ),
+        border: _inputBorder(AppColors.textPrimary),
+        // Habilitado: 1px Main/Dark da spec (issue #269).
+        enabledBorder: _inputBorder(AppColors.textPrimary),
         focusedBorder: _inputBorder(AppColors.primary),
         disabledBorder: _inputBorder(AppColors.disabled),
         errorBorder: _inputBorder(AppColors.danger),
@@ -116,7 +124,13 @@ class AppTheme {
 
   static TextTheme _textTheme(TextTheme base) {
     return base.copyWith(
-      displayLarge: _style(base.displayLarge, fontSize: 36, height: 46 / 36, weight: FontWeight.w700),
+      displayLarge: _style(
+        base.displayLarge,
+        fontSize: 36,
+        height: 46 / 36,
+        weight: FontWeight.w700,
+        letterSpacing: -1.6,
+      ),
       headlineMedium: _style(base.headlineMedium, fontSize: 24, height: 34 / 24, weight: FontWeight.w700),
       headlineSmall: _style(base.headlineSmall, fontSize: 22, height: 32 / 22, weight: FontWeight.w700),
       titleLarge: _style(base.titleLarge, fontSize: 18, height: 28 / 18, weight: FontWeight.w700),
@@ -133,11 +147,13 @@ class AppTheme {
     required double fontSize,
     required double height,
     required FontWeight weight,
+    double? letterSpacing,
   }) {
     return (base ?? const TextStyle()).copyWith(
       fontSize: fontSize,
       height: height,
       fontWeight: weight,
+      letterSpacing: letterSpacing,
       color: AppColors.textPrimary,
     );
   }
