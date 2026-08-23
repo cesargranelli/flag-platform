@@ -1,10 +1,10 @@
-﻿import '../enums/document_type.dart';
+import '../enums/document_type.dart';
 import '../enums/organization_status.dart';
 import '../enums/organization_type.dart';
 
-/// OrganizaÃ§Ã£o esportiva do Flag Platform.
+/// Organização esportiva do Flag Platform.
 ///
-/// Shape de `GET /api/v1/organizations` (lista, detalhe e atualizaÃ§Ã£o).
+/// Shape de `GET /api/v1/organizations` (lista, detalhe e atualização).
 class Organization {
   final String id;
   final String legalName;
@@ -97,7 +97,7 @@ class Organization {
         updatedAt: _tryParseDate(json['updatedAt']),
       );
 
-  /// Corpo de criaÃ§Ã£o/atualizaÃ§Ã£o (`POST/PUT /api/v1/organizations`).
+  /// Corpo de criação/atualização (`POST/PUT /api/v1/organizations`).
   Map<String, dynamic> toJson() => {
         'legalName': legalName,
         'tradeName': tradeName,
