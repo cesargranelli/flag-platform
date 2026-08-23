@@ -21,6 +21,9 @@ Marca única adotada (2026-08-14): paleta do UI Kit **Shifty** (primário laranj
 | `color.surface` | `#FFFFFF` | Cards, inputs, superfícies elevadas |
 | `color.text.primary` | `#1B1D21` | Texto principal |
 | `color.text.secondary` | `#737373` | Legendas, metadados, placeholders |
+| `color.text.muted` | `rgba(0,0,0,.5)` | Subtítulos de tela e rodapé (issue #269) |
+| `color.gray.g100` | `#8F92A1` | Labels curtas em caixa alta (divisor "OU") |
+| `color.surface.muted` | `#F3F6F8` | Superfície neutra — fundo de botões sociais |
 
 ### Semântica esportiva
 - **Ao vivo / sucesso**: verde (`#4FBF67` / `#24D173`)
@@ -28,7 +31,7 @@ Marca única adotada (2026-08-14): paleta do UI Kit **Shifty** (primário laranj
 
 ## Tipografia
 
-Família da marca: **DM Sans** (bundle via Google Fonts será adicionado em tarefa futura; até lá, fallback da fonte padrão). Escala do Shifty:
+Família da marca: **DM Sans**, aplicada via pacote `google_fonts` (fetch em runtime com cache HTTP; offline cai na fonte padrão da plataforma, sem quebrar o app). Escala do Shifty:
 
 | Token | Tamanho | Peso | Uso |
 |---|---|---|---|
@@ -41,6 +44,21 @@ Família da marca: **DM Sans** (bundle via Google Fonts será adicionado em tare
 | `type.body` | 18 / 28 | regular | Paragraph 1 |
 | `type.body.md` | 16 / 26 | regular | Paragraph 2 — corpo |
 | `type.body.sm` | 14 / 24 | regular | Paragraph 3 — corpo secundário |
+
+### Estilos nomeados (`AppTextStyles`)
+
+Constantes em `frontend/packages/core/lib/src/theme/app_text_styles.dart`, com letter-spacing da spec do Figma. A família é herdada do tema; a cor pode ser ajustada no ponto de uso via `copyWith`.
+
+| Token | Tamanho/Linha | Peso | Letter-spacing | Cor padrão | Uso |
+|---|---|---|---|---|---|
+| `headline1` | 36 / 46 | w700 | −1.6 | `text.primary` | H1 — títulos de destaque |
+| `subtitle` | 24 / 34 | w400 | −0.8 | `text.muted` | Subtítulo de tela |
+| `labelMedium` | 14 / 24 | w500 | −0.3 | parametrizável | Links e rótulos de checkbox |
+| `paragraph` | 14 / 24 | w400 | −0.3 | `text.primary` | Parágrafo |
+| `fieldLabel` | 12 / 16 | w400 | −0.2 | `text.primary` @40% | Rótulo flutuante de input |
+| `overlineLabel` | 12 / 20 | w700 | +1 (uppercase) | `gray.g100` | Overline — divisor "OU" |
+| `buttonText` | 14 / 24 | w700 | −0.3 | branco | Texto de botão primário |
+| `footerLink` | 13 / 17 | w500 | −0.2 | `text.muted` | Link/texto de rodapé |
 
 ## Espaçamento
 
@@ -60,7 +78,7 @@ Escala: `4, 8, 12, 16, 24, 32`. Uso típico: padding de tela `16`, espaçamento 
 
 ## Componentes (padrões do Shifty)
 
-- **Inputs** (`InputDecorationTheme`): preenchidos (`surface`), `OutlineInputBorder` raio 16, conteúdo vertical ~64px, **rótulo sempre visível**; estados **Normal / Disabled / Success / Error** (borda `textSecondary` 50% / `disabled` / `success` / `danger`)
+- **Inputs** (`InputDecorationTheme`): preenchidos (`surface`), `OutlineInputBorder` raio 16, conteúdo vertical ~64px, **rótulo sempre visível** (12/16 ls−0.2 @40% — `fieldLabel`); estados **Normal / Focado / Disabled / Error** (borda `text.primary` 1px Main/Dark / `primary` / `disabled` / `danger`)
 - **Botões** (`FilledButton`/`ElevatedButton`/`OutlinedButton`): altura mínima **56px**, raio 16; variantes **Main** (fundo `primary`), **Disable** (fundo `disabled`, texto `textPrimary`), **Ghost** (borda `primary`)
 - **Chip**: raio 10; selecionado com fundo `primary`; não selecionado com borda `black`
 - **Checkbox**: 24px, raio 2; checado `primary`, não checado `gray.fill`
