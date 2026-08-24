@@ -8,3 +8,12 @@
 3. Autonomia total em comandos locais dentro do projeto.
 4. **Excluir a branch-feature remota após o merge** (`git push origin --delete <branch>`).
 5. Sem arquivos de teste automatizado (AGENTS.md).
+
+## Fila ativa (issues abertas)
+- #255 [backend] autorização por criador do campeonato (item 1)
+- #256 [ux] calendário vs Figma — AGUARDANDO LINK DO FIGMA (item 2)
+- #257 [ux] avaliar fluxo de criação de campeonato (item 3)
+- #258 [frontend] conferências/divisões na edição + modais + botão rodadas (itens 4+5)
+
+## Pendências antigas
+- #230 Staging E2E verde 4/4 (reaberta com plano de ação)

@@ -51,13 +51,15 @@ class AppTheme {
         labelStyle: AppTextStyles.fieldLabel.copyWith(
           color: AppColors.textPrimary.withValues(alpha: 0.4),
         ),
-        border: _inputBorder(AppColors.textPrimary),
-        // Habilitado: 1px Main/Dark da spec (issue #269).
-        enabledBorder: _inputBorder(AppColors.textPrimary),
-        focusedBorder: _inputBorder(AppColors.primary),
+        border: _inputBorder(AppColors.primary),
+        // Issue #273 (validação UX): habilitado/focado usam a cor da marca —
+        // a distinção de foco é por espessura (2px), não por tom. Erro segue
+        // danger; desabilitado neutro.
+        enabledBorder: _inputBorder(AppColors.primary),
+        focusedBorder: _inputBorder(AppColors.primary, width: 2),
         disabledBorder: _inputBorder(AppColors.disabled),
         errorBorder: _inputBorder(AppColors.danger),
-        focusedErrorBorder: _inputBorder(AppColors.danger),
+        focusedErrorBorder: _inputBorder(AppColors.danger, width: 2),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
