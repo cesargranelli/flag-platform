@@ -2,6 +2,11 @@
 
 Fonte da verdade visual para os apps (Flutter). Reflete `frontend/packages/core/lib/src/theme/app_colors.dart` e `app_theme.dart`. O agente de UX deve basear propostas nestes tokens — qualquer mudança de token deve ser proposta aqui e refletida no `core`.
 
+## Referência Figma (UI Kit Shifty)
+
+- **Arquivo**: [Shifty — House Service App (Community)](https://www.figma.com/design/MxhoZOwT1HrI1Zrm3Vdc7M/Shifty---House-Service-App--Community-?node-id=5-0&t=LdacgMtgKolC4XVk-0)
+- Usar como referência visual de componentes ao avaliar/propor layouts (ex.: calendário, inputs, chips).
+
 ## Cores
 
 Marca única adotada (2026-08-14): paleta do UI Kit **Shifty** (primário laranja, fundo claro), harmonizada com cores semânticas dos kits esportivos (live/fim).
