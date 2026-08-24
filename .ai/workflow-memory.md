@@ -9,11 +9,13 @@
 4. **Excluir a branch-feature remota após o merge** (`git push origin --delete <branch>`).
 5. Sem arquivos de teste automatizado (AGENTS.md).
 
-## Fila ativa (issues abertas)
-- #255 [backend] autorização por criador do campeonato (item 1)
-- #256 [ux] calendário vs Figma — AGUARDANDO LINK DO FIGMA (item 2)
-- #257 [ux] avaliar fluxo de criação de campeonato (item 3)
-- #258 [frontend] conferências/divisões na edição + modais + botão rodadas (itens 4+5)
+## Referência de design
+- Figma Shifty: https://www.figma.com/design/MxhoZOwT1HrI1Zrm3Vdc7M/Shifty---House-Service-App--Community-?node-id=5-0&t=LdacgMtgKolC4XVk-0
+- Registrado também em `docs/design/tokens.md`.
 
-## Pendências antigas
-- #230 Staging E2E verde 4/4 (reaberta com plano de ação)
+## Decisões de domínio registradas
+- Autorização futura: **ADMIN tem acesso full** (override de qualquer trava, incluindo edição por criador).
+
+## Fila ativa
+- Vazia — issues #273 e #230 encerradas a pedido do usuário (2026-08-24).
+- Pedidos pendentes de re-priorização (não formalizados): autorização por criador de campeonato; calendário vs Figma; fluxo de criação; conferências/divisões na edição + modais + botão rodadas.
