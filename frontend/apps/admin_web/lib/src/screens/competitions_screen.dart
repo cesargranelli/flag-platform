@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../widgets/app_screen.dart';
 
 /// Gestão de campeonatos: cards de acesso e navegação para o detalhe.
 ///
@@ -30,11 +31,9 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
         ? ref.watch(competitionsAdminProvider(true))
         : ref.watch(competitionsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Campeonatos'),
-        leading: BackButton(onPressed: () => context.go('/')),
-      ),
+    return AppScreen(
+      title: 'Campeonatos',
+      leading: BackButton(onPressed: () => context.go('/')),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Novo campeonato',
         onPressed: () => context.push('/competitions/new'),

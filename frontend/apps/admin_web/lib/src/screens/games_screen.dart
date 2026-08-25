@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
 /// Gestão de jogos: lista por rodada e acesso ao detalhe.
@@ -37,20 +38,18 @@ class GamesScreen extends ConsumerWidget {
       selectedCompetitionObj,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Jogos'),
-        leading: BackButton(onPressed: () => context.go('/')),
-        actions: [
-          if (selectedRound != null && canEdit)
-            IconButton(
-              tooltip: 'Importar CSV',
-              icon: const Icon(Icons.upload_file),
-              onPressed: () =>
-                  context.push('/games/import', extra: selectedRound),
-            ),
-        ],
-      ),
+    return AppScreen(
+      title: 'Jogos',
+      leading: BackButton(onPressed: () => context.go('/')),
+      actions: [
+        if (selectedRound != null && canEdit)
+          IconButton(
+            tooltip: 'Importar CSV',
+            icon: const Icon(Icons.upload_file),
+            onPressed: () =>
+                context.push('/games/import', extra: selectedRound),
+          ),
+      ],
       floatingActionButton:
           effectiveComp != null && canEdit
               ? FloatingActionButton(

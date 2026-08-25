@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 
 /// Detalhe de um campeonato: apresenta os dados e oferece a edição.
 ///
@@ -28,11 +29,9 @@ class CompetitionDetailScreen extends ConsumerWidget {
         ? null
         : ref.watch(competitionProvider(competitionId!));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(competition?.name ?? 'Campeonato'),
-        leading: AppBackButton(fallbackRoute: '/competitions'),
-      ),
+    return AppScreen(
+      title: competition?.name ?? 'Campeonato',
+      leading: AppBackButton(fallbackRoute: '/competitions'),
       body: compFuture == null
           ? _buildDetail(context, ref, competition!)
           : compFuture.when(

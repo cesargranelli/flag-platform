@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
 /// Gestão de times: lista por campeonato e acesso ao detalhe.
@@ -36,11 +37,9 @@ class TeamsScreen extends ConsumerWidget {
       selectedCompetitionObj,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Times'),
-        leading: BackButton(onPressed: () => context.go('/')),
-      ),
+    return AppScreen(
+      title: 'Times',
+      leading: BackButton(onPressed: () => context.go('/')),
       floatingActionButton:
           effectiveComp != null && canEdit
               ? FloatingActionButton(

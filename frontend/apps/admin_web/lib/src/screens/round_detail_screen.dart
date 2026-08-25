@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
 /// Detalhe de uma rodada: apresenta os dados e oferece a edição.
@@ -20,11 +21,9 @@ class RoundDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final roundFuture = round != null ? null : ref.watch(roundProvider(roundId!));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(round?.name ?? 'Rodada'),
-        leading: AppBackButton(fallbackRoute: '/rounds'),
-      ),
+    return AppScreen(
+      title: round?.name ?? 'Rodada',
+      leading: AppBackButton(fallbackRoute: '/rounds'),
       body: roundFuture == null
           ? _buildDetail(context, ref, round!)
           : roundFuture.when(

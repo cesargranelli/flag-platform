@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_screen.dart';
 
 /// Tela inicial do Admin Web: cards de acesso às áreas de gestão.
 ///
@@ -31,22 +32,8 @@ final items = <_MenuItem>[
       if (isAdmin) _MenuItem(Icons.admin_panel_settings, AppStrings.users, '/users'),
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppStrings.appBarTitle),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(child: Text(userName ?? 'organizador')),
-          ),
-          IconButton(
-            tooltip: AppStrings.logout,
-            icon: const Icon(Icons.logout),
-            onPressed: () =>
-                ref.read(authControllerProvider.notifier).logout(),
-          ),
-        ],
-      ),
+    return AppScreen(
+      title: AppStrings.appBarTitle,
       body: LayoutBuilder(
         builder: (context, constraints) {
           final wide = constraints.maxWidth >= 960;

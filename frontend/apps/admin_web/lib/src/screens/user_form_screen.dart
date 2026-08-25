@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 
 const _roles = ['ADMIN', 'ORGANIZER', 'MESA'];
 
@@ -89,11 +90,9 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Novo usuário'),
-        leading: AppBackButton(fallbackRoute: '/users'),
-      ),
+    return AppScreen(
+      title: 'Novo usuário',
+      leading: AppBackButton(fallbackRoute: '/users'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

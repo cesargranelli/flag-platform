@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_screen.dart';
 
 /// Formulário de criação de organização em etapas (wizard).
 ///
@@ -233,11 +234,9 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) _handleBack();
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Nova organização'),
-          leading: BackButton(onPressed: _handleBack),
-        ),
+      child: AppScreen(
+        title: 'Nova organização',
+        leading: BackButton(onPressed: _handleBack),
         body: _buildWizard(context),
       ),
     );

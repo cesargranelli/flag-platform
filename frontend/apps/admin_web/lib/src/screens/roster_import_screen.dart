@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 
 /// Importação em lote de atletas para o elenco de um time (CSV/TXT).
 ///
@@ -182,11 +183,9 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
     final resolved = _resolved;
     final result = _result;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Importar elenco'),
-        leading: AppBackButton(fallbackRoute: '/rosters'),
-      ),
+    return AppScreen(
+      title: 'Importar elenco',
+      leading: AppBackButton(fallbackRoute: '/rosters'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

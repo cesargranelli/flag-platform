@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
 /// Detalhe de um time: apresenta os dados e oferece a edição.
@@ -20,11 +21,9 @@ class TeamDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final teamFuture = team != null ? null : ref.watch(teamProvider(teamId!));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(team?.name ?? 'Time'),
-        leading: AppBackButton(fallbackRoute: '/teams'),
-      ),
+    return AppScreen(
+      title: team?.name ?? 'Time',
+      leading: AppBackButton(fallbackRoute: '/teams'),
       body: teamFuture == null
           ? _buildDetail(context, ref, team!)
           : teamFuture.when(

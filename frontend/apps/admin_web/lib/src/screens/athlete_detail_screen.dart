@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 
 /// Detalhe de um atleta: apresenta os dados e oferece a edição.
 ///
@@ -23,11 +24,9 @@ class AthleteDetailScreen extends ConsumerWidget {
         ? null
         : ref.watch(athleteProvider(athleteId!));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(athlete?.name ?? 'Atleta'),
-        leading: AppBackButton(fallbackRoute: '/athletes'),
-      ),
+    return AppScreen(
+      title: athlete?.name ?? 'Atleta',
+      leading: AppBackButton(fallbackRoute: '/athletes'),
       body: athleteFuture == null
           ? _buildDetail(context, athlete!)
           : athleteFuture.when(

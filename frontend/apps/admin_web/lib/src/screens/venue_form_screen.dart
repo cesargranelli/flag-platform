@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 
 /// Formulário de criação/edição de campo de jogo.
 class VenueFormScreen extends ConsumerStatefulWidget {
@@ -110,11 +111,9 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
   Widget build(BuildContext context) {
     final organizations = ref.watch(organizationsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar campo' : 'Novo campo'),
-        leading: AppBackButton(fallbackRoute: '/venues'),
-      ),
+    return AppScreen(
+      title: _isEditing ? 'Editar campo' : 'Novo campo',
+      leading: AppBackButton(fallbackRoute: '/venues'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(
