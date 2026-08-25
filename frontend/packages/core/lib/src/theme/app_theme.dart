@@ -117,10 +117,10 @@ class AppTheme {
     );
   }
 
-  static InputBorder _inputBorder(Color color) {
+  static InputBorder _inputBorder(Color color, {double width = 1.0}) {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: color),
+      borderSide: BorderSide(color: color, width: width),
     );
   }
 
