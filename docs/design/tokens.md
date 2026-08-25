@@ -86,6 +86,9 @@ Escala: `4, 8, 12, 16, 24, 32`. Uso típico: padding de tela `16`, espaçamento 
 - **Inputs** (`InputDecorationTheme`): preenchidos (`surface`), `OutlineInputBorder` raio 16, conteúdo vertical ~64px, **rótulo sempre visível** (12/16 ls−0.2 @40% — `fieldLabel`); estados **Normal / Focado / Disabled / Error** (borda `text.primary` 1px Main/Dark / `primary` / `disabled` / `danger`)
 - **Botões** (`FilledButton`/`ElevatedButton`/`OutlinedButton`): altura mínima **56px**, raio 16; variantes **Main** (fundo `primary`), **Disable** (fundo `disabled`, texto `textPrimary`), **Ghost** (borda `primary`)
 - **Chip**: raio 10; selecionado com fundo `primary`; não selecionado com borda `black`
+- **SelectableCard** (`widgets/selectable_card.dart`): card de seleção única (comportamento de rádio por grupo) — `surface`, raio 16, elevação 1, altura mín. 96px (72px compacto); estados: padrão borda `black` 1px · hover `gray.fill` · foco contorno `primary` 2px · **selecionado** borda `primary` 2px + tinta `primary` @10% + badge de check (fundo `primary`, ícone `black`) · desabilitado 55% de opacidade
+- **SelectableChip**: variação em pill (raio 10) para grupos com muitas opções (ex.: faixa etária); selecionado = fundo `primary` + texto/ícone **`black`**
+- **Regra de contraste sobre primário**: conteúdo sobre preenchimento `primary` (#FD6B22) usa sempre `black` — branco reprova WCAG AA (~2,9:1)
 - **Checkbox**: 24px, raio 2; checado `primary`, não checado `gray.fill`
 - **Card**: `surface`, raio 16, elevação 1
 - **AppBar**: fundo `primary`, texto branco, título centralizado

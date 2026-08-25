@@ -1,0 +1,820 @@
+import 'package:flag_api/flag_api.dart';
+import 'package:flag_core/flag_core.dart';
+import 'package:flag_domain/flag_domain.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../providers/providers.dart';
+import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
+import '../widgets/selectable_card.dart';
+
+/// Wizard de CRIAÇÃO de campeonato em 4 sessões (issue #287).
+///
+/// O cadastro nasce sempre em RASCUNHO — não há campo de status aqui.
+/// A publicação acontece pela edição (`CompetitionEditScreen`).
+class CompetitionCreateScreen extends ConsumerStatefulWidget {
+  const CompetitionCreateScreen({super.key});
+
+  @override
+  ConsumerState<CompetitionCreateScreen> createState() =>
+      _CompetitionCreateScreenState();
+}
+
+class _CompetitionCreateScreenState
+    extends ConsumerState<CompetitionCreateScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  late final TextEditingController _name;
+  late final TextEditingController _description;
+  late final TextEditingController _organizationId;
+  late final TextEditingController _startDate;
+  late final TextEditingController _endDate;
+
+  Modality? _modality;
+  Gender? _gender;
+  AgeGroup? _ageGroup;
+
+  int _step = 0;
+  bool _submitting = false;
+  bool _saved = false;
+  bool _hasChanges = false;
+
+  bool _populating = false;
+
+  String? _modalityError;
+  String? _categoryError;
+
+  static const _titles = ['Campeonato', 'Modalidade', 'Categoria', 'Temporada'];
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController();
+    _description = TextEditingController();
+    _organizationId = TextEditingController();
+    _startDate = TextEditingController();
+    _endDate = TextEditingController();
+
+    for (final controller in [
+      _name,
+      _description,
+      _organizationId,
+      _startDate,
+      _endDate,
+    ]) {
+      controller.addListener(_markDirty);
+    }
+  }
+
+  void _markDirty() {
+    if (_populating || _saved || _hasChanges) return;
+    setState(() => _hasChanges = true);
+  }
+
+  void _selectModality(Modality value) {
+    setState(() {
+      _modality = value;
+      _modalityError = null;
+    });
+    _markDirty();
+  }
+
+  void _selectGender(Gender value) {
+    setState(() {
+      _gender = value;
+      _categoryError = null;
+    });
+    _markDirty();
+  }
+
+  void _selectAgeGroup(AgeGroup value) {
+    setState(() {
+      _ageGroup = value;
+      _categoryError = null;
+    });
+    _markDirty();
+  }
+
+  @override
+  void dispose() {
+    for (final controller in [
+      _name,
+      _description,
+      _organizationId,
+      _startDate,
+      _endDate,
+    ]) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  String _formatDate(DateTime? date) => date == null
+      ? ''
+      : '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+  /// Issue #257 (D): com exatamente 1 organização disponível, pré-seleciona.
+  void _maybePreselectOrganization(List<Organization> orgs) {
+    if (_organizationId.text.isNotEmpty || orgs.length != 1) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _organizationId.text.isNotEmpty) return;
+      setState(() {
+        _populating = true;
+        _organizationId.text = orgs.single.id;
+        _populating = false;
+      });
+    });
+  }
+
+  Future<void> _pickDate(
+    TextEditingController controller, {
+    DateTime? minDate,
+  }) async {
+    final now = DateTime.now();
+    final firstDate = minDate ?? DateTime(2000);
+    final parsed = DateTime.tryParse(controller.text);
+    var initialDate = parsed ?? now;
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+    if (initialDate.isAfter(DateTime(2100))) initialDate = DateTime(2100);
+    final picked = await showAppCalendarDialog(
+      context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: DateTime(2100),
+    );
+    if (picked != null && mounted) {
+      controller.text = _formatDate(picked);
+    }
+  }
+
+  DateTime? get _parsedStartDate => DateTime.tryParse(_startDate.text.trim());
+
+  /// Valida a sessão atual; retorna true quando pode avançar/salvar.
+  bool _validateStep() {
+    var valid = true;
+    if (_step == 0) {
+      valid = _formKey.currentState!.validate();
+    } else if (_step == 1 && _modality == null) {
+      setState(() => _modalityError = 'Selecione a modalidade');
+      valid = false;
+    } else if (_step == 2 && (_gender == null || _ageGroup == null)) {
+      setState(() => _categoryError =
+          _gender == null ? 'Selecione o gênero' : 'Selecione a faixa etária');
+      valid = false;
+    }
+    return valid;
+  }
+
+  void _next() {
+    if (!_validateStep()) return;
+    if (_step < _titles.length - 1) {
+      setState(() => _step += 1);
+    } else {
+      _save();
+    }
+  }
+
+  Future<void> _save() async {
+    if (!_validateStep()) return;
+
+    setState(() {
+      _submitting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final api = ref.read(competitionApiProvider);
+      // Issue #287: sem status no create — o campeonato nasce RASCUNHO
+      // (default do backend). Publicação ocorre pela edição.
+      final created = await api.create(
+        organizationId: _organizationId.text.trim(),
+        name: _name.text.trim(),
+        description: _description.text.trim().isEmpty
+            ? null
+            : _description.text.trim(),
+        startDate: _startDate.text.isEmpty ? null : _startDate.text,
+        endDate: _endDate.text.isEmpty ? null : _endDate.text,
+        modality: _modality,
+        gender: _gender?.toJson(),
+        ageGroup: _ageGroup?.toJson(),
+      );
+
+      ref.invalidate(competitionsProvider);
+      ref.invalidate(competitionProvider(created.id));
+
+      _saved = true;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Rascunho criado. Abra o campeonato para publicar quando '
+              'estiver pronto.',
+            ),
+          ),
+        );
+        context.go('/competitions/${created.id}', extra: created);
+      }
+    } on RepositoryException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } catch (_) {
+      setState(() => _errorMessage = 'Não foi possível salvar o campeonato.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  String? _errorMessage;
+
+  /// Voltar: navega para a sessão anterior quando dentro do wizard;
+  /// na primeira sessão, sai da rota com proteção de descarte (M3).
+  Future<void> _handleBack() async {
+    if (_step > 0) {
+      setState(() {
+        _step -= 1;
+        _modalityError = null;
+        _categoryError = null;
+      });
+      return;
+    }
+    if (_hasChanges && !_submitting && !_saved) {
+      final discard = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Descartar alterações?'),
+          content: const Text('As alterações não salvas serão perdidas.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Descartar'),
+            ),
+          ],
+        ),
+      );
+      if (discard != true) return;
+      if (!mounted) return;
+      setState(() => _saved = true);
+    }
+    if (!mounted) return;
+    _goBack();
+  }
+
+  void _goBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/competitions');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: !_hasChanges || _submitting || _saved,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _handleBack();
+      },
+      child: AppScreen(
+        title: 'Novo campeonato',
+        leading: AppBackButton(fallbackRoute: '/competitions'),
+        body: _buildWizard(context),
+      ),
+    );
+  }
+
+  Widget _buildWizard(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          Expanded(
+            child: AppLayout.form(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 16,
+                    ),
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < _titles.length; i++)
+                          Expanded(child: _stepIndicator(i)),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Etapa ${_step + 1} de ${_titles.length}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (_errorMessage != null)
+                            _errorBanner(_errorMessage!),
+                          _stepContent(context),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: AppLayout.form(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _submitting ? null : _handleBack,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      minimumSize: const Size(120, 56),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(16)),
+                      ),
+                    ),
+                    icon: Icon(_step == 0 ? Icons.close : Icons.arrow_back),
+                    label: Text(_step == 0 ? 'Cancelar' : 'Voltar'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: _submitting ? null : _next,
+                    icon: _submitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.arrow_forward),
+                    label: Text(
+                      _step == _titles.length - 1 ? 'Criar rascunho' : 'Continuar',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _errorBanner(String message) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.danger),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.danger),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stepIndicator(int index) {
+    final selected = index == _step;
+    final done = index < _step;
+    final CircleAvatar circle;
+    if (done) {
+      circle = const CircleAvatar(
+        radius: 14,
+        backgroundColor: AppColors.success,
+        child: Icon(Icons.check, size: 20, color: AppColors.black),
+      );
+    } else if (selected) {
+      circle = const CircleAvatar(
+        radius: 14,
+        backgroundColor: AppColors.primary,
+        child: Icon(Icons.circle, size: 8, color: AppColors.black),
+      );
+    } else {
+      circle = CircleAvatar(
+        radius: 14,
+        backgroundColor: AppColors.grayFill,
+        child: Text(
+          '${index + 1}',
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 13,
+          ),
+        ),
+      );
+    }
+    return InkWell(
+      onTap: () {
+        if (index == _step) return;
+        // Avanço apenas sequencial (com validação); voltar é livre.
+        if (index > _step) {
+          if (index > _step + 1) return;
+          if (!_validateStep()) return;
+        }
+        setState(() => _step = index);
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        child: Column(
+          children: [
+            circle,
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                _titles[index],
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                  color: selected
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _groupLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: AppColors.textPrimary,
+      ),
+    );
+  }
+
+  Widget _groupError(String message) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Text(
+        message,
+        style: const TextStyle(fontSize: 12, color: AppColors.danger),
+      ),
+    );
+  }
+
+  Widget _stepContent(BuildContext context) {
+    switch (_step) {
+      case 0:
+        return _identityStep(context);
+      case 1:
+        return _modalityStep(context);
+      case 2:
+        return _categoryStep(context);
+      default:
+        return _seasonStep(context);
+    }
+  }
+
+  // Sessão 1 — Campeonato: organização, nome e descrição.
+  Widget _identityStep(BuildContext context) {
+    final organizations = ref.watch(organizationsProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        organizations.when(
+          loading: () => DropdownButtonFormField<String>(
+            items: const <DropdownMenuItem<String>>[],
+            onChanged: null,
+            decoration: const InputDecoration(
+              labelText: 'Organização',
+              hintText: 'Carregando organizações…',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          error: (e, s) => Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.danger.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: AppColors.danger),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 20,
+                  color: AppColors.danger,
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Erro ao carregar organizações',
+                    style: TextStyle(color: AppColors.danger),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => ref.invalidate(organizationsProvider),
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('Tentar novamente'),
+                ),
+              ],
+            ),
+          ),
+          data: (orgs) {
+            _maybePreselectOrganization(orgs);
+            if (orgs.isEmpty) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: AppColors.textSecondary.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.business_outlined,
+                      color: AppColors.textSecondary,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Nenhuma organização disponível',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return DropdownButtonFormField<String>(
+              key: ValueKey('create-${_organizationId.text}'),
+              initialValue: _organizationId.text.isEmpty
+                  ? null
+                  : _organizationId.text,
+              decoration: InputDecoration(
+                labelText:
+                    'Organização${orgs.length == 1 ? ' (pré-selecionada)' : ''}',
+                border: const OutlineInputBorder(),
+              ),
+              items: orgs
+                  .map(
+                    (o) => DropdownMenuItem(value: o.id, child: Text(o.tradeName)),
+                  )
+                  .toList(),
+              onChanged: (value) => _organizationId.text = value ?? '',
+              validator: (value) => (value == null || value.isEmpty)
+                  ? 'Selecione a organização'
+                  : null,
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _name,
+          decoration: const InputDecoration(
+            labelText: 'Nome',
+            border: OutlineInputBorder(),
+          ),
+          validator: (value) => (value == null || value.trim().isEmpty)
+              ? 'Informe o nome'
+              : null,
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _description,
+          decoration: const InputDecoration(
+            labelText: 'Descrição',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 3,
+        ),
+      ],
+    );
+  }
+
+  // Sessão 2 — Modalidade: cards 2x2.
+  Widget _modalityStep(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _groupLabel('Escolha a modalidade'),
+        const SizedBox(height: 4),
+        const Text(
+          'Formato de jogo do campeonato',
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 480;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final modality in Modality.values)
+                  SizedBox(
+                    width: isWide
+                        ? (constraints.maxWidth - 12) / 2
+                        : constraints.maxWidth,
+                    child: SelectableCard(
+                      label: modality.label,
+                      description: _modalityDescription(modality),
+                      icon: _modalityIcon(modality),
+                      selected: _modality == modality,
+                      onTap: () => _selectModality(modality),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+        if (_modalityError != null) _groupError(_modalityError!),
+      ],
+    );
+  }
+
+  String _modalityDescription(Modality modality) => switch (modality) {
+        Modality.flag5x5 => 'Flag sem contato · 5 jogadores',
+        Modality.flag8x8 => 'Flag sem contato · 8 jogadores',
+        Modality.flag9x9 => 'Flag sem contato · 9 jogadores',
+        Modality.fullPads11x11 => 'Tackle com proteção · 11 jogadores',
+      };
+
+  IconData _modalityIcon(Modality modality) => modality == Modality.fullPads11x11
+      ? Icons.shield_outlined
+      : Icons.sports_football_outlined;
+
+  // Sessão 3 — Categoria: gênero (cards) + faixa etária (chips).
+  Widget _categoryStep(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _groupLabel('Gênero'),
+        const SizedBox(height: 8),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cardWidth = (constraints.maxWidth - 24) / 3;
+            return Row(
+              children: [
+                for (final gender in Gender.values) ...[
+                  if (gender != Gender.values.first) const SizedBox(width: 12),
+                  SizedBox(
+                    width: cardWidth,
+                    child: SelectableCard(
+                      label: gender.label,
+                      selected: _gender == gender,
+                      onTap: () => _selectGender(gender),
+                      minHeight: 72,
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
+        if (_categoryError != null && _gender == null)
+          _groupError('Selecione o gênero'),
+        const SizedBox(height: 20),
+        _groupLabel('Faixa etária'),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final ageGroup in AgeGroup.values)
+              SelectableChip(
+                label: ageGroup.label,
+                selected: _ageGroup == ageGroup,
+                onTap: () => _selectAgeGroup(ageGroup),
+              ),
+          ],
+        ),
+        if (_categoryError != null && _gender != null && _ageGroup == null)
+          _groupError(_categoryError!),
+      ],
+    );
+  }
+
+  // Sessão 4 — Temporada: datas opcionais + resumo das escolhas.
+  Widget _seasonStep(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _groupLabel('Período da temporada (opcional)'),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _startDate,
+                readOnly: true,
+                onTap: () => _pickDate(_startDate),
+                decoration: const InputDecoration(
+                  labelText: 'Início (opcional)',
+                  suffixIcon: Icon(Icons.calendar_today),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                controller: _endDate,
+                readOnly: true,
+                onTap: () => _pickDate(_endDate, minDate: _parsedStartDate),
+                decoration: const InputDecoration(
+                  labelText: 'Fim (opcional)',
+                  suffixIcon: Icon(Icons.calendar_today),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  final start = _parsedStartDate;
+                  final end =
+                      value == null || value.isEmpty ? null : DateTime.tryParse(value);
+                  if (start != null && end != null && end.isBefore(start)) {
+                    return 'Data final deve ser maior ou igual à data inicial';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        _groupLabel('Resumo'),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _summaryChip(
+              _name.text.trim().isEmpty ? 'Campeonato' : _name.text.trim(),
+              Icons.emoji_events_outlined,
+            ),
+            if (_modality != null)
+              _summaryChip(_modality!.label, Icons.sports_football_outlined),
+            if (_gender != null) _summaryChip(_gender!.label, Icons.groups_outlined),
+            if (_ageGroup != null)
+              _summaryChip(_ageGroup!.label, Icons.cake_outlined),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _summaryChip(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.grayFill,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.textSecondary),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
