@@ -18,8 +18,11 @@ public record CreateCompetitionRequest(
         @NotNull
         Modality modality,
 
+        // Issue #286: obrigatórios — alinhados à exigência da UI.
+        @NotNull
         Gender gender,
 
+        @NotNull
         AgeGroup ageGroup,
 
         @NotBlank
