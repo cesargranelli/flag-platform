@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/club_assignment_modal.dart';
 import '../widgets/conference_form_modal.dart';
 import '../widgets/division_form_modal.dart';
@@ -28,11 +29,9 @@ class GroupingsScreen extends ConsumerWidget {
     final competitions = ref.watch(competitionsProvider);
     final selectedCompetitionId = ref.watch(selectedCompetitionProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Conferências e divisões'),
-        leading: const AppBackButton(fallbackRoute: '/'),
-      ),
+    return AppScreen(
+      title: 'Conferências e divisões',
+      leading: const AppBackButton(fallbackRoute: '/'),
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(

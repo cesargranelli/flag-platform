@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 
 /// Argumentos de navegação do formulário de jogo.
 typedef GameFormArgs = ({String? competitionId, String? roundId, Game? game});
@@ -135,11 +136,9 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
         : ref.watch(teamsProvider(competitionId));
     final venues = ref.watch(venuesProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar jogo' : 'Novo jogo'),
-        leading: AppBackButton(fallbackRoute: '/games'),
-      ),
+    return AppScreen(
+      title: _isEditing ? 'Editar jogo' : 'Novo jogo',
+      leading: AppBackButton(fallbackRoute: '/games'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

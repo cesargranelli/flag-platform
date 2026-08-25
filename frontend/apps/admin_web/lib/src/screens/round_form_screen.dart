@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 
 /// Formulário de criação/edição de rodada.
 class RoundFormScreen extends ConsumerStatefulWidget {
@@ -114,11 +115,9 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
         ref.watch(selectedCompetitionProvider) ??
         (compItems.isNotEmpty ? compItems.first.id : null);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar rodada' : 'Nova rodada'),
-        leading: AppBackButton(fallbackRoute: '/rounds'),
-      ),
+    return AppScreen(
+      title: _isEditing ? 'Editar rodada' : 'Nova rodada',
+      leading: AppBackButton(fallbackRoute: '/rounds'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

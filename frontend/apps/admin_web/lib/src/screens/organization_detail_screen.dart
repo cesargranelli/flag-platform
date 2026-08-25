@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 
 /// Detalhe de uma organização: apresenta os dados e oferece a edição.
 ///
@@ -22,11 +23,9 @@ class OrganizationDetailScreen extends ConsumerWidget {
         ? null
         : ref.watch(organizationProvider(organizationId!));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(organization?.tradeName ?? 'Organização'),
-        leading: AppBackButton(fallbackRoute: '/organizations'),
-      ),
+    return AppScreen(
+      title: organization?.tradeName ?? 'Organização',
+      leading: AppBackButton(fallbackRoute: '/organizations'),
       body: orgFuture == null
           ? _buildDetail(context, organization!)
           : orgFuture.when(

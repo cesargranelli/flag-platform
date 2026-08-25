@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_screen.dart';
 
 /// Gestão de usuários (somente ADMIN): lista e acesso ao formulário.
 class UsersScreen extends ConsumerWidget {
@@ -14,11 +15,9 @@ class UsersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final users = ref.watch(usersProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Usuários'),
-        leading: BackButton(onPressed: () => context.go('/')),
-      ),
+    return AppScreen(
+      title: 'Usuários',
+      leading: BackButton(onPressed: () => context.go('/')),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Novo usuário',
         onPressed: () => context.push('/users/new'),

@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 
 /// Formulário de criação/edição de campeonato.
 class CompetitionFormScreen extends ConsumerStatefulWidget {
@@ -281,18 +282,14 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
     if (_isEditing && !_appliedRemote) {
       final asyncComp = ref.watch(competitionProvider(widget.competitionId!));
       return asyncComp.when(
-        loading: () => Scaffold(
-          appBar: AppBar(
-            title: const Text('Editar campeonato'),
-            leading: AppBackButton(fallbackRoute: '/competitions'),
-          ),
+        loading: () => AppScreen(
+          title: 'Editar campeonato',
+          leading: AppBackButton(fallbackRoute: '/competitions'),
           body: const AppLoading(message: 'Carregando campeonato...'),
         ),
-        error: (error, stackTrace) => Scaffold(
-          appBar: AppBar(
-            title: const Text('Editar campeonato'),
-            leading: AppBackButton(fallbackRoute: '/competitions'),
-          ),
+        error: (error, stackTrace) => AppScreen(
+          title: 'Editar campeonato',
+          leading: AppBackButton(fallbackRoute: '/competitions'),
           body: AppErrorState(
             message: 'Não foi possível carregar o campeonato',
             onRetry: () =>
@@ -305,11 +302,9 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
           // de renderizar o formulário.
           final user = ref.watch(authControllerProvider).state.user;
           if (!canEditCompetition(user, competition)) {
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text('Editar campeonato'),
-                leading: AppBackButton(fallbackRoute: '/competitions'),
-              ),
+            return AppScreen(
+              title: 'Editar campeonato',
+              leading: AppBackButton(fallbackRoute: '/competitions'),
               body: const AppEmptyState(
                 message: 'Você não tem permissão para editar este campeonato.',
                 icon: Icons.lock_outline,
@@ -321,17 +316,15 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
           // recebem estado informativo em vez de um formulário que falharia
           // no save (o backend bloqueia o update).
           if (competition.status != CompetitionStatus.draft) {
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text('Editar campeonato'),
-                leading: AppBackButton(fallbackRoute: '/competitions'),
-              ),
+            return AppScreen(
+              title: 'Editar campeonato',
+              leading: AppBackButton(fallbackRoute: '/competitions'),
               body: AppEmptyState(
                 message: competition.status == CompetitionStatus.published
                     ? 'Campeonato publicado — não é mais editável.'
                     : 'Campeonato '
-                          '${_statusLabel(competition.status).toLowerCase()} — '
-                          'não é mais editável.',
+                           '${_statusLabel(competition.status).toLowerCase()} — '
+                           'não é mais editável.',
                 icon: Icons.lock,
               ),
             );
@@ -366,11 +359,9 @@ class _CompetitionFormScreenState extends ConsumerState<CompetitionFormScreen> {
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) _handleBack();
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(_isEditing ? 'Editar campeonato' : 'Novo campeonato'),
-          leading: BackButton(onPressed: _handleBack),
-        ),
+      child: AppScreen(
+        title: _isEditing ? 'Editar campeonato' : 'Novo campeonato',
+        leading: BackButton(onPressed: _handleBack),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: AppLayout.form(

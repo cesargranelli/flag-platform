@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_screen.dart';
 
 /// Gestão de organizações: cards de acesso e navegação para o detalhe.
 ///
@@ -33,11 +34,9 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
         ? ref.watch(organizationsAdminProvider(true))
         : ref.watch(organizationsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Organizações'),
-        leading: BackButton(onPressed: () => context.go('/')),
-      ),
+    return AppScreen(
+      title: 'Organizações',
+      leading: BackButton(onPressed: () => context.go('/')),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Nova organização',
         onPressed: () => context.push('/organizations/new'),

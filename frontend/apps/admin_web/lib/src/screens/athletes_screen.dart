@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_screen.dart';
 
 /// Gestão de atletas: cards e navegação para o detalhe.
 class AthletesScreen extends ConsumerWidget {
@@ -14,18 +15,16 @@ class AthletesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final athletes = ref.watch(athletesProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Atletas'),
-        leading: BackButton(onPressed: () => context.go('/')),
-        actions: [
-          IconButton(
-            tooltip: 'Importar CSV',
-            icon: const Icon(Icons.upload_file),
-            onPressed: () => context.push('/athletes/import'),
-          ),
-        ],
-      ),
+    return AppScreen(
+      title: 'Atletas',
+      leading: BackButton(onPressed: () => context.go('/')),
+      actions: [
+        IconButton(
+          tooltip: 'Importar CSV',
+          icon: const Icon(Icons.upload_file),
+          onPressed: () => context.push('/athletes/import'),
+        ),
+      ],
       floatingActionButton: FloatingActionButton(
         tooltip: 'Novo atleta',
         onPressed: () => context.push('/athletes/new'),

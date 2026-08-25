@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
 /// Gestão de rodadas: lista por campeonato e acesso ao detalhe.
@@ -37,14 +38,12 @@ class RoundsScreen extends ConsumerWidget {
       selectedCompetitionObj,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Rodadas'),
-        // Issue #259: com pilha de navegação (ex.: vindo da tela do
-        // campeonato), o voltar retorna à origem via pop; em deep link/
-        // refresh cai no fallback (home), como antes.
-        leading: const AppBackButton(fallbackRoute: '/'),
-      ),
+    return AppScreen(
+      title: 'Rodadas',
+      // Issue #259: com pilha de navegação (ex.: vindo da tela do
+      // campeonato), o voltar retorna à origem via pop; em deep link/
+      // refresh cai no fallback (home), como antes.
+      leading: const AppBackButton(fallbackRoute: '/'),
       floatingActionButton:
           effectiveComp != null && canEdit
               ? FloatingActionButton(

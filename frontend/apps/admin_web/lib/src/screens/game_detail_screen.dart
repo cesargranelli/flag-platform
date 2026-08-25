@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
 /// Detalhe de um jogo: confronto, placar, status e informações.
@@ -23,11 +24,9 @@ class GameDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final gameFuture = game != null ? null : ref.watch(gameProvider(gameId!));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(game?.homeTeamName ?? 'Jogo'),
-        leading: AppBackButton(fallbackRoute: '/games'),
-      ),
+    return AppScreen(
+      title: game?.homeTeamName ?? 'Jogo',
+      leading: AppBackButton(fallbackRoute: '/games'),
       body: gameFuture == null
           ? _buildDetail(context, ref, game!)
           : gameFuture.when(

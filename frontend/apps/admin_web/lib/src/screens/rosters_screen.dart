@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
 /// Gestão de elencos (roster): inscreve e remove atletas de um time.
@@ -36,20 +37,18 @@ class RostersScreen extends ConsumerWidget {
       selectedCompetitionObj,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Elenco'),
-        leading: BackButton(onPressed: () => context.go('/')),
-        actions: [
-          if (effectiveComp != null && canEdit)
-            IconButton(
-              tooltip: 'Importar CSV',
-              icon: const Icon(Icons.upload_file),
-              onPressed: () =>
-                  context.push('/rosters/import', extra: effectiveComp),
-            ),
-        ],
-      ),
+    return AppScreen(
+      title: 'Elenco',
+      leading: BackButton(onPressed: () => context.go('/')),
+      actions: [
+        if (effectiveComp != null && canEdit)
+          IconButton(
+            tooltip: 'Importar CSV',
+            icon: const Icon(Icons.upload_file),
+            onPressed: () =>
+                context.push('/rosters/import', extra: effectiveComp),
+          ),
+      ],
       floatingActionButton:
           effectiveComp != null && canEdit
               ? FloatingActionButton(

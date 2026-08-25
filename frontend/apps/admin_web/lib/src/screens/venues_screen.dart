@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_screen.dart';
 
 /// Gestão de campos de jogo: cards e navegação para o detalhe.
 ///
@@ -18,11 +19,9 @@ class VenuesScreen extends ConsumerWidget {
     final venues = ref.watch(venuesProvider);
     final organizations = ref.watch(organizationsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Campos'),
-        leading: BackButton(onPressed: () => context.go('/')),
-      ),
+    return AppScreen(
+      title: 'Campos',
+      leading: BackButton(onPressed: () => context.go('/')),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Novo campo',
         onPressed: () => context.push('/venues/new'),

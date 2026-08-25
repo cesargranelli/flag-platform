@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_screen.dart';
 
 /// Tela exclusiva do super usuário (ADMIN) para aprovar/rejeitar contas.
 class ApprovalsScreen extends ConsumerWidget {
@@ -15,11 +16,9 @@ class ApprovalsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pending = ref.watch(pendingUsersProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Aprovações'),
-        leading: BackButton(onPressed: () => context.go('/')),
-      ),
+    return AppScreen(
+      title: 'Aprovações',
+      leading: BackButton(onPressed: () => context.go('/')),
       body: pending.when(
         loading: () => const AppLoading(message: 'Carregando pendências...'),
         error: (error, stackTrace) => AppErrorState(
