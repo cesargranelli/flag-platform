@@ -8,8 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
-/// Formulário de criação/edição de organização em etapas (wizard).
-/// Formulário de criação de organização.
+/// Formulário de criação de organização em etapas (wizard).
 ///
 /// V250: organizações não são editáveis após a criação — este formulário
 /// apenas cria. Alterações de cadastro não são suportadas.
@@ -65,28 +64,28 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   @override
   void initState() {
     super.initState();
-    final Organization? org = null;
-    _tradeName = TextEditingController(text: org?.tradeName ?? '');
-    _legalName = TextEditingController(text: org?.legalName ?? '');
-    _abbreviation = TextEditingController(text: org?.abbreviation ?? '');
-    _document = TextEditingController(text: org?.document ?? '');
-    _presidentName = TextEditingController(text: org?.presidentName ?? '');
-    _presidentCpf = TextEditingController(text: org?.presidentCpf ?? '');
-    _email = TextEditingController(text: org?.email ?? '');
-    _phone = TextEditingController(text: org?.phone ?? '');
-    _website = TextEditingController(text: org?.website ?? '');
-    _instagram = TextEditingController(text: org?.instagram ?? '');
-    _state = TextEditingController(text: org?.state ?? '');
-    _city = TextEditingController(text: org?.city ?? '');
-    _logoUrl = TextEditingController(text: org?.logoUrl ?? '');
-    _primaryColor = TextEditingController(text: org?.primaryColor ?? '');
-    _secondaryColor = TextEditingController(text: org?.secondaryColor ?? '');
-    _tertiaryColor = TextEditingController(text: org?.tertiaryColor ?? '');
-    _quaternaryColor = TextEditingController(text: org?.quaternaryColor ?? '');
-    _locale = TextEditingController(text: org?.locale ?? 'pt-BR');
-    _country = org?.country.isNotEmpty == true ? org!.country : 'BR';
-    _type = org?.organizationType;
-    _documentType = org?.documentType ?? DocumentType.cnpj;
+    // Formulário apenas de criação: todos os campos iniciam vazios.
+    _tradeName = TextEditingController();
+    _legalName = TextEditingController();
+    _abbreviation = TextEditingController();
+    _document = TextEditingController();
+    _presidentName = TextEditingController();
+    _presidentCpf = TextEditingController();
+    _email = TextEditingController();
+    _phone = TextEditingController();
+    _website = TextEditingController();
+    _instagram = TextEditingController();
+    _state = TextEditingController();
+    _city = TextEditingController();
+    _logoUrl = TextEditingController();
+    _primaryColor = TextEditingController();
+    _secondaryColor = TextEditingController();
+    _tertiaryColor = TextEditingController();
+    _quaternaryColor = TextEditingController();
+    _locale = TextEditingController(text: 'pt-BR');
+    _country = 'BR';
+    _type = null;
+    _documentType = DocumentType.cnpj;
 
     for (final controller in [
       _tradeName, _legalName, _abbreviation, _document, _presidentName,
