@@ -18,5 +18,5 @@
 - Autorização futura: **ADMIN tem acesso full** (override de qualquer trava, incluindo edição por criador).
 
 ## Fila ativa
-- Vazia — issues #273 e #230 encerradas a pedido do usuário (2026-08-24).
-- Pedidos pendentes de re-priorização (não formalizados): autorização por criador de campeonato; calendário vs Figma; fluxo de criação; conferências/divisões na edição + modais + botão rodadas.
+- **VAZIA** (2026-08-24) — nenhuma issue ou PR aberto.
+- Histórico: pedidos anteriores (autorização por criador, calendário vs Figma, fluxo de criação, conferências/divisões na edição, botão rodadas) foram arquivados sem formalização por decisão do usuário; podem ser retomados sob demanda.
