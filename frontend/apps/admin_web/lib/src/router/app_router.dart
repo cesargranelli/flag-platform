@@ -8,7 +8,8 @@ import '../screens/home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/competitions_screen.dart';
 import '../screens/groupings_screen.dart';
-import '../screens/competition_form_screen.dart';
+import '../screens/competition_create_screen.dart';
+import '../screens/competition_edit_screen.dart';
 import '../screens/competition_detail_screen.dart';
 import '../screens/organization_detail_screen.dart';
 import '../screens/organization_form_screen.dart';
@@ -126,7 +127,7 @@ class AppRouter {
       GoRoute(
         path: '/competitions/new',
         name: 'competitionNew',
-        builder: (context, state) => const CompetitionFormScreen(),
+        builder: (context, state) => const CompetitionCreateScreen(),
       ),
       GoRoute(
         path: '/competitions/:id',
@@ -148,7 +149,7 @@ class AppRouter {
           final competition = state.extra is Competition
               ? state.extra as Competition
               : null;
-          return CompetitionFormScreen(
+          return CompetitionEditScreen(
             competitionId: state.pathParameters['id'],
             competition: competition,
           );
