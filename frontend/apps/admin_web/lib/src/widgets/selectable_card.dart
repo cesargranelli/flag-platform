@@ -8,12 +8,12 @@ import 'package:flutter/material.dart';
 /// aparecem apenas em estados específicos (foco e seleção), como anel em
 /// `foregroundDecoration` para não deslocar o conteúdo.
 ///
-/// Estados: padrão (card puro) · hover (tinta `gray.fill`) · foco
-/// (contorno `primary` 2px) · selecionado (contorno `primary` 2px +
-/// tinta `primary` @10% + badge de check) · desabilitado (55% opacidade).
+/// Estados: padrão (card puro) · hover (tinta suave) · foco
+/// (contorno `primary` 2px) · selecionado (fundo `primary` sólido +
+/// conteúdo branco + badge invertido) · desabilitado (55% opacidade).
 ///
-/// Regra de contraste: conteúdo sobre o preenchimento `primary` usa
-/// `AppColors.black` (branco sobre #FD6B22 reprova WCAG AA).
+/// Issue #294: decisão do produto — conteúdo sobre preenchimento
+/// `primary` usa BRANCO.
 class SelectableCard extends StatefulWidget {
   const SelectableCard({
     super.key,
@@ -89,11 +89,9 @@ class _SelectableCardState extends State<SelectableCard> {
         selected: widget.selected,
         enabled: widget.enabled,
         child: Material(
-          // Selecionado mantém a tinta primary @10%; padrão é card surface
-          // elevação 1, igual ao Card usado nas demais telas do app.
-          color: widget.selected
-              ? AppColors.primary.withValues(alpha: 0.10)
-              : AppColors.surface,
+          // Issue #294: selecionado = preenchimento primary SÓLIDO com
+          // conteúdo branco; padrão é card surface elevação 1.
+          color: widget.selected ? AppColors.primary : AppColors.surface,
           elevation: 1,
           borderRadius: _radius,
           clipBehavior: Clip.antiAlias,
@@ -102,7 +100,9 @@ class _SelectableCardState extends State<SelectableCard> {
             focusNode: _focusNode,
             canRequestFocus: widget.enabled,
             borderRadius: _radius,
-            hoverColor: AppColors.grayFill,
+            hoverColor: widget.selected
+                ? Colors.white.withValues(alpha: 0.10)
+                : AppColors.grayFill,
             focusColor: AppColors.primary.withValues(alpha: 0.18),
             child: Container(
               constraints:
@@ -119,20 +119,30 @@ class _SelectableCardState extends State<SelectableCard> {
                         Icon(
                           widget.icon,
                           size: 28,
-                          color: AppColors.textPrimary,
+                          color: widget.selected
+                              ? Colors.white
+                              : AppColors.textPrimary,
                         ),
                         const SizedBox(height: 8),
                       ],
                       Text(
                         widget.label,
-                        style: Theme.of(context).textTheme.titleSmall,
+                        style:
+                            Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  color: widget.selected
+                                      ? Colors.white
+                                      : null,
+                                ),
                       ),
                       if (widget.description != null) ...[
                         const SizedBox(height: 4),
                         Text(
                           widget.description!,
-                          style: AppTextStyles.footerLink
-                              .copyWith(color: AppColors.textSecondary),
+                          style: AppTextStyles.footerLink.copyWith(
+                            color: widget.selected
+                                ? Colors.white
+                                : AppColors.textSecondary,
+                          ),
                         ),
                       ],
                     ],
@@ -146,13 +156,13 @@ class _SelectableCardState extends State<SelectableCard> {
                           width: 24,
                           height: 24,
                           decoration: const BoxDecoration(
-                            color: AppColors.primary,
+                            color: Colors.white,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.check,
                             size: 16,
-                            color: AppColors.black,
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -171,10 +181,10 @@ class _SelectableCardState extends State<SelectableCard> {
 ///
 /// Padrão SEM bordas (issue #292): o estado é comunicado por preenchimento.
 /// Não selecionado: fundo `gray.fill` + texto `textPrimary`. Selecionado:
-/// fundo `primary` + texto `black` (contraste WCAG AA). Métricas estáveis
-/// entre estados para evitar jitter no wrap: raio 10 (`radius.chip`),
-/// altura ~34px, tipografia 13/17 (`footerLink`). Anel de foco `primary`
-/// apenas na navegação por teclado (acessibilidade).
+/// fundo `primary` + texto BRANCO (issue #294, decisão do produto).
+/// Métricas estáveis entre estados para evitar jitter no wrap: raio 10
+/// (`radius.chip`), altura ~34px, tipografia 13/17 (`footerLink`). Anel de
+/// foco `primary` apenas na navegação por teclado (acessibilidade).
 class SelectableChip extends StatelessWidget {
   const SelectableChip({
     super.key,
@@ -199,7 +209,9 @@ class SelectableChip extends StatelessWidget {
             return InkWell(
               onTap: onTap,
               borderRadius: BorderRadius.circular(10),
-              hoverColor: AppColors.grayFill,
+              hoverColor: selected
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : AppColors.grayFill,
               focusColor: Colors.transparent,
               child: Container(
                 // Sem bordas em nenhum estado; foco por teclado usa anel
@@ -228,7 +240,7 @@ class SelectableChip extends StatelessWidget {
                     label,
                     style: AppTextStyles.footerLink.copyWith(
                       color:
-                          selected ? AppColors.black : AppColors.textPrimary,
+                          selected ? Colors.white : AppColors.textPrimary,
                     ),
                   ),
                 ),
