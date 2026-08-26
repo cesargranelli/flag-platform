@@ -14,20 +14,17 @@ class AppBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Caixa 40×40: reduz o círculo de hover/ripple do IconButton padrão
-    // (48×48), mantendo alvo de toque acessível e efeito consistente.
-    return SizedBox(
-      width: 40,
-      height: 40,
-      child: BackButton(
-        onPressed: () {
-          if (context.canPop()) {
-            context.pop();
-          } else {
-            context.go(fallbackRoute);
-          }
-        },
-      ),
+    // Issue #302: sem wrapper de tamanho — usa o BackButton nativo 48×48,
+    // idêntico às demais telas (hover padronizado em todo o app; a caixa
+    // 40×40 da #238 foi revertida por gerar hover inconsistente).
+    return BackButton(
+      onPressed: () {
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go(fallbackRoute);
+        }
+      },
     );
   }
 }
