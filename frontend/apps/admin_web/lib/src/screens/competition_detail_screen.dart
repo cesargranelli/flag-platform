@@ -124,18 +124,15 @@ class _CompetitionDetailScreenState
     bool isDraft,
   ) {
     return Card(
-      child: Padding(
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 160),
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Campeonato',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+              style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 12),
             Row(
@@ -221,7 +218,7 @@ class _CompetitionDetailScreenState
             // Descrição pertence à sessão Campeonato (wizard).
             if (comp.description != null && comp.description!.isNotEmpty) ...[
               const SizedBox(height: 16),
-              _row('Descrição', comp.description!),
+              AppInfoRow(label: 'Descrição', value: comp.description!),
             ],
           ],
         ),
@@ -231,29 +228,41 @@ class _CompetitionDetailScreenState
 
   /// Sessão 2 — Modalidade (#306).
   Widget _modalidadeCard(Competition comp) {
-    return _infoCard('Modalidade', [
-      _row('Modalidade', comp.modality?.label ?? 'Não definido'),
-    ]);
+    return AppInfoCard(
+      title: 'Modalidade',
+      children: [
+        AppInfoRow(
+          label: 'Modalidade',
+          value: comp.modality?.label ?? 'Não definido',
+        ),
+      ],
+    );
   }
 
   /// Sessão 3 — Categoria (#306): gênero + faixa etária.
   Widget _categoriaCard(Competition comp) {
-    return _infoCard('Categoria', [
-      _row('Gênero', _genderLabel(comp.gender)),
-      _row('Faixa etária', _ageGroupLabel(comp.ageGroup)),
-    ]);
+    return AppInfoCard(
+      title: 'Categoria',
+      children: [
+        AppInfoRow(label: 'Gênero', value: _genderLabel(comp.gender)),
+        AppInfoRow(label: 'Faixa etária', value: _ageGroupLabel(comp.ageGroup)),
+      ],
+    );
   }
 
   /// Sessão 4 — Temporada (#306).
   Widget _temporadaCard(Competition comp) {
-    return _infoCard('Temporada', [
-      if (comp.startDate != null)
-        _row('Início', _formatDate(comp.startDate!)),
-      if (comp.endDate != null)
-        _row('Fim', _formatDate(comp.endDate!)),
-      if (comp.startDate == null && comp.endDate == null)
-        _row('Período', 'Não definido'),
-    ]);
+    return AppInfoCard(
+      title: 'Temporada',
+      children: [
+        if (comp.startDate != null)
+          AppInfoRow(label: 'Início', value: _formatDate(comp.startDate!)),
+        if (comp.endDate != null)
+          AppInfoRow(label: 'Fim', value: _formatDate(comp.endDate!)),
+        if (comp.startDate == null && comp.endDate == null)
+          AppInfoRow(label: 'Período', value: 'Não definido'),
+      ],
+    );
   }
 
   /// Sessão 6 — Estrutura (#306): agrupamentos dos clubes.
@@ -264,50 +273,53 @@ class _CompetitionDetailScreenState
     bool canEdit,
     bool isDraft,
   ) {
-    return _infoCard('Estrutura', [
-      _row(
-        'Modelo',
-        comp.groupingType?.label ?? GroupingType.divisions.label,
-      ),
-      if (canEdit && isDraft) ...[
-        _actionRowButton(
-          context,
-          icon: Icons.account_tree_outlined,
-          label: comp.groupingType == GroupingType.groups
-              ? 'Gerenciar Conferências e Grupos'
-              : 'Gerenciar Conferências e Divisões',
-          onTap: () {
-            ref.read(selectedCompetitionProvider.notifier).state = comp.id;
-            context.push('/groupings');
-          },
+    return AppInfoCard(
+      title: 'Estrutura',
+      children: [
+        AppInfoRow(
+          label: 'Modelo',
+          value: comp.groupingType?.label ?? GroupingType.divisions.label,
         ),
-        _actionRowButton(
-          context,
-          icon: Icons.groups,
-          label: 'Associar Clubes',
-          onTap: () {
-            ref.read(selectedCompetitionProvider.notifier).state = comp.id;
-            context.push('/teams');
-          },
-        ),
-      ] else ...[
-        Text(
-          'Campeonato publicado — a estrutura está travada.',
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
+        if (canEdit && isDraft) ...[
+          _actionRowButton(
+            context,
+            icon: Icons.account_tree_outlined,
+            label: comp.groupingType == GroupingType.groups
+                ? 'Gerenciar Conferências e Grupos'
+                : 'Gerenciar Conferências e Divisões',
+            onTap: () {
+              ref.read(selectedCompetitionProvider.notifier).state = comp.id;
+              context.push('/groupings');
+            },
           ),
-        ),
+          _actionRowButton(
+            context,
+            icon: Icons.groups,
+            label: 'Associar Clubes',
+            onTap: () {
+              ref.read(selectedCompetitionProvider.notifier).state = comp.id;
+              context.push('/teams');
+            },
+          ),
+        ] else ...[
+          Text(
+            'Campeonato publicado — a estrutura está travada.',
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       ],
-    ]);
+    );
   }
 
   /// Sessão Conferências (#323): lista as conferências do campeonato.
   Widget _conferencesCard(Competition comp) {
     final conferences = ref.watch(conferencesProvider(comp.id));
-    return _infoCard(
-      'Conferências',
-      conferences.when(
+    return AppInfoCard(
+      title: 'Conferências',
+      children: conferences.when(
         loading: () => const [
           Text(
             'Carregando conferências...',
@@ -387,48 +399,6 @@ class _CompetitionDetailScreenState
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoCard(String title, List<Widget> rows) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style:
-                  const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...rows,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _row(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
         ],
       ),
     );

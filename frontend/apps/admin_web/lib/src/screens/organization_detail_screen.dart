@@ -106,18 +106,15 @@ class _OrganizationDetailScreenState
   /// Sessão 1 — Identificação (#323): card hero consolidado + dados.
   Widget _identificacaoCard(Organization org) {
     return Card(
-      child: Padding(
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 160),
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Identificação',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+              style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 12),
             Row(
@@ -155,11 +152,11 @@ class _OrganizationDetailScreenState
             ),
             const SizedBox(height: 16),
             if (org.abbreviation != null && org.abbreviation!.isNotEmpty)
-              _row('Sigla', org.abbreviation!),
+              AppInfoRow(label: 'Sigla', value: org.abbreviation!),
             if (org.organizationType != null)
-              _row('Tipo', org.organizationType!.label),
+              AppInfoRow(label: 'Tipo', value: org.organizationType!.label),
             if (org.document != null && org.document!.isNotEmpty)
-              _row('CNPJ', org.document!),
+              AppInfoRow(label: 'CNPJ', value: org.document!),
             if (org.createdAt != null) ...[
               const SizedBox(height: 4),
               Text(
@@ -176,140 +173,66 @@ class _OrganizationDetailScreenState
 
   /// Sessão 2 — Presidente (#323).
   Widget _presidenteCard(Organization org) {
-    return _infoCard('Presidente', [
-      if (org.presidentName != null && org.presidentName!.isNotEmpty)
-        _row('Nome', org.presidentName!),
-      if (org.presidentCpf != null && org.presidentCpf!.isNotEmpty)
-        _row('CPF', org.presidentCpf!),
-    ]);
+    return AppInfoCard(
+      title: 'Presidente',
+      children: [
+        if (org.presidentName != null && org.presidentName!.isNotEmpty)
+          AppInfoRow(label: 'Nome', value: org.presidentName!),
+        if (org.presidentCpf != null && org.presidentCpf!.isNotEmpty)
+          AppInfoRow(label: 'CPF', value: org.presidentCpf!),
+      ],
+    );
   }
 
   /// Sessão 3 — Contato (#323).
   Widget _contatoCard(Organization org) {
-    return _infoCard('Contato', [
-      if (org.email != null && org.email!.isNotEmpty)
-        _row('E-mail', org.email!),
-      if (org.phone != null && org.phone!.isNotEmpty)
-        _row('Telefone', org.phone!),
-      if (org.website != null && org.website!.isNotEmpty)
-        _row('Site', org.website!),
-      if (org.instagram != null && org.instagram!.isNotEmpty)
-        _row('Instagram', org.instagram!),
-    ]);
+    return AppInfoCard(
+      title: 'Contato',
+      children: [
+        if (org.email != null && org.email!.isNotEmpty)
+          AppInfoRow(label: 'E-mail', value: org.email!),
+        if (org.phone != null && org.phone!.isNotEmpty)
+          AppInfoRow(label: 'Telefone', value: org.phone!),
+        if (org.website != null && org.website!.isNotEmpty)
+          AppInfoRow(label: 'Site', value: org.website!),
+        if (org.instagram != null && org.instagram!.isNotEmpty)
+          AppInfoRow(label: 'Instagram', value: org.instagram!),
+      ],
+    );
   }
 
   /// Sessão 4 — Localização (#323): movida de Identificação.
   Widget _localizacaoCard(Organization org) {
-    return _infoCard('Localização', [
-      _row('País', org.country),
-      if (org.state != null && org.state!.isNotEmpty)
-        _row('Estado', org.state!),
-      if (org.city != null && org.city!.isNotEmpty)
-        _row('Cidade', org.city!),
-    ]);
+    return AppInfoCard(
+      title: 'Localização',
+      children: [
+        AppInfoRow(label: 'País', value: org.country),
+        if (org.state != null && org.state!.isNotEmpty)
+          AppInfoRow(label: 'Estado', value: org.state!),
+        if (org.city != null && org.city!.isNotEmpty)
+          AppInfoRow(label: 'Cidade', value: org.city!),
+      ],
+    );
   }
 
   /// Sessão 5 — Identidade (#323): renomeado de 'Visual'.
   Widget _identidadeCard(Organization org) {
-    return _infoCard('Identidade', [
-      if (org.locale.isNotEmpty) _row('Locale', org.locale),
-      if (org.primaryColor != null && org.primaryColor!.isNotEmpty)
-        _colorRow('Cor primária', org.primaryColor!),
-      if (org.secondaryColor != null && org.secondaryColor!.isNotEmpty)
-        _colorRow('Cor secundária', org.secondaryColor!),
-      if (org.tertiaryColor != null && org.tertiaryColor!.isNotEmpty)
-        _colorRow('Cor terciária', org.tertiaryColor!),
-      if (org.quaternaryColor != null && org.quaternaryColor!.isNotEmpty)
-        _colorRow('Cor quaternária', org.quaternaryColor!),
-      if (org.logoUrl != null && org.logoUrl!.isNotEmpty)
-        _row('Logo', org.logoUrl!),
-    ]);
-  }
-
-  Widget _infoCard(String title, List<Widget> rows) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...rows,
-          ],
-        ),
-      ),
+    return AppInfoCard(
+      title: 'Identidade',
+      children: [
+        if (org.locale.isNotEmpty) AppInfoRow(label: 'Locale', value: org.locale),
+        if (org.primaryColor != null && org.primaryColor!.isNotEmpty)
+          AppInfoColorRow(label: 'Cor primária', hex: org.primaryColor!),
+        if (org.secondaryColor != null && org.secondaryColor!.isNotEmpty)
+          AppInfoColorRow(label: 'Cor secundária', hex: org.secondaryColor!),
+        if (org.tertiaryColor != null && org.tertiaryColor!.isNotEmpty)
+          AppInfoColorRow(label: 'Cor terciária', hex: org.tertiaryColor!),
+        if (org.quaternaryColor != null && org.quaternaryColor!.isNotEmpty)
+          AppInfoColorRow(label: 'Cor quaternária', hex: org.quaternaryColor!),
+        if (org.logoUrl != null && org.logoUrl!.isNotEmpty)
+          AppInfoRow(label: 'Logo', value: org.logoUrl!),
+      ],
     );
-  }
-
-  Widget _row(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                  fontSize: 13, color: AppColors.textSecondary),
-            ),
-          ),
-          Expanded(
-            child: Text(value, style: const TextStyle(fontSize: 14)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Linha de cor: swatch arredondado preenchido + valor hex legível.
-  Widget _colorRow(String label, String hex) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                  fontSize: 13, color: AppColors.textSecondary),
-            ),
-          ),
-          Container(
-            width: 18,
-            height: 18,
-            decoration: BoxDecoration(
-              color: _parseHex(hex) ?? Colors.transparent,
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(
-                color: AppColors.textSecondary.withValues(alpha: 0.5),
-                width: 0.5,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            hex.toUpperCase(),
-            style: const TextStyle(fontSize: 13, letterSpacing: 0.3),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Aceita "#RRGGBB" ou "RRGGBB"; retorna null se inválido.
-  Color? _parseHex(String? hex) {
-    if (hex == null || hex.isEmpty) return null;
-    final clean = hex.replaceAll('#', '').trim();
-    final value = int.tryParse('FF$clean', radix: 16);
-    return value == null ? null : Color(value);
   }
 
   String _formatDate(DateTime value) {
