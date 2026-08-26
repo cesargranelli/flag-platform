@@ -35,8 +35,12 @@ class _CompetitionDetailScreenState
     'Modalidade',
     'Categoria',
     'Temporada',
+    'Conferências',
     'Estrutura',
   ];
+
+  /// Limiar (px do topo do card) que considera a sessão como ativa na rolagem.
+  static const _activeSessionTopLimit = 180.0;
 
   final _scrollController = ScrollController();
   final _sessionKeys = List<GlobalKey>.generate(
@@ -67,7 +71,7 @@ class _CompetitionDetailScreenState
       final box = ctx.findRenderObject();
       if (box is! RenderBox) continue;
       final top = box.localToGlobal(Offset.zero).dy;
-      if (top <= 180) active = i;
+      if (top <= _activeSessionTopLimit) active = i;
     }
     if (active != _activeSession && mounted) {
       setState(() => _activeSession = active);
@@ -97,7 +101,14 @@ class _CompetitionDetailScreenState
       leading: AppBackButton(fallbackRoute: '/competitions'),
       body: Column(
         children: [
-          _sessionBar(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: AppSessionNavBar(
+              sessions: _sessions,
+              activeIndex: _activeSession,
+              onTap: _scrollToSession,
+            ),
+          ),
           Expanded(
             child: compFuture == null
                 ? _buildDetail(context, ref, widget.competition!)
@@ -115,49 +126,6 @@ class _CompetitionDetailScreenState
                   ),
           ),
         ],
-      ),
-    );
-  }
-
-  /// Barra fixa de sessões (mesma linguagem do indicador do wizard):
-  /// chip ativo com fundo `primary` e texto branco (#294).
-  Widget _sessionBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: SizedBox(
-        height: 40,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: _sessions.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 8),
-          itemBuilder: (context, index) {
-            final active = index == _activeSession;
-            return InkWell(
-              onTap: () => _scrollToSession(index),
-              borderRadius: BorderRadius.circular(10),
-              hoverColor: active
-                  ? Colors.white.withValues(alpha: 0.10)
-                  : AppColors.grayFill,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 120),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: active ? AppColors.primary : AppColors.grayFill,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  _sessions[index],
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: active ? Colors.white : AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
       ),
     );
   }
@@ -325,10 +293,17 @@ class _CompetitionDetailScreenState
             ),
             const SizedBox(height: 12),
 
-            // Sessão 5 — Estrutura (#306): agrupamentos dos clubes.
-            // Issue #305: ações de escrita apenas em DRAFT.
+            // Sessão 5 — Conferências (#323): presentes no cadastro (estrutura).
             KeyedSubtree(
               key: _sessionKeys[4],
+              child: _conferencesCard(comp),
+            ),
+            const SizedBox(height: 12),
+
+            // Sessão 6 — Estrutura (#306): agrupamentos dos clubes.
+            // Issue #305: ações de escrita apenas em DRAFT.
+            KeyedSubtree(
+              key: _sessionKeys[5],
               child: _infoCard('Estrutura', [
                 _row(
                   'Modelo',
@@ -371,6 +346,66 @@ class _CompetitionDetailScreenState
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Sessão Conferências (#323): lista as conferências do campeonato.
+  Widget _conferencesCard(Competition comp) {
+    final conferences = ref.watch(conferencesProvider(comp.id));
+    return _infoCard(
+      'Conferências',
+      conferences.when(
+        loading: () => const [
+          Text(
+            'Carregando conferências...',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          ),
+        ],
+        error: (e, s) => const [
+          Text(
+            'Não foi possível carregar as conferências.',
+            style: TextStyle(color: AppColors.danger, fontSize: 13),
+          ),
+        ],
+        data: (items) => items.isEmpty
+            ? const [
+                Text(
+                  'Sem conferências definidas.',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                ),
+              ]
+            : [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final c in items) _conferenceChip(c.name),
+                  ],
+                ),
+              ],
+      ),
+    );
+  }
+
+  Widget _conferenceChip(String name) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.grayFill,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.account_tree_outlined,
+            size: 14,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: 6),
+          Text(name, style: const TextStyle(fontSize: 12, color: AppColors.textPrimary)),
+        ],
       ),
     );
   }
