@@ -19,6 +19,7 @@ class AppStepIndicator extends StatelessWidget {
     required this.titles,
     this.icons,
     required this.currentStep,
+    this.showDoneState = true,
     this.onStepTap,
   });
 
@@ -32,6 +33,11 @@ class AppStepIndicator extends StatelessWidget {
 
   /// Índice da etapa ativa.
   final int currentStep;
+
+  /// Marca como concluídas (verde) as etapas anteriores à ativa. Desligue
+  /// (`false`) em navegações de leitura (telas de detalhe) para que apenas a
+  /// etapa ativa fique selecionada e as demais permaneçam "não selecionadas".
+  final bool showDoneState;
 
   /// Chamado ao tocar em uma etapa; a regra de navegação é do pai.
   final void Function(int index)? onStepTap;
@@ -52,23 +58,20 @@ class AppStepIndicator extends StatelessWidget {
 
   Widget _stepItem(int index) {
     final selected = index == currentStep;
-    final done = index < currentStep;
+    // Em leitura (detalhe) o "concluído" fica desligado: só a etapa ativa é
+    // selecionada; as demais permanecem "não selecionadas" (gris), sem o verde.
+    final done = showDoneState && index < currentStep;
+    final useIcons = icons != null;
+
     final CircleAvatar circle;
-    if (icons != null) {
-      // Modo "ícones" (telas de detalhe): o ícone da sessão identifica cada
-      // etapa e a cor do círculo comunica o estado (#332).
+    if (useIcons) {
       circle = CircleAvatar(
         radius: 14,
-        backgroundColor: done
-            ? AppColors.success
-            : selected
-                ? AppColors.primary
-                : AppColors.grayFill,
+        backgroundColor: selected ? AppColors.primary : AppColors.grayFill,
         child: Icon(
           icons![index],
           size: 18,
-          color:
-              (done || selected) ? Colors.white : AppColors.textPrimary,
+          color: selected ? Colors.white : AppColors.textPrimary,
         ),
       );
     } else if (done) {
@@ -94,6 +97,8 @@ class AppStepIndicator extends StatelessWidget {
       );
     }
 
+    // No modo ícones, o item selecionado fica com fundo `primary` (todo
+    // laranja) e conteúdo BRANCO (ícone + rótulo) (#332).
     return Semantics(
       selected: selected,
       button: true,
@@ -101,8 +106,13 @@ class AppStepIndicator extends StatelessWidget {
       child: InkWell(
         onTap: () => onStepTap?.call(index),
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            color: useIcons && selected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Column(
             children: [
               circle,
@@ -114,9 +124,13 @@ class AppStepIndicator extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                    color: selected
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
+                    color: useIcons
+                        ? (selected
+                            ? Colors.white
+                            : AppColors.textSecondary)
+                        : (selected
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary),
                   ),
                 ),
               ),
