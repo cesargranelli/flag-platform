@@ -13,6 +13,11 @@
 - Quality will be guaranteed by another strategy (decided by the user), not by automated tests. Do not add, keep, or restore test files unless the user explicitly asks. A estratégia vigente é a suíte E2E Playwright em `e2e/` contra staging efêmero (ADR-005) — ela é a única exceção; não confundi-la com testes unitários/de widget.
 - **Never merge locally.** The flow is always: push the feature branch → open a PR on GitHub (base `develop`, ou `main` apenas para release/hotfix) → the tech-lead agent reviews and approves the PR → merge via GitHub (`gh pr merge`). Local branches only sync from their remote after the merge.
 - **Local commands need no permission** while working inside the flag-platform project: compile, analyze, run checks, git status/add/commit/push to working branches, create issues/PRs via `gh`, etc., are executed autonomously. Ask only when an action leaves the project directory or affects global/external configuration.
+- **CI indisponível (GitHub Actions fora/limite).** Se o CI do GitHub não disparar para o PR (ex.: limite mensal de uso do Actions ou indisponibilidade) e a mudança tiver sido validada localmente (`melos analyze` para frontend / `.\mvnw.cmd --batch-mode -DskipTests compile` para backend, conforme o escopo), o tech-lead pode **aprovar/mergear o PR sem os checks**, desde que TODAS as condições abaixo sejam atendidas:
+    1. a branch base (`develop` ou `main`) **não** tenha required status checks configurados;
+    2. o escopo da mudança **não dependa** do job que não rodou (ex.: mudança frontend-only não exige o job backend, e vice-versa);
+    3. a ocorrência seja **registrada explicitamente no reporte ao usuário** (e, se houver, no construtor/issue).
+    Se alguma condição falhar ou houver dúvida, **pausar e acionar o usuário** para decidir (não mergear às cegas).
 
 ## Fluxo de issues (GitHub)
 
