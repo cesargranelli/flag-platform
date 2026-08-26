@@ -8,6 +8,7 @@
 
 -- 1) Zera as tabelas da estrutura (ordem filhos -> pais).
 TRUNCATE TABLE platform.score_events;
+TRUNCATE TABLE platform.standings;
 TRUNCATE TABLE platform.checkins;
 TRUNCATE TABLE platform.team_roster;
 TRUNCATE TABLE platform.athletes;
