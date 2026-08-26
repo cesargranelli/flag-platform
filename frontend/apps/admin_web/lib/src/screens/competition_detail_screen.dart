@@ -59,13 +59,23 @@ class CompetitionDetailScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Identidade: cabeçalho do campeonato com edição explícita.
+            // Sessão 1 — Campeonato (#306): identidade + ações por status,
+            // espelhando a primeira sessão do wizard de cadastro.
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      'Campeonato',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Container(
@@ -151,22 +161,33 @@ class CompetitionDetailScreen extends ConsumerWidget {
                         label: const Text('Adicionar rodadas'),
                       ),
                     ],
+                    // Descrição pertence à sessão Campeonato (como no wizard).
+                    if (comp.description != null &&
+                        comp.description!.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      _row('Descrição', comp.description!),
+                    ],
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
-            // Atributos da competição.
-            _infoCard('Atributos', [
+            // Sessão 2 — Modalidade (#306).
+            _infoCard('Modalidade', [
               _row('Modalidade', comp.modality?.label ?? 'Não definido'),
-              _row('Gênero', _genderLabel(comp.gender)),
-              _row('Faixa Etária', _ageGroupLabel(comp.ageGroup)),
             ]),
             const SizedBox(height: 12),
 
-            // Período de realização.
-            _infoCard('Período', [
+            // Sessão 3 — Categoria (#306): gênero + faixa etária.
+            _infoCard('Categoria', [
+              _row('Gênero', _genderLabel(comp.gender)),
+              _row('Faixa etária', _ageGroupLabel(comp.ageGroup)),
+            ]),
+            const SizedBox(height: 12),
+
+            // Sessão 4 — Temporada (#306).
+            _infoCard('Temporada', [
               if (comp.startDate != null)
                 _row('Início', _formatDate(comp.startDate!)),
               if (comp.endDate != null) _row('Fim', _formatDate(comp.endDate!)),
@@ -175,20 +196,20 @@ class CompetitionDetailScreen extends ConsumerWidget {
             ]),
             const SizedBox(height: 12),
 
-            // Descrição opcional.
-            if (comp.description != null && comp.description!.isNotEmpty) ...[
-              _infoCard('Descrição', [
-                _row('Descrição', comp.description!),
-              ]),
-              const SizedBox(height: 12),
-            ],
-
-            // Ações dentro do campeonato.
-            _infoCard('Ações do campeonato', [
+            // Sessão 5 — Estrutura (#306): agrupamentos dos clubes
+            // (conferências, divisões/grupos e rodadas).
+            _infoCard('Estrutura', [
+              _row(
+                'Modelo',
+                comp.groupingType?.label ??
+                    GroupingType.divisions.label,
+              ),
               _actionRowButton(
                 context,
                 icon: Icons.account_tree_outlined,
-                label: 'Gerenciar Conferências e Divisões',
+                label: comp.groupingType == GroupingType.groups
+                    ? 'Gerenciar Conferências e Grupos'
+                    : 'Gerenciar Conferências e Divisões',
                 onTap: () {
                   ref.read(selectedCompetitionProvider.notifier).state =
                       comp.id;

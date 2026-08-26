@@ -27,4 +27,5 @@ export 'src/enums/round_type.dart';
 export 'src/enums/athlete_position.dart';
 export 'src/enums/gender.dart';
 export 'src/enums/age_group.dart';
+export 'src/enums/grouping_type.dart';
 export 'src/enums/document_type.dart';
