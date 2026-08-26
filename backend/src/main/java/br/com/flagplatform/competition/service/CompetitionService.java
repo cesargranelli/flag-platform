@@ -163,6 +163,14 @@ public class CompetitionService implements CompetitionLookup {
         }
     }
 
+    @Override
+    public void assertEditable(UUID competitionId) {
+        CompetitionEntity entity = findEntityById(competitionId);
+        if (entity.getStatus() != CompetitionStatus.DRAFT) {
+            throw new CompetitionNotEditableException(entity.getStatus());
+        }
+    }
+
     private CompetitionEntity findEntityById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new CompetitionNotFoundException(id));

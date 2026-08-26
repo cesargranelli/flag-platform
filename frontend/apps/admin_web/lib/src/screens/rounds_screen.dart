@@ -30,13 +30,18 @@ class RoundsScreen extends ConsumerWidget {
 
     // Issue #261: criação/edição de rodadas exige ser criador do
     // campeonato ou ADMIN (o backend já bloqueia as escritas).
+    // Issue #305: e apenas com o campeonato em DRAFT — publicado/encerrado
+    // tem a estrutura travada (somente leitura).
     final selectedCompetitionObj = compItems
         .where((c) => c.id == effectiveComp)
         .firstOrNull;
+    final isDraft =
+        selectedCompetitionObj?.status == CompetitionStatus.draft;
     final canEdit = canEditCompetition(
       ref.watch(authControllerProvider).state.user,
       selectedCompetitionObj,
     );
+    final canManage = canEdit && isDraft;
 
     return AppScreen(
       title: 'Rodadas',
@@ -45,7 +50,7 @@ class RoundsScreen extends ConsumerWidget {
       // refresh cai no fallback (home), como antes.
       leading: const AppBackButton(fallbackRoute: '/'),
       floatingActionButton:
-          effectiveComp != null && canEdit
+          effectiveComp != null && canManage
               ? FloatingActionButton(
                   tooltip: 'Nova rodada',
                   onPressed: () =>
@@ -96,11 +101,13 @@ class RoundsScreen extends ConsumerWidget {
                           ref.read(selectedRoundProvider.notifier).state = null;
                         },
                       ),
-                      if (!canEdit)
-                        const EditRestrictionNote(
-                          message:
-                              'Apenas o criador do campeonato pode '
-                              'gerenciar rodadas.',
+                      if (!canManage)
+                        EditRestrictionNote(
+                          message: !isDraft
+                              ? 'Campeonato publicado — as rodadas estão '
+                                  'travadas.'
+                              : 'Apenas o criador do campeonato pode '
+                                  'gerenciar rodadas.',
                         ),
                     ],
                   ),

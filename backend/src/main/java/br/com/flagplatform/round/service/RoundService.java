@@ -31,6 +31,8 @@ public class RoundService implements RoundLookup {
     public RoundResponse create(CreateRoundRequest request, String currentUserEmail) {
         // V260: apenas o criador do campeonato (ou ADMIN) gerencia o campeonato.
         competitionLookup.assertManagedBy(request.competitionId(), currentUserEmail);
+        // Issue #305: estrutura só é editável com o campeonato em DRAFT.
+        competitionLookup.assertEditable(request.competitionId());
 
         if (repository.existsByCompetitionIdAndNumber(request.competitionId(), request.number())) {
             throw new DuplicateRoundNumberException(request.number());
@@ -56,6 +58,12 @@ public class RoundService implements RoundLookup {
         competitionLookup.assertManagedBy(entity.getCompetitionId(), currentUserEmail);
         if (!entity.getCompetitionId().equals(request.competitionId())) {
             competitionLookup.assertManagedBy(request.competitionId(), currentUserEmail);
+        }
+        // Issue #305: estrutura só é editável com o campeonato em DRAFT
+        // (valida a rodada e o destino, se diferente).
+        competitionLookup.assertEditable(entity.getCompetitionId());
+        if (!entity.getCompetitionId().equals(request.competitionId())) {
+            competitionLookup.assertEditable(request.competitionId());
         }
 
         if (repository.existsByCompetitionIdAndNumberAndIdNot(

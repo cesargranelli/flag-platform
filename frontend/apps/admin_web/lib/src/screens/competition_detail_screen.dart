@@ -144,10 +144,10 @@ class CompetitionDetailScreen extends ConsumerWidget {
                         ),
                       ),
                     // Issue #259: atalho para gerenciar rodadas já no
-                    // contexto deste campeonato. Segue a mesma regra de
-                    // permissão da edição (criador ou ADMIN), sem restrição
-                    // de status — rodadas também são geridas após publicar.
-                    if (canEdit) ...[
+                    // contexto deste campeonato. Issue #305: apenas em
+                    // DRAFT — publicado tem a estrutura travada.
+                    if (canEdit &&
+                        comp.status == CompetitionStatus.draft) ...[
                       const SizedBox(height: 12),
                       FilledButton.icon(
                         onPressed: () {
@@ -197,35 +197,47 @@ class CompetitionDetailScreen extends ConsumerWidget {
             const SizedBox(height: 12),
 
             // Sessão 5 — Estrutura (#306): agrupamentos dos clubes
-            // (conferências, divisões/grupos e rodadas).
+            // (conferências, divisões/grupos e rodadas). Issue #305:
+            // ações de escrita apenas em DRAFT.
             _infoCard('Estrutura', [
               _row(
                 'Modelo',
                 comp.groupingType?.label ??
                     GroupingType.divisions.label,
               ),
-              _actionRowButton(
-                context,
-                icon: Icons.account_tree_outlined,
-                label: comp.groupingType == GroupingType.groups
-                    ? 'Gerenciar Conferências e Grupos'
-                    : 'Gerenciar Conferências e Divisões',
-                onTap: () {
-                  ref.read(selectedCompetitionProvider.notifier).state =
-                      comp.id;
-                  context.push('/groupings');
-                },
-              ),
-              _actionRowButton(
-                context,
-                icon: Icons.groups,
-                label: 'Associar Clubes',
-                onTap: () {
-                  ref.read(selectedCompetitionProvider.notifier).state =
-                      comp.id;
-                  context.push('/teams');
-                },
-              ),
+              if (canEdit &&
+                  comp.status == CompetitionStatus.draft) ...[
+                _actionRowButton(
+                  context,
+                  icon: Icons.account_tree_outlined,
+                  label: comp.groupingType == GroupingType.groups
+                      ? 'Gerenciar Conferências e Grupos'
+                      : 'Gerenciar Conferências e Divisões',
+                  onTap: () {
+                    ref.read(selectedCompetitionProvider.notifier).state =
+                        comp.id;
+                    context.push('/groupings');
+                  },
+                ),
+                _actionRowButton(
+                  context,
+                  icon: Icons.groups,
+                  label: 'Associar Clubes',
+                  onTap: () {
+                    ref.read(selectedCompetitionProvider.notifier).state =
+                        comp.id;
+                    context.push('/teams');
+                  },
+                ),
+              ] else ...[
+                Text(
+                  'Campeonato publicado — a estrutura está travada.',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ]),
           ],
         ),
