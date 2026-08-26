@@ -14,7 +14,7 @@ import '../widgets/selectable_card.dart';
 ///
 /// Sessões 1–4 montam o cadastro; o botão "Criar rascunho" grava o
 /// campeonato (sempre RASCUNHO) e habilita as sessões de estrutura
-/// (Conferências → Estrutura: Divisões ou Grupos), ambas com opção de
+/// (Conferências → Agrupamento: Divisões ou Grupos), ambas com opção de
 /// declínio — o fluxo nunca trava.
 class CompetitionCreateScreen extends ConsumerStatefulWidget {
   const CompetitionCreateScreen({super.key});
@@ -47,6 +47,9 @@ class _CompetitionCreateScreenState
   bool _declinedStructure = false;
   GroupingType? _groupingChoice;
 
+  /// Conferência selecionada para associar a nova divisão/grupo (#338).
+  String? _conferenceId;
+
   int _step = 0;
   bool _submitting = false;
   bool _saved = false;
@@ -64,7 +67,7 @@ class _CompetitionCreateScreenState
     'Categoria',
     'Temporada',
     'Conferências',
-    'Estrutura',
+    'Agrupamento',
   ];
 
   @override
@@ -181,7 +184,11 @@ class _CompetitionCreateScreenState
       _step == 3 ? 'Criar rascunho' : (_step == 5 ? 'Concluir' : 'Continuar');
 
   /// Cria o campeonato em RASCUNHO e avança para a estrutura (#304).
-  Future<void> _createDraft() async {
+  ///
+  /// [targetStep] permite navegar direto à etapa desejada ao avançar pelo
+  /// indicador (ex.: Agrupamento) — senão o rascunho não é criado e os botões
+  /// "Adicionar" da estrutura ficam desabilitados (#338).
+  Future<void> _createDraft({int? targetStep}) async {
     setState(() {
       _submitting = true;
       _errorMessage = null;
@@ -213,7 +220,7 @@ class _CompetitionCreateScreenState
       );
       setState(() {
         _created = created;
-        _step += 1;
+        _step = targetStep ?? _step + 1;
       });
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
@@ -313,6 +320,7 @@ class _CompetitionCreateScreenState
       await ref.read(divisionApiProvider).create(
             competitionId: _created!.id,
             name: name,
+            conferenceId: _conferenceId,
           );
       _divisionName.clear();
       ref.invalidate(divisionsProvider(_created!.id));
@@ -504,6 +512,12 @@ class _CompetitionCreateScreenState
     if (index > _step) {
       if (index > _step + 1) return;
       if (!_validateStep()) return;
+    }
+    // Da Temporada (3) para as sessões de estrutura, o rascunho é criado antes
+    // — senão os campos/botões "Adicionar" da estrutura ficam desabilitados.
+    if (_step == 3 && _created == null) {
+      _createDraft(targetStep: index);
+      return;
     }
     setState(() => _step = index);
   }
@@ -971,11 +985,15 @@ class _CompetitionCreateScreenState
     );
   }
 
-  // Sessão 6 — Estrutura (#304): Divisões OU Grupos, com declínio.
+  // Sessão 6 — Agrupamento (#304/#338): Divisões OU Grupos, com declínio.
   Widget _structureStep(BuildContext context) {
     final divisions = _created == null
         ? const AsyncValue<List<Division>>.data([])
         : ref.watch(divisionsProvider(_created!.id));
+    final conferences = _created == null
+        ? const AsyncValue<List<Conference>>.data([])
+        : ref.watch(conferencesProvider(_created!.id));
+    final conferenceItems = conferences.valueOrNull ?? const <Conference>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1032,6 +1050,29 @@ class _CompetitionCreateScreenState
             'campeonato não usará agrupamentos.',
           )
         else ...[
+          if (conferenceItems.isNotEmpty) ...[
+            DropdownButtonFormField<String>(
+              key: ValueKey('division-conf-${_conferenceId ?? ''}'),
+              initialValue: _conferenceId ?? '',
+              decoration: const InputDecoration(
+                labelText: 'Conferência',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem(
+                  value: '',
+                  child: Text('Sem conferência'),
+                ),
+                for (final c in conferenceItems)
+                  DropdownMenuItem(value: c.id, child: Text(c.name)),
+              ],
+              onChanged: (value) => setState(
+                () => _conferenceId =
+                    (value == null || value.isEmpty) ? null : value,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
