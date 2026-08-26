@@ -64,6 +64,14 @@ class _CompetitionEditScreenState
 
   static const _titles = ['Campeonato', 'Modalidade', 'Categoria', 'Temporada'];
 
+  /// Ícones das sessões (issue #326), paralelos a [_titles].
+  static const _titlesIcons = <IconData>[
+    Icons.emoji_events_outlined,
+    Icons.sports_football_outlined,
+    Icons.groups_outlined,
+    Icons.date_range,
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -455,6 +463,7 @@ class _CompetitionEditScreenState
                     ),
                     child: AppSessionNav(
                       sessions: _titles,
+                      icons: _titlesIcons,
                       activeIndex: _step,
                       showDoneState: true,
                       onTap: _handleStepTap,

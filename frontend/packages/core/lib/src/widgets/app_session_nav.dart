@@ -12,9 +12,13 @@ enum AppSessionTone { current, done, inactive }
 /// #300) com estados por preenchimento e conteúdo BRANCO sobre `primary`
 /// (sessão atual/selecionada) e sobre `success` (sessão concluída, #294).
 ///
-/// - **Atual/selecionada** = fundo `primary` + texto e possíveis ícones BRANCOS
-/// - **Concluída** (wizard) = fundo `success` + check BRANCO
-/// - **Inativa/pendente** = card `surface` padrão (borda/elevação) + `textPrimary`
+/// Cada card exibe um **ícone representativo da sessão + rótulo** (issue #326):
+/// o ícone substitui o `check` no estado concluído — a cor comunica o estado.
+///
+/// - **Atual/selecionada** = fundo `primary` + ícone e texto BRANCOS (negrito)
+/// - **Concluída** (wizard) = fundo `success` + ícone e texto BRANCOS
+/// - **Inativa/pendente** = card `surface` padrão (borda/elevação) +
+///   ícone e texto `textPrimary`
 ///
 /// Cards centralizados (`WrapAlignment.center`) e SEM numeração — o estado é
 /// comunicado por cor/ícone (e pelo rótulo "Etapa X de Y", quando houver).
@@ -23,6 +27,7 @@ class AppSessionNav extends StatelessWidget {
   const AppSessionNav({
     super.key,
     required this.sessions,
+    required this.icons,
     required this.activeIndex,
     required this.onTap,
     this.showDoneState = false,
@@ -31,13 +36,17 @@ class AppSessionNav extends StatelessWidget {
   /// Rótulos das sessões, na ordem das seções na tela.
   final List<String> sessions;
 
+  /// Ícones representativos de cada sessão (paralelo a [sessions], mesmo
+  /// comprimento), exibidos em todos os estados — inclusive no concluído.
+  final List<IconData> icons;
+
   /// Índice da sessão ativa/selecionada (card `primary`).
   final int activeIndex;
 
   /// Chamado ao tocar em um card (rola até a sessão / navega no wizard).
   final void Function(int index) onTap;
 
-  /// Marca como concluídas (verde + check) as sessões anteriores à ativa.
+  /// Marca como concluídas (verde) as sessões anteriores à ativa.
   /// Use `true` no wizard; `false` na tela de detalhe (apenas atual/inativa).
   final bool showDoneState;
 
@@ -49,6 +58,11 @@ class AppSessionNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    assert(
+      icons.length == sessions.length,
+      'AppSessionNav: "icons" (${icons.length}) e "sessions" '
+      '(${sessions.length}) devem ter o mesmo tamanho.',
+    );
     return Wrap(
       alignment: WrapAlignment.center,
       spacing: 8,
@@ -67,6 +81,7 @@ class AppSessionNav extends StatelessWidget {
       AppSessionTone.done => AppColors.success,
       AppSessionTone.inactive => null,
     };
+    final contentColor = filled ? Colors.white : AppColors.textPrimary;
 
     return Semantics(
       selected: tone == AppSessionTone.current,
@@ -87,10 +102,8 @@ class AppSessionNav extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (tone == AppSessionTone.done) ...[
-                  const Icon(Icons.check, size: 18, color: Colors.white),
-                  const SizedBox(width: 6),
-                ],
+                Icon(icons[index], size: 18, color: contentColor),
+                const SizedBox(width: 6),
                 Text(
                   sessions[index],
                   style: TextStyle(
@@ -98,7 +111,7 @@ class AppSessionNav extends StatelessWidget {
                     fontWeight: tone == AppSessionTone.current
                         ? FontWeight.bold
                         : FontWeight.normal,
-                    color: filled ? Colors.white : AppColors.textPrimary,
+                    color: contentColor,
                   ),
                 ),
               ],
