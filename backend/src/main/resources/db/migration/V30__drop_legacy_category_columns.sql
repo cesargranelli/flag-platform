@@ -1,48 +1,37 @@
--- V30: limpeza defensiva das colunas category_id da era de categorias.
--- A V24/V25 já as removeram em schemas onde aplicaram; bancos que
--- preservaram a coluna (com NOT NULL) fazem INSERTs do JPA falharem,
--- pois a entidade não mapeia category_id (#315).
--- Bloco idempotente: só age quando a coluna ainda existe, removendo
--- antes as constraints que dependem dela.
+-- V30: limpeza da era de categorias — abordagem de RESET (#315/#319).
+-- Diretriz do projeto: mudanças estruturantes em tabelas com
+-- relacionamento vêm acompanhadas de reset dos dados afetados
+-- (ambiente de desenvolvimento).
+--
+-- Remove os dados dependentes e depois as colunas category_id legadas,
+-- caso ainda existam no schema (V24/V25 não aplicadas naquele banco).
 
-DO $$
-DECLARE
-    t text;
-BEGIN
-    FOREACH t IN ARRAY ARRAY['conferences', 'divisions', 'rounds', 'standings', 'teams']
-    LOOP
-        IF EXISTS (
-            SELECT 1 FROM information_schema.columns
-            WHERE table_schema = 'platform'
-              AND table_name = t
-              AND column_name = 'category_id'
-        ) THEN
-            -- Remove constraints (FK/UNIQUE/CHECK) que referenciam a coluna.
-            EXECUTE format(
-                $f$
-                DO $inner$
-                DECLARE r record;
-                BEGIN
-                    FOR r IN
-                        SELECT con.conname
-                        FROM pg_constraint con
-                        JOIN pg_class rel ON rel.oid = con.conrelid
-                        JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
-                        JOIN pg_attribute att ON att.attrelid = con.conrelid
-                                             AND att.attnum = ANY (con.conkey)
-                        WHERE nsp.nspname = 'platform'
-                          AND rel.relname = %L
-                          AND att.attname = 'category_id'
-                    LOOP
-                        EXECUTE format(
-                            'ALTER TABLE platform.%I DROP CONSTRAINT IF EXISTS %I',
-                            t, r.conname);
-                    END LOOP;
-                END $inner$;
-                $f$,
-                t
-            );
-            EXECUTE format('ALTER TABLE platform.%I DROP COLUMN IF EXISTS category_id', t);
-        END IF;
-    END LOOP;
-END $$;
+-- 1) Zera as tabelas da estrutura (ordem filhos -> pais).
+TRUNCATE TABLE platform.score_events;
+TRUNCATE TABLE platform.checkins;
+TRUNCATE TABLE platform.team_roster;
+TRUNCATE TABLE platform.athletes;
+TRUNCATE TABLE platform.games;
+TRUNCATE TABLE platform.rounds;
+TRUNCATE TABLE platform.teams;
+TRUNCATE TABLE platform.divisions;
+TRUNCATE TABLE platform.conferences;
+
+-- 2) Constraints legadas conhecidas que referenciam category_id.
+ALTER TABLE platform.conferences DROP CONSTRAINT IF EXISTS fk_conferences_category;
+ALTER TABLE platform.conferences DROP CONSTRAINT IF EXISTS uk_conferences_category_name;
+ALTER TABLE platform.divisions   DROP CONSTRAINT IF EXISTS fk_divisions_category;
+ALTER TABLE platform.divisions   DROP CONSTRAINT IF EXISTS uk_divisions_category_conference_name;
+ALTER TABLE platform.rounds      DROP CONSTRAINT IF EXISTS fk_rounds_category;
+ALTER TABLE platform.rounds      DROP CONSTRAINT IF EXISTS uk_rounds_category_number;
+ALTER TABLE platform.standings   DROP CONSTRAINT IF EXISTS fk_standings_category;
+ALTER TABLE platform.standings   DROP CONSTRAINT IF EXISTS uk_standings_category_team;
+ALTER TABLE platform.teams       DROP CONSTRAINT IF EXISTS fk_teams_category;
+ALTER TABLE platform.teams       DROP CONSTRAINT IF EXISTS uk_teams_category_name;
+
+-- 3) Colunas legadas (no-op quando já removidas pela V24).
+ALTER TABLE platform.conferences DROP COLUMN IF EXISTS category_id;
+ALTER TABLE platform.divisions   DROP COLUMN IF EXISTS category_id;
+ALTER TABLE platform.rounds      DROP COLUMN IF EXISTS category_id;
+ALTER TABLE platform.standings   DROP COLUMN IF EXISTS category_id;
+ALTER TABLE platform.teams       DROP COLUMN IF EXISTS category_id;
