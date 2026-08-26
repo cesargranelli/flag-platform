@@ -24,7 +24,7 @@ final items = <_MenuItem>[
       _MenuItem(Icons.business, 'Organizações', '/organizations'),
       _MenuItem(Icons.emoji_events_outlined, AppStrings.competitions, '/competitions'),
       _MenuItem(Icons.sports_soccer, AppStrings.venues, '/venues'),
-      _MenuItem(Icons.format_list_numbered, AppStrings.rounds, '/rounds'),
+      // Rodadas removidas da home (#309): acesso via contexto do campeonato.
       _MenuItem(Icons.sports, AppStrings.games, '/games'),
       _MenuItem(Icons.person_outline, AppStrings.athletes, '/athletes'),
       _MenuItem(Icons.groups_outlined, AppStrings.rosters, '/rosters'),
