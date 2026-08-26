@@ -169,10 +169,12 @@ class _SelectableCardState extends State<SelectableCard> {
 
 /// Chip selecionável para grupos com muitas opções (ex.: faixa etária).
 ///
-/// Métricas estáveis entre estados (borda sempre 1px, peso fixo) para
-/// evitar jitter no wrap: raio 10 (`radius.chip`), altura ~34px, tipografia
-/// 13/17 (`footerLink`). Não selecionado: fundo `surface` + borda `black`.
-/// Selecionado: fundo `primary` + texto `black` (contraste WCAG AA).
+/// Padrão SEM bordas (issue #292): o estado é comunicado por preenchimento.
+/// Não selecionado: fundo `gray.fill` + texto `textPrimary`. Selecionado:
+/// fundo `primary` + texto `black` (contraste WCAG AA). Métricas estáveis
+/// entre estados para evitar jitter no wrap: raio 10 (`radius.chip`),
+/// altura ~34px, tipografia 13/17 (`footerLink`). Anel de foco `primary`
+/// apenas na navegação por teclado (acessibilidade).
 class SelectableChip extends StatelessWidget {
   const SelectableChip({
     super.key,
@@ -189,27 +191,50 @@ class SelectableChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        hoverColor: AppColors.grayFill,
-        focusColor: AppColors.primary.withValues(alpha: 0.18),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.primary : AppColors.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: selected ? AppColors.primary : AppColors.black,
-            ),
-          ),
-          child: Text(
-            label,
-            style: AppTextStyles.footerLink.copyWith(
-              color: selected ? AppColors.black : AppColors.textPrimary,
-            ),
-          ),
+      child: Focus(
+        canRequestFocus: onTap != null,
+        child: Builder(
+          builder: (context) {
+            final focused = Focus.of(context).hasFocus;
+            return InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(10),
+              hoverColor: AppColors.grayFill,
+              focusColor: Colors.transparent,
+              child: Container(
+                // Sem bordas em nenhum estado; foco por teclado usa anel
+                // externo desenhado sobre o chip, sem afetar o layout.
+                foregroundDecoration: focused
+                    ? BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.primary,
+                          width: 2,
+                        ),
+                      )
+                    : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        selected ? AppColors.primary : AppColors.grayFill,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    label,
+                    style: AppTextStyles.footerLink.copyWith(
+                      color:
+                          selected ? AppColors.black : AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
