@@ -1,20 +1,15 @@
 import 'package:flag_core/flag_core.dart';
 import 'package:flutter/material.dart';
 
-/// Card selecionável do design system (issues #287/#290).
+/// Card selecionável do design system (issues #287/#290–#300).
 ///
-/// Segue o padrão de [Card] do app: `surface`, raio 16 (`radius.card`) e
-/// elevação 1 (`elevation.card`) — sem borda permanente; os contornos
-/// aparecem apenas em estados específicos (foco e seleção), como anel em
-/// `foregroundDecoration` para não deslocar o conteúdo.
-///
-/// Estados: padrão (card puro) · hover (tinta suave) · foco
-/// (contorno `primary` 2px) · selecionado (fundo `primary` sólido +
-/// conteúdo branco + badge invertido) · desabilitado (55% opacidade).
-///
-/// Issue #294: decisão do produto — conteúdo sobre preenchimento
-/// `primary` usa BRANCO.
-class SelectableCard extends StatefulWidget {
+/// Mesmo padrão de interação dos cards de lista (ex. lista de
+/// campeonatos): [Card] + [InkWell] com a tinta padrão do tema — sem
+/// hover/splash customizados, que causam cintilação no web (#300).
+/// A seleção é comunicada por um `Container` interno com preenchimento:
+/// não selecionado = card `surface` padrão; selecionado = fundo
+/// `primary` sólido com conteúdo BRANCO e badge invertido (#294).
+class SelectableCard extends StatelessWidget {
   const SelectableCard({
     super.key,
     required this.label,
@@ -35,132 +30,47 @@ class SelectableCard extends StatefulWidget {
   final double minHeight;
 
   @override
-  State<SelectableCard> createState() => _SelectableCardState();
-}
-
-class _SelectableCardState extends State<SelectableCard> {
-  static const _radius = BorderRadius.all(Radius.circular(16));
-
-  /// Foco rastreado para desenhar o contorno de foco (`primary` 2px),
-  /// mesmo tratamento visual de foco aplicado aos inputs do tema.
-  final _focusNode = FocusNode();
-
-  /// Hover via notificador (issue #298): o `InkWell` NUNCA é reconstruído
-  /// durante o hover — reconstruir a região de mouse dispara exit/enter em
-  /// loop no web (cintilação). Só o `AnimatedContainer` reage ao valor.
-  final _hovering = ValueNotifier<bool>(false);
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(_handleFocusChanged);
-  }
-
-  @override
-  void didUpdateWidget(SelectableCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Desabilitado não retém foco (evita estado preso sem ação associada).
-    if (!widget.enabled && _focusNode.hasFocus) {
-      _focusNode.unfocus();
-    }
-  }
-
-  @override
-  void dispose() {
-    _focusNode.removeListener(_handleFocusChanged);
-    _focusNode.dispose();
-    _hovering.dispose();
-    super.dispose();
-  }
-
-  void _handleFocusChanged() {
-    if (mounted) setState(() {});
-  }
-
-  /// Anel de estado (foco/seleção) desenhado sobre o card, sem afetar
-  /// o layout — evita jitter de 1px entre estados.
-  BoxDecoration? _stateRing() {
-    if (!widget.selected && !_focusNode.hasFocus) return null;
-    return BoxDecoration(
-      borderRadius: _radius,
-      border: Border.all(color: AppColors.primary, width: 2),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Opacity(
-      opacity: widget.enabled ? 1 : 0.55,
+      opacity: enabled ? 1 : 0.55,
       child: Semantics(
-        selected: widget.selected,
-        enabled: widget.enabled,
-        child: Material(
-          // Material permanece surface (estático); a cor de estado vive no
-          // AnimatedContainer interno, garantindo transição suave sem o
-          // flash branco do overlay do InkWell (issue #296).
-          color: AppColors.surface,
-          elevation: 1,
-          borderRadius: _radius,
+        selected: selected,
+        enabled: enabled,
+        child: Card(
+          margin: EdgeInsets.zero,
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: widget.enabled ? widget.onTap : null,
-            focusNode: _focusNode,
-            canRequestFocus: widget.enabled,
-            borderRadius: _radius,
-            splashFactory: NoSplash.splashFactory,
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
-            focusColor: AppColors.primary.withValues(alpha: 0.18),
-            onHover: (hovering) => _hovering.value = hovering,
-            child: ValueListenableBuilder<bool>(
-              valueListenable: _hovering,
-              builder: (context, hovering, content) => AnimatedContainer(
-                duration: const Duration(milliseconds: 120),
-                constraints:
-                    BoxConstraints(minHeight: widget.minHeight),
-                padding: const EdgeInsets.all(16),
-                foregroundDecoration: _stateRing(),
-                decoration: BoxDecoration(
-                  borderRadius: _radius,
-                  color: widget.selected
-                      ? AppColors.primary
-                      : (hovering
-                          ? AppColors.grayFill
-                          : Colors.transparent),
-                ),
-                child: content,
-              ),
+            onTap: enabled ? onTap : null,
+            child: Container(
+              constraints: BoxConstraints(minHeight: minHeight),
+              padding: const EdgeInsets.all(16),
+              color: selected ? AppColors.primary : null,
               child: Stack(
                 children: [
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (widget.icon != null) ...[
+                      if (icon != null) ...[
                         Icon(
-                          widget.icon,
+                          icon,
                           size: 28,
-                          color: widget.selected
-                              ? Colors.white
-                              : AppColors.textPrimary,
+                          color:
+                              selected ? Colors.white : AppColors.textPrimary,
                         ),
                         const SizedBox(height: 8),
                       ],
                       Text(
-                        widget.label,
-                        style:
-                            Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  color: widget.selected
-                                      ? Colors.white
-                                      : null,
-                                ),
+                        label,
+                        style: Theme.of(context).textTheme.titleSmall
+                            ?.copyWith(color: selected ? Colors.white : null),
                       ),
-                      if (widget.description != null) ...[
+                      if (description != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          widget.description!,
+                          description!,
                           style: AppTextStyles.footerLink.copyWith(
-                            color: widget.selected
+                            color: selected
                                 ? Colors.white
                                 : AppColors.textSecondary,
                           ),
@@ -168,7 +78,7 @@ class _SelectableCardState extends State<SelectableCard> {
                       ],
                     ],
                   ),
-                  if (widget.selected)
+                  if (selected)
                     Positioned(
                       top: 0,
                       right: 0,
@@ -200,12 +110,10 @@ class _SelectableCardState extends State<SelectableCard> {
 
 /// Chip selecionável para grupos com muitas opções (ex.: faixa etária).
 ///
-/// Padrão SEM bordas (issue #292): o estado é comunicado por preenchimento.
-/// Não selecionado: fundo `gray.fill` + texto `textPrimary`. Selecionado:
-/// fundo `primary` + texto BRANCO (issue #294, decisão do produto).
-/// Métricas estáveis entre estados para evitar jitter no wrap: raio 10
-/// (`radius.chip`), altura ~34px, tipografia 13/17 (`footerLink`). Anel de
-/// foco `primary` apenas na navegação por teclado (acessibilidade).
+/// Padrão SEM bordas (#292), estado por preenchimento: não selecionado =
+/// fundo `gray.fill` + texto `textPrimary`; selecionado = fundo
+/// `primary` + texto BRANCO (#294). Interação idêntica aos cards de
+/// lista: `InkWell` padrão do tema (#300).
 class SelectableChip extends StatelessWidget {
   const SelectableChip({
     super.key,
@@ -222,52 +130,22 @@ class SelectableChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       selected: selected,
-      child: Focus(
-        canRequestFocus: onTap != null,
-        child: Builder(
-          builder: (context) {
-            final focused = Focus.of(context).hasFocus;
-            return InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(10),
-              splashFactory: NoSplash.splashFactory,
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              focusColor: Colors.transparent,
-              child: Container(
-                // Sem bordas em nenhum estado; foco por teclado usa anel
-                // externo desenhado sobre o chip, sem afetar o layout.
-                foregroundDecoration: focused
-                    ? BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: AppColors.primary,
-                          width: 2,
-                        ),
-                      )
-                    : null,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 120),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        selected ? AppColors.primary : AppColors.grayFill,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    label,
-                    style: AppTextStyles.footerLink.copyWith(
-                      color:
-                          selected ? Colors.white : AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primary : AppColors.grayFill,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            label,
+            style: AppTextStyles.footerLink.copyWith(
+              color: selected ? Colors.white : AppColors.textPrimary,
+            ),
+          ),
         ),
       ),
     );
