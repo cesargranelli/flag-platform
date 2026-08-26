@@ -68,6 +68,7 @@ class _CompetitionDetailScreenState
               titles: _sessions,
               icons: _sessionIcons,
               currentStep: _activeSession,
+              showDoneState: false,
               onStepTap: (index) => setState(() => _activeSession = index),
             ),
           ),
