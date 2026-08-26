@@ -9,6 +9,7 @@ export 'src/widgets/app_loading.dart';
 export 'src/widgets/app_calendar.dart';
 export 'src/widgets/app_empty_state.dart';
 export 'src/widgets/app_error_state.dart';
+export 'src/widgets/app_info_card.dart';
 export 'src/widgets/app_session_nav.dart';
 export 'src/widgets/score_timeline.dart';
 export 'src/session/session_manager.dart';

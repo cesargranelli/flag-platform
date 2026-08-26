@@ -852,6 +852,13 @@ class _CompetitionEditScreenState
           ? Icons.shield_outlined
           : Icons.sports_football_outlined;
 
+  /// Ícone representativo por gênero — mantém a simetria dos cards (#328).
+  IconData _genderIcon(Gender gender) => switch (gender) {
+        Gender.male => Icons.male,
+        Gender.female => Icons.female,
+        Gender.mixed => Icons.transgender,
+      };
+
   Widget _categoryStep(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -860,21 +867,24 @@ class _CompetitionEditScreenState
         const SizedBox(height: 8),
         LayoutBuilder(
           builder: (context, constraints) {
-            final cardWidth = (constraints.maxWidth - 24) / 3;
-            return Row(
+            final isWide = constraints.maxWidth >= 480;
+            final cardWidth = isWide
+                ? (constraints.maxWidth - 24) / 3
+                : constraints.maxWidth;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
               children: [
-                for (final gender in Gender.values) ...[
-                  if (gender != Gender.values.first) const SizedBox(width: 12),
+                for (final gender in Gender.values)
                   SizedBox(
                     width: cardWidth,
                     child: SelectableCard(
                       label: gender.label,
+                      icon: _genderIcon(gender),
                       selected: _gender == gender,
                       onTap: () => _selectGender(gender),
-                      minHeight: 72,
                     ),
                   ),
-                ],
               ],
             );
           },
