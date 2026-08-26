@@ -45,6 +45,11 @@ class _SelectableCardState extends State<SelectableCard> {
   /// mesmo tratamento visual de foco aplicado aos inputs do tema.
   final _focusNode = FocusNode();
 
+  /// Hover controlado manualmente: a tinta do InkWell fica invisível
+  /// sob o fundo opaco, então o estado de hover entra na cor do
+  /// AnimatedContainer (issue #296).
+  bool _hovering = false;
+
   @override
   void initState() {
     super.initState();
@@ -89,9 +94,10 @@ class _SelectableCardState extends State<SelectableCard> {
         selected: widget.selected,
         enabled: widget.enabled,
         child: Material(
-          // Issue #294: selecionado = preenchimento primary SÓLIDO com
-          // conteúdo branco; padrão é card surface elevação 1.
-          color: widget.selected ? AppColors.primary : AppColors.surface,
+          // Material permanece surface (estático); a cor de estado vive no
+          // AnimatedContainer interno, garantindo transição suave sem o
+          // flash branco do overlay do InkWell (issue #296).
+          color: AppColors.surface,
           elevation: 1,
           borderRadius: _radius,
           clipBehavior: Clip.antiAlias,
@@ -100,15 +106,27 @@ class _SelectableCardState extends State<SelectableCard> {
             focusNode: _focusNode,
             canRequestFocus: widget.enabled,
             borderRadius: _radius,
-            hoverColor: widget.selected
-                ? Colors.white.withValues(alpha: 0.10)
-                : AppColors.grayFill,
+            splashFactory: NoSplash.splashFactory,
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
             focusColor: AppColors.primary.withValues(alpha: 0.18),
-            child: Container(
+            onHover: (hovering) {
+              if (mounted && hovering != _hovering) {
+                setState(() => _hovering = hovering);
+              }
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
               constraints:
                   BoxConstraints(minHeight: widget.minHeight),
               padding: const EdgeInsets.all(16),
               foregroundDecoration: _stateRing(),
+              decoration: BoxDecoration(
+                borderRadius: _radius,
+                color: widget.selected
+                    ? AppColors.primary
+                    : (_hovering ? AppColors.grayFill : Colors.transparent),
+              ),
               child: Stack(
                 children: [
                   Column(
@@ -209,9 +227,9 @@ class SelectableChip extends StatelessWidget {
             return InkWell(
               onTap: onTap,
               borderRadius: BorderRadius.circular(10),
-              hoverColor: selected
-                  ? Colors.white.withValues(alpha: 0.10)
-                  : AppColors.grayFill,
+              splashFactory: NoSplash.splashFactory,
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
               focusColor: Colors.transparent,
               child: Container(
                 // Sem bordas em nenhum estado; foco por teclado usa anel
