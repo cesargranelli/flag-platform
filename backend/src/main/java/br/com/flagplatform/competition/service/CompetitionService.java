@@ -1,6 +1,7 @@
 package br.com.flagplatform.competition.service;
 
 import br.com.flagplatform.common.enums.CompetitionStatus;
+import br.com.flagplatform.common.enums.GroupingType;
 import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.common.pagination.PagedResponse;
 import br.com.flagplatform.competition.dto.request.CreateCompetitionRequest;
@@ -50,6 +51,10 @@ public class CompetitionService implements CompetitionLookup {
         CompetitionEntity entity = mapper.toEntity(request);
         if (entity.getStatus() == null) {
             entity.setStatus(CompetitionStatus.DRAFT);
+        }
+        // Issue #308: rótulo do agrupamento — default DIVISIONS.
+        if (entity.getGroupingType() == null) {
+            entity.setGroupingType(GroupingType.DIVISIONS);
         }
         // V260: registra quem criou o campeonato — base da regra de
         // edição restrita ao criador (ou ADMIN).
@@ -198,6 +203,7 @@ public class CompetitionService implements CompetitionLookup {
                 base.startDate(),
                 base.endDate(),
                 base.status(),
+                base.groupingType(),
                 base.createdBy(),
                 base.createdAt(),
                 base.updatedAt());

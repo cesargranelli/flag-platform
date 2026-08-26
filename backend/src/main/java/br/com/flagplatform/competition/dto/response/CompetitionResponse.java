@@ -3,6 +3,7 @@ package br.com.flagplatform.competition.dto.response;
 import br.com.flagplatform.common.enums.AgeGroup;
 import br.com.flagplatform.common.enums.CompetitionStatus;
 import br.com.flagplatform.common.enums.Gender;
+import br.com.flagplatform.common.enums.GroupingType;
 import br.com.flagplatform.common.enums.Modality;
 
 import java.time.LocalDate;
@@ -21,6 +22,7 @@ public record CompetitionResponse(
         LocalDate startDate,
         LocalDate endDate,
         CompetitionStatus status,
+        GroupingType groupingType,
         UUID createdBy,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
