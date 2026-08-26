@@ -60,11 +60,11 @@ class _OrganizationDetailScreenState
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: AppSessionNav(
-              sessions: _sessions,
+            child: AppStepIndicator(
+              titles: _sessions,
               icons: _sessionIcons,
-              activeIndex: _activeSession,
-              onTap: (index) => setState(() => _activeSession = index),
+              currentStep: _activeSession,
+              onStepTap: (index) => setState(() => _activeSession = index),
             ),
           ),
           Expanded(
