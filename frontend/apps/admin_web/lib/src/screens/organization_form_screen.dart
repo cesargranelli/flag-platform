@@ -253,10 +253,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-                    child: AppStepIndicator(
-                      titles: _titles,
-                      currentStep: _step,
-                      onStepTap: _handleStepTap,
+                    child: AppSessionNav(
+                      sessions: _titles,
+                      activeIndex: _step,
+                      showDoneState: true,
+                      onTap: _handleStepTap,
                     ),
                   ),
                   Expanded(

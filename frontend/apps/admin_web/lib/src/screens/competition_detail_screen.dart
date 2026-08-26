@@ -103,7 +103,7 @@ class _CompetitionDetailScreenState
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: AppSessionNavBar(
+            child: AppSessionNav(
               sessions: _sessions,
               activeIndex: _activeSession,
               onTap: _scrollToSession,
