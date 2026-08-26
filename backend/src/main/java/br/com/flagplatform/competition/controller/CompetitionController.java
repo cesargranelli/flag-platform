@@ -41,8 +41,8 @@ public class CompetitionController {
             summary = "Criar campeonato",
             description = "Cria um novo campeonato. O usuário autenticado é registrado como criador "
                     + "e passa a ser o único (além do ADMIN) autorizado a editá-lo e gerenciar seus recursos. "
-                    + "O sistema semeia automaticamente a estrutura padrão: conferência \"Conferência Geral\" "
-                    + "e divisão \"Divisão Geral\" dentro dela. Requer autenticação."
+                    + "A estrutura (conferências e divisões) é adicionada manualmente pelo organizador. "
+                    + "Requer autenticação."
     )
     @PostMapping("/api/v1/competitions")
     @ResponseStatus(HttpStatus.CREATED)

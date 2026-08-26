@@ -102,6 +102,20 @@ public class DivisionService implements DivisionLookup {
         }
     }
 
+    /**
+     * Elimina a divisão. V260: apenas o criador do campeonato (ou ADMIN) gerencia
+     * o campeonato; issue #305: estrutura só é alterável com o campeonato em DRAFT.
+     */
+    @Transactional
+    public void delete(UUID id, String currentUserEmail) {
+        DivisionEntity entity = findEntityById(id);
+
+        competitionLookup.assertManagedBy(entity.getCompetitionId(), currentUserEmail);
+        competitionLookup.assertEditable(entity.getCompetitionId());
+
+        repository.delete(entity);
+    }
+
     private DivisionEntity findEntityById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new DivisionNotFoundException(id));
