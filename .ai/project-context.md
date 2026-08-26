@@ -142,6 +142,7 @@ Regras obrigatórias para toda issue criada no repositório `cesargranelli/flag-
 3. **Associação issue ↔ branch-feature**: o corpo de cada issue deve referenciar explicitamente a branch-feature em execução para aquela issue (ex.: `**Branch:** \`feature/issue-{n}-{slug}\``). Uma branch por issue; a issue só é fechada após o merge da sua branch.
 4. **Merge exclusivamente via GitHub (PR)**: nunca fazer merge localmente (`git merge` na base local). O fluxo é: push da branch → abrir PR → **o próprio agente tech-lead revisa e aprova o PR** → merge via GitHub (`gh pr merge`). As branches locais apenas sincronizam com seus remotes após o merge.
 5. **Autonomia em comandos locais**: atuando no projeto flag-platform, **não é necessário pedir permissão/autorização** para executar comandos locais (compilar, analisar, testar, git status/add/commit/push em branch-feature, criar issues/PRs via gh, etc.). Perguntar apenas quando a ação sair do diretório do projeto ou afetar configuração global/externa.
+6. **Mudanças estruturantes → script de reset**: sempre que uma migration alterar a estrutura de tabelas que possuem relacionamentos afetados, acompanhar com um script simples de **reset (TRUNCATE)** das tabelas relacionadas — os dados de desenvolvimento são descartáveis e prevalece a simplicidade/execução garantida do Flyway sobre limpeza cirúrgica de dados (diretriz do usuário, #319).
 
 ### Fluxo de Branches — GitFlow padrão
 
