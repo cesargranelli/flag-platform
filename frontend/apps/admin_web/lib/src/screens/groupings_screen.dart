@@ -75,21 +75,32 @@ class _GroupingsBody extends ConsumerWidget {
     final divisions = ref.watch(divisionsProvider(competition.id));
     // Issue #261: criação/edição de conferências e divisões exige ser
     // criador do campeonato ou ADMIN (o backend já bloqueia as escritas).
+    // Issue #305: e apenas com o campeonato em DRAFT — publicado/encerrado
+    // tem a estrutura travada (somente leitura).
     final canEdit = canEditCompetition(
-      ref.watch(authControllerProvider).state.user,
-      competition,
-    );
+          ref.watch(authControllerProvider).state.user,
+          competition,
+        ) &&
+        competition.status == CompetitionStatus.draft;
+    final lockedByStatus =
+        competition.status != CompetitionStatus.draft;
 
     return AppLayout.content(
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _contextHeader(context, ref, conferences, divisions),
-          if (!canEdit)
+          if (!canEdit && !lockedByStatus)
             const EditRestrictionNote(
               message:
                   'Apenas o criador do campeonato pode gerenciar '
                   'conferências e divisões.',
+            ),
+          if (lockedByStatus)
+            const EditRestrictionNote(
+              message:
+                  'Campeonato publicado — conferências, divisões e grupos '
+                  'estão travados.',
             ),
           const SizedBox(height: 24),
           _conferencesSection(context, ref, conferences, divisions, canEdit),

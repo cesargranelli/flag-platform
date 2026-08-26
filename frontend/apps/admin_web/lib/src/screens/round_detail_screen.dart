@@ -45,13 +45,17 @@ class RoundDetailScreen extends ConsumerWidget {
             .firstOrNull ??
         '';
     // Issue #261: edição da rodada exige ser criador do campeonato ou ADMIN.
+    // Issue #305: e o campeonato precisa estar em DRAFT (estrutura travada
+    // após a publicação).
     final competition = competitions.valueOrNull
         ?.where((c) => c.id == round.competitionId)
         .firstOrNull;
+    final isDraft = competition?.status == CompetitionStatus.draft;
     final canEdit = canEditCompetition(
       ref.watch(authControllerProvider).state.user,
       competition,
     );
+    final canManage = canEdit && isDraft;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -107,7 +111,7 @@ class RoundDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    if (canEdit)
+                    if (canManage)
                       FilledButton.icon(
                         onPressed: () => context.push(
                           '/rounds/${round.id}/edit',
@@ -117,10 +121,12 @@ class RoundDetailScreen extends ConsumerWidget {
                         label: const Text('Editar dados'),
                       )
                     else
-                      const EditRestrictionNote(
-                        message:
-                            'Apenas o criador do campeonato pode editar '
-                            'esta rodada.',
+                      EditRestrictionNote(
+                        message: !isDraft
+                            ? 'Campeonato publicado — as rodadas estão '
+                                'travadas.'
+                            : 'Apenas o criador do campeonato pode editar '
+                                'esta rodada.',
                       ),
                   ],
                 ),

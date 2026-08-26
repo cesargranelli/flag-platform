@@ -31,6 +31,8 @@ public class ConferenceService implements ConferenceLookup {
     public ConferenceResponse create(UUID competitionId, CreateConferenceRequest request, String currentUserEmail) {
         // V260: apenas o criador do campeonato (ou ADMIN) gerencia o campeonato.
         competitionLookup.assertManagedBy(competitionId, currentUserEmail);
+        // Issue #305: estrutura só é editável com o campeonato em DRAFT.
+        competitionLookup.assertEditable(competitionId);
 
         if (repository.existsByCompetitionIdAndNameIgnoreCase(competitionId, request.name())) {
             throw new DuplicateConferenceNameException(request.name());
@@ -52,6 +54,8 @@ public class ConferenceService implements ConferenceLookup {
         ConferenceEntity entity = findEntityById(id);
 
         competitionLookup.assertManagedBy(entity.getCompetitionId(), currentUserEmail);
+        // Issue #305: estrutura só é editável com o campeonato em DRAFT.
+        competitionLookup.assertEditable(entity.getCompetitionId());
 
         if (repository.existsByCompetitionIdAndNameIgnoreCaseAndIdNot(
                 entity.getCompetitionId(), request.name(), id)) {

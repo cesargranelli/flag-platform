@@ -34,6 +34,8 @@ public class DivisionService implements DivisionLookup {
     public DivisionResponse create(UUID competitionId, CreateDivisionRequest request, String currentUserEmail) {
         // V260: apenas o criador do campeonato (ou ADMIN) gerencia o campeonato.
         competitionLookup.assertManagedBy(competitionId, currentUserEmail);
+        // Issue #305: estrutura só é editável com o campeonato em DRAFT.
+        competitionLookup.assertEditable(competitionId);
 
         validateConference(request.conferenceId(), competitionId);
         ensureUniqueName(competitionId, request.conferenceId(), request.name(), null);
@@ -54,6 +56,8 @@ public class DivisionService implements DivisionLookup {
         DivisionEntity entity = findEntityById(id);
 
         competitionLookup.assertManagedBy(entity.getCompetitionId(), currentUserEmail);
+        // Issue #305: estrutura só é editável com o campeonato em DRAFT.
+        competitionLookup.assertEditable(entity.getCompetitionId());
 
         validateConference(request.conferenceId(), entity.getCompetitionId());
         ensureUniqueName(entity.getCompetitionId(), request.conferenceId(), request.name(), id);
