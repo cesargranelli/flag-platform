@@ -67,16 +67,6 @@ class _CompetitionCreateScreenState
     'Estrutura',
   ];
 
-  /// Ícones das sessões (issue #326), paralelos a [_titles].
-  static const _titlesIcons = <IconData>[
-    Icons.emoji_events_outlined,
-    Icons.sports_football_outlined,
-    Icons.groups_outlined,
-    Icons.date_range,
-    Icons.account_tree_outlined,
-    Icons.hub_outlined,
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -411,12 +401,10 @@ class _CompetitionCreateScreenState
                       horizontal: 8,
                       vertical: 16,
                     ),
-                    child: AppSessionNav(
-                      sessions: _titles,
-                      icons: _titlesIcons,
-                      activeIndex: _step,
-                      showDoneState: true,
-                      onTap: _handleStepTap,
+                    child: AppStepIndicator(
+                      titles: _titles,
+                      currentStep: _step,
+                      onStepTap: _handleStepTap,
                     ),
                   ),
                   Expanded(
