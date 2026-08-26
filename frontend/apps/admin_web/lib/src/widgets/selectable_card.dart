@@ -45,10 +45,10 @@ class _SelectableCardState extends State<SelectableCard> {
   /// mesmo tratamento visual de foco aplicado aos inputs do tema.
   final _focusNode = FocusNode();
 
-  /// Hover controlado manualmente: a tinta do InkWell fica invisível
-  /// sob o fundo opaco, então o estado de hover entra na cor do
-  /// AnimatedContainer (issue #296).
-  bool _hovering = false;
+  /// Hover via notificador (issue #298): o `InkWell` NUNCA é reconstruído
+  /// durante o hover — reconstruir a região de mouse dispara exit/enter em
+  /// loop no web (cintilação). Só o `AnimatedContainer` reage ao valor.
+  final _hovering = ValueNotifier<bool>(false);
 
   @override
   void initState() {
@@ -69,6 +69,7 @@ class _SelectableCardState extends State<SelectableCard> {
   void dispose() {
     _focusNode.removeListener(_handleFocusChanged);
     _focusNode.dispose();
+    _hovering.dispose();
     super.dispose();
   }
 
@@ -110,22 +111,24 @@ class _SelectableCardState extends State<SelectableCard> {
             splashColor: Colors.transparent,
             highlightColor: Colors.transparent,
             focusColor: AppColors.primary.withValues(alpha: 0.18),
-            onHover: (hovering) {
-              if (mounted && hovering != _hovering) {
-                setState(() => _hovering = hovering);
-              }
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              constraints:
-                  BoxConstraints(minHeight: widget.minHeight),
-              padding: const EdgeInsets.all(16),
-              foregroundDecoration: _stateRing(),
-              decoration: BoxDecoration(
-                borderRadius: _radius,
-                color: widget.selected
-                    ? AppColors.primary
-                    : (_hovering ? AppColors.grayFill : Colors.transparent),
+            onHover: (hovering) => _hovering.value = hovering,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: _hovering,
+              builder: (context, hovering, content) => AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                constraints:
+                    BoxConstraints(minHeight: widget.minHeight),
+                padding: const EdgeInsets.all(16),
+                foregroundDecoration: _stateRing(),
+                decoration: BoxDecoration(
+                  borderRadius: _radius,
+                  color: widget.selected
+                      ? AppColors.primary
+                      : (hovering
+                          ? AppColors.grayFill
+                          : Colors.transparent),
+                ),
+                child: content,
               ),
               child: Stack(
                 children: [
