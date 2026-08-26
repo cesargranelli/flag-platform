@@ -62,6 +62,15 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     'Identidade',
   ];
 
+  /// Ícones das sessões (issue #326), paralelos a [_titles].
+  static const _titlesIcons = <IconData>[
+    Icons.business_outlined,
+    Icons.person_outline,
+    Icons.contact_mail_outlined,
+    Icons.location_on_outlined,
+    Icons.palette_outlined,
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -255,6 +264,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                     child: AppSessionNav(
                       sessions: _titles,
+                      icons: _titlesIcons,
                       activeIndex: _step,
                       showDoneState: true,
                       onTap: _handleStepTap,

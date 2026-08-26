@@ -10,9 +10,8 @@ import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
 /// Detalhe de um campeonato em sessões espelhando o wizard (#306),
-/// com navegação fluida por chips no topo (#316): tocar em uma sessão
-/// rola suavemente até o respectivo card, e o chip da seção visível
-/// fica destacado conforme a rolagem.
+/// com navegação por cards no topo (#316): tocar em uma sessão troca o
+/// bloco exibido — a tela mostra APENAS o conteúdo da sessão ativa (#326).
 class CompetitionDetailScreen extends ConsumerStatefulWidget {
   const CompetitionDetailScreen({
     super.key,
@@ -39,56 +38,18 @@ class _CompetitionDetailScreenState
     'Estrutura',
   ];
 
-  /// Limiar (px do topo do card) que considera a sessão como ativa na rolagem.
-  static const _activeSessionTopLimit = 180.0;
+  /// Ícones das sessões (issue #326), paralelos a [_sessions].
+  static const _sessionIcons = <IconData>[
+    Icons.emoji_events_outlined,
+    Icons.sports_football_outlined,
+    Icons.groups_outlined,
+    Icons.date_range,
+    Icons.account_tree_outlined,
+    Icons.hub_outlined,
+  ];
 
-  final _scrollController = ScrollController();
-  final _sessionKeys = List<GlobalKey>.generate(
-    _sessions.length,
-    (_) => GlobalKey(),
-  );
+  /// Índice da sessão ativa — único bloco exibido no corpo da tela (#326).
   int _activeSession = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_updateActiveSession);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_updateActiveSession);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  /// Destaca o chip da sessão cujo card está no topo da viewport.
-  void _updateActiveSession() {
-    var active = 0;
-    for (var i = 0; i < _sessionKeys.length; i++) {
-      final ctx = _sessionKeys[i].currentContext;
-      if (ctx == null) continue;
-      final box = ctx.findRenderObject();
-      if (box is! RenderBox) continue;
-      final top = box.localToGlobal(Offset.zero).dy;
-      if (top <= _activeSessionTopLimit) active = i;
-    }
-    if (active != _activeSession && mounted) {
-      setState(() => _activeSession = active);
-    }
-  }
-
-  void _scrollToSession(int index) {
-    final ctx = _sessionKeys[index].currentContext;
-    if (ctx == null) return;
-    Scrollable.ensureVisible(
-      ctx,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      alignment: 0.0,
-    );
-    setState(() => _activeSession = index);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,13 +66,14 @@ class _CompetitionDetailScreenState
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: AppSessionNav(
               sessions: _sessions,
+              icons: _sessionIcons,
               activeIndex: _activeSession,
-              onTap: _scrollToSession,
+              onTap: (index) => setState(() => _activeSession = index),
             ),
           ),
           Expanded(
             child: compFuture == null
-                ? _buildDetail(context, ref, widget.competition!)
+                ? _buildDetail(context, widget.competition!)
                 : compFuture.when(
                     loading: () => const AppLoading(
                       message: 'Carregando campeonato...',
@@ -122,7 +84,7 @@ class _CompetitionDetailScreenState
                         competitionProvider(widget.competitionId!),
                       ),
                     ),
-                    data: (comp) => _buildDetail(context, ref, comp),
+                    data: (comp) => _buildDetail(context, comp),
                   ),
           ),
         ],
@@ -130,7 +92,7 @@ class _CompetitionDetailScreenState
     );
   }
 
-  Widget _buildDetail(BuildContext context, WidgetRef ref, Competition comp) {
+  Widget _buildDetail(BuildContext context, Competition comp) {
     // Issue #261: edição exige ser criador do campeonato ou ADMIN.
     final canEdit = canEditCompetition(
       ref.watch(authControllerProvider).state.user,
@@ -139,215 +101,205 @@ class _CompetitionDetailScreenState
     final isDraft = comp.status == CompetitionStatus.draft;
 
     return SingleChildScrollView(
-      controller: _scrollController,
       padding: const EdgeInsets.all(16),
       child: AppLayout.detail(
+        child: switch (_activeSession) {
+          0 => _campeonatoCard(context, comp, canEdit, isDraft),
+          1 => _modalidadeCard(comp),
+          2 => _categoriaCard(comp),
+          3 => _temporadaCard(comp),
+          4 => _conferencesCard(comp),
+          _ => _estruturaCard(context, comp, canEdit, isDraft),
+        },
+      ),
+    );
+  }
+
+  /// Sessão 1 — Campeonato (#306): identidade + ações por status,
+  /// espelhando a primeira sessão do wizard de cadastro.
+  Widget _campeonatoCard(
+    BuildContext context,
+    Competition comp,
+    bool canEdit,
+    bool isDraft,
+  ) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Sessão 1 — Campeonato (#306): identidade + ações por status,
-            // espelhando a primeira sessão do wizard de cadastro.
-            KeyedSubtree(
-              key: _sessionKeys[0],
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
+            Text(
+              'Campeonato',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.emoji_events_outlined,
+                    color: AppColors.primary,
+                    size: 36,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Campeonato',
+                        comp.name,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        comp.organizationName ??
+                            (comp.organizationId != null
+                                ? 'Organização #${comp.organizationId}'
+                                : ''),
                         style: const TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: AppColors.textSecondary,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              color:
-                                  AppColors.primary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Icon(
-                              Icons.emoji_events_outlined,
-                              color: AppColors.primary,
-                              size: 36,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  comp.name,
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  comp.organizationName ??
-                                      (comp.organizationId != null
-                                          ? 'Organização #${comp.organizationId}'
-                                          : ''),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                _statusChip(comp.status),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // V250: edição permitida apenas enquanto rascunho.
-                      // Issue #261: e apenas pelo criador ou ADMIN.
-                      if (isDraft && canEdit)
-                        FilledButton.icon(
-                          onPressed: () => context.push(
-                            '/competitions/${comp.id}/edit',
-                            extra: comp,
-                          ),
-                          icon: const Icon(Icons.edit_outlined),
-                          label: const Text('Editar campeonato'),
-                        )
-                      else
-                        Text(
-                          isDraft
-                              ? 'Apenas o criador do campeonato pode editá-lo.'
-                              : 'Campeonato publicado — não é mais editável.',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      // Issue #259/#305: rodadas apenas em DRAFT.
-                      if (canEdit && isDraft) ...[
-                        const SizedBox(height: 12),
-                        FilledButton.icon(
-                          onPressed: () {
-                            ref
-                                    .read(selectedCompetitionProvider.notifier)
-                                    .state =
-                                comp.id;
-                            context.push('/rounds');
-                          },
-                          icon: const Icon(Icons.format_list_numbered),
-                          label: const Text('Adicionar rodadas'),
-                        ),
-                      ],
-                      // Descrição pertence à sessão Campeonato (wizard).
-                      if (comp.description != null &&
-                          comp.description!.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        _row('Descrição', comp.description!),
-                      ],
+                      const SizedBox(height: 8),
+                      _statusChip(comp.status),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 12),
-
-            // Sessão 2 — Modalidade (#306).
-            KeyedSubtree(
-              key: _sessionKeys[1],
-              child: _infoCard('Modalidade', [
-                _row('Modalidade', comp.modality?.label ?? 'Não definido'),
-              ]),
-            ),
-            const SizedBox(height: 12),
-
-            // Sessão 3 — Categoria (#306): gênero + faixa etária.
-            KeyedSubtree(
-              key: _sessionKeys[2],
-              child: _infoCard('Categoria', [
-                _row('Gênero', _genderLabel(comp.gender)),
-                _row('Faixa etária', _ageGroupLabel(comp.ageGroup)),
-              ]),
-            ),
-            const SizedBox(height: 12),
-
-            // Sessão 4 — Temporada (#306).
-            KeyedSubtree(
-              key: _sessionKeys[3],
-              child: _infoCard('Temporada', [
-                if (comp.startDate != null)
-                  _row('Início', _formatDate(comp.startDate!)),
-                if (comp.endDate != null)
-                  _row('Fim', _formatDate(comp.endDate!)),
-                if (comp.startDate == null && comp.endDate == null)
-                  _row('Período', 'Não definido'),
-              ]),
-            ),
-            const SizedBox(height: 12),
-
-            // Sessão 5 — Conferências (#323): presentes no cadastro (estrutura).
-            KeyedSubtree(
-              key: _sessionKeys[4],
-              child: _conferencesCard(comp),
-            ),
-            const SizedBox(height: 12),
-
-            // Sessão 6 — Estrutura (#306): agrupamentos dos clubes.
-            // Issue #305: ações de escrita apenas em DRAFT.
-            KeyedSubtree(
-              key: _sessionKeys[5],
-              child: _infoCard('Estrutura', [
-                _row(
-                  'Modelo',
-                  comp.groupingType?.label ??
-                      GroupingType.divisions.label,
+            const SizedBox(height: 16),
+            // V250: edição permitida apenas enquanto rascunho.
+            // Issue #261: e apenas pelo criador ou ADMIN.
+            if (isDraft && canEdit)
+              FilledButton.icon(
+                onPressed: () => context.push(
+                  '/competitions/${comp.id}/edit',
+                  extra: comp,
                 ),
-                if (canEdit && isDraft) ...[
-                  _actionRowButton(
-                    context,
-                    icon: Icons.account_tree_outlined,
-                    label: comp.groupingType == GroupingType.groups
-                        ? 'Gerenciar Conferências e Grupos'
-                        : 'Gerenciar Conferências e Divisões',
-                    onTap: () {
-                      ref.read(selectedCompetitionProvider.notifier).state =
-                          comp.id;
-                      context.push('/groupings');
-                    },
-                  ),
-                  _actionRowButton(
-                    context,
-                    icon: Icons.groups,
-                    label: 'Associar Clubes',
-                    onTap: () {
-                      ref.read(selectedCompetitionProvider.notifier).state =
-                          comp.id;
-                      context.push('/teams');
-                    },
-                  ),
-                ] else ...[
-                  Text(
-                    'Campeonato publicado — a estrutura está travada.',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ]),
-            ),
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Editar campeonato'),
+              )
+            else
+              Text(
+                isDraft
+                    ? 'Apenas o criador do campeonato pode editá-lo.'
+                    : 'Campeonato publicado — não é mais editável.',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            // Issue #259/#305: rodadas apenas em DRAFT.
+            if (canEdit && isDraft) ...[
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: () {
+                  ref.read(selectedCompetitionProvider.notifier).state =
+                      comp.id;
+                  context.push('/rounds');
+                },
+                icon: const Icon(Icons.format_list_numbered),
+                label: const Text('Adicionar rodadas'),
+              ),
+            ],
+            // Descrição pertence à sessão Campeonato (wizard).
+            if (comp.description != null && comp.description!.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _row('Descrição', comp.description!),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  /// Sessão 2 — Modalidade (#306).
+  Widget _modalidadeCard(Competition comp) {
+    return _infoCard('Modalidade', [
+      _row('Modalidade', comp.modality?.label ?? 'Não definido'),
+    ]);
+  }
+
+  /// Sessão 3 — Categoria (#306): gênero + faixa etária.
+  Widget _categoriaCard(Competition comp) {
+    return _infoCard('Categoria', [
+      _row('Gênero', _genderLabel(comp.gender)),
+      _row('Faixa etária', _ageGroupLabel(comp.ageGroup)),
+    ]);
+  }
+
+  /// Sessão 4 — Temporada (#306).
+  Widget _temporadaCard(Competition comp) {
+    return _infoCard('Temporada', [
+      if (comp.startDate != null)
+        _row('Início', _formatDate(comp.startDate!)),
+      if (comp.endDate != null)
+        _row('Fim', _formatDate(comp.endDate!)),
+      if (comp.startDate == null && comp.endDate == null)
+        _row('Período', 'Não definido'),
+    ]);
+  }
+
+  /// Sessão 6 — Estrutura (#306): agrupamentos dos clubes.
+  /// Issue #305: ações de escrita apenas em DRAFT.
+  Widget _estruturaCard(
+    BuildContext context,
+    Competition comp,
+    bool canEdit,
+    bool isDraft,
+  ) {
+    return _infoCard('Estrutura', [
+      _row(
+        'Modelo',
+        comp.groupingType?.label ?? GroupingType.divisions.label,
+      ),
+      if (canEdit && isDraft) ...[
+        _actionRowButton(
+          context,
+          icon: Icons.account_tree_outlined,
+          label: comp.groupingType == GroupingType.groups
+              ? 'Gerenciar Conferências e Grupos'
+              : 'Gerenciar Conferências e Divisões',
+          onTap: () {
+            ref.read(selectedCompetitionProvider.notifier).state = comp.id;
+            context.push('/groupings');
+          },
+        ),
+        _actionRowButton(
+          context,
+          icon: Icons.groups,
+          label: 'Associar Clubes',
+          onTap: () {
+            ref.read(selectedCompetitionProvider.notifier).state = comp.id;
+            context.push('/teams');
+          },
+        ),
+      ] else ...[
+        Text(
+          'Campeonato publicado — a estrutura está travada.',
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    ]);
   }
 
   /// Sessão Conferências (#323): lista as conferências do campeonato.
