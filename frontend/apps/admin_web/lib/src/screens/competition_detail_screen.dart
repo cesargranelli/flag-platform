@@ -64,12 +64,14 @@ class _CompetitionDetailScreenState
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: AppStepIndicator(
-              titles: _sessions,
-              icons: _sessionIcons,
-              currentStep: _activeSession,
-              showDoneState: false,
-              onStepTap: (index) => setState(() => _activeSession = index),
+            child: AppLayout.form(
+              child: AppStepIndicator(
+                titles: _sessions,
+                icons: _sessionIcons,
+                currentStep: _activeSession,
+                showDoneState: false,
+                onStepTap: (index) => setState(() => _activeSession = index),
+              ),
             ),
           ),
           Expanded(
