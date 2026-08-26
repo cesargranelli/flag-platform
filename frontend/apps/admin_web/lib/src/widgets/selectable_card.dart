@@ -18,7 +18,7 @@ class SelectableCard extends StatelessWidget {
     this.description,
     this.icon,
     this.enabled = true,
-    this.minHeight = 96,
+    this.minHeight = 120,
   });
 
   final String label;
@@ -46,10 +46,12 @@ class SelectableCard extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               color: selected ? AppColors.primary : null,
               child: Stack(
+                alignment: AlignmentDirectional.centerStart,
                 children: [
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (icon != null) ...[
                         Icon(
@@ -69,6 +71,8 @@ class SelectableCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           description!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: AppTextStyles.footerLink.copyWith(
                             color: selected
                                 ? Colors.white
