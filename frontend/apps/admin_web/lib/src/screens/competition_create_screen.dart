@@ -10,10 +10,12 @@ import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/selectable_card.dart';
 
-/// Wizard de CRIAÇÃO de campeonato em 4 sessões (issue #287).
+/// Wizard de CRIAÇÃO de campeonato em 6 sessões (issues #287/#304).
 ///
-/// O cadastro nasce sempre em RASCUNHO — não há campo de status aqui.
-/// A publicação acontece pela edição (`CompetitionEditScreen`).
+/// Sessões 1–4 montam o cadastro; o botão "Criar rascunho" grava o
+/// campeonato (sempre RASCUNHO) e habilita as sessões de estrutura
+/// (Conferências → Estrutura: Divisões ou Grupos), ambas com opção de
+/// declínio — o fluxo nunca trava.
 class CompetitionCreateScreen extends ConsumerStatefulWidget {
   const CompetitionCreateScreen({super.key});
 
@@ -31,10 +33,19 @@ class _CompetitionCreateScreenState
   late final TextEditingController _organizationId;
   late final TextEditingController _startDate;
   late final TextEditingController _endDate;
+  final _conferenceName = TextEditingController();
+  final _divisionName = TextEditingController();
 
   Modality? _modality;
   Gender? _gender;
   AgeGroup? _ageGroup;
+
+  /// Campeonato recém-criado — alimenta as sessões de estrutura (#304).
+  Competition? _created;
+
+  bool _declinedConferences = false;
+  bool _declinedStructure = false;
+  GroupingType? _groupingChoice;
 
   int _step = 0;
   bool _submitting = false;
@@ -45,8 +56,16 @@ class _CompetitionCreateScreenState
 
   String? _modalityError;
   String? _categoryError;
+  String? _errorMessage;
 
-  static const _titles = ['Campeonato', 'Modalidade', 'Categoria', 'Temporada'];
+  static const _titles = [
+    'Campeonato',
+    'Modalidade',
+    'Categoria',
+    'Temporada',
+    'Conferências',
+    'Estrutura',
+  ];
 
   @override
   void initState() {
@@ -73,30 +92,6 @@ class _CompetitionCreateScreenState
     setState(() => _hasChanges = true);
   }
 
-  void _selectModality(Modality value) {
-    setState(() {
-      _modality = value;
-      _modalityError = null;
-    });
-    _markDirty();
-  }
-
-  void _selectGender(Gender value) {
-    setState(() {
-      _gender = value;
-      _categoryError = null;
-    });
-    _markDirty();
-  }
-
-  void _selectAgeGroup(AgeGroup value) {
-    setState(() {
-      _ageGroup = value;
-      _categoryError = null;
-    });
-    _markDirty();
-  }
-
   @override
   void dispose() {
     for (final controller in [
@@ -105,6 +100,8 @@ class _CompetitionCreateScreenState
       _organizationId,
       _startDate,
       _endDate,
+      _conferenceName,
+      _divisionName,
     ]) {
       controller.dispose();
     }
@@ -115,7 +112,7 @@ class _CompetitionCreateScreenState
       ? ''
       : '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
-  /// Issue #257 (D): com exatamente 1 organização disponível, pré-seleciona.
+  // Issue #257 (D): com exatamente 1 organização disponível, pré-seleciona.
   void _maybePreselectOrganization(List<Organization> orgs) {
     if (_organizationId.text.isNotEmpty || orgs.length != 1) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -151,7 +148,6 @@ class _CompetitionCreateScreenState
 
   DateTime? get _parsedStartDate => DateTime.tryParse(_startDate.text.trim());
 
-  /// Valida a sessão atual; retorna true quando pode avançar/salvar.
   bool _validateStep() {
     var valid = true;
     if (_step == 0) {
@@ -170,15 +166,22 @@ class _CompetitionCreateScreenState
   void _next() {
     if (!_validateStep()) return;
     if (_step < _titles.length - 1) {
+      // Sessão Temporada cria o rascunho antes das sessões de estrutura.
+      if (_step == 3) {
+        _createDraft();
+        return;
+      }
       setState(() => _step += 1);
     } else {
-      _save();
+      _finish();
     }
   }
 
-  Future<void> _save() async {
-    if (!_validateStep()) return;
+  String get _draftLabel =>
+      _step == 3 ? 'Criar rascunho' : (_step == 5 ? 'Concluir' : 'Continuar');
 
+  /// Cria o campeonato em RASCUNHO e avança para a estrutura (#304).
+  Future<void> _createDraft() async {
     setState(() {
       _submitting = true;
       _errorMessage = null;
@@ -186,8 +189,6 @@ class _CompetitionCreateScreenState
 
     try {
       final api = ref.read(competitionApiProvider);
-      // Issue #287: sem status no create — o campeonato nasce RASCUNHO
-      // (default do backend). Publicação ocorre pela edição.
       final created = await api.create(
         organizationId: _organizationId.text.trim(),
         name: _name.text.trim(),
@@ -204,28 +205,126 @@ class _CompetitionCreateScreenState
       ref.invalidate(competitionsProvider);
       ref.invalidate(competitionProvider(created.id));
 
-      _saved = true;
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Rascunho criado. Abra o campeonato para publicar quando '
-              'estiver pronto.',
-            ),
-          ),
-        );
-        context.go('/competitions/${created.id}', extra: created);
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Rascunho criado — agora configure a estrutura.'),
+        ),
+      );
+      setState(() {
+        _created = created;
+        _step += 1;
+      });
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
     } catch (_) {
-      setState(() => _errorMessage = 'Não foi possível salvar o campeonato.');
+      setState(() => _errorMessage = 'Não foi possível criar o campeonato.');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
   }
 
-  String? _errorMessage;
+  /// Persiste a escolha de agrupamento (quando houver) e vai ao detalhe.
+  Future<void> _finish() async {
+    final created = _created!;
+    final needsUpdate =
+        !_declinedStructure && _groupingChoice != created.groupingType;
+
+    if (needsUpdate) {
+      setState(() {
+        _submitting = true;
+        _errorMessage = null;
+      });
+      try {
+        final api = ref.read(competitionApiProvider);
+        final updated = await api.update(
+          created.id,
+          organizationId: created.organizationId!,
+          name: created.name,
+          description: created.description,
+          startDate: _formatDate(created.startDate),
+          endDate: _formatDate(created.endDate),
+          status: created.status,
+          modality: created.modality,
+          gender: created.gender,
+          ageGroup: created.ageGroup,
+          groupingType: _groupingChoice,
+        );
+        ref.invalidate(competitionProvider(created.id));
+        _created = updated;
+      } on RepositoryException catch (e) {
+        setState(() => _errorMessage = e.message);
+        return;
+      } catch (_) {
+        setState(
+          () => _errorMessage =
+              'Não foi possível salvar o tipo de agrupamento.',
+        );
+        return;
+      } finally {
+        if (mounted) setState(() => _submitting = false);
+      }
+    }
+
+    _saved = true;
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Rascunho criado. Abra o campeonato para publicar quando '
+            'estiver pronto.',
+          ),
+        ),
+      );
+      context.go('/competitions/${_created!.id}', extra: _created);
+    }
+  }
+
+  Future<void> _addConference() async {
+    final name = _conferenceName.text.trim();
+    if (name.isEmpty || _created == null) return;
+    setState(() => _submitting = true);
+    try {
+      await ref.read(conferenceApiProvider).create(
+            competitionId: _created!.id,
+            name: name,
+          );
+      _conferenceName.clear();
+      ref.invalidate(conferencesProvider(_created!.id));
+      _markDirty();
+    } on RepositoryException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } catch (_) {
+      setState(() => _errorMessage = 'Não foi possível adicionar.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _addDivision() async {
+    final name = _divisionName.text.trim();
+    if (name.isEmpty ||
+        _created == null ||
+        _groupingChoice == null) {
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      await ref.read(divisionApiProvider).create(
+            competitionId: _created!.id,
+            name: name,
+          );
+      _divisionName.clear();
+      ref.invalidate(divisionsProvider(_created!.id));
+      _markDirty();
+    } on RepositoryException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } catch (_) {
+      setState(() => _errorMessage = 'Não foi possível adicionar.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   /// Voltar: navega para a sessão anterior quando dentro do wizard;
   /// na primeira sessão, sai da rota com proteção de descarte (M3).
@@ -363,9 +462,7 @@ class _CompetitionCreateScreenState
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.arrow_forward),
-                    label: Text(
-                      _step == _titles.length - 1 ? 'Criar rascunho' : 'Continuar',
-                    ),
+                    label: Text(_draftLabel),
                   ),
                 ],
               ),
@@ -486,6 +583,13 @@ class _CompetitionCreateScreenState
     );
   }
 
+  Widget _hint(String text) {
+    return Text(
+      text,
+      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+    );
+  }
+
   Widget _stepContent(BuildContext context) {
     switch (_step) {
       case 0:
@@ -494,8 +598,12 @@ class _CompetitionCreateScreenState
         return _modalityStep(context);
       case 2:
         return _categoryStep(context);
-      default:
+      case 3:
         return _seasonStep(context);
+      case 4:
+        return _conferencesStep(context);
+      default:
+        return _structureStep(context);
     }
   }
 
@@ -586,7 +694,8 @@ class _CompetitionCreateScreenState
               ),
               items: orgs
                   .map(
-                    (o) => DropdownMenuItem(value: o.id, child: Text(o.tradeName)),
+                    (o) =>
+                        DropdownMenuItem(value: o.id, child: Text(o.tradeName)),
                   )
                   .toList(),
               onChanged: (value) => _organizationId.text = value ?? '',
@@ -627,10 +736,7 @@ class _CompetitionCreateScreenState
       children: [
         _groupLabel('Escolha a modalidade'),
         const SizedBox(height: 4),
-        const Text(
-          'Formato de jogo do campeonato',
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        ),
+        _hint('Formato de jogo do campeonato'),
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (context, constraints) {
@@ -649,7 +755,13 @@ class _CompetitionCreateScreenState
                       description: _modalityDescription(modality),
                       icon: _modalityIcon(modality),
                       selected: _modality == modality,
-                      onTap: () => _selectModality(modality),
+                      onTap: () {
+                        setState(() {
+                          _modality = modality;
+                          _modalityError = null;
+                        });
+                        _markDirty();
+                      },
                     ),
                   ),
               ],
@@ -668,9 +780,10 @@ class _CompetitionCreateScreenState
         Modality.fullPads11x11 => 'Tackle com proteção · 11 jogadores',
       };
 
-  IconData _modalityIcon(Modality modality) => modality == Modality.fullPads11x11
-      ? Icons.shield_outlined
-      : Icons.sports_football_outlined;
+  IconData _modalityIcon(Modality modality) =>
+      modality == Modality.fullPads11x11
+          ? Icons.shield_outlined
+          : Icons.sports_football_outlined;
 
   // Sessão 3 — Categoria: gênero (cards) + faixa etária (chips).
   Widget _categoryStep(BuildContext context) {
@@ -691,7 +804,13 @@ class _CompetitionCreateScreenState
                     child: SelectableCard(
                       label: gender.label,
                       selected: _gender == gender,
-                      onTap: () => _selectGender(gender),
+                      onTap: () {
+                        setState(() {
+                          _gender = gender;
+                          _categoryError = null;
+                        });
+                        _markDirty();
+                      },
                       minHeight: 72,
                     ),
                   ),
@@ -713,7 +832,13 @@ class _CompetitionCreateScreenState
               SelectableChip(
                 label: ageGroup.label,
                 selected: _ageGroup == ageGroup,
-                onTap: () => _selectAgeGroup(ageGroup),
+                onTap: () {
+                  setState(() {
+                    _ageGroup = ageGroup;
+                    _categoryError = null;
+                  });
+                  _markDirty();
+                },
               ),
           ],
         ),
@@ -757,8 +882,9 @@ class _CompetitionCreateScreenState
                 ),
                 validator: (value) {
                   final start = _parsedStartDate;
-                  final end =
-                      value == null || value.isEmpty ? null : DateTime.tryParse(value);
+                  final end = value == null || value.isEmpty
+                      ? null
+                      : DateTime.tryParse(value);
                   if (start != null && end != null && end.isBefore(start)) {
                     return 'Data final deve ser maior ou igual à data inicial';
                   }
@@ -781,14 +907,236 @@ class _CompetitionCreateScreenState
             ),
             if (_modality != null)
               _summaryChip(_modality!.label, Icons.sports_football_outlined),
-            if (_gender != null) _summaryChip(_gender!.label, Icons.groups_outlined),
+            if (_gender != null)
+              _summaryChip(_gender!.label, Icons.groups_outlined),
             if (_ageGroup != null)
               _summaryChip(_ageGroup!.label, Icons.cake_outlined),
           ],
         ),
+        const SizedBox(height: 16),
+        _hint(
+          'Ao continuar, o campeonato é criado como rascunho e você poderá '
+          'configurar conferências, divisões ou grupos nas próximas etapas.',
+        ),
       ],
     );
   }
+
+  // Sessão 5 — Conferências (#304): criar/listar, com declínio.
+  Widget _conferencesStep(BuildContext context) {
+    final conferences = _created == null
+        ? const AsyncValue<List<Conference>>.data([])
+        : ref.watch(conferencesProvider(_created!.id));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _groupLabel('Conferências'),
+        const SizedBox(height: 4),
+        _hint(
+          'Opcional. Use conferências para separar grandes blocos do '
+          'campeonato (ex.: Conferência Norte/Sul).',
+        ),
+        const SizedBox(height: 12),
+        if (_declinedConferences) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.grayFill),
+              color: AppColors.grayFill.withValues(alpha: 0.5),
+            ),
+            child: const Text(
+              'Este campeonato não usará conferências.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: () => setState(() => _declinedConferences = false),
+            icon: const Icon(Icons.undo, size: 18),
+            label: const Text('Usar conferências'),
+          ),
+        ] else ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _conferenceName,
+                  enabled: _created != null,
+                  decoration: const InputDecoration(
+                    labelText: 'Nome da conferência',
+                    border: OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _addConference(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.icon(
+                onPressed:
+                    _created == null || _submitting ? null : _addConference,
+                icon: const Icon(Icons.add),
+                label: const Text('Adicionar'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          conferences.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(8),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            error: (e, s) => const Text(
+              'Não foi possível carregar as conferências.',
+              style: TextStyle(color: AppColors.danger),
+            ),
+            data: (items) => items.isEmpty
+                ? _hint('Nenhuma conferência adicionada ainda.')
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final c in items) _summaryChip(c.name, Icons.account_tree_outlined),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: () => setState(() {
+              _declinedConferences = true;
+              _markDirty();
+            }),
+            child: const Text('Este campeonato não usa conferências'),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // Sessão 6 — Estrutura (#304): Divisões OU Grupos, com declínio.
+  Widget _structureStep(BuildContext context) {
+    final divisions = _created == null
+        ? const AsyncValue<List<Division>>.data([])
+        : ref.watch(divisionsProvider(_created!.id));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _groupLabel('Como os clubes serão agrupados?'),
+        const SizedBox(height: 4),
+        _hint('Divisões e Grupos têm o mesmo funcionamento — muda apenas o nome.'),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cardWidth = (constraints.maxWidth - 12) / 2;
+            return Row(
+              children: [
+                for (final type in GroupingType.values) ...[
+                  if (type != GroupingType.values.first)
+                    const SizedBox(width: 12),
+                  SizedBox(
+                    width: cardWidth,
+                    child: SelectableCard(
+                      label: type.label,
+                      description: 'Agrupamento por ${type.label.toLowerCase()}',
+                      icon: Icons.account_tree_outlined,
+                      selected: _groupingChoice == type,
+                      onTap: () => setState(() {
+                        _groupingChoice = type;
+                        _declinedStructure = false;
+                        _markDirty();
+                      }),
+                      minHeight: 72,
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        if (_declinedStructure)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.grayFill),
+              color: AppColors.grayFill.withValues(alpha: 0.5),
+            ),
+            child: const Text(
+              'Este campeonato não usará divisões nem grupos.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          )
+        else if (_groupingChoice == null)
+          _hint(
+            'Selecione Divisões ou Grupos acima, ou declare que este '
+            'campeonato não usará agrupamentos.',
+          )
+        else ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _divisionName,
+                  enabled: _created != null,
+                  decoration: InputDecoration(
+                    labelText: 'Nome ($_groupingChoice)',
+                    border: const OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _addDivision(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.icon(
+                onPressed:
+                    _created == null || _submitting ? null : _addDivision,
+                icon: const Icon(Icons.add),
+                label: const Text('Adicionar'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          divisions.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(8),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            error: (e, s) => Text(
+              'Não foi possível carregar as $_itemLabelLower.',
+              style: const TextStyle(color: AppColors.danger),
+            ),
+            data: (items) => items.isEmpty
+                ? _hint('Nenhum item adicionado ainda.')
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final d in items)
+                        _summaryChip(d.name, Icons.folder_outlined),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: () => setState(() {
+              _declinedStructure = true;
+              _groupingChoice = null;
+              _markDirty();
+            }),
+            child: const Text('Não usar divisões nem grupos'),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String get _itemLabelLower =>
+      _groupingChoice == GroupingType.groups ? 'grupos' : 'divisões';
 
   Widget _summaryChip(String label, IconData icon) {
     return Container(
