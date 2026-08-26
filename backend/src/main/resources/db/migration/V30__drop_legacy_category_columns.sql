@@ -6,19 +6,7 @@
 -- Remove os dados dependentes e depois as colunas category_id legadas,
 -- caso ainda existam no schema (V24/V25 não aplicadas naquele banco).
 
--- 1) Zera as tabelas da estrutura (ordem filhos -> pais).
-TRUNCATE TABLE platform.score_events;
-TRUNCATE TABLE platform.standings;
-TRUNCATE TABLE platform.checkins;
-TRUNCATE TABLE platform.team_roster;
-TRUNCATE TABLE platform.athletes;
-TRUNCATE TABLE platform.games;
-TRUNCATE TABLE platform.rounds;
-TRUNCATE TABLE platform.teams;
-TRUNCATE TABLE platform.divisions;
-TRUNCATE TABLE platform.conferences;
-
--- 2) Constraints legadas conhecidas que referenciam category_id.
+-- 1) Constraints legadas conhecidas que referenciam category_id.
 ALTER TABLE platform.conferences DROP CONSTRAINT IF EXISTS fk_conferences_category;
 ALTER TABLE platform.conferences DROP CONSTRAINT IF EXISTS uk_conferences_category_name;
 ALTER TABLE platform.divisions   DROP CONSTRAINT IF EXISTS fk_divisions_category;
@@ -30,7 +18,7 @@ ALTER TABLE platform.standings   DROP CONSTRAINT IF EXISTS uk_standings_category
 ALTER TABLE platform.teams       DROP CONSTRAINT IF EXISTS fk_teams_category;
 ALTER TABLE platform.teams       DROP CONSTRAINT IF EXISTS uk_teams_category_name;
 
--- 3) Colunas legadas (no-op quando já removidas pela V24).
+-- 1) Colunas legadas (no-op quando já removidas pela V24).
 ALTER TABLE platform.conferences DROP COLUMN IF EXISTS category_id;
 ALTER TABLE platform.divisions   DROP COLUMN IF EXISTS category_id;
 ALTER TABLE platform.rounds      DROP COLUMN IF EXISTS category_id;
