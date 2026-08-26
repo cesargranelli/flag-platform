@@ -38,4 +38,7 @@ class DivisionApi {
     'conferenceId': ?conferenceId,
     'name': name,
   }, Division.fromJson);
+
+  /// Exclui uma divisão (a estrutura só é alterável em DRAFT).
+  Future<void> delete(String id) => _client.delete('/api/v1/divisions/$id');
 }

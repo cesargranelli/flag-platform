@@ -334,6 +334,41 @@ class _CompetitionCreateScreenState
     }
   }
 
+  Future<void> _removeConference(Conference conference) async {
+    if (_created == null) return;
+    setState(() => _submitting = true);
+    try {
+      await ref.read(conferenceApiProvider).delete(conference.id);
+      // Se a conferência removida era a selecionada no Agrupamento, zera a seleção.
+      if (_conferenceId == conference.id) _conferenceId = null;
+      ref.invalidate(conferencesProvider(_created!.id));
+      ref.invalidate(divisionsProvider(_created!.id)); // conferência pode ter divisões (cascade)
+      _markDirty();
+    } on RepositoryException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } catch (_) {
+      setState(() => _errorMessage = 'Não foi possível remover.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _removeDivision(Division division) async {
+    if (_created == null) return;
+    setState(() => _submitting = true);
+    try {
+      await ref.read(divisionApiProvider).delete(division.id);
+      ref.invalidate(divisionsProvider(_created!.id));
+      _markDirty();
+    } on RepositoryException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } catch (_) {
+      setState(() => _errorMessage = 'Não foi possível remover.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
   /// Voltar: navega para a sessão anterior quando dentro do wizard;
   /// na primeira sessão, sai da rota com proteção de descarte (M3).
   Future<void> _handleBack() async {
@@ -968,7 +1003,12 @@ class _CompetitionCreateScreenState
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      for (final c in items) _summaryChip(c.name, Icons.account_tree_outlined),
+                      for (final c in items)
+                        _removableChip(
+                          label: c.name,
+                          icon: Icons.account_tree_outlined,
+                          onDelete: () => _removeConference(c),
+                        ),
                     ],
                   ),
           ),
@@ -994,6 +1034,7 @@ class _CompetitionCreateScreenState
         ? const AsyncValue<List<Conference>>.data([])
         : ref.watch(conferencesProvider(_created!.id));
     final conferenceItems = conferences.valueOrNull ?? const <Conference>[];
+    final hasAddedItems = (divisions.valueOrNull ?? const <Division>[]).isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1017,6 +1058,7 @@ class _CompetitionCreateScreenState
                       description: 'Agrupamento por ${type.label.toLowerCase()}',
                       icon: Icons.account_tree_outlined,
                       selected: _groupingChoice == type,
+                      enabled: !hasAddedItems,
                       onTap: () => setState(() {
                         _groupingChoice = type;
                         _declinedStructure = false;
@@ -1113,7 +1155,11 @@ class _CompetitionCreateScreenState
                     runSpacing: 8,
                     children: [
                       for (final d in items)
-                        _summaryChip(d.name, Icons.folder_outlined),
+                        _removableChip(
+                          label: d.name,
+                          icon: Icons.folder_outlined,
+                          onDelete: () => _removeDivision(d),
+                        ),
                     ],
                   ),
           ),
@@ -1155,6 +1201,54 @@ class _CompetitionCreateScreenState
                 fontSize: 12,
                 color: AppColors.textPrimary,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Chip de resumo com botão de remoção (X), usado nas listas de
+  /// conferências e divisões/agrupamentos (#341).
+  Widget _removableChip({
+    required String label,
+    required IconData icon,
+    required VoidCallback onDelete,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.grayFill,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.textSecondary),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Semantics(
+            label: 'Remover $label',
+            button: true,
+            child: IconButton(
+              onPressed: onDelete,
+              tooltip: 'Remover',
+              icon: const Icon(Icons.close, size: 16),
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              color: AppColors.textSecondary,
+              padding: EdgeInsets.zero,
             ),
           ),
         ],
