@@ -401,11 +401,11 @@ class _CompetitionCreateScreenState
                       horizontal: 8,
                       vertical: 16,
                     ),
-                    child: Row(
-                      children: [
-                        for (var i = 0; i < _titles.length; i++)
-                          Expanded(child: _stepIndicator(i)),
-                      ],
+                    child: AppSessionNav(
+                      sessions: _titles,
+                      activeIndex: _step,
+                      showDoneState: true,
+                      onTap: _handleStepTap,
                     ),
                   ),
                   Expanded(
@@ -497,69 +497,16 @@ class _CompetitionCreateScreenState
     );
   }
 
-  Widget _stepIndicator(int index) {
-    final selected = index == _step;
-    final done = index < _step;
-    final CircleAvatar circle;
-    if (done) {
-      circle = const CircleAvatar(
-        radius: 14,
-        backgroundColor: AppColors.success,
-        child: Icon(Icons.check, size: 20, color: AppColors.black),
-      );
-    } else if (selected) {
-      circle = const CircleAvatar(
-        radius: 14,
-        backgroundColor: AppColors.primary,
-        child: Icon(Icons.circle, size: 8, color: AppColors.black),
-      );
-    } else {
-      circle = CircleAvatar(
-        radius: 14,
-        backgroundColor: AppColors.grayFill,
-        child: Text(
-          '${index + 1}',
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 13,
-          ),
-        ),
-      );
+  /// Tocar em uma etapa do indicador: avança apenas sequencialmente (com
+  /// validação da etapa atual) e volta livremente (#323).
+  void _handleStepTap(int index) {
+    if (index == _step) return;
+    // Avanço apenas sequencial (com validação); voltar é livre.
+    if (index > _step) {
+      if (index > _step + 1) return;
+      if (!_validateStep()) return;
     }
-    return InkWell(
-      onTap: () {
-        if (index == _step) return;
-        // Avanço apenas sequencial (com validação); voltar é livre.
-        if (index > _step) {
-          if (index > _step + 1) return;
-          if (!_validateStep()) return;
-        }
-        setState(() => _step = index);
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        child: Column(
-          children: [
-            circle,
-            const SizedBox(height: 4),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                _titles[index],
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                  color: selected
-                      ? AppColors.textPrimary
-                      : AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    setState(() => _step = index);
   }
 
   Widget _groupLabel(String text) {
