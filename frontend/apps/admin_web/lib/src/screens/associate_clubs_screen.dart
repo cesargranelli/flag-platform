@@ -163,6 +163,12 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
     );
   }
 
+  /// Tipos de organização que podem ser associados como clube (#357):
+  /// clubes e universidades/colégios.
+  bool _isAssociableType(Organization org) =>
+      org.organizationType == OrganizationType.club ||
+      org.organizationType == OrganizationType.university;
+
   List<Organization> _filter(List<Organization> orgs) {
     final query = _query.trim().toLowerCase();
     if (query.isEmpty) return orgs;
@@ -198,12 +204,14 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
             );
           }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppLayout.content(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          // Issue #357: largura padrão dos formulários (600px), como nas
+          // telas de cadastro de organizações/campeonatos.
+          return AppLayout.form(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
@@ -233,9 +241,9 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
                     }),
                   ),
                 ),
-              ),
-              Expanded(child: _buildClubList(effectiveComp)),
-            ],
+                Expanded(child: _buildClubList(effectiveComp)),
+              ],
+            ),
           );
         },
       ),
@@ -267,13 +275,16 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
             onRetry: () => ref.invalidate(organizationsProvider),
           ),
           data: (orgs) {
-            if (orgs.isEmpty) {
+            // Issue #357: apenas clubes e universidades/colégios são
+            // associáveis nesta tela.
+            final clubs = orgs.where(_isAssociableType).toList();
+            if (clubs.isEmpty) {
               return const AppEmptyState(
-                message: 'Nenhum clube cadastrado na plataforma',
+                message: 'Nenhum clube/universidade disponível',
                 icon: Icons.groups_outlined,
               );
             }
-            final filtered = _filter(orgs);
+            final filtered = _filter(clubs);
             if (filtered.isEmpty) {
               return AppEmptyState(
                 message: 'Nenhum clube encontrado para "$_query".',
@@ -281,7 +292,7 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
               );
             }
 
-            final orgsById = {for (final o in orgs) o.id: o};
+            final orgsById = {for (final o in clubs) o.id: o};
             final hasSelectable = filtered.any(
               (o) => !orgIdToTeam.containsKey(o.id),
             );
@@ -290,19 +301,17 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
               children: [
                 if (hasSelectable) _selectionBar(competitionId, orgsById),
                 Expanded(
-                  child: AppLayout.content(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final club = filtered[index];
-                        return _clubCard(
-                          club,
-                          competitionId,
-                          orgIdToTeam: orgIdToTeam,
-                        );
-                      },
-                    ),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final club = filtered[index];
+                      return _clubCard(
+                        club,
+                        competitionId,
+                        orgIdToTeam: orgIdToTeam,
+                      );
+                    },
                   ),
                 ),
               ],
