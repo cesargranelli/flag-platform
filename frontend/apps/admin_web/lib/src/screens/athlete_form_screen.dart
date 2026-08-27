@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
+import '../widgets/selectable_card.dart';
 
 /// Formulário de criação/edição de atleta.
 class AthleteFormScreen extends ConsumerStatefulWidget {
@@ -116,14 +117,15 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
             runSpacing: 8,
             children: [
               for (final position in AthletePosition.values)
-                FilterChip(
-                  label: Text(position.label),
+                SelectableChip(
+                  label: position.label,
                   selected: _positions.contains(position),
-                  // Desabilitadas as opções livres quando o limite é atingido.
-                  onSelected:
-                      maxed && !_positions.contains(position) ? null : (_) {
-                    _togglePosition(position);
-                  },
+                  // Desabilitadas as opções livres quando o limite é atingido
+                  // (#371/#290): sem bordas; selecionado = fundo `primary` +
+                  // texto branco (padrão do projeto).
+                  onTap: maxed && !_positions.contains(position)
+                      ? null
+                      : () => _togglePosition(position),
                 ),
             ],
           ),
