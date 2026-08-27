@@ -40,6 +40,8 @@ class _CompetitionEditScreenState
   late final TextEditingController _organizationId;
   late final TextEditingController _startDate;
   late final TextEditingController _endDate;
+  final _conferenceName = TextEditingController();
+  final _divisionName = TextEditingController();
 
   Modality? _modality;
   Gender? _gender;
@@ -62,7 +64,19 @@ class _CompetitionEditScreenState
   String? _modalityError;
   String? _categoryError;
 
-  static const _titles = ['Campeonato', 'Modalidade', 'Categoria', 'Temporada'];
+  bool _declinedConferences = false;
+  bool _declinedStructure = false;
+  GroupingType? _groupingChoice;
+  String? _conferenceId;
+
+  static const _titles = [
+    'Campeonato',
+    'Modalidade',
+    'Categoria',
+    'Temporada',
+    'Conferências',
+    'Agrupamento',
+  ];
 
   @override
   void initState() {
@@ -104,6 +118,7 @@ class _CompetitionEditScreenState
         ? null
         : AgeGroup.fromJson(competition.ageGroup!);
     _status = competition.status;
+    _groupingChoice = competition.groupingType;
     _populating = false;
     _appliedRemote = true;
   }
@@ -116,6 +131,8 @@ class _CompetitionEditScreenState
       _organizationId,
       _startDate,
       _endDate,
+      _conferenceName,
+      _divisionName,
     ]) {
       controller.dispose();
     }
@@ -221,6 +238,7 @@ class _CompetitionEditScreenState
         modality: _modality,
         gender: _gender?.toJson(),
         ageGroup: _ageGroup?.toJson(),
+        groupingType: _groupingChoice,
       );
       ref.invalidate(competitionsProvider);
       ref.invalidate(competitionProvider(id));
@@ -287,6 +305,7 @@ class _CompetitionEditScreenState
         modality: _modality,
         gender: _gender?.toJson(),
         ageGroup: _ageGroup?.toJson(),
+        groupingType: _groupingChoice,
       );
       ref.invalidate(competitionsProvider);
       ref.invalidate(competitionProvider(id));
@@ -477,8 +496,6 @@ class _CompetitionEditScreenState
                           if (_errorMessage != null)
                             _errorBanner(_errorMessage!),
                           _stepContent(context),
-                          const SizedBox(height: 24),
-                          _structureCard(context),
                         ],
                       ),
                     ),
@@ -524,59 +541,6 @@ class _CompetitionEditScreenState
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  /// Issue #258: configuração de estrutura (conferências/divisões) apenas
-  /// em edição, para quem pode editar e enquanto rascunho.
-  Widget _structureCard(BuildContext context) {
-    final user = ref.watch(authControllerProvider).state.user;
-    final competition =
-        ref.watch(competitionProvider(widget.competitionId!)).valueOrNull;
-    final canConfigureStructure = canEditCompetition(user, competition);
-    if (!canConfigureStructure) return const SizedBox.shrink();
-
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.account_tree_outlined,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Estrutura do campeonato',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Configure conferências, divisões e associe clubes às divisões.',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () {
-                ref.read(selectedCompetitionProvider.notifier).state =
-                    widget.competitionId!;
-                context.push('/groupings');
-              },
-              icon: const Icon(Icons.settings_outlined),
-              label: const Text('Configurar conferências e divisões'),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -655,6 +619,13 @@ class _CompetitionEditScreenState
     );
   }
 
+  Widget _hint(String text) {
+    return Text(
+      text,
+      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+    );
+  }
+
   Widget _stepContent(BuildContext context) {
     switch (_step) {
       case 0:
@@ -663,8 +634,12 @@ class _CompetitionEditScreenState
         return _modalityStep(context);
       case 2:
         return _categoryStep(context);
-      default:
+      case 3:
         return _seasonStep(context);
+      case 4:
+        return _conferencesStep(context);
+      default:
+        return _structureStep(context);
     }
   }
 
@@ -948,6 +923,375 @@ class _CompetitionEditScreenState
           ],
         ),
       ],
+    );
+  }
+
+  Future<void> _addConference() async {
+    final name = _conferenceName.text.trim();
+    if (name.isEmpty) return;
+    setState(() => _submitting = true);
+    try {
+      await ref.read(conferenceApiProvider).create(
+            competitionId: widget.competitionId!,
+            name: name,
+          );
+      _conferenceName.clear();
+      ref.invalidate(conferencesProvider(widget.competitionId!));
+      _markDirty();
+    } on RepositoryException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } catch (_) {
+      setState(() => _errorMessage = 'Não foi possível adicionar.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _addDivision() async {
+    final name = _divisionName.text.trim();
+    if (name.isEmpty || _groupingChoice == null) return;
+    setState(() => _submitting = true);
+    try {
+      await ref.read(divisionApiProvider).create(
+            competitionId: widget.competitionId!,
+            name: name,
+            conferenceId: _conferenceId,
+          );
+      _divisionName.clear();
+      ref.invalidate(divisionsProvider(widget.competitionId!));
+      _markDirty();
+    } on RepositoryException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } catch (_) {
+      setState(() => _errorMessage = 'Não foi possível adicionar.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _removeConference(Conference conference) async {
+    setState(() => _submitting = true);
+    try {
+      await ref.read(conferenceApiProvider).delete(conference.id);
+      // Se a conferência removida era a selecionada no Agrupamento, zera a seleção.
+      if (_conferenceId == conference.id) _conferenceId = null;
+      ref.invalidate(conferencesProvider(widget.competitionId!));
+      ref.invalidate(divisionsProvider(widget.competitionId!)); // conferência pode ter divisões (cascade)
+      _markDirty();
+    } on RepositoryException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } catch (_) {
+      setState(() => _errorMessage = 'Não foi possível remover.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _removeDivision(Division division) async {
+    setState(() => _submitting = true);
+    try {
+      await ref.read(divisionApiProvider).delete(division.id);
+      ref.invalidate(divisionsProvider(widget.competitionId!));
+      _markDirty();
+    } on RepositoryException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } catch (_) {
+      setState(() => _errorMessage = 'Não foi possível remover.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  // Sessão 5 — Conferências (#345): replicar o fluxo do cadastro em edição.
+  Widget _conferencesStep(BuildContext context) {
+    final conferences = ref.watch(conferencesProvider(widget.competitionId!));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _groupLabel('Conferências'),
+        const SizedBox(height: 4),
+        _hint(
+          'Opcional. Use conferências para separar grandes blocos do '
+          'campeonato (ex.: Conferência Norte/Sul).',
+        ),
+        const SizedBox(height: 12),
+        if (_declinedConferences) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.grayFill),
+              color: AppColors.grayFill.withValues(alpha: 0.5),
+            ),
+            child: const Text(
+              'Este campeonato não usará conferências.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: () => setState(() => _declinedConferences = false),
+            icon: const Icon(Icons.undo, size: 18),
+            label: const Text('Usar conferências'),
+          ),
+        ] else ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _conferenceName,
+                  decoration: const InputDecoration(
+                    labelText: 'Nome da conferência',
+                    border: OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _addConference(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.icon(
+                onPressed: _submitting ? null : _addConference,
+                icon: const Icon(Icons.add),
+                label: const Text('Adicionar'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          conferences.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(8),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            error: (e, s) => const Text(
+              'Não foi possível carregar as conferências.',
+              style: TextStyle(color: AppColors.danger),
+            ),
+            data: (items) => items.isEmpty
+                ? _hint('Nenhuma conferência adicionada ainda.')
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final c in items)
+                        _removableChip(
+                          label: c.name,
+                          icon: Icons.account_tree_outlined,
+                          onDelete: () => _removeConference(c),
+                        ),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: () => setState(() {
+              _declinedConferences = true;
+              _markDirty();
+            }),
+            child: const Text('Este campeonato não usa conferências'),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // Sessão 6 — Agrupamento (#345/#338): Divisões OU Grupos, com declínio.
+  Widget _structureStep(BuildContext context) {
+    final divisions = ref.watch(divisionsProvider(widget.competitionId!));
+    final conferences = ref.watch(conferencesProvider(widget.competitionId!));
+    final conferenceItems = conferences.valueOrNull ?? const <Conference>[];
+    final hasAddedItems =
+        (divisions.valueOrNull ?? const <Division>[]).isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _groupLabel('Como os clubes serão agrupados?'),
+        const SizedBox(height: 4),
+        _hint(
+          'Divisões e Grupos têm o mesmo funcionamento — muda apenas o nome.',
+        ),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cardWidth = (constraints.maxWidth - 12) / 2;
+            return Row(
+              children: [
+                for (final type in GroupingType.values) ...[
+                  if (type != GroupingType.values.first)
+                    const SizedBox(width: 12),
+                  SizedBox(
+                    width: cardWidth,
+                    child: SelectableCard(
+                      label: type.label,
+                      description: 'Agrupamento por ${type.label.toLowerCase()}',
+                      icon: Icons.account_tree_outlined,
+                      selected: _groupingChoice == type,
+                      enabled: !hasAddedItems,
+                      onTap: () => setState(() {
+                        _groupingChoice = type;
+                        _declinedStructure = false;
+                        _markDirty();
+                      }),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        if (_declinedStructure)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.grayFill),
+              color: AppColors.grayFill.withValues(alpha: 0.5),
+            ),
+            child: const Text(
+              'Este campeonato não usará divisões nem grupos.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          )
+        else if (_groupingChoice == null)
+          _hint(
+            'Selecione Divisões ou Grupos acima, ou declare que este '
+            'campeonato não usará agrupamentos.',
+          )
+        else ...[
+          if (conferenceItems.isNotEmpty) ...[
+            DropdownButtonFormField<String>(
+              key: ValueKey('division-conf-${_conferenceId ?? ''}'),
+              initialValue: _conferenceId ?? '',
+              decoration: const InputDecoration(
+                labelText: 'Conferência',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem(
+                  value: '',
+                  child: Text('Sem conferência'),
+                ),
+                for (final c in conferenceItems)
+                  DropdownMenuItem(value: c.id, child: Text(c.name)),
+              ],
+              onChanged: (value) => setState(
+                () => _conferenceId =
+                    (value == null || value.isEmpty) ? null : value,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _divisionName,
+                  decoration: InputDecoration(
+                    labelText: 'Nome ($_groupingChoice)',
+                    border: const OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _addDivision(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.icon(
+                onPressed: _submitting ? null : _addDivision,
+                icon: const Icon(Icons.add),
+                label: const Text('Adicionar'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          divisions.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(8),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            error: (e, s) => Text(
+              'Não foi possível carregar as $_itemLabelLower.',
+              style: const TextStyle(color: AppColors.danger),
+            ),
+            data: (items) => items.isEmpty
+                ? _hint('Nenhum item adicionado ainda.')
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final d in items)
+                        _removableChip(
+                          label: d.name,
+                          icon: Icons.folder_outlined,
+                          onDelete: () => _removeDivision(d),
+                        ),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: () => setState(() {
+              _declinedStructure = true;
+              _groupingChoice = null;
+              _markDirty();
+            }),
+            child: const Text('Não usar divisões nem grupos'),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String get _itemLabelLower =>
+      _groupingChoice == GroupingType.groups ? 'grupos' : 'divisões';
+
+  /// Chip removível (X), usado nas listas de conferências e divisões (#341).
+  Widget _removableChip({
+    required String label,
+    required IconData icon,
+    required VoidCallback onDelete,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.grayFill,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.textSecondary),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Semantics(
+            label: 'Remover $label',
+            button: true,
+            child: IconButton(
+              onPressed: onDelete,
+              tooltip: 'Remover',
+              icon: const Icon(Icons.close, size: 16),
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              color: AppColors.textSecondary,
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

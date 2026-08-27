@@ -35,7 +35,7 @@ class _CompetitionDetailScreenState
     'Categoria',
     'Temporada',
     'Conferências',
-    'Estrutura',
+    'Agrupamento',
   ];
 
   /// Ícones das sessões (issue #326), paralelos a [_sessions].
@@ -108,9 +108,15 @@ class _CompetitionDetailScreenState
       child: AppLayout.detail(
         child: switch (_activeSession) {
           0 => _campeonatoCard(context, comp, canEdit, isDraft),
-          1 => _modalidadeCard(comp),
-          2 => _categoriaCard(comp),
-          3 => _temporadaCard(comp),
+          1 => comp.modality == null
+              ? const SizedBox.shrink()
+              : _modalidadeCard(comp),
+          2 => (comp.gender == null && comp.ageGroup == null)
+              ? const SizedBox.shrink()
+              : _categoriaCard(comp),
+          3 => (comp.startDate == null && comp.endDate == null)
+              ? const SizedBox.shrink()
+              : _temporadaCard(comp),
           4 => _conferencesCard(comp),
           _ => _estruturaCard(context, comp, canEdit, isDraft),
         },
@@ -268,81 +274,110 @@ class _CompetitionDetailScreenState
     );
   }
 
-  /// Sessão 6 — Estrutura (#306): agrupamentos dos clubes.
+  /// Sessão 6 — Agrupamento (#306/#345): agrupamentos dos clubes.
   /// Issue #305: ações de escrita apenas em DRAFT.
+  /// Oculto quando o campeonato não tem divisões (#345).
   Widget _estruturaCard(
     BuildContext context,
     Competition comp,
     bool canEdit,
     bool isDraft,
   ) {
-    return AppInfoCard(
-      title: 'Estrutura',
-      children: [
-        AppInfoRow(
-          label: 'Modelo',
-          value: comp.groupingType?.label ?? GroupingType.divisions.label,
-        ),
-        if (canEdit && isDraft) ...[
-          _actionRowButton(
-            context,
-            icon: Icons.account_tree_outlined,
-            label: comp.groupingType == GroupingType.groups
-                ? 'Gerenciar Conferências e Grupos'
-                : 'Gerenciar Conferências e Divisões',
-            onTap: () {
-              ref.read(selectedCompetitionProvider.notifier).state = comp.id;
-              context.push('/groupings');
-            },
-          ),
-          _actionRowButton(
-            context,
-            icon: Icons.groups,
-            label: 'Associar Clubes',
-            onTap: () {
-              ref.read(selectedCompetitionProvider.notifier).state = comp.id;
-              context.push('/teams');
-            },
-          ),
-        ] else ...[
+    final divisions = ref.watch(divisionsProvider(comp.id));
+    return divisions.when(
+      loading: () => AppInfoCard(
+        title: 'Agrupamento',
+        children: const [
           Text(
-            'Campeonato publicado — a estrutura está travada.',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
+            'Carregando agrupamento...',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
           ),
         ],
-      ],
+      ),
+      error: (e, s) => AppInfoCard(
+        title: 'Agrupamento',
+        children: const [
+          Text(
+            'Não foi possível carregar as divisões.',
+            style: TextStyle(color: AppColors.danger, fontSize: 13),
+          ),
+        ],
+      ),
+      data: (items) => items.isEmpty
+          ? const SizedBox.shrink()
+          : AppInfoCard(
+              title: 'Agrupamento',
+              children: [
+                AppInfoRow(
+                  label: 'Modelo',
+                  value:
+                      comp.groupingType?.label ?? GroupingType.divisions.label,
+                ),
+                if (canEdit && isDraft) ...[
+                  _actionRowButton(
+                    context,
+                    icon: Icons.account_tree_outlined,
+                    label: comp.groupingType == GroupingType.groups
+                        ? 'Gerenciar Conferências e Grupos'
+                        : 'Gerenciar Conferências e Divisões',
+                    onTap: () {
+                      ref.read(selectedCompetitionProvider.notifier).state =
+                          comp.id;
+                      context.push('/groupings');
+                    },
+                  ),
+                  _actionRowButton(
+                    context,
+                    icon: Icons.groups,
+                    label: 'Associar Clubes',
+                    onTap: () {
+                      ref.read(selectedCompetitionProvider.notifier).state =
+                          comp.id;
+                      context.push('/teams');
+                    },
+                  ),
+                ] else ...[
+                  Text(
+                    'Campeonato publicado — a estrutura está travada.',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
     );
   }
 
-  /// Sessão Conferências (#323): lista as conferências do campeonato.
+  /// Sessão Conferências (#323/#345): lista as conferências do campeonato.
+  /// Oculto quando não há conferências (#345).
   Widget _conferencesCard(Competition comp) {
     final conferences = ref.watch(conferencesProvider(comp.id));
-    return AppInfoCard(
-      title: 'Conferências',
-      children: conferences.when(
-        loading: () => const [
+    return conferences.when(
+      loading: () => AppInfoCard(
+        title: 'Conferências',
+        children: const [
           Text(
             'Carregando conferências...',
             style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
           ),
         ],
-        error: (e, s) => const [
+      ),
+      error: (e, s) => AppInfoCard(
+        title: 'Conferências',
+        children: const [
           Text(
             'Não foi possível carregar as conferências.',
             style: TextStyle(color: AppColors.danger, fontSize: 13),
           ),
         ],
-        data: (items) => items.isEmpty
-            ? const [
-                Text(
-                  'Sem conferências definidas.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                ),
-              ]
-            : [
+      ),
+      data: (items) => items.isEmpty
+          ? const SizedBox.shrink()
+          : AppInfoCard(
+              title: 'Conferências',
+              children: [
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -351,7 +386,7 @@ class _CompetitionDetailScreenState
                   ],
                 ),
               ],
-      ),
+            ),
     );
   }
 
