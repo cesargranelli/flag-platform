@@ -195,11 +195,30 @@ class _CompetitionDetailScreenState
             // V250: edição permitida apenas enquanto rascunho.
             // Issue #261: e apenas pelo criador ou ADMIN.
             if (isDraft && canEdit)
-              FilledButton.icon(
-                onPressed: () =>
-                    context.push('/competitions/${comp.id}/edit', extra: comp),
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text('Editar campeonato'),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    onPressed: () => context.push(
+                      '/competitions/${comp.id}/edit',
+                      extra: comp,
+                    ),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Editar campeonato'),
+                  ),
+                  // Issue #381: novo ponto de entrada para rodadas/confrontos,
+                  // ao lado de "Editar campeonato" (recupera o acesso a /rounds).
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      ref.read(selectedCompetitionProvider.notifier).state =
+                          comp.id;
+                      context.push('/rounds');
+                    },
+                    icon: const Icon(Icons.format_list_numbered),
+                    label: const Text('Rodadas'),
+                  ),
+                ],
               )
             else
               Text(
