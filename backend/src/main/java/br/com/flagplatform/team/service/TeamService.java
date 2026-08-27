@@ -63,6 +63,29 @@ public class TeamService implements TeamLookup {
         return mapper.toResponse(repository.save(mapper.toEntity(request)));
     }
 
+    /**
+     * Associa um clube (organização) a um campeonato (#377). Ação própria de
+     * associação (separada do cadastro de time): o nome do time é derivado do
+     * próprio clube; documento/divisão não são exigidos. V260: apenas o
+     * criador do campeonato (ou ADMIN) gerencia o campeonato.
+     */
+    @Transactional
+    public TeamResponse associateClub(UUID competitionId, UUID organizationId, String currentUserEmail) {
+        competitionLookup.assertManagedBy(competitionId, currentUserEmail);
+        organizationLookup.assertExists(organizationId);
+
+        if (repository.existsByCompetitionIdAndOrganizationId(competitionId, organizationId)) {
+            throw new DuplicateTeamRegistrationException(organizationId, competitionId);
+        }
+
+        TeamEntity entity = new TeamEntity();
+        entity.setOrganizationId(organizationId);
+        entity.setCompetitionId(competitionId);
+        entity.setName(organizationLookup.findTradeNameById(organizationId));
+
+        return mapper.toResponse(repository.save(entity));
+    }
+
     public List<TeamResponse> findByCompetitionId(UUID competitionId) {
         return mapper.toResponseList(repository.findAllByCompetitionIdOrderByNameAsc(competitionId));
     }

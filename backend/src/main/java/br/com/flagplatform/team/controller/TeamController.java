@@ -1,6 +1,7 @@
 package br.com.flagplatform.team.controller;
 
 import br.com.flagplatform.common.security.SecurityExpressions;
+import br.com.flagplatform.team.dto.request.AssociateClubRequest;
 import br.com.flagplatform.team.dto.request.CreateTeamRequest;
 import br.com.flagplatform.team.dto.request.UpdateTeamRequest;
 import br.com.flagplatform.team.dto.response.TeamResponse;
@@ -43,6 +44,22 @@ public class TeamController {
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public TeamResponse create(@Valid @RequestBody CreateTeamRequest request, Authentication authentication) {
         return service.create(request, authentication.getName());
+    }
+
+    @Operation(
+            summary = "Associar clube ao campeonato",
+            description = "Associa uma organização (clube) ao campeonato, criando o time automaticamente com o nome do clube. Permitido apenas ao criador do campeonato ou ADMIN. Ação própria de associação (separada do cadastro de time)."
+    )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
+    @ApiResponse(responseCode = "409", description = "O clube já está associado a este campeonato")
+    @PostMapping("/api/v1/competitions/{competitionId}/clubs")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public TeamResponse associateClub(
+            @Parameter(description = "Id do campeonato") @PathVariable UUID competitionId,
+            @Valid @RequestBody AssociateClubRequest request,
+            Authentication authentication) {
+        return service.associateClub(competitionId, request.organizationId(), authentication.getName());
     }
 
     @Operation(
