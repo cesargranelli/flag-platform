@@ -600,14 +600,10 @@ class _CompetitionEditScreenState
     );
   }
 
-  /// Tocar em uma etapa do indicador: avança apenas sequencialmente (com
-  /// validação da etapa atual) e volta livremente (#323).
+  /// Tocar em uma etapa do indicador: navegação LIVRE (#381) — o usuário
+  /// escolhe qualquer etapa sem restrição sequencial nem validação.
   void _handleStepTap(int index) {
     if (index == _step) return;
-    if (index > _step) {
-      if (index > _step + 1) return;
-      if (!_validateStep()) return;
-    }
     setState(() => _step = index);
   }
 
