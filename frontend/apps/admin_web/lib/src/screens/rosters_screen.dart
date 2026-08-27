@@ -59,7 +59,7 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppLayout.content(
+              AppLayout.form(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: DropdownButtonFormField<String>(
@@ -103,12 +103,13 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
     );
   }
 
-  /// Lista os clubes e universidades (organizações) do usuário.
+  /// Lista os clubes e universidades (organizações).
   ///
-  /// Percorre [organizationsProvider] (todas as organizações) mantendo apenas
-  /// as do tipo clube/universidade cujo `createdBy` é o usuário logado. Para
-  /// cada organização, localiza o [Team] (se houver) no campeonato via
-  /// [teamsProvider] (mapa `organizationId → Team`).
+  /// Percorre [organizationsProvider] mantendo as elegíveis (tipo `null`,
+  /// `club` ou `university` — ignora apenas os tipos explicitamente excluídos:
+  /// federação/liga/associação/outro). Não filtra por `createdBy` para garantir
+  /// que os clubes/universidades apareçam (#385). Para cada organização,
+  /// localiza o [Team] (se houver) no campeonato via [teamsProvider].
   Widget _clubList(BuildContext context, String competitionId) {
     final teamsAsync = ref.watch(teamsProvider(competitionId));
     final orgsAsync = ref.watch(organizationsProvider);
@@ -125,7 +126,6 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
 
     final orgs = orgsAsync.value ?? const <Organization>[];
     final teams = teamsAsync.value ?? const <Team>[];
-    final userId = ref.read(authControllerProvider).state.user?.id;
 
     // Mapa organização → time no campeonato selecionado.
     final teamByOrgId = <String, Team>{
@@ -134,12 +134,14 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
     };
 
     // Deduplica por organização: um clube/universidade aparece uma única vez.
+    // Elegível = tipo null, club ou university (ignora apenas os tipos
+    // explicitamente excluídos) — #385.
     final clubs = <Organization>[];
     final seenOrgIds = <String>{};
     for (final org in orgs) {
       final type = org.organizationType;
-      if (userId != null && org.createdBy != userId) continue;
-      if (type != OrganizationType.club &&
+      if (type != null &&
+          type != OrganizationType.club &&
           type != OrganizationType.university) {
         continue;
       }
