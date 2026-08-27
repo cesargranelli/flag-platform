@@ -9,13 +9,13 @@ import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
-/// Elenco de um clube (time) num campeonato (issue #360).
+/// Elenco de um clube (time) num campeonato (issue #360/#363).
 ///
-/// O elenco é a associação de atletas ao clube naquele campeonato. A tela
-/// lista os atletas do [rosterProvider] do time e permite adicionar (buscar
-/// atleta em [athletesProvider] e chamar `RosterApi.add`) e remover
-/// (`RosterApi.remove`) — sempre invalidando o provider do elenco após a
-/// operação.
+/// A tela combina [athletesProvider] (atletas da plataforma) com o
+/// [rosterProvider] do time e permite **incluir** atletas ("Incluir") e
+/// **removê-los** ("Remover"), sempre invalidando o provider do elenco após a
+/// operação. Há busca por nome (TextField) e o action "Importar CSV" é
+/// mantido. Atletas já inscritos aparecem com a marcação "No elenco".
 class TeamRosterScreen extends ConsumerStatefulWidget {
   const TeamRosterScreen({super.key, this.team, this.teamId});
 
@@ -30,10 +30,48 @@ class TeamRosterScreen extends ConsumerStatefulWidget {
 }
 
 class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+
+  /// Ids de atletas com inclusão em andamento (desabilita a linha).
+  final Set<String> _adding = {};
+
   /// Ids de atletas do elenco com remoção em andamento (desabilita a linha).
   final Set<String> _removing = {};
 
   String? get _teamId => widget.team?.id ?? widget.teamId;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addAthlete(Athlete athlete) async {
+    final teamId = _teamId;
+    if (teamId == null) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _adding.add(athlete.id));
+    try {
+      await ref.read(rosterApiProvider).add(
+            teamId: teamId,
+            athleteId: athlete.id,
+          );
+      ref.invalidate(rosterProvider(teamId));
+      messenger.showSnackBar(
+        SnackBar(content: Text('${athlete.name} adicionado ao elenco.')),
+      );
+    } on RepositoryException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Não foi possível adicionar o atleta.')),
+      );
+    } finally {
+      if (mounted) setState(() => _adding.remove(athlete.id));
+    }
+  }
 
   Future<void> _removeAthlete(RosterEntry entry) async {
     final teamId = _teamId;
@@ -61,22 +99,6 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     }
   }
 
-  Future<void> _openAddAthleteDialog() async {
-    final teamId = _teamId;
-    if (teamId == null) return;
-
-    final entries = ref.read(rosterProvider(teamId)).valueOrNull ?? const [];
-    final existing = {for (final e in entries) e.athleteId};
-
-    await showDialog<void>(
-      context: context,
-      builder: (_) => _RosterAddAthleteDialog(
-        teamId: teamId,
-        existingAthleteIds: existing,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final teamId = _teamId;
@@ -85,9 +107,8 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
         : teamId != null
             ? ref.watch(teamProvider(teamId))
             : null;
-    final title = widget.team?.name ??
-        teamFuture?.valueOrNull?.name ??
-        'Elenco';
+    final title =
+        widget.team?.name ?? teamFuture?.valueOrNull?.name ?? 'Elenco';
 
     return AppScreen(
       title: title,
@@ -100,54 +121,159 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
             onPressed: () => context.push('/rosters/import', extra: teamId),
           ),
       ],
-      floatingActionButton: teamId == null
-          ? null
-          : FloatingActionButton(
-              tooltip: 'Adicionar atleta',
-              onPressed: _openAddAthleteDialog,
-              child: const Icon(Icons.person_add_alt_1),
-            ),
       body: teamId == null
           ? const AppEmptyState(
               message: 'Time não identificado',
               icon: Icons.groups_outlined,
             )
-          : ref.watch(rosterProvider(teamId)).when(
-              loading: () => const AppLoading(message: 'Carregando elenco...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar o elenco',
-                onRetry: () => ref.invalidate(rosterProvider(teamId)),
-              ),
-              data: (entries) {
-                if (entries.isEmpty) {
-                  return const AppEmptyState(
-                    message: 'Nenhum atleta no elenco',
-                    icon: Icons.person_outline,
-                  );
-                }
-                return AppLayout.content(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: entries.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) =>
-                        _entryCard(context, entries[index]),
-                  ),
-                );
-              },
-            ),
+          : _buildRoster(context, teamId),
     );
   }
 
-  Widget _entryCard(BuildContext context, RosterEntry entry) {
-    final position = entry.position?.label ?? '';
+  Widget _buildRoster(BuildContext context, String teamId) {
+    final athletesAsync = ref.watch(athletesProvider);
+    final rosterAsync = ref.watch(rosterProvider(teamId));
+
+    if (athletesAsync.isLoading || rosterAsync.isLoading) {
+      return const AppLoading(message: 'Carregando atletas...');
+    }
+    if (athletesAsync.hasError) {
+      return AppErrorState(
+        message: 'Não foi possível carregar os atletas',
+        onRetry: () => ref.invalidate(athletesProvider),
+      );
+    }
+    if (rosterAsync.hasError) {
+      return AppErrorState(
+        message: 'Não foi possível carregar o elenco',
+        onRetry: () => ref.invalidate(rosterProvider(teamId)),
+      );
+    }
+
+    final athletes = athletesAsync.value ?? const <Athlete>[];
+    final entries = rosterAsync.value ?? const <RosterEntry>[];
+    final inRosterIds = {for (final e in entries) e.athleteId};
+    final entryByAthleteId = {for (final e in entries) e.athleteId: e};
+
+    final normalizedQuery = _query.trim().toLowerCase();
+    final filtered = athletes
+        .where((a) =>
+            normalizedQuery.isEmpty ||
+            a.name.toLowerCase().contains(normalizedQuery))
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppLayout.content(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Buscar atleta',
+                hintText: 'Busque pelo nome',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear),
+                        tooltip: 'Limpar busca',
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _query = '');
+                        },
+                      ),
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (value) => setState(() => _query = value),
+            ),
+          ),
+        ),
+        Expanded(
+          child: _buildList(
+            athletes: athletes,
+            filtered: filtered,
+            inRosterIds: inRosterIds,
+            entryByAthleteId: entryByAthleteId,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildList({
+    required List<Athlete> athletes,
+    required List<Athlete> filtered,
+    required Set<String> inRosterIds,
+    required Map<String, RosterEntry> entryByAthleteId,
+  }) {
+    if (athletes.isEmpty) {
+      return const AppEmptyState(
+        message: 'Nenhum atleta encontrado',
+        icon: Icons.person_outline,
+      );
+    }
+    if (filtered.isEmpty) {
+      return const AppEmptyState(
+        message: 'Nenhum atleta encontrado',
+        icon: Icons.search_off,
+      );
+    }
+
+    final allInRoster = athletes.every((a) => inRosterIds.contains(a.id));
+    final showAllInRosterNote = allInRoster && _query.trim().isEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showAllInRosterNote)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              'Todos os atletas já estão no elenco',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        Expanded(
+          child: AppLayout.content(
+            child: ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: filtered.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final athlete = filtered[index];
+                final inRoster = inRosterIds.contains(athlete.id);
+                return _athleteCard(
+                  context,
+                  athlete,
+                  inRoster: inRoster,
+                  entry: inRoster ? entryByAthleteId[athlete.id] : null,
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _athleteCard(
+    BuildContext context,
+    Athlete athlete, {
+    required bool inRoster,
+    required RosterEntry? entry,
+  }) {
+    final position = athlete.position?.label ?? '';
     final subtitle = [
-      if (entry.number != null) '#${entry.number}',
+      if (athlete.number != null) '#${athlete.number}',
       if (position.isNotEmpty) position,
-      if (entry.athleteNickname != null && entry.athleteNickname!.isNotEmpty)
-        entry.athleteNickname!,
     ].join(' · ');
-    final removing = _removing.contains(entry.athleteId);
+    final adding = _adding.contains(athlete.id);
+    final removing = _removing.contains(athlete.id);
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -155,7 +281,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
         padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
         child: Row(
           children: [
-            _avatar(entry, size: 48),
+            _athleteAvatar(athlete, size: 48),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -163,7 +289,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    entry.athleteName,
+                    athlete.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -186,7 +312,8 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
                 ],
               ),
             ),
-            if (removing)
+            const SizedBox(width: 8),
+            if (adding || removing)
               const Padding(
                 padding: EdgeInsets.all(12),
                 child: SizedBox(
@@ -195,11 +322,22 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               )
+            else if (inRoster)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const _InRosterBadge(),
+                  IconButton(
+                    tooltip: 'Remover atleta',
+                    icon: const Icon(Icons.person_remove_outlined),
+                    onPressed: entry == null ? null : () => _removeAthlete(entry),
+                  ),
+                ],
+              )
             else
-              IconButton(
-                tooltip: 'Remover atleta',
-                icon: const Icon(Icons.person_remove_outlined),
-                onPressed: () => _removeAthlete(entry),
+              FilledButton.tonal(
+                onPressed: () => _addAthlete(athlete),
+                child: const Text('Incluir'),
               ),
           ],
         ),
@@ -207,8 +345,8 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     );
   }
 
-  Widget _avatar(RosterEntry entry, {required double size}) {
-    final photo = entry.photoUrl;
+  Widget _athleteAvatar(Athlete athlete, {required double size}) {
+    final photo = athlete.photoUrl;
     final validPhoto = photo != null &&
         photo.isNotEmpty &&
         (Uri.tryParse(photo)?.hasScheme ?? false);
@@ -226,7 +364,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => Center(
                 child: Text(
-                  _initials(entry.athleteName),
+                  _initials(athlete.name),
                   style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
@@ -237,7 +375,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
             )
           : Center(
               child: Text(
-                _initials(entry.athleteName),
+                _initials(athlete.name),
                 style: TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
@@ -257,203 +395,26 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
   }
 }
 
-/// Diálogo de seleção de atleta para adicionar ao elenco (issue #360).
-///
-/// Busca atletas de [athletesProvider] por nome, oculta os que já constam no
-/// elenco do time e permite adicionar com um toque. O diálogo fecha após o
-/// sucesso e a lista é invalidada pelo provider de elenco.
-class _RosterAddAthleteDialog extends ConsumerStatefulWidget {
-  const _RosterAddAthleteDialog({
-    required this.teamId,
-    required this.existingAthleteIds,
-  });
-
-  final String teamId;
-  final Set<String> existingAthleteIds;
-
-  @override
-  ConsumerState<_RosterAddAthleteDialog> createState() =>
-      _RosterAddAthleteDialogState();
-}
-
-class _RosterAddAthleteDialogState
-    extends ConsumerState<_RosterAddAthleteDialog> {
-  final TextEditingController _searchController = TextEditingController();
-  String _query = '';
-
-  /// Ids de atletas com adição em andamento (evita toque duplo).
-  final Set<String> _adding = {};
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _add(Athlete athlete) async {
-    final messenger = ScaffoldMessenger.of(context);
-    setState(() => _adding.add(athlete.id));
-    try {
-      await ref.read(rosterApiProvider).add(
-            teamId: widget.teamId,
-            athleteId: athlete.id,
-          );
-      ref.invalidate(rosterProvider(widget.teamId));
-      if (mounted) Navigator.pop(context);
-      messenger.showSnackBar(
-        SnackBar(content: Text('${athlete.name} adicionado ao elenco.')),
-      );
-    } on RepositoryException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
-      if (mounted) setState(() => _adding.remove(athlete.id));
-    } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Não foi possível adicionar o atleta.')),
-      );
-      if (mounted) setState(() => _adding.remove(athlete.id));
-    }
-  }
+/// Marcação visual de atleta já inscrito no elenco (não permite re-incluir).
+class _InRosterBadge extends StatelessWidget {
+  const _InRosterBadge();
 
   @override
   Widget build(BuildContext context) {
-    final athletesAsync = ref.watch(athletesProvider);
-
-    return AlertDialog(
-      title: const Text('Adicionar atleta'),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: AppLayout.maxFormWidth,
-          maxHeight: 520,
-        ),
-        child: SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Busque por nome e toque em um atleta para adicioná-lo ao '
-                'elenco (atletas já inscritos são ocultados).',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  labelText: 'Buscar atleta',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _query.isEmpty
-                      ? null
-                      : IconButton(
-                          icon: const Icon(Icons.clear),
-                          tooltip: 'Limpar busca',
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _query = '');
-                          },
-                        ),
-                  border: const OutlineInputBorder(),
-                ),
-                onChanged: (value) => setState(() => _query = value),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: athletesAsync.when(
-                  loading: () =>
-                      const AppLoading(message: 'Carregando atletas...'),
-                  error: (error, stackTrace) => AppErrorState(
-                    message: 'Não foi possível carregar os atletas',
-                    onRetry: () => ref.invalidate(athletesProvider),
-                  ),
-                  data: (athletes) {
-                    final normalizedQuery = _query.trim().toLowerCase();
-                    final filtered = athletes
-                        .where((a) => !widget.existingAthleteIds.contains(a.id))
-                        .where((a) =>
-                            normalizedQuery.isEmpty ||
-                            a.name.toLowerCase().contains(normalizedQuery))
-                        .toList();
-
-                    if (athletes.isEmpty) {
-                      return const AppEmptyState(
-                        message: 'Nenhum atleta cadastrado',
-                        icon: Icons.person_outline,
-                      );
-                    }
-                    if (filtered.isEmpty) {
-                      return normalizedQuery.isEmpty
-                          ? const AppEmptyState(
-                              message: 'Todos os atletas já estão no elenco',
-                              icon: Icons.check_circle_outline,
-                            )
-                          : AppEmptyState(
-                              message:
-                                  'Nenhum atleta encontrado para "$_query".',
-                              icon: Icons.search_off,
-                            );
-                    }
-                    return ListView.builder(
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) =>
-                          _athleteTile(filtered[index]),
-                    );
-                  },
-                ),
-              ),
-            ],
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.check_circle, color: AppColors.success, size: 20),
+        const SizedBox(width: 6),
+        Text(
+          'No elenco',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.success,
           ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
         ),
       ],
     );
-  }
-
-  Widget _athleteTile(Athlete athlete) {
-    final adding = _adding.contains(athlete.id);
-    final position = athlete.position?.label ?? '';
-    final subtitle = [
-      if (athlete.number != null) '#${athlete.number}',
-      if (position.isNotEmpty) position,
-    ].join(' · ');
-
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-        child: Text(
-          _initials(athlete.name),
-          style: const TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-      ),
-      title: Text(athlete.name),
-      subtitle: subtitle.isEmpty ? null : Text(subtitle),
-      trailing: adding
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.add_circle_outline),
-      onTap: adding ? null : () => _add(athlete),
-    );
-  }
-
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '?';
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
-        .toUpperCase();
   }
 }
