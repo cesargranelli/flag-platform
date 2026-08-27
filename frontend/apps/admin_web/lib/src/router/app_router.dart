@@ -35,6 +35,7 @@ import '../screens/athlete_import_screen.dart';
 import '../screens/athlete_detail_screen.dart';
 import '../screens/athletes_screen.dart';
 import '../screens/rosters_screen.dart';
+import '../screens/team_roster_screen.dart';
 import '../screens/roster_import_screen.dart';
 import '../screens/signup_screen.dart';
 import '../screens/user_form_screen.dart';
@@ -223,6 +224,17 @@ class AppRouter {
         builder: (context, state) {
           final team = state.extra is Team ? state.extra as Team : null;
           return TeamEditScreen(teamId: state.pathParameters['id'], team: team);
+        },
+      ),
+      GoRoute(
+        path: '/teams/:id/roster',
+        name: 'teamRoster',
+        builder: (context, state) {
+          final team = state.extra is Team ? state.extra as Team : null;
+          return TeamRosterScreen(
+            team: team,
+            teamId: state.pathParameters['id'],
+          );
         },
       ),
       GoRoute(
