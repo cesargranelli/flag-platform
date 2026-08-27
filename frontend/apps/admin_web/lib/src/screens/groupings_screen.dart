@@ -178,7 +178,10 @@ class _GroupingsBody extends ConsumerWidget {
                       .map(
                         (c) => DropdownMenuItem(
                           value: c.id,
-                          child: Text(c.name),
+                          child: appDropdownItem(
+                            Icons.emoji_events_outlined,
+                            c.name,
+                          ),
                         ),
                       )
                       .toList(),

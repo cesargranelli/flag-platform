@@ -689,8 +689,13 @@ class _CompetitionCreateScreenState
               ),
               items: orgs
                   .map(
-                    (o) =>
-                        DropdownMenuItem(value: o.id, child: Text(o.tradeName)),
+                    (o) => DropdownMenuItem(
+                      value: o.id,
+                      child: appDropdownItem(
+                        organizationTypeIcon(o.organizationType),
+                        o.tradeName,
+                      ),
+                    ),
                   )
                   .toList(),
               onChanged: (value) => _organizationId.text = value ?? '',
