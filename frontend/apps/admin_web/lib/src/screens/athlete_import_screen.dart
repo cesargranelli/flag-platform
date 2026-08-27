@@ -156,12 +156,27 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
       return {
         if (r['nome'] != null) 'name': r['nome'],
         if (r['apelido'] != null) 'nickname': r['apelido'],
-        if (r['posicao'] != null) 'position': _positionCode(r['posicao']),
+        if (r['posicao'] != null) 'positions': _positionCodes(r['posicao']),
         if (r['numero'] != null && int.tryParse(r['numero']) != null)
           'number': int.parse(r['numero']),
         if (r['foto'] != null) 'photoUrl': r['foto'],
       };
     }).toList();
+  }
+
+  /// Converte o campo "posicao" (pode ter várias posições separadas por
+  /// `,`/`;`/`/`) em uma lista de códigos, com limite de 3 e sem duplicatas.
+  List<String> _positionCodes(String? label) {
+    if (label == null || label.trim().isEmpty) return const [];
+    final codes = <String>[];
+    for (final part in label.split(RegExp(r'[,;/]'))) {
+      final code = _positionCode(part.trim());
+      if (code != null && !codes.contains(code)) {
+        codes.add(code);
+        if (codes.length >= 3) break;
+      }
+    }
+    return codes;
   }
 
   String? _positionCode(String? label) {
