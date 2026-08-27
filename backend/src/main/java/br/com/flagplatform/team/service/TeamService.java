@@ -121,12 +121,13 @@ public class TeamService implements TeamLookup {
     }
 
     /**
-     * Valida o documento do time: obrigatorio CNPJ do time ou CPF do
-     * representante; formato valido; documento unico.
+     * Valida o documento do time: OPCIONAL (#375). O clube (organização) já
+     * possui CNPJ/CPF próprio, então não é exigido de novo no time. Quando
+     * informado, valida formato e unicidade.
      */
     private void validateDocument(String document, DocumentType type, UUID currentId) {
         if (document == null || document.isBlank()) {
-            throw new InvalidDocumentException("Informe o CNPJ do time ou o CPF do representante.");
+            return;
         }
         if (type == null) {
             throw new InvalidDocumentException("Informe o tipo do documento (CNPJ ou CPF).");
