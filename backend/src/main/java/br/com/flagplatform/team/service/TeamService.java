@@ -16,10 +16,12 @@ import br.com.flagplatform.team.dto.response.TeamResponse;
 import br.com.flagplatform.team.entity.TeamEntity;
 import br.com.flagplatform.team.exception.DuplicateTeamRegistrationException;
 import br.com.flagplatform.team.exception.DuplicateTeamNameException;
+import br.com.flagplatform.team.exception.TeamInUseException;
 import br.com.flagplatform.team.exception.TeamNotFoundException;
 import br.com.flagplatform.team.mapper.TeamMapper;
 import br.com.flagplatform.team.repository.TeamRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -138,6 +140,27 @@ public class TeamService implements TeamLookup {
                 : repository.existsByDocumentAndIdNot(normalized, currentId);
         if (duplicate) {
             throw new DuplicateDocumentException(normalized);
+        }
+    }
+
+    /**
+     * Remove a inscrição do clube no campeonato (desassociar). V260: apenas o
+     * criador do campeonato (ou ADMIN); issue #305: somente com o campeonato em
+     * DRAFT. Se o time já possui jogos vinculados, a integridade referencial
+     * impede a remoção (TeamInUseException).
+     */
+    @Transactional
+    public void delete(UUID id, String currentUserEmail) {
+        TeamEntity entity = findEntityById(id);
+
+        competitionLookup.assertManagedBy(entity.getCompetitionId(), currentUserEmail);
+        competitionLookup.assertEditable(entity.getCompetitionId());
+
+        try {
+            repository.delete(entity);
+            repository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new TeamInUseException(id);
         }
     }
 

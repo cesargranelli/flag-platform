@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -76,6 +77,21 @@ public class TeamController {
             @Valid @RequestBody UpdateTeamRequest request,
             Authentication authentication) {
         return service.update(id, request, authentication.getName());
+    }
+
+    @Operation(
+            summary = "Excluir time (desassociar clube)",
+            description = "Remove a inscri��ǜo do clube no campeonato. Permitido apenas ao criador do campeonato ou ADMIN, enquanto estiver em DRAFT."
+    )
+    @ApiResponse(responseCode = "403", description = "Usuǭrio nǜo Ǹ o criador do campeonato nem ADMIN")
+    @ApiResponse(responseCode = "409", description = "O clube jǭ possui jogos associados")
+    @DeleteMapping("/api/v1/teams/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public void delete(
+            @Parameter(description = "Id do time") @PathVariable UUID id,
+            Authentication authentication) {
+        service.delete(id, authentication.getName());
     }
 
 }
