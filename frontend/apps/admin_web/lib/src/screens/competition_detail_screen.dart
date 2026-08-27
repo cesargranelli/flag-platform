@@ -211,17 +211,18 @@ class _CompetitionDetailScreenState
                   color: AppColors.textSecondary,
                 ),
               ),
-            // Issue #259/#305: rodadas apenas em DRAFT.
+            // Issue #347/#349: associação de clubes via detalhe (DRAFT),
+            // fixada no campeonato de origem.
             if (canEdit && isDraft) ...[
               const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: () {
                   ref.read(selectedCompetitionProvider.notifier).state =
                       comp.id;
-                  context.push('/rounds');
+                  context.push('/teams', extra: comp.id);
                 },
-                icon: const Icon(Icons.format_list_numbered),
-                label: const Text('Adicionar rodadas'),
+                icon: const Icon(Icons.groups),
+                label: const Text('Associar clubes'),
               ),
             ],
             // Descrição pertence à sessão Campeonato (wizard).
@@ -274,9 +275,9 @@ class _CompetitionDetailScreenState
     );
   }
 
-  /// Sessão 6 — Agrupamento (#306/#345): agrupamentos dos clubes.
-  /// Issue #305: ações de escrita apenas em DRAFT.
-  /// Oculto quando o campeonato não tem divisões (#345).
+  /// Sessão 6 — Agrupamento (#306/#349): reflete apenas o que foi cadastrado
+  /// (divisões/grupos), sem a linha "Modelo" nem botões de ação.
+  /// Oculto quando o campeonato não tem divisões.
   Widget _estruturaCard(
     BuildContext context,
     Competition comp,
@@ -284,6 +285,8 @@ class _CompetitionDetailScreenState
     bool isDraft,
   ) {
     final divisions = ref.watch(divisionsProvider(comp.id));
+    final conferences =
+        ref.watch(conferencesProvider(comp.id)).valueOrNull ?? const <Conference>[];
     return divisions.when(
       loading: () => AppInfoCard(
         title: 'Agrupamento',
@@ -308,43 +311,22 @@ class _CompetitionDetailScreenState
           : AppInfoCard(
               title: 'Agrupamento',
               children: [
-                AppInfoRow(
-                  label: 'Modelo',
-                  value:
-                      comp.groupingType?.label ?? GroupingType.divisions.label,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final division in items)
+                      _divisionChip(
+                        division.name,
+                        conferenceName: division.conferenceId == null
+                            ? null
+                            : conferences
+                                .where((c) => c.id == division.conferenceId)
+                                .map((c) => c.name)
+                                .firstOrNull,
+                      ),
+                  ],
                 ),
-                if (canEdit && isDraft) ...[
-                  _actionRowButton(
-                    context,
-                    icon: Icons.account_tree_outlined,
-                    label: comp.groupingType == GroupingType.groups
-                        ? 'Gerenciar Conferências e Grupos'
-                        : 'Gerenciar Conferências e Divisões',
-                    onTap: () {
-                      ref.read(selectedCompetitionProvider.notifier).state =
-                          comp.id;
-                      context.push('/groupings');
-                    },
-                  ),
-                  _actionRowButton(
-                    context,
-                    icon: Icons.groups,
-                    label: 'Associar Clubes',
-                    onTap: () {
-                      ref.read(selectedCompetitionProvider.notifier).state =
-                          comp.id;
-                      context.push('/teams');
-                    },
-                  ),
-                ] else ...[
-                  Text(
-                    'Campeonato publicado — a estrutura está travada.',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
               ],
             ),
     );
@@ -412,28 +394,31 @@ class _CompetitionDetailScreenState
     );
   }
 
-  Widget _actionRowButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+  Widget _divisionChip(String name, {String? conferenceName}) {
+    final label = conferenceName == null ? name : '$name · $conferenceName';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.grayFill,
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: AppColors.primary, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextButton(
-              onPressed: onTap,
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.primary,
-                ),
+          const Icon(
+            Icons.folder_outlined,
+            size: 14,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textPrimary,
               ),
             ),
           ),
