@@ -16,10 +16,16 @@ class RosterApi {
   Future<void> add({
     required String teamId,
     required String athleteId,
+    String? nickname,
+    int? number,
   }) =>
       _client.post(
         '/api/v1/teams/$teamId/roster',
-        {'athleteId': athleteId},
+        {
+          'athleteId': athleteId,
+          'nickname': ?nickname,
+          'number': ?number,
+        },
         (json) => json,
       );
 

@@ -28,7 +28,7 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
   late final TextEditingController _nickname;
   late final TextEditingController _number;
   late final TextEditingController _photoUrl;
-  AthletePosition? _position;
+  List<AthletePosition> _positions = [];
   bool _submitting = false;
   String? _errorMessage;
 
@@ -43,7 +43,7 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
     _nickname = TextEditingController(text: athlete?.nickname ?? '');
     _number = TextEditingController(text: athlete?.number?.toString() ?? '');
     _photoUrl = TextEditingController(text: athlete?.photoUrl ?? '');
-    _position = athlete?.position;
+    _positions = List.of(athlete?.positions ?? []);
   }
 
   @override
@@ -79,11 +79,65 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
         'name': _name.text.trim(),
         'cpf': _cpf.text.trim().replaceAll(RegExp(r'\D'), ''),
         if (_nickname.text.trim().isNotEmpty) 'nickname': _nickname.text.trim(),
-        if (_position != null) 'position': _position!.toJson(),
+        'positions': _positions.map((p) => p.toJson()).toList(),
         if (int.tryParse(_number.text.trim()) != null)
           'number': int.parse(_number.text.trim()),
         if (_photoUrl.text.trim().isNotEmpty) 'photoUrl': _photoUrl.text.trim(),
       };
+
+  /// Alterna a seleção de uma posição, respeitando o limite de 3 e evitando
+  /// duplicatas.
+  void _togglePosition(AthletePosition position) {
+    setState(() {
+      if (_positions.contains(position)) {
+        _positions.remove(position);
+      } else if (_positions.length < 3) {
+        _positions.add(position);
+      }
+    });
+  }
+
+  /// Campo de posições: um conjunto de chips de seleção, limitado a 3
+  /// posições, sem duplicatas. As opções não selecionadas são desabilitadas ao
+  /// atingir o limite para deixar claro que não há mais vagas.
+  Widget _positionsField() {
+    final maxed = _positions.length >= 3;
+    return InputDecorator(
+      decoration: const InputDecoration(
+        labelText: 'Posições',
+        helperText: 'Selecione até 3 posições',
+        border: OutlineInputBorder(),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final position in AthletePosition.values)
+                FilterChip(
+                  label: Text(position.label),
+                  selected: _positions.contains(position),
+                  // Desabilitadas as opções livres quando o limite é atingido.
+                  onSelected:
+                      maxed && !_positions.contains(position) ? null : (_) {
+                    _togglePosition(position);
+                  },
+                ),
+            ],
+          ),
+          if (maxed) ...[
+            const SizedBox(height: 6),
+            const Text(
+              'Máximo de 3 posições atingido. Desmarque uma para alterar.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -174,23 +228,7 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<AthletePosition>(
-                  initialValue: _position,
-                  decoration: const InputDecoration(
-                    labelText: 'Posição',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: [
-                    const DropdownMenuItem<AthletePosition>(
-                        value: null, child: Text('Sem posição')),
-                    ...AthletePosition.values.map((p) =>
-                        DropdownMenuItem<AthletePosition>(
-                          value: p,
-                          child: Text(p.label),
-                        )),
-                  ],
-                  onChanged: (value) => setState(() => _position = value),
-                ),
+                _positionsField(),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _number,

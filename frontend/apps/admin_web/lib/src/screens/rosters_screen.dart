@@ -7,12 +7,13 @@ import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 import '../widgets/app_screen.dart';
 
-/// Gestão de elencos (roster): clube do usuário → elenco do clube.
+/// Gestão de elencos (roster): clube ou universidade do usuário → elenco da
+/// organização.
 ///
-/// O fluxo (issue #360) é: campeonato → clubes (organizações) do usuário →
-/// elenco do clube. O elenco é a associação de atletas ao clube naquele
-/// campeonato — não um cadastro de time. Os cardapios seguem o padrão de
-/// grid da tela de atletas e navegam para `/teams/:id/roster`.
+/// O fluxo (issue #360) é: campeonato → clubes/universidades (organizações)
+/// do usuário → elenco da organização. O elenco é a associação de atletas à
+/// organização naquele campeonato — não um cadastro de time. Os cards seguem
+/// o padrão de grid da tela de atletas e navegam para `/teams/:id/roster`.
 class RostersScreen extends ConsumerWidget {
   const RostersScreen({super.key});
 
@@ -89,11 +90,13 @@ class RostersScreen extends ConsumerWidget {
     );
   }
 
-  /// Lista os clubes (organizações) do usuário que participam do campeonato.
+  /// Lista os clubes e universidades (organizações) do usuário que participam
+  /// do campeonato.
   ///
-  /// Combina [teamsProvider] (participação do clube no campeonato) com
-  /// [organizationsProvider] (dados da organização). Mantém apenas os clubes
-  /// cujo `createdBy` é o usuário logado e que participam do campeonato.
+  /// Combina [teamsProvider] (participação da organização no campeonato) com
+  /// [organizationsProvider] (dados da organização). Mantém apenas as
+  /// organizações do tipo clube/universidade cujo `createdBy` é o usuário
+  /// logado e que participam do campeonato.
   Widget _clubList(
     BuildContext context,
     WidgetRef ref,
@@ -103,7 +106,7 @@ class RostersScreen extends ConsumerWidget {
     final orgsAsync = ref.watch(organizationsProvider);
 
     if (teamsAsync.isLoading || orgsAsync.isLoading) {
-      return const AppLoading(message: 'Carregando clubes...');
+      return const AppLoading(message: 'Carregando clubes e universidades...');
     }
     if (teamsAsync.hasError) {
       return AppErrorState(
@@ -124,8 +127,8 @@ class RostersScreen extends ConsumerWidget {
 
     final orgById = {for (final o in orgs) o.id: o};
 
-    // Deduplica por organização: um clube aparece uma única vez por
-    // campeonato. Mantém o primeiro time como destino do elenco.
+    // Deduplica por organização: um clube/universidade aparece uma única vez
+    // por campeonato. Mantém o primeiro time como destino do elenco.
     final clubs = <_ClubEntry>[];
     final seenOrgIds = <String>{};
     for (final team in teams) {
@@ -135,13 +138,18 @@ class RostersScreen extends ConsumerWidget {
       final org = orgById[orgId];
       if (org == null) continue;
       if (userId != null && org.createdBy != userId) continue;
+      final type = org.organizationType;
+      if (type != OrganizationType.club &&
+          type != OrganizationType.university) {
+        continue;
+      }
       seenOrgIds.add(orgId);
       clubs.add(_ClubEntry(team: team, org: org));
     }
 
     if (clubs.isEmpty) {
       return const AppEmptyState(
-        message: 'Nenhum clube seu neste campeonato',
+        message: 'Nenhum clube ou universidade seu neste campeonato',
         icon: Icons.groups_outlined,
       );
     }

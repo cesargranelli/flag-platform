@@ -70,10 +70,10 @@ class AthletesScreen extends ConsumerWidget {
   }
 
   Widget _athleteCard(BuildContext context, Athlete athlete) {
-    final position = athlete.position?.label ?? '';
+    final positions = athlete.positionsLabel;
     final subtitle = [
       if (athlete.number != null) '#${athlete.number}',
-      if (position.isNotEmpty) position,
+      if (positions.isNotEmpty) positions,
     ].join(' · ');
 
     return Card(
