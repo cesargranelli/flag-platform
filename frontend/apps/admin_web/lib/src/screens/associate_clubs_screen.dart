@@ -486,19 +486,24 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
         color: AppColors.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Center(
-        child: Text(
-          club.tradeName.isEmpty ? '?' : club.tradeName[0].toUpperCase(),
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
-          ),
-        ),
+      child: Icon(
+        _orgTypeIcon(club.organizationType),
+        color: AppColors.primary,
       ),
     );
   }
 }
+
+/// Ícone correspondente ao tipo de organização (issue #363).
+IconData _orgTypeIcon(OrganizationType? type) => switch (type) {
+      OrganizationType.federation => Icons.account_balance_outlined,
+      OrganizationType.league => Icons.emoji_events_outlined,
+      OrganizationType.association => Icons.groups_outlined,
+      OrganizationType.university => Icons.school_outlined,
+      OrganizationType.club => Icons.sports_outlined,
+      OrganizationType.other => Icons.business_outlined,
+      null => Icons.business_outlined,
+    };
 
 /// Marcação visual de clube já associado (não permite re-associar).
 class _AssociatedBadge extends StatelessWidget {

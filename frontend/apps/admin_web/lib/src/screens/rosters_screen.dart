@@ -183,7 +183,7 @@ class RostersScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              _avatar(title),
+              _typeIcon(org.organizationType),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -221,37 +221,30 @@ class RostersScreen extends ConsumerWidget {
     );
   }
 
-  /// Avatar circular com as iniciais do clube (padrão de atletas).
-  Widget _avatar(String name) {
+  /// Ícone destacado com o tipo de organização (fundo primary 12% + ícone).
+  Widget _typeIcon(OrganizationType? type) {
     return Container(
       width: 48,
       height: 48,
-      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.12),
         shape: BoxShape.circle,
       ),
-      child: Center(
-        child: Text(
-          _initials(name),
-          style: TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-            fontSize: 19,
-          ),
-        ),
-      ),
+      child: Icon(_orgTypeIcon(type), color: AppColors.primary),
     );
   }
-
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '?';
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
-        .toUpperCase();
-  }
 }
+
+/// Ícone correspondente ao tipo de organização (issue #363).
+IconData _orgTypeIcon(OrganizationType? type) => switch (type) {
+      OrganizationType.federation => Icons.account_balance_outlined,
+      OrganizationType.league => Icons.emoji_events_outlined,
+      OrganizationType.association => Icons.groups_outlined,
+      OrganizationType.university => Icons.school_outlined,
+      OrganizationType.club => Icons.sports_outlined,
+      OrganizationType.other => Icons.business_outlined,
+      null => Icons.business_outlined,
+    };
 
 /// Par (time do campeonato + organização/clube) exibido na lista.
 class _ClubEntry {

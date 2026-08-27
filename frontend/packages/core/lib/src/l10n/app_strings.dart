@@ -35,6 +35,6 @@ abstract final class AppStrings {
   static const rounds = 'Rodadas';
   static const games = 'Jogos';
   static const athletes = 'Atletas';
-  static const rosters = 'Elenco';
+  static const rosters = 'Elencos';
   static const users = 'Usuários';
 }
