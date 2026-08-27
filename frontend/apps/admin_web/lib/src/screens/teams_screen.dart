@@ -15,7 +15,11 @@ import '../widgets/edit_restriction_note.dart';
 /// Os times associam-se diretamente ao competition_id (migração V24);
 /// as categories foram removidas.
 class TeamsScreen extends ConsumerWidget {
-  const TeamsScreen({super.key});
+  const TeamsScreen({super.key, this.lockedCompetitionId});
+
+  /// Quando informado, a tela fica "travada" nesse campeonato (dropdown
+  /// desabilitado) — usado ao vir do detalhe do campeonato (#349).
+  final String? lockedCompetitionId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,8 +28,10 @@ class TeamsScreen extends ConsumerWidget {
 
     final compItems = competitions.valueOrNull ?? const [];
     final effectiveComp =
+        lockedCompetitionId ??
         selectedCompetition ??
         (compItems.isNotEmpty ? compItems.first.id : null);
+    final locked = lockedCompetitionId != null;
 
     // Issue #261: inscrição de times exige ser criador do campeonato
     // ou ADMIN (o backend já bloqueia as escritas).
@@ -73,9 +79,10 @@ class TeamsScreen extends ConsumerWidget {
                     children: [
                       DropdownButtonFormField<String>(
                         initialValue: effectiveComp,
-                        decoration: const InputDecoration(
-                          labelText: 'Campeonato',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText:
+                              locked ? 'Campeonato (travado)' : 'Campeonato',
+                          border: const OutlineInputBorder(),
                         ),
                         items: compItems
                             .map(
@@ -85,10 +92,13 @@ class TeamsScreen extends ConsumerWidget {
                               ),
                             )
                             .toList(),
-                        onChanged: (value) {
-                          ref.read(selectedCompetitionProvider.notifier).state =
-                              value;
-                        },
+                        onChanged: locked
+                            ? null
+                            : (value) {
+                                ref
+                                    .read(selectedCompetitionProvider.notifier)
+                                    .state = value;
+                              },
                       ),
                       if (!canEdit)
                         const EditRestrictionNote(
