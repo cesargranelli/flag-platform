@@ -78,9 +78,8 @@ class _CompetitionDetailScreenState
             child: compFuture == null
                 ? _buildDetail(context, widget.competition!)
                 : compFuture.when(
-                    loading: () => const AppLoading(
-                      message: 'Carregando campeonato...',
-                    ),
+                    loading: () =>
+                        const AppLoading(message: 'Carregando campeonato...'),
                     error: (error, stackTrace) => AppErrorState(
                       message: 'Não foi possível carregar o campeonato',
                       onRetry: () => ref.invalidate(
@@ -108,15 +107,18 @@ class _CompetitionDetailScreenState
       child: AppLayout.detail(
         child: switch (_activeSession) {
           0 => _campeonatoCard(context, comp, canEdit, isDraft),
-          1 => comp.modality == null
-              ? const SizedBox.shrink()
-              : _modalidadeCard(comp),
-          2 => (comp.gender == null && comp.ageGroup == null)
-              ? const SizedBox.shrink()
-              : _categoriaCard(comp),
-          3 => (comp.startDate == null && comp.endDate == null)
-              ? const SizedBox.shrink()
-              : _temporadaCard(comp),
+          1 =>
+            comp.modality == null
+                ? const SizedBox.shrink()
+                : _modalidadeCard(comp),
+          2 =>
+            (comp.gender == null && comp.ageGroup == null)
+                ? const SizedBox.shrink()
+                : _categoriaCard(comp),
+          3 =>
+            (comp.startDate == null && comp.endDate == null)
+                ? const SizedBox.shrink()
+                : _temporadaCard(comp),
           4 => _conferencesCard(comp),
           _ => _estruturaCard(context, comp, canEdit, isDraft),
         },
@@ -139,10 +141,7 @@ class _CompetitionDetailScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Campeonato',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
+            Text('Campeonato', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -194,10 +193,8 @@ class _CompetitionDetailScreenState
             // Issue #261: e apenas pelo criador ou ADMIN.
             if (isDraft && canEdit)
               FilledButton.icon(
-                onPressed: () => context.push(
-                  '/competitions/${comp.id}/edit',
-                  extra: comp,
-                ),
+                onPressed: () =>
+                    context.push('/competitions/${comp.id}/edit', extra: comp),
                 icon: const Icon(Icons.edit_outlined),
                 label: const Text('Editar campeonato'),
               )
@@ -217,9 +214,11 @@ class _CompetitionDetailScreenState
               const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: () {
+                  // Issue #351: associação de clubes na própria tela de
+                  // associação, fixada no campeonato de origem (#349).
                   ref.read(selectedCompetitionProvider.notifier).state =
                       comp.id;
-                  context.push('/teams', extra: comp.id);
+                  context.push('/teams/associate', extra: comp.id);
                 },
                 icon: const Icon(Icons.groups),
                 label: const Text('Associar clubes'),
@@ -286,7 +285,8 @@ class _CompetitionDetailScreenState
   ) {
     final divisions = ref.watch(divisionsProvider(comp.id));
     final conferences =
-        ref.watch(conferencesProvider(comp.id)).valueOrNull ?? const <Conference>[];
+        ref.watch(conferencesProvider(comp.id)).valueOrNull ??
+        const <Conference>[];
     return divisions.when(
       loading: () => AppInfoCard(
         title: 'Agrupamento',
@@ -321,9 +321,9 @@ class _CompetitionDetailScreenState
                         conferenceName: division.conferenceId == null
                             ? null
                             : conferences
-                                .where((c) => c.id == division.conferenceId)
-                                .map((c) => c.name)
-                                .firstOrNull,
+                                  .where((c) => c.id == division.conferenceId)
+                                  .map((c) => c.name)
+                                  .firstOrNull,
                       ),
                   ],
                 ),
@@ -363,9 +363,7 @@ class _CompetitionDetailScreenState
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: [
-                    for (final c in items) _conferenceChip(c.name),
-                  ],
+                  children: [for (final c in items) _conferenceChip(c.name)],
                 ),
               ],
             ),
@@ -388,7 +386,10 @@ class _CompetitionDetailScreenState
             color: AppColors.textSecondary,
           ),
           const SizedBox(width: 6),
-          Text(name, style: const TextStyle(fontSize: 12, color: AppColors.textPrimary)),
+          Text(
+            name,
+            style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
+          ),
         ],
       ),
     );

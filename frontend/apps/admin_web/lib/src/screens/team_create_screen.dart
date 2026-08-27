@@ -9,18 +9,15 @@ import '../providers/providers.dart';
 import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
-/// Formulário de criação/edição de time.
-class TeamFormScreen extends ConsumerStatefulWidget {
-  const TeamFormScreen({super.key, this.teamId, this.team});
-
-  final String? teamId;
-  final Team? team;
+/// Formulário de criação de time (clube inscrito em um campeonato).
+class TeamCreateScreen extends ConsumerStatefulWidget {
+  const TeamCreateScreen({super.key});
 
   @override
-  ConsumerState<TeamFormScreen> createState() => _TeamFormScreenState();
+  ConsumerState<TeamCreateScreen> createState() => _TeamCreateScreenState();
 }
 
-class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
+class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _name;
@@ -34,20 +31,13 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
   bool _submitting = false;
   String? _errorMessage;
 
-  bool get _isEditing => widget.teamId != null || widget.team != null;
-
   @override
   void initState() {
     super.initState();
-    final team = widget.team;
-    _name = TextEditingController(text: team?.name ?? '');
-    _shortName = TextEditingController(text: team?.shortName ?? '');
-    _document = TextEditingController(text: team?.document ?? '');
-    _logoUrl = TextEditingController(text: team?.logoUrl ?? '');
-    _competitionId = widget.team?.competitionId;
-    _organizationId = team?.organizationId;
-    _divisionId = team?.divisionId;
-    _documentType = team?.documentType;
+    _name = TextEditingController();
+    _shortName = TextEditingController();
+    _document = TextEditingController();
+    _logoUrl = TextEditingController();
   }
 
   @override
@@ -69,49 +59,25 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
 
     try {
       final api = ref.read(teamApiProvider);
-      final id = widget.teamId ?? widget.team?.id;
       // organizationId é obrigatório no backend (@NotNull) e o validador do
       // dropdown garante que esteja preenchido.
-      if (id == null) {
-        await api.create(
-          organizationId: _organizationId!,
-          competitionId: _competitionId ?? '',
-          divisionId: _divisionId,
-          name: _name.text.trim(),
-          shortName: _shortName.text.trim().isEmpty
-              ? null
-              : _shortName.text.trim(),
-          document: _document.text.trim().isEmpty
-              ? null
-              : _document.text.trim().replaceAll(RegExp(r'\D'), ''),
-          documentType: _documentType,
-          logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
-        );
-      } else {
-        await api.update(
-          id,
-          organizationId: _organizationId!,
-          competitionId: _competitionId ?? '',
-          divisionId: _divisionId,
-          name: _name.text.trim(),
-          shortName: _shortName.text.trim().isEmpty
-              ? null
-              : _shortName.text.trim(),
-          document: _document.text.trim().isEmpty
-              ? null
-              : _document.text.trim().replaceAll(RegExp(r'\D'), ''),
-          documentType: _documentType,
-          logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
-        );
-      }
+      await api.create(
+        organizationId: _organizationId!,
+        competitionId: _competitionId ?? '',
+        divisionId: _divisionId,
+        name: _name.text.trim(),
+        shortName: _shortName.text.trim().isEmpty
+            ? null
+            : _shortName.text.trim(),
+        document: _document.text.trim().isEmpty
+            ? null
+            : _document.text.trim().replaceAll(RegExp(r'\D'), ''),
+        documentType: _documentType,
+        logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
+      );
       ref.invalidate(teamsProvider);
       if (mounted) {
-        if (id != null) {
-          ref.invalidate(teamProvider(id));
-          context.go('/teams/$id');
-        } else {
-          context.pop();
-        }
+        context.pop();
       }
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
@@ -143,7 +109,7 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
         (compItems.isNotEmpty ? compItems.first.id : null);
 
     return AppScreen(
-      title: _isEditing ? 'Editar time' : 'Novo time',
+      title: 'Novo time',
       leading: AppBackButton(fallbackRoute: '/teams'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -155,12 +121,8 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
               children: [
                 organizations.when(
                   loading: () => const LinearProgressIndicator(),
-                  error: (e, s) =>
-                      const Text('Erro ao carregar organizações'),
+                  error: (e, s) => const Text('Erro ao carregar organizações'),
                   data: (orgs) {
-                    // Ao editar, a organização atual pode não estar na lista
-                    // (ex.: desativada); mantém como opção para o dropdown
-                    // pré-selecionar sem quebrar.
                     final items = orgs
                         .map(
                           (o) => DropdownMenuItem(
@@ -169,19 +131,6 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
                           ),
                         )
                         .toList();
-                    final currentId = _organizationId;
-                    if (currentId != null &&
-                        currentId.isNotEmpty &&
-                        !orgs.any((o) => o.id == currentId)) {
-                      items.insert(
-                        0,
-                        DropdownMenuItem(
-                          value: currentId,
-                          child:
-                              const Text('Organização atual (indisponível)'),
-                        ),
-                      );
-                    }
                     return DropdownButtonFormField<String>(
                       initialValue: _organizationId,
                       decoration: const InputDecoration(
