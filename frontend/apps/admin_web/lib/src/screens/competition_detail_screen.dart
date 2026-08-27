@@ -36,6 +36,7 @@ class _CompetitionDetailScreenState
     'Temporada',
     'Conferências',
     'Agrupamento',
+    'Clubes',
   ];
 
   /// Ícones das sessões (issue #326), paralelos a [_sessions].
@@ -46,6 +47,7 @@ class _CompetitionDetailScreenState
     Icons.date_range,
     Icons.account_tree_outlined,
     Icons.hub_outlined,
+    Icons.groups,
   ];
 
   /// Índice da sessão ativa — único bloco exibido no corpo da tela (#326).
@@ -120,7 +122,8 @@ class _CompetitionDetailScreenState
                 ? const SizedBox.shrink()
                 : _temporadaCard(comp),
           4 => _conferencesCard(comp),
-          _ => _estruturaCard(context, comp, canEdit, isDraft),
+          5 => _estruturaCard(context, comp, canEdit, isDraft),
+          _ => _clubsCard(context, comp, canEdit, isDraft),
         },
       ),
     );
@@ -208,22 +211,6 @@ class _CompetitionDetailScreenState
                   color: AppColors.textSecondary,
                 ),
               ),
-            // Issue #347/#349: associação de clubes via detalhe (DRAFT),
-            // fixada no campeonato de origem.
-            if (canEdit && isDraft) ...[
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: () {
-                  // Issue #351: associação de clubes na própria tela de
-                  // associação, fixada no campeonato de origem (#349).
-                  ref.read(selectedCompetitionProvider.notifier).state =
-                      comp.id;
-                  context.push('/teams/associate', extra: comp.id);
-                },
-                icon: const Icon(Icons.groups),
-                label: const Text('Associar clubes'),
-              ),
-            ],
             // Descrição pertence à sessão Campeonato (wizard).
             if (comp.description != null && comp.description!.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -329,6 +316,120 @@ class _CompetitionDetailScreenState
                 ),
               ],
             ),
+    );
+  }
+
+  /// Sessão 7 — Clubes (#377): lista simples dos clubes (organizações)
+  /// associados ao campeonato + botão para a tela de associação.
+  Widget _clubsCard(
+    BuildContext context,
+    Competition comp,
+    bool canEdit,
+    bool isDraft,
+  ) {
+    final teams = ref.watch(teamsProvider(comp.id));
+    final organizations = ref.watch(organizationsProvider);
+
+    return teams.when(
+      loading: () => AppInfoCard(
+        title: 'Clubes',
+        children: const [
+          Text(
+            'Carregando clubes...',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          ),
+        ],
+      ),
+      error: (e, s) => AppInfoCard(
+        title: 'Clubes',
+        children: const [
+          Text(
+            'Não foi possível carregar os clubes.',
+            style: TextStyle(color: AppColors.danger, fontSize: 13),
+          ),
+        ],
+      ),
+      data: (items) {
+        final orgs = organizations.valueOrNull ?? const <Organization>[];
+        final orgById = {for (final o in orgs) o.id: o};
+        final clubs = items
+            .map((t) => orgById[t.organizationId ?? ''])
+            .whereType<Organization>()
+            .toList();
+
+        return AppInfoCard(
+          title: 'Clubes',
+          children: [
+            if (clubs.isEmpty)
+              const Text(
+                'Nenhum clube associado.',
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final club in clubs)
+                    _clubChip(
+                      club.tradeName,
+                      subtitle: club.city?.isNotEmpty == true ? club.city : null,
+                    ),
+                ],
+              ),
+            const SizedBox(height: 12),
+            if (canEdit && isDraft)
+              FilledButton.icon(
+                onPressed: () {
+                  ref.read(selectedCompetitionProvider.notifier).state =
+                      comp.id;
+                  context.push('/teams/associate', extra: comp.id);
+                },
+                icon: const Icon(Icons.groups),
+                label: const Text('Associar clubes'),
+              )
+            else
+              const Text(
+                'Apenas o criador do campeonato pode associar clubes.',
+                style:
+                    TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _clubChip(String name, {String? subtitle}) {
+    final label = subtitle == null ? name : '$name · $subtitle';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.grayFill,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.groups,
+            size: 14,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
