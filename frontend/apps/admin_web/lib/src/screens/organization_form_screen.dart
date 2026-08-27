@@ -475,8 +475,10 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       initialValue: _type,
       decoration: const InputDecoration(labelText: 'Tipo'),
       items: OrganizationType.values
-          .map((t) =>
-              DropdownMenuItem(value: t, child: Text(_typeLabel(t))))
+          .map((t) => DropdownMenuItem(
+                value: t,
+                child: appDropdownItem(organizationTypeIcon(t), _typeLabel(t)),
+              ))
           .toList(),
       onChanged: (value) {
         setState(() => _type = value);

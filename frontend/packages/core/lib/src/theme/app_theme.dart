@@ -34,6 +34,9 @@ class AppTheme {
         centerTitle: true,
         iconTheme: IconThemeData(color: Colors.white, size: 24),
       ),
+      // Canvas para menu aberto de dropdown (DropdownButtonFormField lê
+      // `Theme.of(context).canvasColor` como fundo do menu — issue #365).
+      canvasColor: AppColors.surface,
       textTheme: _textTheme(GoogleFonts.dmSansTextTheme(base.textTheme)),
       cardTheme: const CardThemeData(
         color: AppColors.surface,
@@ -60,6 +63,17 @@ class AppTheme {
         disabledBorder: _inputBorder(AppColors.disabled),
         errorBorder: _inputBorder(AppColors.danger),
         focusedErrorBorder: _inputBorder(AppColors.danger, width: 2),
+      ),
+      // Menu aberto de dropdown com fundo branco (surface) e raio 16 (issue #365).
+      // Vale para os widgets `DropdownMenu`; o `DropdownButtonFormField` ainda
+      // usa `canvasColor` (definido acima) para o fundo do menu.
+      dropdownMenuTheme: DropdownMenuThemeData(
+        menuStyle: MenuStyle(
+          backgroundColor: const WidgetStatePropertyAll(AppColors.surface),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(

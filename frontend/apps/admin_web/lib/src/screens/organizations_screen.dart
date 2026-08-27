@@ -108,7 +108,10 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                             ...OrganizationType.values.map(
                               (t) => DropdownMenuItem<OrganizationType?>(
                                 value: t,
-                                child: Text(t.label),
+                                child: appDropdownItem(
+                                  organizationTypeIcon(t),
+                                  t.label,
+                                ),
                               ),
                             ),
                           ],
