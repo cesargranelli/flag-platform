@@ -32,6 +32,7 @@ public record OrganizationResponse(
         String timezone,
         String locale,
         OrganizationStatus status,
+        UUID createdBy,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
