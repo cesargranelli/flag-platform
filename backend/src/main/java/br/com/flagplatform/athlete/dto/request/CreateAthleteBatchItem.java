@@ -3,6 +3,8 @@ package br.com.flagplatform.athlete.dto.request;
 import br.com.flagplatform.common.enums.AthletePosition;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
+
 public record CreateAthleteBatchItem(
         @Size(max = 150)
         String name,
@@ -13,7 +15,8 @@ public record CreateAthleteBatchItem(
         @Size(max = 100)
         String nickname,
 
-        AthletePosition position,
+        @Size(max = 3)
+        List<AthletePosition> positions,
 
         Integer number,
 

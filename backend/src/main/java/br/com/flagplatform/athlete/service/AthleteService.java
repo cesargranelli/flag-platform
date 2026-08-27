@@ -69,6 +69,8 @@ public class AthleteService implements AthleteLookup {
                 lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "CPF já cadastrado", item));
             } else if (repository.existsByNameIgnoreCase(item.name().trim())) {
                 lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "Atleta já existe", item));
+            } else if (validateBatchPositions(item.positions()) != null) {
+                lines.add(new AthleteBatchLineResult(line, "INVALID", validateBatchPositions(item.positions()), item));
             } else {
                 valid++;
                 lines.add(new AthleteBatchLineResult(line, "VALID", null, item));
@@ -96,10 +98,12 @@ public class AthleteService implements AthleteLookup {
                 lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "CPF já cadastrado", item));
             } else if (repository.existsByNameIgnoreCase(item.name().trim())) {
                 lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "Atleta já existe", item));
+            } else if (validateBatchPositions(item.positions()) != null) {
+                lines.add(new AthleteBatchLineResult(line, "INVALID", validateBatchPositions(item.positions()), item));
             } else {
                 CreateAthleteRequest createRequest = new CreateAthleteRequest(
                         item.name().trim(), item.cpf().replaceAll("\\D", ""),
-                        item.nickname(), singlePosition(item.position()), item.number(), item.photoUrl());
+                        item.nickname(), item.positions(), item.number(), item.photoUrl());
                 repository.save(mapper.toEntity(createRequest));
                 imported++;
                 lines.add(new AthleteBatchLineResult(line, "IMPORTED", null, item));
@@ -179,8 +183,19 @@ public class AthleteService implements AthleteLookup {
         return positions == null ? List.of() : positions;
     }
 
-    private List<AthletePosition> singlePosition(AthletePosition position) {
-        return position == null ? List.of() : List.of(position);
+    /**
+     * Valida as posições de uma linha do import em lote (máx. 3, sem
+     * duplicatas). Retorna mensagem de erro, ou {@code null} se válido.
+     */
+    private String validateBatchPositions(List<AthletePosition> positions) {
+        List<AthletePosition> normalized = normalizePositions(positions);
+        if (normalized.size() > MAX_POSITIONS) {
+            return "O atleta pode ter no máximo %d posições.".formatted(MAX_POSITIONS);
+        }
+        if (normalized.stream().map(AthletePosition::name).distinct().count() != normalized.size()) {
+            return "Posições duplicadas não são permitidas.";
+        }
+        return null;
     }
 
     private AthletePosition primaryPosition(List<AthletePosition> positions) {
