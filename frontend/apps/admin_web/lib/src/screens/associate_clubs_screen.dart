@@ -62,12 +62,13 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
 
     setState(() => _associatingOrgIds.add(club.id));
     try {
+      // Rota própria de associação de clube ao campeonato (#377) — o nome do
+      // time é derivado do clube no backend, sem cadastro de time completo.
       await ref
           .read(teamApiProvider)
-          .create(
-            organizationId: club.id,
+          .associateClub(
             competitionId: competitionId,
-            name: club.tradeName,
+            organizationId: club.id,
           );
       ref.invalidate(teamsProvider(competitionId));
       messenger.showSnackBar(
@@ -134,10 +135,9 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
       final club = orgsById[orgId];
       if (club == null) continue;
       try {
-        await ref.read(teamApiProvider).create(
-          organizationId: club.id,
+        await ref.read(teamApiProvider).associateClub(
           competitionId: competitionId,
-          name: club.tradeName,
+          organizationId: club.id,
         );
         success++;
       } catch (_) {

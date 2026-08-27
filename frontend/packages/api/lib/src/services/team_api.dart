@@ -41,6 +41,17 @@ class TeamApi {
     'logoUrl': ?logoUrl,
   }, Team.fromJson);
 
+  /// Associa um clube (organização) a um campeonato, criando o time
+  /// automaticamente com o nome do clube (rota própria de associação, #377).
+  Future<Team> associateClub({
+    required String competitionId,
+    required String organizationId,
+  }) => _client.post(
+        '/api/v1/competitions/$competitionId/clubs',
+        {'organizationId': organizationId},
+        Team.fromJson,
+      );
+
   /// Atualiza um time enviando o MESMO corpo completo da criação
   /// (o backend exige `organizationId` com `@NotNull`).
   Future<Team> update(
