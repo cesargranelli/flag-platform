@@ -78,6 +78,17 @@ class _CompetitionEditScreenState
     'Agrupamento',
   ];
 
+  /// Ícones das etapas (paralelo a [_titles]), no mesmo modelo da tela de
+  /// detalhes (#326/#381).
+  static const _titlesIcons = <IconData>[
+    Icons.emoji_events_outlined,
+    Icons.sports_football_outlined,
+    Icons.groups_outlined,
+    Icons.date_range,
+    Icons.account_tree_outlined,
+    Icons.hub_outlined,
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -474,7 +485,9 @@ class _CompetitionEditScreenState
                     ),
                     child: AppStepIndicator(
                       titles: _titles,
+                      icons: _titlesIcons,
                       currentStep: _step,
+                      showDoneState: false,
                       onStepTap: _handleStepTap,
                     ),
                   ),

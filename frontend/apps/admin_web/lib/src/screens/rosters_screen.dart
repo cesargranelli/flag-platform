@@ -1,3 +1,4 @@
+import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
@@ -11,14 +12,26 @@ import '../widgets/app_screen.dart';
 /// organização.
 ///
 /// O fluxo (issue #360) é: campeonato → clubes/universidades (organizações)
-/// do usuário → elenco da organização. O elenco é a associação de atletas à
-/// organização naquele campeonato — não um cadastro de time. Os cards seguem
-/// o padrão de grid da tela de atletas e navegam para `/teams/:id/roster`.
-class RostersScreen extends ConsumerWidget {
+/// do usuário → elenco da organização. A lista passa a exibir **todas** as
+/// organizações clube/universidade do usuário (issue #381) — mesmo as que
+/// ainda não participam do campeonato selecionado: nesse caso o card oferece
+/// a ação "Associar à temporada" (cria o [Team] via `associateClub`). Os cards
+/// seguem o padrão de grid da tela de atletas e navegam para
+/// `/teams/:id/roster` quando o time (clube+competição) já existe.
+class RostersScreen extends ConsumerStatefulWidget {
   const RostersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RostersScreen> createState() => _RostersScreenState();
+}
+
+class _RostersScreenState extends ConsumerState<RostersScreen> {
+  /// Ids de organizações com associação à temporada em andamento
+  /// (desabilita o card durante o POST).
+  final Set<String> _associatingOrgIds = {};
+
+  @override
+  Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
     final selectedCompetition = ref.watch(selectedCompetitionProvider);
 
@@ -77,7 +90,7 @@ class RostersScreen extends ConsumerWidget {
               ),
               Expanded(
                 child: effectiveComp != null
-                    ? _clubList(context, ref, effectiveComp)
+                    ? _clubList(context, effectiveComp)
                     : const AppEmptyState(
                         message: 'Selecione um campeonato',
                         icon: Icons.emoji_events_outlined,
@@ -90,29 +103,18 @@ class RostersScreen extends ConsumerWidget {
     );
   }
 
-  /// Lista os clubes e universidades (organizações) do usuário que participam
-  /// do campeonato.
+  /// Lista os clubes e universidades (organizações) do usuário.
   ///
-  /// Combina [teamsProvider] (participação da organização no campeonato) com
-  /// [organizationsProvider] (dados da organização). Mantém apenas as
-  /// organizações do tipo clube/universidade cujo `createdBy` é o usuário
-  /// logado e que participam do campeonato.
-  Widget _clubList(
-    BuildContext context,
-    WidgetRef ref,
-    String competitionId,
-  ) {
+  /// Percorre [organizationsProvider] (todas as organizações) mantendo apenas
+  /// as do tipo clube/universidade cujo `createdBy` é o usuário logado. Para
+  /// cada organização, localiza o [Team] (se houver) no campeonato via
+  /// [teamsProvider] (mapa `organizationId → Team`).
+  Widget _clubList(BuildContext context, String competitionId) {
     final teamsAsync = ref.watch(teamsProvider(competitionId));
     final orgsAsync = ref.watch(organizationsProvider);
 
-    if (teamsAsync.isLoading || orgsAsync.isLoading) {
+    if (orgsAsync.isLoading) {
       return const AppLoading(message: 'Carregando clubes e universidades...');
-    }
-    if (teamsAsync.hasError) {
-      return AppErrorState(
-        message: 'Não foi possível carregar os clubes',
-        onRetry: () => ref.invalidate(teamsProvider(competitionId)),
-      );
     }
     if (orgsAsync.hasError) {
       return AppErrorState(
@@ -121,35 +123,34 @@ class RostersScreen extends ConsumerWidget {
       );
     }
 
-    final teams = teamsAsync.value ?? const <Team>[];
     final orgs = orgsAsync.value ?? const <Organization>[];
+    final teams = teamsAsync.value ?? const <Team>[];
     final userId = ref.read(authControllerProvider).state.user?.id;
 
-    final orgById = {for (final o in orgs) o.id: o};
+    // Mapa organização → time no campeonato selecionado.
+    final teamByOrgId = <String, Team>{
+      for (final team in teams)
+        if (team.organizationId != null) team.organizationId!: team,
+    };
 
-    // Deduplica por organização: um clube/universidade aparece uma única vez
-    // por campeonato. Mantém o primeiro time como destino do elenco.
-    final clubs = <_ClubEntry>[];
+    // Deduplica por organização: um clube/universidade aparece uma única vez.
+    final clubs = <Organization>[];
     final seenOrgIds = <String>{};
-    for (final team in teams) {
-      final orgId = team.organizationId;
-      if (orgId == null || orgId.isEmpty) continue;
-      if (seenOrgIds.contains(orgId)) continue;
-      final org = orgById[orgId];
-      if (org == null) continue;
-      if (userId != null && org.createdBy != userId) continue;
+    for (final org in orgs) {
       final type = org.organizationType;
+      if (userId != null && org.createdBy != userId) continue;
       if (type != OrganizationType.club &&
           type != OrganizationType.university) {
         continue;
       }
-      seenOrgIds.add(orgId);
-      clubs.add(_ClubEntry(team: team, org: org));
+      if (seenOrgIds.contains(org.id)) continue;
+      seenOrgIds.add(org.id);
+      clubs.add(org);
     }
 
     if (clubs.isEmpty) {
       return const AppEmptyState(
-        message: 'Nenhum clube ou universidade seu neste campeonato',
+        message: 'Nenhum clube ou universidade seu cadastrado na plataforma',
         icon: Icons.groups_outlined,
       );
     }
@@ -167,31 +168,41 @@ class RostersScreen extends ConsumerWidget {
               mainAxisSpacing: 12,
               mainAxisExtent: 96,
             ),
-            itemBuilder: (context, index) => _clubCard(context, clubs[index]),
+            itemBuilder: (context, index) {
+              final org = clubs[index];
+              return _clubCard(
+                context,
+                org,
+                team: teamByOrgId[org.id],
+                competitionId: competitionId,
+              );
+            },
           );
         },
       ),
     );
   }
 
-  Widget _clubCard(BuildContext context, _ClubEntry entry) {
-    final org = entry.org;
-    final team = entry.team;
-
-    // Nome de exibição: razão social curta (tradeName), com fallback no nome
-    // do time (participação no campeonato).
-    final title = org.tradeName.isNotEmpty ? org.tradeName : team.name;
+  Widget _clubCard(
+    BuildContext context,
+    Organization org, {
+    required Team? team,
+    required String competitionId,
+  }) {
     final subtitle = [
       if (org.city != null && org.city!.isNotEmpty) org.city!,
       if (org.organizationType != null) org.organizationType!.label,
     ].join(' · ');
 
+    final associating = _associatingOrgIds.contains(org.id);
+    final isAssociated = team != null;
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/teams/${team.id}/roster', extra: team),
+        onTap: () => _handleCardTap(org, team, competitionId),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           child: Row(
             children: [
               _typeIcon(org.organizationType),
@@ -202,7 +213,7 @@ class RostersScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      title,
+                      org.tradeName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -225,11 +236,76 @@ class RostersScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              if (!isAssociated) ...[
+                const SizedBox(width: 8),
+                associating
+                    ? const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : FilledButton(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          minimumSize: const Size(0, 36),
+                          textStyle: const TextStyle(fontSize: 12),
+                        ),
+                        onPressed: () => _associate(org, competitionId),
+                        child: const Text('Associar à temporada'),
+                      ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// Tocar no card: com time no campeonato → elenco; sem time → associa à
+  /// temporada.
+  void _handleCardTap(Organization org, Team? team, String competitionId) {
+    final associated = team;
+    if (associated != null) {
+      context.push('/teams/${associated.id}/roster', extra: associated);
+    } else {
+      _associate(org, competitionId);
+    }
+  }
+
+  /// Associa o clube/universidade à temporada selecionada (cria o [Team] via
+  /// `associateClub`), revalida [teamsProvider] e navega para o elenco.
+  Future<void> _associate(Organization org, String competitionId) async {
+    // Capturados antes do await: o contexto pode sair de cena ao trocar de tela.
+    final messenger = ScaffoldMessenger.of(context);
+
+    setState(() => _associatingOrgIds.add(org.id));
+    try {
+      final team = await ref.read(teamApiProvider).associateClub(
+        competitionId: competitionId,
+        organizationId: org.id,
+      );
+      ref.invalidate(teamsProvider(competitionId));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('${org.tradeName} associado à temporada.'),
+        ),
+      );
+      if (mounted) {
+        context.push('/teams/${team.id}/roster', extra: team);
+      }
+    } on RepositoryException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Não foi possível associar o clube.')),
+      );
+    } finally {
+      if (mounted) setState(() => _associatingOrgIds.remove(org.id));
+    }
   }
 
   /// Ícone destacado com o tipo de organização (fundo primary 12% + ícone).
@@ -241,26 +317,7 @@ class RostersScreen extends ConsumerWidget {
         color: AppColors.primary.withValues(alpha: 0.12),
         shape: BoxShape.circle,
       ),
-      child: Icon(_orgTypeIcon(type), color: AppColors.primary),
+      child: Icon(organizationTypeIcon(type), color: AppColors.primary),
     );
   }
-}
-
-/// Ícone correspondente ao tipo de organização (issue #363).
-IconData _orgTypeIcon(OrganizationType? type) => switch (type) {
-      OrganizationType.federation => Icons.account_balance_outlined,
-      OrganizationType.league => Icons.emoji_events_outlined,
-      OrganizationType.association => Icons.groups_outlined,
-      OrganizationType.university => Icons.school_outlined,
-      OrganizationType.club => Icons.sports_outlined,
-      OrganizationType.other => Icons.business_outlined,
-      null => Icons.business_outlined,
-    };
-
-/// Par (time do campeonato + organização/clube) exibido na lista.
-class _ClubEntry {
-  const _ClubEntry({required this.team, required this.org});
-
-  final Team team;
-  final Organization org;
 }
