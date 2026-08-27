@@ -18,7 +18,9 @@ import '../screens/reset_password_screen.dart';
 import '../screens/venue_form_screen.dart';
 import '../screens/venue_detail_screen.dart';
 import '../screens/venues_screen.dart';
-import '../screens/team_form_screen.dart';
+import '../screens/associate_clubs_screen.dart';
+import '../screens/team_create_screen.dart';
+import '../screens/team_edit_screen.dart';
 import '../screens/team_detail_screen.dart';
 import '../screens/teams_screen.dart';
 import '../screens/round_form_screen.dart';
@@ -194,11 +196,15 @@ class AppRouter {
             TeamsScreen(lockedCompetitionId: state.extra as String?),
       ),
       GoRoute(
+        path: '/teams/associate',
+        name: 'teamAssociate',
+        builder: (context, state) =>
+            AssociateClubsScreen(lockedCompetitionId: state.extra as String?),
+      ),
+      GoRoute(
         path: '/teams/new',
         name: 'teamNew',
-        builder: (context, state) => TeamFormScreen(
-          // competitionId removido; team agora tem organizationId + competitionId
-        ),
+        builder: (context, state) => const TeamCreateScreen(),
       ),
       GoRoute(
         path: '/teams/:id',
@@ -216,7 +222,7 @@ class AppRouter {
         name: 'teamEdit',
         builder: (context, state) {
           final team = state.extra is Team ? state.extra as Team : null;
-          return TeamFormScreen(teamId: state.pathParameters['id'], team: team);
+          return TeamEditScreen(teamId: state.pathParameters['id'], team: team);
         },
       ),
       GoRoute(
