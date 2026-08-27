@@ -3,6 +3,7 @@ package br.com.flagplatform.athlete.dto.response;
 import br.com.flagplatform.common.enums.AthletePosition;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record AthleteResponse(
@@ -10,7 +11,7 @@ public record AthleteResponse(
         String name,
         String cpf,
         String nickname,
-        AthletePosition position,
+        List<AthletePosition> positions,
         Integer number,
         String photoUrl,
         LocalDateTime createdAt,

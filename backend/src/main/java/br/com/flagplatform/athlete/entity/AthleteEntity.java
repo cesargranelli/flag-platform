@@ -2,11 +2,18 @@ package br.com.flagplatform.athlete.entity;
 
 import br.com.flagplatform.common.enums.AthletePosition;
 import br.com.flagplatform.common.persistence.entity.BaseEntity;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -23,7 +30,10 @@ public class AthleteEntity extends BaseEntity {
     @Column(length = 100)
     private String nickname;
 
-    private AthletePosition position;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "athlete_positions", joinColumns = @JoinColumn(name = "athlete_id"))
+    @Column(name = "position")
+    private List<AthletePosition> positions = new ArrayList<>();
 
     private Integer number;
 
