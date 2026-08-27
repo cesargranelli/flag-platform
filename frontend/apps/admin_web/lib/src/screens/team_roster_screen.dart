@@ -51,12 +51,18 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     final teamId = _teamId;
     if (teamId == null) return;
 
+    // Solicita apelido e número da camisa antes de incluir.
+    final details = await _promptRosterDetails(athlete.name);
+    if (details == null || !mounted) return;
+
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _adding.add(athlete.id));
     try {
       await ref.read(rosterApiProvider).add(
             teamId: teamId,
             athleteId: athlete.id,
+            nickname: details.nickname,
+            number: details.number,
           );
       ref.invalidate(rosterProvider(teamId));
       messenger.showSnackBar(
@@ -71,6 +77,17 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     } finally {
       if (mounted) setState(() => _adding.remove(athlete.id));
     }
+  }
+
+  /// Diálogo para coletar apelido e número da camisa do atleta ao incluí-lo no
+  /// elenco. Retorna `null` quando cancelado.
+  Future<({String? nickname, int? number})?> _promptRosterDetails(
+    String athleteName,
+  ) {
+    return showDialog<({String? nickname, int? number})>(
+      context: context,
+      builder: (_) => _RosterDetailsDialog(athleteName: athleteName),
+    );
   }
 
   Future<void> _removeAthlete(RosterEntry entry) async {
@@ -267,9 +284,19 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     required bool inRoster,
     required RosterEntry? entry,
   }) {
-    final position = athlete.position?.label ?? '';
+    // Quando já está no elenco, prioriza apelido/número do próprio elenco
+    // (preenchidos na inclusão); caso contrário, usa os do atleta.
+    final rosterNickname = inRoster && entry != null
+        ? (entry.nickname ?? entry.athleteNickname)
+        : null;
+    final displayNickname = rosterNickname ?? athlete.nickname;
+    final displayNumber = inRoster && entry != null
+        ? entry.number
+        : athlete.number;
+    final position = athlete.positionsLabel;
     final subtitle = [
-      if (athlete.number != null) '#${athlete.number}',
+      if (displayNumber != null) '#$displayNumber',
+      if (displayNickname != null && displayNickname.isNotEmpty) displayNickname,
       if (position.isNotEmpty) position,
     ].join(' · ');
     final adding = _adding.contains(athlete.id);
@@ -413,6 +440,93 @@ class _InRosterBadge extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: AppColors.success,
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Diálogo que coleta apelido e número da camisa ao incluir um atleta no
+/// elenco. Retorna um record com os valores preenchidos (ou `null` para
+/// campos vazios) e `null` ao cancelar.
+class _RosterDetailsDialog extends StatefulWidget {
+  const _RosterDetailsDialog({required this.athleteName});
+
+  final String athleteName;
+
+  @override
+  State<_RosterDetailsDialog> createState() => _RosterDetailsDialogState();
+}
+
+class _RosterDetailsDialogState extends State<_RosterDetailsDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nicknameController = TextEditingController();
+  final _numberController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nicknameController.dispose();
+    _numberController.dispose();
+    super.dispose();
+  }
+
+  String? _validateNumber(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    return int.tryParse(value.trim()) == null
+        ? 'Informe um número válido'
+        : null;
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    final nickname = _nicknameController.text.trim();
+    final numberText = _numberController.text.trim();
+    Navigator.of(context).pop((
+      nickname: nickname.isEmpty ? null : nickname,
+      number: numberText.isEmpty ? null : int.parse(numberText),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Incluir ${widget.athleteName}'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _nicknameController,
+              maxLength: 100,
+              decoration: const InputDecoration(
+                labelText: 'Apelido',
+                hintText: 'Ex.: "Veloz"',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _numberController,
+              keyboardType: TextInputType.number,
+              maxLength: 3,
+              decoration: const InputDecoration(
+                labelText: 'Número da camisa',
+                border: OutlineInputBorder(),
+              ),
+              validator: _validateNumber,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: const Text('Confirmar'),
         ),
       ],
     );

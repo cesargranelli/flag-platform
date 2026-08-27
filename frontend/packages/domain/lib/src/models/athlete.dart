@@ -8,7 +8,7 @@ class Athlete {
   final String name;
   final String? cpf;
   final String? nickname;
-  final AthletePosition? position;
+  final List<AthletePosition> positions;
   final int? number;
   final String? photoUrl;
   final DateTime? createdAt;
@@ -19,37 +19,55 @@ class Athlete {
     required this.name,
     this.cpf,
     this.nickname,
-    this.position,
+    this.positions = const [],
     this.number,
     this.photoUrl,
     this.createdAt,
     this.updatedAt,
   });
 
-  factory Athlete.fromJson(Map<String, dynamic> json) => Athlete(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        cpf: json['cpf'] as String?,
-        nickname: json['nickname'] as String?,
-        position: json['position'] is String
-            ? AthletePosition.fromJson(json['position'] as String)
-            : null,
-        number: json['number'] as int?,
-        photoUrl: json['photoUrl'] as String?,
-        createdAt: json['createdAt'] is String
-            ? DateTime.tryParse(json['createdAt'] as String)
-            : null,
-        updatedAt: json['updatedAt'] is String
-            ? DateTime.tryParse(json['updatedAt'] as String)
-            : null,
-      );
+  factory Athlete.fromJson(Map<String, dynamic> json) {
+    // Backend atual expõe `positions` (lista). Fallback para o shape legado
+    // (`position` único) quando o campo não vier como lista.
+    final rawPositions = json['positions'];
+    final List<AthletePosition> positions;
+    if (rawPositions is List) {
+      positions = rawPositions.whereType<String>().map(AthletePosition.fromJson).toList();
+    } else if (json['position'] is String) {
+      positions = [AthletePosition.fromJson(json['position'] as String)];
+    } else {
+      positions = const [];
+    }
+    return Athlete(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      cpf: json['cpf'] as String?,
+      nickname: json['nickname'] as String?,
+      positions: positions,
+      number: json['number'] as int?,
+      photoUrl: json['photoUrl'] as String?,
+      createdAt: json['createdAt'] is String
+          ? DateTime.tryParse(json['createdAt'] as String)
+          : null,
+      updatedAt: json['updatedAt'] is String
+          ? DateTime.tryParse(json['updatedAt'] as String)
+          : null,
+    );
+  }
+
+  /// Posição primária (a primeira da lista), quando houver.
+  AthletePosition? get primaryPosition =>
+      positions.isNotEmpty ? positions.first : null;
+
+  /// Rótulos das posições do atleta unidos por " / " para exibição.
+  String get positionsLabel => positions.map((p) => p.label).join(' / ');
 
   /// Corpo de criação/atualização (`POST/PUT /api/v1/athletes`).
   Map<String, dynamic> toJson() => {
         'name': name,
         if (cpf != null) 'cpf': cpf,
         if (nickname != null) 'nickname': nickname,
-        if (position != null) 'position': position!.toJson(),
+        'positions': positions.map((p) => p.toJson()).toList(),
         if (number != null) 'number': number,
         if (photoUrl != null) 'photoUrl': photoUrl,
       };

@@ -100,7 +100,7 @@ class AthleteDetailScreen extends ConsumerWidget {
               [
                 _row('Nome', athlete.name),
                 _row('Apelido', athlete.nickname?.isNotEmpty == true ? athlete.nickname! : '—'),
-                _row('Posição', athlete.position?.label ?? 'Sem posição'),
+                _row('Posição', athlete.positionsLabel.isNotEmpty ? athlete.positionsLabel : 'Sem posição'),
                 _row('Número da camisa', athlete.number?.toString() ?? '—'),
                 if (athlete.photoUrl != null && athlete.photoUrl!.isNotEmpty)
                   _row('URL da foto', athlete.photoUrl!),
