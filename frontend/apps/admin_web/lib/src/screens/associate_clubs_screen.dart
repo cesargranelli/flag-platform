@@ -13,8 +13,11 @@ import '../widgets/app_screen.dart';
 /// Lista todos os clubes da plataforma com busca por nome fantasia
 /// ([Organization.tradeName]) e indica quais já estão inscritos no
 /// campeonato selecionado (existe um [Team] com `organizationId` do clube).
-/// Clubes já associados aparecem com marcação e não podem ser re-associados;
-/// os demais têm o botão "Associar", que cria um [Team] via
+/// Clubes já associados aparecem com marcação e podem ser **desassociados**
+/// (issue #354), removendo o [Team] via `teamApiProvider.delete(...)`.
+/// Os demais podem ser associados individualmente ("Associar") ou **em lote**,
+/// selecionando vários clubes não associados via checkbox e confirmando na
+/// barra de seleção, que cria um [Team] para cada um via
 /// `teamApiProvider.create(...)`.
 ///
 /// A tela fica "travada" no campeonato informado via [lockedCompetitionId]
@@ -36,6 +39,15 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
 
   /// Clubes com associação em andamento (desabilita o botão durante o POST).
   final Set<String> _associatingOrgIds = {};
+
+  /// Times com desassociação em andamento (desabilita o botão durante o DELETE).
+  final Set<String> _disassociatingTeamIds = {};
+
+  /// Ids de clubes NÃO associados marcados para associação em lote.
+  final Set<String> _selectedOrgIds = {};
+
+  /// Indica se a associação em lote está sendo executada.
+  bool _submittingBatch = false;
 
   @override
   void dispose() {
@@ -70,6 +82,85 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
     } finally {
       if (mounted) setState(() => _associatingOrgIds.remove(club.id));
     }
+  }
+
+  /// Remove a inscrição do clube no campeonato (desassociar).
+  Future<void> _disassociate(Team team, String competitionId) async {
+    // Capturados antes do await: o contexto pode sair de cena ao trocar de tela.
+    final messenger = ScaffoldMessenger.of(context);
+
+    setState(() => _disassociatingTeamIds.add(team.id));
+    try {
+      await ref.read(teamApiProvider).delete(team.id);
+      ref.invalidate(teamsProvider(competitionId));
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Clube desassociado do campeonato.')),
+      );
+    } on RepositoryException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Não foi possível desassociar o clube.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _disassociatingTeamIds.remove(team.id);
+          // O clube deixou de ser selecionável; remove da seleção se constar.
+          if (team.organizationId != null) {
+            _selectedOrgIds.remove(team.organizationId);
+          }
+        });
+      }
+    }
+  }
+
+  /// Associa em lote todos os clubes selecionados (cria um [Team] por clube).
+  ///
+  /// Cada falha é tratada isoladamente — o lote não é abortado. Ao final
+  /// exibe um SnackBar-resumo e invalida [teamsProvider].
+  Future<void> _associateSelected(
+    String competitionId,
+    Map<String, Organization> orgsById,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ids = List<String>.from(_selectedOrgIds);
+    if (ids.isEmpty) return;
+
+    setState(() => _submittingBatch = true);
+    var success = 0;
+    var failure = 0;
+    for (final orgId in ids) {
+      final club = orgsById[orgId];
+      if (club == null) continue;
+      try {
+        await ref.read(teamApiProvider).create(
+          organizationId: club.id,
+          competitionId: competitionId,
+          name: club.tradeName,
+        );
+        success++;
+      } catch (_) {
+        failure++;
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _selectedOrgIds.clear();
+        _submittingBatch = false;
+      });
+    }
+    // Revalida os times (clubes recém-associados deixam de ser selecionáveis).
+    ref.invalidate(teamsProvider(competitionId));
+
+    final summary = [
+      if (success > 0) '$success associado(s)',
+      if (failure > 0) '$failure falha(s)',
+    ].join('; ');
+    messenger.showSnackBar(
+      SnackBar(content: Text('$summary.')),
+    );
   }
 
   List<Organization> _filter(List<Organization> orgs) {
@@ -126,12 +217,20 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
                               tooltip: 'Limpar busca',
                               onPressed: () {
                                 _searchController.clear();
-                                setState(() => _query = '');
+                                setState(() {
+                                  _query = '';
+                                  _selectedOrgIds.clear();
+                                });
                               },
                             ),
                       border: const OutlineInputBorder(),
                     ),
-                    onChanged: (value) => setState(() => _query = value),
+                    onChanged: (value) => setState(() {
+                      _query = value;
+                      // A seleção pode conter clubes que saíram do filtro;
+                      // limpa para evitar seleções "fantasma".
+                      _selectedOrgIds.clear();
+                    }),
                   ),
                 ),
               ),
@@ -155,9 +254,9 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
       ),
       data: (teams) {
         // Organizações já inscritas neste campeonato (id do clube → Team).
-        final associatedOrgIds = <String>{
+        final orgIdToTeam = <String, Team>{
           for (final team in teams)
-            if (team.organizationId != null) team.organizationId!,
+            if (team.organizationId != null) team.organizationId!: team,
         };
 
         return orgsAsync.when(
@@ -181,19 +280,32 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
                 icon: Icons.search_off,
               );
             }
-            return AppLayout.content(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: filtered.length,
-                itemBuilder: (context, index) {
-                  final club = filtered[index];
-                  return _clubCard(
-                    club,
-                    competitionId,
-                    associatedOrgIds: associatedOrgIds,
-                  );
-                },
-              ),
+
+            final orgsById = {for (final o in orgs) o.id: o};
+            final hasSelectable = filtered.any(
+              (o) => !orgIdToTeam.containsKey(o.id),
+            );
+
+            return Column(
+              children: [
+                if (hasSelectable) _selectionBar(competitionId, orgsById),
+                Expanded(
+                  child: AppLayout.content(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final club = filtered[index];
+                        return _clubCard(
+                          club,
+                          competitionId,
+                          orgIdToTeam: orgIdToTeam,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         );
@@ -201,13 +313,58 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
     );
   }
 
+  /// Barra fixa de seleção em lote: contador + botão "Associar selecionados".
+  Widget _selectionBar(
+    String competitionId,
+    Map<String, Organization> orgsById,
+  ) {
+    final count = _selectedOrgIds.length;
+    return Material(
+      color: AppColors.surfaceMuted,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                count == 0
+                    ? 'Selecione clubes para associar em lote'
+                    : '$count clube(s) selecionado(s)',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            FilledButton(
+              onPressed: count == 0 || _submittingBatch
+                  ? null
+                  : () => _associateSelected(competitionId, orgsById),
+              child: _submittingBatch
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text('Associar selecionados ($count)'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _clubCard(
     Organization club,
     String competitionId, {
-    required Set<String> associatedOrgIds,
+    required Map<String, Team> orgIdToTeam,
   }) {
-    final isAssociated = associatedOrgIds.contains(club.id);
+    final team = orgIdToTeam[club.id];
+    final isAssociated = team != null;
     final associating = _associatingOrgIds.contains(club.id);
+    final disassociating =
+        team != null && _disassociatingTeamIds.contains(team.id);
+    final selected = _selectedOrgIds.contains(club.id);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -215,6 +372,22 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
+            // Apenas clubes não associados são selecionáveis para o lote.
+            if (!isAssociated)
+              Checkbox(
+                value: selected,
+                onChanged: associating || _submittingBatch
+                    ? null
+                    : (checked) {
+                        setState(() {
+                          if (checked == true) {
+                            _selectedOrgIds.add(club.id);
+                          } else {
+                            _selectedOrgIds.remove(club.id);
+                          }
+                        });
+                      },
+              ),
             _clubAvatar(club),
             const SizedBox(width: 12),
             Expanded(
@@ -244,22 +417,55 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            if (associating)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else if (isAssociated)
-              const _AssociatedBadge()
-            else
-              FilledButton(
-                onPressed: () => _associate(club, competitionId),
-                child: const Text('Associar'),
-              ),
+            _clubAction(
+              club: club,
+              competitionId: competitionId,
+              team: team,
+              isAssociated: isAssociated,
+              associating: associating,
+              disassociating: disassociating,
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Ação à direita do card: spinner durante POST/DELETE, badge + "Desassociar"
+  /// para clubes associados ou botão "Associar" para os demais.
+  Widget _clubAction({
+    required Organization club,
+    required String competitionId,
+    required Team? team,
+    required bool isAssociated,
+    required bool associating,
+    required bool disassociating,
+  }) {
+    if (associating || disassociating) {
+      return const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    if (isAssociated) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const _AssociatedBadge(),
+          IconButton(
+            tooltip: 'Desassociar',
+            icon: const Icon(Icons.link_off),
+            onPressed: _submittingBatch
+                ? null
+                : () => _disassociate(team!, competitionId),
+          ),
+        ],
+      );
+    }
+    return FilledButton(
+      onPressed: _submittingBatch ? null : () => _associate(club, competitionId),
+      child: const Text('Associar'),
     );
   }
 

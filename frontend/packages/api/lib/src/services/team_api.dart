@@ -63,4 +63,7 @@ class TeamApi {
     'documentType': documentType?.toJson(),
     'logoUrl': ?logoUrl,
   }, Team.fromJson);
+
+  /// Remove a inscrição do clube no campeonato (desassociar).
+  Future<void> delete(String id) => _client.delete('/api/v1/teams/$id');
 }
