@@ -111,7 +111,7 @@ class RoundDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    if (canManage)
+                    if (canManage) ...[
                       FilledButton.icon(
                         onPressed: () => context.push(
                           '/rounds/${round.id}/edit',
@@ -119,8 +119,24 @@ class RoundDetailScreen extends ConsumerWidget {
                         ),
                         icon: const Icon(Icons.edit_outlined),
                         label: const Text('Editar dados'),
-                      )
-                    else
+                      ),
+                      const SizedBox(height: 8),
+                      // Issue #347: confrontos/jogos geridos via contexto do
+                      // campeonato (rodada → jogos), sem atalho global da home.
+                      FilledButton.icon(
+                        onPressed: () {
+                          ref
+                                  .read(selectedCompetitionProvider.notifier)
+                                  .state =
+                              round.competitionId;
+                          ref.read(selectedRoundProvider.notifier).state =
+                              round.id;
+                          context.push('/games');
+                        },
+                        icon: const Icon(Icons.sports),
+                        label: const Text('Confrontos'),
+                      ),
+                    ] else
                       EditRestrictionNote(
                         message: !isDraft
                             ? 'Campeonato publicado — as rodadas estão '
