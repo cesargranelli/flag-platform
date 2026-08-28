@@ -33,6 +33,7 @@ class PublicShell extends ConsumerWidget {
   static const List<_NavDestination> _destinations = [
     _NavDestination(label: 'Início', icon: Icons.home_rounded),
     _NavDestination(label: 'Campeonato', icon: Icons.emoji_events_rounded),
+    _NavDestination(label: 'Ao vivo', icon: Icons.sensors_rounded),
     _NavDestination(label: 'Sobre', icon: Icons.info_rounded),
   ];
 
@@ -61,7 +62,8 @@ void _goToTab(BuildContext context, WidgetRef ref, int index) {
   }
   context.go(switch (index) {
     0 => '/',
-    2 => '/about',
+    2 => '/live',
+    3 => '/about',
     _ => '/',
   });
 }

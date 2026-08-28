@@ -132,3 +132,76 @@ final rosterApiProvider = Provider<RosterApi>(
 final teamRosterProvider = FutureProvider.family<List<RosterEntry>, String>(
   (ref, teamId) => ref.watch(rosterApiProvider).listByTeam(teamId),
 );
+
+/// Dados FAKE de livescore (issue #391) — demonstração do "Ao vivo" no próprio
+/// app, sem backend. Só um Provider que gera jogos ao vivo/encerrados com
+/// datas relativas ao momento da leitura.
+final fakeLiveGamesProvider = Provider<List<Game>>((ref) {
+  final now = DateTime.now();
+
+  Game live(
+    String id,
+    String home,
+    String away,
+    int homeScore,
+    int awayScore,
+    String venue,
+    int round,
+    Duration ago,
+  ) {
+    return Game(
+      id: id,
+      roundId: 'round-$round',
+      competitionId: 'fake',
+      roundNumber: round,
+      homeTeamId: 'team-$id-h',
+      awayTeamId: 'team-$id-a',
+      homeTeamName: home,
+      awayTeamName: away,
+      venueId: 'venue-$id',
+      venueName: venue,
+      scheduledAt: now.subtract(ago),
+      status: GameStatus.inProgress,
+      homeScore: homeScore,
+      awayScore: awayScore,
+    );
+  }
+
+  Game finished(
+    String id,
+    String home,
+    String away,
+    int homeScore,
+    int awayScore,
+    String venue,
+    int round,
+    Duration ago,
+  ) {
+    return Game(
+      id: id,
+      roundId: 'round-$round',
+      competitionId: 'fake',
+      roundNumber: round,
+      homeTeamId: 'team-$id-h',
+      awayTeamId: 'team-$id-a',
+      homeTeamName: home,
+      awayTeamName: away,
+      venueId: 'venue-$id',
+      venueName: venue,
+      scheduledAt: now.subtract(ago),
+      status: GameStatus.finished,
+      homeScore: homeScore,
+      awayScore: awayScore,
+    );
+  }
+
+  return [
+    live('live-1', 'Clube 01', 'Clube 02', 14, 8, 'Campo 01', 1, const Duration(minutes: 35)),
+    live('live-2', 'Clube 03', 'Clube 04', 0, 6, 'Campo 02', 1, const Duration(minutes: 12)),
+    live('live-3', 'Clube 05', 'Clube 06', 21, 14, 'Campo 01', 2, const Duration(minutes: 55)),
+    live('live-4', 'Clube 07', 'Clube 08', 7, 7, 'Campo 02', 2, const Duration(hours: 1, minutes: 18)),
+    finished('done-1', 'Clube 09', 'Clube 10', 21, 0, 'Campo 01', 3, const Duration(hours: 2)),
+    finished('done-2', 'Clube 11', 'Clube 12', 12, 22, 'Campo 02', 3, const Duration(hours: 2, minutes: 40)),
+  ];
+});
+

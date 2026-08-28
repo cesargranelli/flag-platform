@@ -4,13 +4,14 @@ import '../screens/about_screen.dart';
 import '../screens/competition_detail_screen.dart';
 import '../screens/game_detail_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/live_screen.dart';
 import '../screens/team_detail_screen.dart';
 import '../widgets/public_shell.dart';
 
 /// Rotas do Public App (issue #389).
 ///
-/// A navegação principal (Início · Campeonato · Sobre) vive dentro de uma
-/// [StatefulShellRoute]: cada aba preserva seu próprio estado e back stack.
+/// A navegação principal (Início · Campeonato · Ao vivo · Sobre) vive dentro de
+/// uma [StatefulShellRoute]: cada aba preserva seu próprio estado e back stack.
 /// Telas de detalhe de jogo/time (`/game/:id`, `/teams/:id`) ficam FORA da
 /// shell — são empilhadas sobre a barra inferior (padrão de apps).
 class AppRouter {
@@ -83,6 +84,16 @@ class AppRouter {
                     ),
                   ),
                 ],
+              ),
+            ],
+          ),
+          // Aba Ao vivo: timeline de livescore (dados fake, #391).
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/live',
+                name: 'live',
+                builder: (context, state) => const LiveScreen(),
               ),
             ],
           ),
