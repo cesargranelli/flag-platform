@@ -24,7 +24,7 @@ class PlayByPlayScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playsAsync = ref.watch(fakePlayByPlayProvider(gameId));
+    final playsAsync = ref.watch(playByPlayProvider(gameId));
     final gameData = game;
 
     return Scaffold(
