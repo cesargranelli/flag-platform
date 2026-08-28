@@ -281,10 +281,10 @@ class _TeamName extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       textAlign: textAlign,
       style: const TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w700,
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
         height: 1.2,
-        color: AppColors.textPrimary,
+        color: AppColors.textSecondary,
       ),
     );
 
@@ -491,15 +491,15 @@ class _ClubLogo extends StatelessWidget {
     final index = hash.abs() % icons.length;
 
     return Container(
-      width: 36,
-      height: 36,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         shape: BoxShape.circle,
       ),
       child: Icon(
         icons[index],
-        size: 20,
+        size: 28,
         color: color,
       ),
     );

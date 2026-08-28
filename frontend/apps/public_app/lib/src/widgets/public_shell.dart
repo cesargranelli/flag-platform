@@ -161,12 +161,12 @@ class _FlagBottomBar extends StatelessWidget {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF1B1D21),
+        color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: Color(0x17201F1F),
-            blurRadius: 56,
-            offset: Offset(0, -7),
+            color: Color(0x0D000000),
+            blurRadius: 8,
+            offset: Offset(0, -2),
           ),
         ],
       ),
