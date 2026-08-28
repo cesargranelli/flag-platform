@@ -138,11 +138,10 @@ class _RailShell extends ConsumerWidget {
   }
 }
 
-/// Barra inferior flutuante (estilo Shifty): fundo `#1B1D21`, raio 20,
-/// margem lateral 16, sombra para cima, com indicador animado.
+/// Barra inferior Material: colada no bottom, ocupando toda a largura.
 ///
-/// O indicador ativo é um pill primário que desliza suavemente entre as abas
-/// quando o usuário troca de aba (rec. 3 e 4).
+/// Seguindo o padrão Material Design 3 NavigationBar, com indicador animado
+/// e rótulos visíveis para acessibilidade.
 class _FlagBottomBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
@@ -160,24 +159,21 @@ class _FlagBottomBar extends StatelessWidget {
         reduceMotion ? Duration.zero : const Duration(milliseconds: 250);
     final destinationCount = PublicShell._destinations.length;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        clipBehavior: Clip.none,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1B1D21),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x17201F1F),
-              blurRadius: 56,
-              offset: Offset(0, -7),
-            ),
-          ],
-        ),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF1B1D21),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x17201F1F),
+            blurRadius: 56,
+            offset: Offset(0, -7),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final itemWidth = constraints.maxWidth / destinationCount;
@@ -237,9 +233,9 @@ class _FlagBottomBar extends StatelessWidget {
 }
 
 /// Item da navegação: ícone + rótulo; quando ativo, o ícone fica dentro de um
-/// **círculo branco 44px** que flutua sobre a barra, com o ícone na cor
-/// primária. Rótulos são sempre visíveis para melhorar a acessibilidade
-/// (rec. 1). Ícones inativos usam `AppColors.grayLabel` para criar hierarquia
+/// **pill indicador** na parte inferior, com o ícone na cor primária.
+/// Rótulos são sempre visíveis para melhorar a acessibilidade (rec. 1).
+/// Ícones inativos usam `AppColors.grayLabel` para criar hierarquia
 /// visual (rec. 2).
 class _NavItem extends StatelessWidget {
   final String label;
@@ -271,21 +267,14 @@ class _NavItem extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(
-                  height: 60,
-                  child: Center(
-                    child: selected
-                        ? _ActiveBadge(icon: icon)
-                        : ExcludeSemantics(
-                            child: Icon(
-                              icon,
-                              size: 24,
-                              color: AppColors.grayLabel, // rec. 2
-                            ),
-                          ),
-                  ),
+                Icon(
+                  icon,
+                  size: 24,
+                  color: selected
+                      ? AppColors.primary
+                      : AppColors.grayLabel, // rec. 2
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   label, // rec. 1 — always visible
                   style: TextStyle(
@@ -307,35 +296,4 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-/// Item ativo: círculo branco 44px sobre a barra, com o ícone primário.
-/// O halo cinza 64px foi removido para simplificar o indicador (rec. 3).
-class _ActiveBadge extends StatelessWidget {
-  final IconData icon;
 
-  const _ActiveBadge({required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Transform.translate(
-      offset: const Offset(0, -8),
-      child: Container(
-        width: 44, // rec. 3 — reduced from 52px
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x33202020),
-              blurRadius: 12,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ExcludeSemantics(
-          child: Icon(icon, size: 24, color: AppColors.primary),
-        ),
-      ),
-    );
-  }
-}
