@@ -70,83 +70,93 @@ class MatchScoreCard extends StatelessWidget {
           : null,
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (showMeta) ...[
-                _MetaLine(
-                  game: game,
-                  showRound: showRound,
-                  highlighted: highlighted,
-                ),
-                const SizedBox(height: 12),
-              ],
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: _TeamName(
-                      label: homeLabel,
-                      textAlign: TextAlign.right,
-                      onTap: onHomeTeamTap,
+                  if (showMeta) ...[
+                    _MetaLine(
+                      game: game,
+                      showRound: showRound,
+                      highlighted: highlighted,
                     ),
+                    const SizedBox(height: 12),
+                  ],
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: _TeamName(
+                          label: homeLabel,
+                          textAlign: TextAlign.right,
+                          onTap: onHomeTeamTap,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _ScoreText(
+                        score: showScores ? game.homeScore : null,
+                        color: game.status == GameStatus.finished
+                            ? AppColors.success
+                            : AppColors.textPrimary,
+                      ),
+                      const SizedBox(width: 10),
+                      _CenterInfo(
+                        status: game.status,
+                        scheduledAt: game.scheduledAt,
+                        showScores: showScores,
+                      ),
+                      const SizedBox(width: 10),
+                      _ScoreText(
+                        score: showScores ? game.awayScore : null,
+                        color: game.status == GameStatus.finished
+                            ? AppColors.success
+                            : AppColors.textPrimary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _TeamName(
+                          label: awayLabel,
+                          textAlign: TextAlign.left,
+                          onTap: onAwayTeamTap,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  _ScoreText(
-                    score: showScores ? game.homeScore : null,
-                    color: game.status == GameStatus.finished
-                        ? AppColors.success
-                        : AppColors.textPrimary,
-                  ),
-                  const SizedBox(width: 10),
-                  _CenterInfo(
-                    status: game.status,
-                    scheduledAt: game.scheduledAt,
-                    showScores: showScores,
-                  ),
-                  const SizedBox(width: 10),
-                  _ScoreText(
-                    score: showScores ? game.awayScore : null,
-                    color: game.status == GameStatus.finished
-                        ? AppColors.success
-                        : AppColors.textPrimary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _TeamName(
-                      label: awayLabel,
-                      textAlign: TextAlign.left,
-                      onTap: onAwayTeamTap,
-                    ),
-                  ),
-                ],
-              ),
-              if (showVenue) ...[
-                const SizedBox(height: 12),
-                _VenueLine(game: game),
-              ],
-              if (showPlayByPlay && onPlayByPlayTap != null) ...[
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: onPlayByPlayTap,
-                    icon: const Icon(Icons.sports_football, size: 18),
-                    label: const Text('Lance a Lance'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  if (showVenue) ...[
+                    const SizedBox(height: 12),
+                    _VenueLine(game: game),
+                  ],
+                  if (showPlayByPlay && onPlayByPlayTap != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: onPlayByPlayTap,
+                        icon: const Icon(Icons.sports_football, size: 18),
+                        label: const Text('Lance a Lance'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ],
-            ],
-          ),
+                  ],
+                ],
+              ),
+            ),
+            // Ícone de clima no canto superior direito
+            Positioned(
+              top: 12,
+              right: 12,
+              child: _WeatherIcon(venue: game.venueName),
+            ),
+          ],
         ),
       ),
     );
@@ -355,5 +365,60 @@ class _VenueLine extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// Ícone de clima/baseado no nome do campo (placeholder).
+///
+/// Em produção, viria de uma API de clima. Aqui usamos o nome do campo
+/// como seed para um ícone determinístico.
+class _WeatherIcon extends StatelessWidget {
+  final String? venue;
+
+  const _WeatherIcon({this.venue});
+
+  @override
+  Widget build(BuildContext context) {
+    // Gera um ícone "determinístico" baseado no nome do campo.
+    final hash = (venue ?? '').hashCode;
+    final icons = [
+      Icons.wb_sunny,        // sol
+      Icons.cloud,           // nublado
+      Icons.wb_cloudy,       // parcialmente nublado
+      Icons.thunderstorm,    // tempestade
+      Icons.grain,           // chuva leve
+      Icons.ac_unit,         // frio/neve
+    ];
+    final colors = [
+      Colors.amber,          // sol
+      AppColors.textSecondary, // nublado
+      Colors.blueGrey,       // parcialmente nublado
+      Colors.deepPurple,     // tempestade
+      Colors.blue,           // chuva
+      Colors.cyan,           // frio
+    ];
+
+    final index = hash.abs() % icons.length;
+
+    return Tooltip(
+      message: _weatherLabel(hash.abs() % icons.length),
+      child: Icon(
+        icons[index],
+        size: 16,
+        color: colors[index],
+      ),
+    );
+  }
+
+  String _weatherLabel(int index) {
+    return switch (index) {
+      0 => 'Ensolarado',
+      1 => 'Nublado',
+      2 => 'Parcialmente nublado',
+      3 => 'Tempestade',
+      4 => 'Chuvoso',
+      5 => 'Frio',
+      _ => 'Clima',
+    };
   }
 }
