@@ -19,7 +19,7 @@ class AppRouter {
   /// Constrói uma instância nova a cada chamada para não compartilhar estado
   /// de navegação entre builds/testes.
   static GoRouter build() => GoRouter(
-    initialLocation: '/',
+    initialLocation: '/live',
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

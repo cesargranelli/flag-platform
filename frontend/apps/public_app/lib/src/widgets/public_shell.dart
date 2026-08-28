@@ -51,19 +51,28 @@ class PublicShell extends ConsumerWidget {
 
 /// Resolve a rota de uma aba ao ser tocada.
 ///
-/// A aba Campeonato não tem rota fixa: navega para o campeonato em foco
-/// (`/competition/{id}`) ou, sem foco, para `/competition` (orientador).
-void _goToTab(BuildContext context, WidgetRef ref, int index) {
+/// Usa [StatefulNavigationShell.goBranch] para transições suaves entre abas.
+/// A aba Campeonato navega para o campeonato em foco ou para `/competition`.
+void _goToTab(
+  BuildContext context,
+  WidgetRef ref,
+  StatefulNavigationShell navigationShell,
+  int index,
+) {
   if (index == 1) {
     final focus = ref.read(focusedCompetitionProvider);
-    context.go(focus != null ? '/competition/${focus.id}' : '/competition');
+    final path = focus != null ? '/competition/${focus.id}' : '/competition';
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
+    context.go(path);
     return;
   }
-  context.go(switch (index) {
-    0 => '/live',
-    2 => '/about',
-    _ => '/live',
-  });
+  navigationShell.goBranch(
+    index,
+    initialLocation: index == navigationShell.currentIndex,
+  );
 }
 
 /// Shell estreito (`<960px`): barra inferior flutuante.
@@ -78,7 +87,7 @@ class _BottomShell extends ConsumerWidget {
       body: navigationShell,
       bottomNavigationBar: _FlagBottomBar(
         currentIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) => _goToTab(context, ref, index),
+        onDestinationSelected: (index) => _goToTab(context, ref, navigationShell, index),
       ),
     );
   }
@@ -100,7 +109,7 @@ class _RailShell extends ConsumerWidget {
             child: NavigationRail(
               backgroundColor: AppColors.surface,
               selectedIndex: navigationShell.currentIndex,
-              onDestinationSelected: (index) => _goToTab(context, ref, index),
+              onDestinationSelected: (index) => _goToTab(context, ref, navigationShell, index),
               labelType: NavigationRailLabelType.none,
               groupAlignment: -0.8,
               indicatorColor: AppColors.primary.withValues(alpha: 0.12),
@@ -214,7 +223,7 @@ class _NavItem extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                height: 83,
+                height: 60,
                 child: Center(
                   child: selected
                       ? _ActiveBadge(icon: icon)
@@ -224,11 +233,11 @@ class _NavItem extends StatelessWidget {
                 ),
               ),
               if (selected) ...[
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 LayoutBuilder(
                   builder: (context, constraints) => Container(
-                    width: math.min(134.0, constraints.maxWidth),
-                    height: 5,
+                    width: math.min(100.0, constraints.maxWidth),
+                    height: 4,
                     decoration: BoxDecoration(
                       color: const Color(0xFF333333),
                       borderRadius: BorderRadius.circular(999),
@@ -244,8 +253,8 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-/// Item ativo: círculo branco 69px (Ellipse 6) sobre um **halo cinza `#C4C4C4`
-/// de 83px** (Ellipse 5), centrados no mesmo ponto, "flutuando" ~10px acima da
+/// Item ativo: círculo branco 52px (Ellipse 6) sobre um **halo cinza `#C4C4C4`
+/// de 64px** (Ellipse 5), centrados no mesmo ponto, "flutuando" ~8px acima da
 /// barra (estilo Shifty), com o ícone primário dentro.
 class _ActiveBadge extends StatelessWidget {
   final IconData icon;
@@ -255,15 +264,15 @@ class _ActiveBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Transform.translate(
-      offset: const Offset(0, -10),
+      offset: const Offset(0, -8),
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          // Halo cinza 83x83 (Ellipse 5) atrás do círculo branco.
+          // Halo cinza 64x64 (Ellipse 5) atrás do círculo branco.
           const SizedBox(
-            width: 83,
-            height: 83,
+            width: 64,
+            height: 64,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: Color(0xFFC4C4C4),
@@ -271,23 +280,23 @@ class _ActiveBadge extends StatelessWidget {
               ),
             ),
           ),
-          // Círculo branco 69x69 (Ellipse 6) com o ícone primário.
+          // Círculo branco 52x52 (Ellipse 6) com o ícone primário.
           Container(
-            width: 69,
-            height: 69,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
               boxShadow: const [
                 BoxShadow(
                   color: Color(0x33202020),
-                  blurRadius: 16,
+                  blurRadius: 12,
                   offset: Offset(0, 4),
                 ),
               ],
             ),
             child: ExcludeSemantics(
-              child: Icon(icon, size: 30, color: AppColors.primary),
+              child: Icon(icon, size: 24, color: AppColors.primary),
             ),
           ),
         ],
