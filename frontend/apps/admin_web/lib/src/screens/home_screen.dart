@@ -33,7 +33,7 @@ final items = <_MenuItem>[
     ];
 
     return AppScreen(
-      title: AppStrings.appBarTitle,
+      title: 'Início',
       body: LayoutBuilder(
         builder: (context, constraints) {
           final wide = constraints.maxWidth >= 960;
