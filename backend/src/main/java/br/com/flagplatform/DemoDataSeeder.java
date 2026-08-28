@@ -21,6 +21,9 @@ import br.com.flagplatform.game.repository.GameRepository;
 import br.com.flagplatform.game.repository.ScoreEventRepository;
 import br.com.flagplatform.organization.entity.OrganizationEntity;
 import br.com.flagplatform.organization.repository.OrganizationRepository;
+import br.com.flagplatform.play.entity.PlayEntity;
+import br.com.flagplatform.play.entity.PlayType;
+import br.com.flagplatform.play.repository.PlayRepository;
 import br.com.flagplatform.round.entity.RoundEntity;
 import br.com.flagplatform.round.repository.RoundRepository;
 import br.com.flagplatform.roster.entity.RosterEntryEntity;
@@ -70,6 +73,7 @@ public class DemoDataSeeder implements CommandLineRunner {
     private final StandingRepository standingRepository;
     private final AthleteRepository athleteRepository;
     private final RosterEntryRepository rosterEntryRepository;
+    private final PlayRepository playRepository;
 
     @Override
     @Transactional
@@ -93,6 +97,8 @@ public class DemoDataSeeder implements CommandLineRunner {
         List<GameEntity> games2 = createGames(rounds2, teams2, venues);
         createScoreEventsForFinishedGames(games1);
         createScoreEventsForFinishedGames(games2);
+        createPlaysForGames(games1, teams1);
+        createPlaysForGames(games2, teams2);
         createStandings(comp1, teams1, games1);
         createStandings(comp2, teams2, games2);
         createAthletesAndRosters(teams1);
@@ -468,6 +474,94 @@ public class DemoDataSeeder implements CommandLineRunner {
             }
         }
         log.info("Atletas criados: {}, Rosters criados para {} times", athleteCounter, teams.size());
+    }
+
+    // ── Plays (Play-by-Play) ───────────────────────────────────────────────
+
+    private void createPlaysForGames(List<GameEntity> games, List<TeamEntity> teams) {
+        String[][] playerNames = {
+            {"Carlos Silva", "Pedro Costa", "Lucas Ferreira", "Gabriel Oliveira", "André Mendes"},
+            {"Rafael Santos", "Matheus Almeida", "Bruno Costa", "Felipe Lima", "Thiago Souza"}
+        };
+
+        String[][] receiverNames = {
+            {"Pedro Costa", "Gabriel Oliveira", "Lucas Ferreira", "Carlos Silva", "Rafael Santos"},
+            {"Matheus Almeida", "Bruno Costa", "Felipe Lima", "Thiago Souza", "André Mendes"}
+        };
+
+        PlayType[][] playTypes = {
+            {PlayType.PASS, PlayType.RUN, PlayType.PASS, PlayType.TOUCHDOWN, PlayType.INTERCEPTION},
+            {PlayType.RUN, PlayType.PASS, PlayType.RUN, PlayType.FIRST_DOWN, PlayType.PASS}
+        };
+
+        int[][] yardsValues = {
+            {12, 5, 8, 25, 0},
+            {3, 15, 7, 10, 20}
+        };
+
+        String[] quarters = {"Q1", "Q2", "Q3", "Q4"};
+        String[] times = {"12:00", "08:32", "05:15", "02:48", "00:30"};
+
+        int playCount = 0;
+        for (GameEntity game : games) {
+            if (playRepository.existsByGameId(game.getId())) {
+                continue;
+            }
+
+            TeamEntity homeTeam = teams.stream()
+                .filter(t -> t.getId().equals(game.getHomeTeamId()))
+                .findFirst().orElse(teams.get(0));
+            TeamEntity awayTeam = teams.stream()
+                .filter(t -> t.getId().equals(game.getAwayTeamId()))
+                .findFirst().orElse(teams.get(1));
+
+            for (int q = 0; q < 2; q++) {
+                for (int p = 0; p < 3; p++) {
+                    boolean isHome = (q + p) % 2 == 0;
+                    TeamEntity team = isHome ? homeTeam : awayTeam;
+                    int teamIdx = isHome ? 0 : 1;
+                    int playIdx = p % playTypes[teamIdx].length;
+
+                    PlayEntity play = new PlayEntity();
+                    play.setGameId(game.getId());
+                    play.setTeamId(team.getId());
+                    play.setPlayerName(playerNames[teamIdx][playIdx]);
+                    play.setReceiverName(receiverNames[teamIdx][playIdx]);
+                    play.setPlayType(playTypes[teamIdx][playIdx]);
+                    play.setYards(yardsValues[teamIdx][playIdx]);
+                    play.setQuarter(quarters[q]);
+                    play.setTime(times[p]);
+                    play.setIsFirstDown(playTypes[teamIdx][playIdx] == PlayType.FIRST_DOWN);
+                    play.setIsTouchdown(playTypes[teamIdx][playIdx] == PlayType.TOUCHDOWN);
+                    play.setIsTurnover(playTypes[teamIdx][playIdx] == PlayType.INTERCEPTION);
+
+                    String desc = buildPlayDescription(play);
+                    play.setDescription(desc);
+
+                    playRepository.save(play);
+                    playCount++;
+                }
+            }
+        }
+        log.info("Plays criados: {} lances para {} jogos", playCount, games.size());
+    }
+
+    private String buildPlayDescription(PlayEntity play) {
+        return switch (play.getPlayType()) {
+            case PASS -> play.getPlayerName() + " passe completo, " +
+                (play.getReceiverName() != null ? play.getReceiverName() + " recepção → " : "→ ") +
+                play.getYards() + " jds";
+            case RUN -> play.getPlayerName() + " corrida → " + play.getYards() + " jds";
+            case TOUCHDOWN -> play.getPlayerName() + " passe, " +
+                (play.getReceiverName() != null ? play.getReceiverName() + " " : "") +
+                "touchdown! → " + play.getYards() + " jds";
+            case INTERCEPTION -> play.getPlayerName() + " interceptação!";
+            case FIELD_GOAL -> play.getPlayerName() + " field goal → " + play.getYards() + " jds";
+            case PUNT -> play.getPlayerName() + " punt → " + play.getYards() + " jds";
+            case KICKOFF -> play.getPlayerName() + " kickoff";
+            case PENALTY -> play.getPlayerName() + " penalidade";
+            case FIRST_DOWN -> play.getPlayerName() + " first down → " + play.getYards() + " jds";
+        };
     }
 
     /**

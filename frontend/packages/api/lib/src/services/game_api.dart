@@ -2,6 +2,7 @@ import 'package:flag_domain/flag_domain.dart';
 
 import '../api_client.dart';
 import '../models/live_game_response.dart';
+import '../models/play_response.dart';
 
 /// Serviço REST de jogos.
 class GameApi {
@@ -91,6 +92,12 @@ class GameApi {
   Future<List<ScoreEvent>> listScoreEvents(String gameId) => _client.getList(
         '/api/v1/games/$gameId/score/events',
         ScoreEvent.fromJson,
+      );
+
+  /// Lista os lances (play-by-play) de um jogo.
+  Future<List<PlayResponse>> findPlaysByGameId(String gameId) => _client.getList(
+        '/api/v1/games/$gameId/plays',
+        PlayResponse.fromJson,
       );
 
   Map<String, dynamic> _body({
