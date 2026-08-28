@@ -226,12 +226,12 @@ class _NavItem extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                height: 69,
+                height: 83,
                 child: Center(
                   child: selected
                       ? _ActiveBadge(icon: icon)
                       : ExcludeSemantics(
-                          child: Icon(icon, size: 30, color: Colors.white),
+                          child: Icon(icon, size: 24, color: Colors.white),
                         ),
                 ),
               ),
@@ -240,9 +240,9 @@ class _NavItem extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: FontWeight.w500,
                   color: Colors.white,
                 ),
               ),
@@ -267,7 +267,9 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-/// Círculo branco 69px que "flutua" acima da barra, com ícone primário.
+/// Item ativo: círculo branco 69px (Ellipse 6) sobre um **halo cinza `#C4C4C4`
+/// de 83px** (Ellipse 5), centrados no mesmo ponto, "flutuando" ~10px acima da
+/// barra (estilo Shifty), com o ícone primário dentro.
 class _ActiveBadge extends StatelessWidget {
   final IconData icon;
 
@@ -275,27 +277,43 @@ class _ActiveBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // O círculo sobe ~10px acima da barra (estilo Shifty) e ganha uma sombra
-    // suave (aprox. do "Ellipse 5" 83px do Figma).
     return Transform.translate(
       offset: const Offset(0, -10),
-      child: Container(
-        width: 69,
-        height: 69,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x33202020),
-              blurRadius: 16,
-              offset: Offset(0, 4),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          // Halo cinza 83x83 (Ellipse 5) atrás do círculo branco.
+          const SizedBox(
+            width: 83,
+            height: 83,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Color(0xFFC4C4C4),
+                shape: BoxShape.circle,
+              ),
             ),
-          ],
-        ),
-        child: ExcludeSemantics(
-          child: Icon(icon, size: 30, color: AppColors.primary),
-        ),
+          ),
+          // Círculo branco 69x69 (Ellipse 6) com o ícone primário.
+          Container(
+            width: 69,
+            height: 69,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x33202020),
+                  blurRadius: 16,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ExcludeSemantics(
+              child: Icon(icon, size: 30, color: AppColors.primary),
+            ),
+          ),
+        ],
       ),
     );
   }
