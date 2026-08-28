@@ -26,13 +26,13 @@ class CompetitionStandingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final standingsAsync = ref.watch(
-      fakeCompetitionStandingsProvider(competitionId),
+      competitionStandingsProvider(competitionId),
     );
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(fakeCompetitionStandingsProvider(competitionId));
-        await ref.read(fakeCompetitionStandingsProvider(competitionId).future);
+        ref.invalidate(competitionStandingsProvider(competitionId));
+        await ref.read(competitionStandingsProvider(competitionId).future);
       },
       child: standingsAsync.when(
         loading: () => ListView(
@@ -49,7 +49,7 @@ class CompetitionStandingsScreen extends ConsumerWidget {
             AppErrorState(
               message: 'Não foi possível carregar a classificação',
               onRetry: () =>
-                  ref.invalidate(fakeCompetitionStandingsProvider(competitionId)),
+                  ref.invalidate(competitionStandingsProvider(competitionId)),
             ),
           ],
         ),
