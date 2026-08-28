@@ -31,9 +31,8 @@ class PublicShell extends ConsumerWidget {
   const PublicShell({super.key, required this.navigationShell});
 
   static const List<_NavDestination> _destinations = [
-    _NavDestination(label: 'Início', icon: Icons.home_rounded),
-    _NavDestination(label: 'Campeonato', icon: Icons.emoji_events_rounded),
     _NavDestination(label: 'Ao vivo', icon: Icons.sensors_rounded),
+    _NavDestination(label: 'Campeonato', icon: Icons.emoji_events_rounded),
     _NavDestination(label: 'Sobre', icon: Icons.info_rounded),
   ];
 
@@ -61,10 +60,9 @@ void _goToTab(BuildContext context, WidgetRef ref, int index) {
     return;
   }
   context.go(switch (index) {
-    0 => '/',
-    2 => '/live',
-    3 => '/about',
-    _ => '/',
+    0 => '/live',
+    2 => '/about',
+    _ => '/live',
   });
 }
 
@@ -103,7 +101,7 @@ class _RailShell extends ConsumerWidget {
               backgroundColor: AppColors.surface,
               selectedIndex: navigationShell.currentIndex,
               onDestinationSelected: (index) => _goToTab(context, ref, index),
-              labelType: NavigationRailLabelType.all,
+              labelType: NavigationRailLabelType.none,
               groupAlignment: -0.8,
               indicatorColor: AppColors.primary.withValues(alpha: 0.12),
               selectedIconTheme: const IconThemeData(
@@ -113,16 +111,6 @@ class _RailShell extends ConsumerWidget {
               unselectedIconTheme: const IconThemeData(
                 color: AppColors.textSecondary,
                 size: 24,
-              ),
-              selectedLabelTextStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-              unselectedLabelTextStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
               ),
               destinations: [
                 for (final destination in PublicShell._destinations)
@@ -233,17 +221,6 @@ class _NavItem extends StatelessWidget {
                       : ExcludeSemantics(
                           child: Icon(icon, size: 24, color: Colors.white),
                         ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
                 ),
               ),
               if (selected) ...[

@@ -4,19 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/competition_card.dart';
 import 'competition_games_screen.dart';
 import 'competition_results_screen.dart';
 import 'competition_standings_screen.dart';
 
 /// Hub do campeonato em foco (issue #389): container com `TabBar`.
 ///
-/// Deixa de ser o placeholder da issue #28 e passa a ser a raiz da aba
-/// Campeonato. Exibe o cabeçalho com o nome do campeonato + affordance
-/// "Trocar" (leva ao Início para escolher outro campeonato) e três abas:
-/// Jogos, Resultados e Classificação — reaproveitando os widgets atuais.
-///
-/// Sem campeonato em foco (e sem `id` na rota) mostra um orientador
-/// (`AppEmptyState` + botão "Ver campeonatos").
+/// A aba Campeonato mostra a lista de campeonatos ao abrir (quando não há
+/// campeonato em foco). Ao selecionar um campeonato, exibe o hub com três abas:
+/// Jogos, Resultados e Classificação. O botão "Trocar" volta para a lista
+/// dentro da mesma aba.
 class CompetitionDetailScreen extends ConsumerStatefulWidget {
   /// Id vindo da rota (`/competition/:id`); `null` na rota `/competition`.
   final String? competitionId;
@@ -103,7 +101,10 @@ class _CompetitionDetailScreenState
         title: Text(title),
         actions: [
           TextButton.icon(
-            onPressed: () => context.go('/'),
+            onPressed: () {
+              ref.read(focusedCompetitionProvider.notifier).set(null);
+              context.go('/competition');
+            },
             style: TextButton.styleFrom(foregroundColor: Colors.white),
             icon: const Icon(Icons.swap_horiz, size: 20),
             label: const Text('Trocar'),
@@ -152,38 +153,45 @@ class _CompetitionDetailScreenState
     );
   }
 
-  /// Orientador exibido quando nenhum campeonato está em foco.
+  /// Lista de campeonatos exibida quando nenhum campeonato está em foco.
   Widget _buildEmpty(BuildContext context) {
+    final competitions = ref.watch(competitionsProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Campeonato')),
-      body: AppLayout.content(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.emoji_events_outlined,
-                  size: 56,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Escolha um campeonato para acompanhar',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () => context.go('/'),
-                  icon: const Icon(Icons.sports_football_outlined),
-                  label: const Text('Ver campeonatos'),
-                ),
-              ],
-            ),
-          ),
+      appBar: AppBar(title: const Text('Campeonatos')),
+      body: competitions.when(
+        loading: () => const AppLoading(message: 'Carregando campeonatos...'),
+        error: (error, stackTrace) => AppErrorState(
+          message: 'Não foi possível carregar os campeonatos',
+          onRetry: () => ref.invalidate(competitionsProvider),
         ),
+        data: (items) {
+          if (items.isEmpty) {
+            return const AppEmptyState(
+              message: 'Nenhum campeonato disponível',
+              icon: Icons.sports_football,
+            );
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final competition = items[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: CompetitionCard(
+                  competition: competition,
+                  onTap: () {
+                    ref.read(focusedCompetitionProvider.notifier).set(
+                      (id: competition.id, name: competition.name),
+                    );
+                    context.go('/competition/${competition.id}');
+                  },
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
