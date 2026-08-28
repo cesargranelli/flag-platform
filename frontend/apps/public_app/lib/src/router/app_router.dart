@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import '../screens/about_screen.dart';
 import '../screens/competition_detail_screen.dart';
 import '../screens/game_detail_screen.dart';
-import '../screens/home_screen.dart';
 import '../screens/live_screen.dart';
 import '../screens/team_detail_screen.dart';
 import '../widgets/public_shell.dart';
@@ -26,21 +25,19 @@ class AppRouter {
         builder: (context, state, navigationShell) =>
             PublicShell(navigationShell: navigationShell),
         branches: [
-          // Aba Início: lista de campeonatos.
+          // Aba Ao vivo: timeline de livescore (dados fake, #391).
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/',
-                name: 'home',
-                builder: (context, state) => const HomeScreen(),
+                path: '/live',
+                name: 'live',
+                builder: (context, state) => const LiveScreen(),
               ),
             ],
           ),
-          // Aba Campeonato: hub do campeonato em foco (ou orientador vazio).
+          // Aba Campeonato: hub do campeonato em foco (ou lista quando vazio).
           StatefulShellBranch(
             routes: [
-              // Rota sem id: usada quando não há campeonato em foco — o hub
-              // exibe o orientador "Escolha um campeonato" (#389).
               GoRoute(
                 path: '/competition',
                 name: 'competitionHub',
@@ -49,8 +46,6 @@ class AppRouter {
               GoRoute(
                 path: '/competition/:id',
                 name: 'competitionDetail',
-                // O nome pode vir via `extra`; em deep links a tela usa o
-                // campeonato em foco como fallback (e define o foco).
                 builder: (context, state) => CompetitionDetailScreen(
                   competitionId: state.pathParameters['id']!,
                   competitionName: state.extra as String?,
@@ -84,16 +79,6 @@ class AppRouter {
                     ),
                   ),
                 ],
-              ),
-            ],
-          ),
-          // Aba Ao vivo: timeline de livescore (dados fake, #391).
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/live',
-                name: 'live',
-                builder: (context, state) => const LiveScreen(),
               ),
             ],
           ),
