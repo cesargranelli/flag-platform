@@ -22,6 +22,7 @@ class MatchScoreCard extends StatelessWidget {
   final bool showMeta;
   final bool showRound;
   final bool showVenue;
+  final bool showClubLogos;
   final bool showPlayByPlay;
   final VoidCallback? onHomeTeamTap;
   final VoidCallback? onAwayTeamTap;
@@ -35,6 +36,7 @@ class MatchScoreCard extends StatelessWidget {
     this.showMeta = false,
     this.showRound = false,
     this.showVenue = false,
+    this.showClubLogos = false,
     this.showPlayByPlay = false,
     this.onHomeTeamTap,
     this.onAwayTeamTap,
@@ -89,10 +91,18 @@ class MatchScoreCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
-                        child: _TeamName(
-                          label: homeLabel,
-                          textAlign: TextAlign.right,
-                          onTap: onHomeTeamTap,
+                        child: Column(
+                          children: [
+                            if (showClubLogos) ...[
+                              _ClubLogo(teamName: homeLabel, color: AppColors.primary),
+                              const SizedBox(height: 4),
+                            ],
+                            _TeamName(
+                              label: homeLabel,
+                              textAlign: TextAlign.right,
+                              onTap: onHomeTeamTap,
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -117,10 +127,18 @@ class MatchScoreCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: _TeamName(
-                          label: awayLabel,
-                          textAlign: TextAlign.left,
-                          onTap: onAwayTeamTap,
+                        child: Column(
+                          children: [
+                            if (showClubLogos) ...[
+                              _ClubLogo(teamName: awayLabel, color: AppColors.secondary),
+                              const SizedBox(height: 4),
+                            ],
+                            _TeamName(
+                              label: awayLabel,
+                              textAlign: TextAlign.left,
+                              onTap: onAwayTeamTap,
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -420,5 +438,44 @@ class _WeatherIcon extends StatelessWidget {
       5 => 'Frio',
       _ => 'Clima',
     };
+  }
+}
+
+/// Ícone placeholder do escudo do time.
+///
+/// Gera um ícone determinístico baseado no nome do time — em produção será
+/// substituído por Image.asset/Image.network com o escudo real.
+class _ClubLogo extends StatelessWidget {
+  final String teamName;
+  final Color color;
+
+  const _ClubLogo({required this.teamName, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final hash = teamName.hashCode;
+    final icons = [
+      Icons.shield,
+      Icons.shield_outlined,
+      Icons.emoji_events,
+      Icons.star,
+      Icons.pets,
+      Icons.local_fire_department,
+    ];
+    final index = hash.abs() % icons.length;
+
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        icons[index],
+        size: 20,
+        color: color,
+      ),
+    );
   }
 }

@@ -133,13 +133,28 @@ final teamRosterProvider = FutureProvider.family<List<RosterEntry>, String>(
   (ref, teamId) => ref.watch(rosterApiProvider).listByTeam(teamId),
 );
 
+/// Jogo enriquecido para a tela Ao vivo (com metadados de filtro).
+class LiveGame {
+  final Game game;
+  final String competitionName;
+  final Modality modality;
+  final Gender gender;
+
+  const LiveGame({
+    required this.game,
+    required this.competitionName,
+    required this.modality,
+    required this.gender,
+  });
+}
+
 /// Dados FAKE de livescore (issue #391) — demonstração do "Ao vivo" no próprio
 /// app, sem backend. Só um Provider que gera jogos ao vivo/encerrados com
-/// datas relativas ao momento da leitura.
-final fakeLiveGamesProvider = Provider<List<Game>>((ref) {
+/// datas relativas ao momento da leitura e metadados de filtro.
+final fakeLiveGamesProvider = Provider<List<LiveGame>>((ref) {
   final now = DateTime.now();
 
-  Game live(
+  LiveGame live(
     String id,
     String home,
     String away,
@@ -147,27 +162,35 @@ final fakeLiveGamesProvider = Provider<List<Game>>((ref) {
     int awayScore,
     String venue,
     int round,
-    Duration ago,
-  ) {
-    return Game(
-      id: id,
-      roundId: 'round-$round',
-      competitionId: 'fake',
-      roundNumber: round,
-      homeTeamId: 'team-$id-h',
-      awayTeamId: 'team-$id-a',
-      homeTeamName: home,
-      awayTeamName: away,
-      venueId: 'venue-$id',
-      venueName: venue,
-      scheduledAt: now.subtract(ago),
-      status: GameStatus.inProgress,
-      homeScore: homeScore,
-      awayScore: awayScore,
+    Duration ago, {
+    required String competition,
+    required Modality modality,
+    required Gender gender,
+  }) {
+    return LiveGame(
+      game: Game(
+        id: id,
+        roundId: 'round-$round',
+        competitionId: 'fake-${competition.hashCode}',
+        roundNumber: round,
+        homeTeamId: 'team-$id-h',
+        awayTeamId: 'team-$id-a',
+        homeTeamName: home,
+        awayTeamName: away,
+        venueId: 'venue-$id',
+        venueName: venue,
+        scheduledAt: now.subtract(ago),
+        status: GameStatus.inProgress,
+        homeScore: homeScore,
+        awayScore: awayScore,
+      ),
+      competitionName: competition,
+      modality: modality,
+      gender: gender,
     );
   }
 
-  Game finished(
+  LiveGame finished(
     String id,
     String home,
     String away,
@@ -175,35 +198,52 @@ final fakeLiveGamesProvider = Provider<List<Game>>((ref) {
     int awayScore,
     String venue,
     int round,
-    Duration ago,
-  ) {
-    return Game(
-      id: id,
-      roundId: 'round-$round',
-      competitionId: 'fake',
-      roundNumber: round,
-      homeTeamId: 'team-$id-h',
-      awayTeamId: 'team-$id-a',
-      homeTeamName: home,
-      awayTeamName: away,
-      venueId: 'venue-$id',
-      venueName: venue,
-      scheduledAt: now.subtract(ago),
-      status: GameStatus.finished,
-      homeScore: homeScore,
-      awayScore: awayScore,
+    Duration ago, {
+    required String competition,
+    required Modality modality,
+    required Gender gender,
+  }) {
+    return LiveGame(
+      game: Game(
+        id: id,
+        roundId: 'round-$round',
+        competitionId: 'fake-${competition.hashCode}',
+        roundNumber: round,
+        homeTeamId: 'team-$id-h',
+        awayTeamId: 'team-$id-a',
+        homeTeamName: home,
+        awayTeamName: away,
+        venueId: 'venue-$id',
+        venueName: venue,
+        scheduledAt: now.subtract(ago),
+        status: GameStatus.finished,
+        homeScore: homeScore,
+        awayScore: awayScore,
+      ),
+      competitionName: competition,
+      modality: modality,
+      gender: gender,
     );
   }
 
   return [
-    live('live-1', 'Clube 01', 'Clube 02', 14, 8, 'Campo 01', 1, const Duration(minutes: 35)),
-    live('live-2', 'Clube 03', 'Clube 04', 0, 6, 'Campo 02', 1, const Duration(minutes: 12)),
-    live('live-3', 'Clube 05', 'Clube 06', 21, 14, 'Campo 01', 2, const Duration(minutes: 55)),
-    live('live-4', 'Clube 07', 'Clube 08', 7, 7, 'Campo 02', 2, const Duration(hours: 1, minutes: 18)),
-    finished('done-1', 'Clube 09', 'Clube 10', 21, 0, 'Campo 01', 3, const Duration(hours: 2)),
-    finished('done-2', 'Clube 11', 'Clube 12', 12, 22, 'Campo 02', 3, const Duration(hours: 2, minutes: 40)),
+    live('live-1', 'Tigers', 'Lynx', 14, 8, 'Campo Central', 1, const Duration(minutes: 35),
+        competition: 'Copa Brasil', modality: Modality.flag5x5, gender: Gender.male),
+    live('live-2', 'Eagles', 'Hawks', 0, 6, 'Campo Norte', 1, const Duration(minutes: 12),
+        competition: 'Copa Brasil', modality: Modality.flag8x8, gender: Gender.male),
+    live('live-3', 'Wolves', 'Bears', 21, 14, 'Campo Sul', 2, const Duration(minutes: 55),
+        competition: 'Liga Regional', modality: Modality.flag5x5, gender: Gender.female),
+    live('live-4', 'Falcons', 'Panthers', 7, 7, 'Campo Leste', 2, const Duration(hours: 1, minutes: 18),
+        competition: 'Liga Regional', modality: Modality.flag9x9, gender: Gender.female),
+    finished('done-1', 'Sharks', 'Dolphins', 21, 0, 'Campo Central', 3, const Duration(hours: 2),
+        competition: 'Copa Brasil', modality: Modality.flag5x5, gender: Gender.mixed),
+    finished('done-2', 'Lions', 'Tigers', 12, 22, 'Campo Norte', 3, const Duration(hours: 2, minutes: 40),
+        competition: 'Copa Brasil', modality: Modality.flag9x9, gender: Gender.male),
   ];
 });
+
+/// Filtro ativo na tela Ao vivo.
+enum LiveFilter { all, competition, modality, gender }
 
 /// Tipo de lance de futebol americano.
 enum PlayType {
@@ -275,7 +315,7 @@ final fakePlayByPlayProvider =
       playerName: 'Carlos Silva',
       receiverName: 'Pedro Costa',
       type: PlayType.pass,
-      description: 'Carlos Silva passe completo, Pedro Costa recepção → 12 jds',
+      description: 'Carlos Silva → Pedro Costa | 12 jds',
       yards: 12,
       quarter: 'Q2',
       time: '08:32',
@@ -288,7 +328,7 @@ final fakePlayByPlayProvider =
       teamName: homeTeam,
       playerName: 'Pedro Costa',
       type: PlayType.run,
-      description: 'Pedro Costa corrida → 5 jds',
+      description: 'Pedro Costa | 5 jds',
       yards: 5,
       quarter: 'Q2',
       time: '08:15',
@@ -301,7 +341,7 @@ final fakePlayByPlayProvider =
       playerName: 'Lucas Ferreira',
       receiverName: 'Gabriel Oliveira',
       type: PlayType.pass,
-      description: 'Lucas Ferreira passe completo, Gabriel Oliveira recepção → 8 jds',
+      description: 'Lucas Ferreira → Gabriel Oliveira | 8 jds',
       yards: 8,
       quarter: 'Q2',
       time: '07:58',
@@ -313,7 +353,7 @@ final fakePlayByPlayProvider =
       teamName: awayTeam,
       playerName: 'André Mendes',
       type: PlayType.interception,
-      description: 'André Mendes interceptação!',
+      description: 'André Mendes | Interceptação!',
       yards: 0,
       quarter: 'Q2',
       time: '07:45',
@@ -326,7 +366,7 @@ final fakePlayByPlayProvider =
       teamName: awayTeam,
       playerName: 'Rafael Santos',
       type: PlayType.run,
-      description: 'Rafael Santos corrida → 3 jds',
+      description: 'Rafael Santos | 3 jds',
       yards: 3,
       quarter: 'Q2',
       time: '07:30',
@@ -339,7 +379,7 @@ final fakePlayByPlayProvider =
       playerName: 'Gabriel Oliveira',
       receiverName: 'Lucas Ferreira',
       type: PlayType.touchdown,
-      description: 'Gabriel Oliveira passe, Lucas Ferreira touchdown! → 25 jds',
+      description: 'Gabriel Oliveira → Lucas Ferreira | 25 jds — TOUCHDOWN!',
       yards: 25,
       quarter: 'Q2',
       time: '07:12',
