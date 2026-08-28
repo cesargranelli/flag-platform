@@ -141,9 +141,10 @@ class _RailShell extends ConsumerWidget {
   }
 }
 
-/// Barra inferior flutuante (estilo Shifty): fundo `surface`, raio 32,
-/// margem lateral 16, sombra para cima (`0x17201F1F` blur 56 offset (0,−7)),
-/// respeitando a safe area inferior.
+/// Barra inferior flutuante (fiel ao Figma Shifty): fundo PRETO `#1B1D21`,
+/// raio 20, margem lateral 16, sombra para cima (`0x17201F1F` blur 56 offset
+/// (0,−7)), respeitando a safe area inferior. `clipBehavior: Clip.none` para o
+/// círculo branco do item ativo "flutuar" acima da barra.
 class _FlagBottomBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
@@ -160,9 +161,10 @@ class _FlagBottomBar extends StatelessWidget {
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        clipBehavior: Clip.none,
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(32),
+          color: const Color(0xFF1B1D21),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: const [
             BoxShadow(
               color: Color(0x17201F1F),
@@ -172,7 +174,7 @@ class _FlagBottomBar extends StatelessWidget {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           child: Row(
             children: [
               for (var i = 0; i < PublicShell._destinations.length; i++)
@@ -192,10 +194,9 @@ class _FlagBottomBar extends StatelessWidget {
   }
 }
 
-/// Item da navegação: círculo/ícone + rótulo + indicador quando ativo.
-///
-/// O item inteiro é o alvo de toque (`>=48px`). O ícone é decorativo
-/// (`excludeSemantics`) — o rótulo é exposto via [Semantics].
+/// Item da navegação: ícone + rótulo; quando ativo, o ícone fica dentro de um
+/// **círculo branco 69px** (que flutua sobre a barra) `AppColors.primary` e
+/// há uma **barrinha `#333333`** abaixo.
 class _NavItem extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -228,13 +229,9 @@ class _NavItem extends StatelessWidget {
                 height: 69,
                 child: Center(
                   child: selected
-                      ? _ActiveCircle(icon: icon)
+                      ? _ActiveBadge(icon: icon)
                       : ExcludeSemantics(
-                          child: Icon(
-                            icon,
-                            size: 30,
-                            color: AppColors.textSecondary,
-                          ),
+                          child: Icon(icon, size: 30, color: Colors.white),
                         ),
                 ),
               ),
@@ -243,28 +240,20 @@ class _NavItem extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: selected
-                    ? const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      )
-                    : const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
-                      ),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: Colors.white,
+                ),
               ),
-              // Barrinha sob o item ativo (134x5), limitada à largura do item
-              // para não estourar em telas muito estreitas.
               if (selected) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 LayoutBuilder(
                   builder: (context, constraints) => Container(
                     width: math.min(134.0, constraints.maxWidth),
                     height: 5,
                     decoration: BoxDecoration(
-                      color: const Color(0x26040415),
+                      color: const Color(0xFF333333),
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -278,30 +267,35 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-/// Círculo branco 69px com sombra atrás do ícone primário (item ativo).
-class _ActiveCircle extends StatelessWidget {
+/// Círculo branco 69px que "flutua" acima da barra, com ícone primário.
+class _ActiveBadge extends StatelessWidget {
   final IconData icon;
 
-  const _ActiveCircle({required this.icon});
+  const _ActiveBadge({required this.icon});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 69,
-      height: 69,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        shape: BoxShape.circle,
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F201F1F),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ExcludeSemantics(
-        child: Icon(icon, size: 30, color: AppColors.primary),
+    // O círculo sobe ~10px acima da barra (estilo Shifty) e ganha uma sombra
+    // suave (aprox. do "Ellipse 5" 83px do Figma).
+    return Transform.translate(
+      offset: const Offset(0, -10),
+      child: Container(
+        width: 69,
+        height: 69,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x33202020),
+              blurRadius: 16,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ExcludeSemantics(
+          child: Icon(icon, size: 30, color: AppColors.primary),
+        ),
       ),
     );
   }
