@@ -1,9 +1,11 @@
+import 'package:flag_domain/flag_domain.dart';
 import 'package:go_router/go_router.dart';
 
 import '../screens/about_screen.dart';
 import '../screens/competition_detail_screen.dart';
 import '../screens/game_detail_screen.dart';
 import '../screens/live_screen.dart';
+import '../screens/play_by_play_screen.dart';
 import '../screens/team_detail_screen.dart';
 import '../widgets/public_shell.dart';
 
@@ -124,6 +126,17 @@ class AppRouter {
           return TeamDetailScreen(
             teamId: args?.teamId ?? state.pathParameters['id']!,
             teamName: args?.teamName ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/live/:id/plays',
+        name: 'playByPlay',
+        builder: (context, state) {
+          final args = state.extra as Game?;
+          return PlayByPlayScreen(
+            gameId: state.pathParameters['id']!,
+            game: args,
           );
         },
       ),
