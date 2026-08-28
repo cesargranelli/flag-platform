@@ -225,6 +225,7 @@ class Play {
   final String teamId;
   final String teamName;
   final String playerName;
+  final String? receiverName;
   final String? playerPhotoUrl;
   final PlayType type;
   final String description;
@@ -241,6 +242,7 @@ class Play {
     required this.teamId,
     required this.teamName,
     required this.playerName,
+    this.receiverName,
     this.playerPhotoUrl,
     required this.type,
     required this.description,
@@ -271,8 +273,9 @@ final fakePlayByPlayProvider =
       teamId: 'team-a',
       teamName: homeTeam,
       playerName: 'Carlos Silva',
+      receiverName: 'Pedro Costa',
       type: PlayType.pass,
-      description: 'Passe completo → 12 jds',
+      description: 'Carlos Silva passe completo, Pedro Costa recepção → 12 jds',
       yards: 12,
       quarter: 'Q2',
       time: '08:32',
@@ -285,7 +288,7 @@ final fakePlayByPlayProvider =
       teamName: homeTeam,
       playerName: 'Pedro Costa',
       type: PlayType.run,
-      description: 'Corrida → 5 jds',
+      description: 'Pedro Costa corrida → 5 jds',
       yards: 5,
       quarter: 'Q2',
       time: '08:15',
@@ -296,8 +299,9 @@ final fakePlayByPlayProvider =
       teamId: 'team-a',
       teamName: homeTeam,
       playerName: 'Lucas Ferreira',
+      receiverName: 'Gabriel Oliveira',
       type: PlayType.pass,
-      description: 'Passe completo → 8 jds',
+      description: 'Lucas Ferreira passe completo, Gabriel Oliveira recepção → 8 jds',
       yards: 8,
       quarter: 'Q2',
       time: '07:58',
@@ -309,7 +313,7 @@ final fakePlayByPlayProvider =
       teamName: awayTeam,
       playerName: 'André Mendes',
       type: PlayType.interception,
-      description: 'Interceptação!',
+      description: 'André Mendes interceptação!',
       yards: 0,
       quarter: 'Q2',
       time: '07:45',
@@ -322,7 +326,7 @@ final fakePlayByPlayProvider =
       teamName: awayTeam,
       playerName: 'Rafael Santos',
       type: PlayType.run,
-      description: 'Corrida → 3 jds',
+      description: 'Rafael Santos corrida → 3 jds',
       yards: 3,
       quarter: 'Q2',
       time: '07:30',
@@ -333,8 +337,9 @@ final fakePlayByPlayProvider =
       teamId: 'team-a',
       teamName: homeTeam,
       playerName: 'Gabriel Oliveira',
+      receiverName: 'Lucas Ferreira',
       type: PlayType.touchdown,
-      description: 'Touchdown! Passe de 25 jds',
+      description: 'Gabriel Oliveira passe, Lucas Ferreira touchdown! → 25 jds',
       yards: 25,
       quarter: 'Q2',
       time: '07:12',

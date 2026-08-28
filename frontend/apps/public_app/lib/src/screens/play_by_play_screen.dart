@@ -277,6 +277,10 @@ class _QuarterSeparator extends StatelessWidget {
 }
 
 /// Card de lance individual.
+///
+/// O layout inverte conforme o lado da ação:
+/// - Time A (laranja): [ícone] [conteúdo] [horário] (borda à esquerda)
+/// - Time B (azul): [horário] [conteúdo] [ícone] (borda à direita)
 class _PlayCard extends StatelessWidget {
   final Play play;
 
@@ -284,14 +288,68 @@ class _PlayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final teamColor = play.teamId == 'team-a' ? AppColors.primary : Colors.blue;
+    final isTeamA = play.teamId == 'team-a';
+    final teamColor = isTeamA ? AppColors.primary : Colors.blue;
+
+    final iconWidget = Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: teamColor.withValues(alpha: 0.1),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        _playIcon(play.type),
+        color: teamColor,
+        size: 20,
+      ),
+    );
+
+    final contentWidget = Expanded(
+      child: Column(
+        crossAxisAlignment:
+            isTeamA ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+        children: [
+          Text(
+            play.playerName,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            play.description,
+            textAlign: isTeamA ? TextAlign.left : TextAlign.right,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          if (play.isFirstDown || play.isTouchdown || play.isTurnover) ...[
+            const SizedBox(height: 4),
+            _PlayBadge(play: play),
+          ],
+        ],
+      ),
+    );
+
+    final timeWidget = Text(
+      play.time,
+      style: const TextStyle(
+        fontSize: 12,
+        color: AppColors.textSecondary,
+      ),
+    );
 
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border(
-          left: BorderSide(color: teamColor, width: 3),
+          left: isTeamA ? BorderSide(color: teamColor, width: 3) : BorderSide.none,
+          right: isTeamA ? BorderSide.none : BorderSide(color: teamColor, width: 3),
         ),
         boxShadow: [
           BoxShadow(
@@ -305,59 +363,18 @@ class _PlayCard extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            // Foto do jogador (placeholder)
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: teamColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                _playIcon(play.type),
-                color: teamColor,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Conteúdo do lance
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    play.playerName,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    play.description,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  if (play.isFirstDown || play.isTouchdown || play.isTurnover) ...[
-                    const SizedBox(height: 4),
-                    _PlayBadge(play: play),
-                  ],
-                ],
-              ),
-            ),
-
-            // Timestamp
-            Text(
-              play.time,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-            ),
+            if (isTeamA) ...[
+              iconWidget,
+              const SizedBox(width: 12),
+              contentWidget,
+              timeWidget,
+            ] else ...[
+              timeWidget,
+              const SizedBox(width: 12),
+              contentWidget,
+              const SizedBox(width: 12),
+              iconWidget,
+            ],
           ],
         ),
       ),
