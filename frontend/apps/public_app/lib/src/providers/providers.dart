@@ -2,6 +2,60 @@ import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Um campeonato "em foco": o que o torcedor escolheu para acompanhar.
+///
+/// Só o par `id`/`name` é retido (o restante vem dos providers de dados).
+typedef FocusedCompetition = ({String id, String name});
+
+/// Chave persistida do id do campeonato em foco (SharedPreferences).
+const _focusedCompetitionIdKey = 'public_focused_competition_id';
+
+/// Chave persistida do nome do campeonato em foco (SharedPreferences).
+const _focusedCompetitionNameKey = 'public_focused_competition_name';
+
+/// Notifier do campeonato em foco, persistido em [SharedPreferences].
+///
+/// O estado inicial pode ser semeado no `main` via [seedFocusedCompetition]
+/// (override do provider) para evitar um instante de "sem foco" no boot;
+/// [set] persiste e notifica. Consumidores usam
+/// `ref.watch(focusedCompetitionProvider)` para ler o valor.
+class FocusedCompetitionNotifier extends Notifier<FocusedCompetition?> {
+  FocusedCompetitionNotifier({FocusedCompetition? initial}) : _initial = initial;
+
+  final FocusedCompetition? _initial;
+
+  @override
+  FocusedCompetition? build() => _initial;
+
+  /// Define (ou limpa, com `null`) o campeonato em foco e persiste.
+  Future<void> set(FocusedCompetition? value) async {
+    state = value;
+    final prefs = await SharedPreferences.getInstance();
+    if (value == null) {
+      await prefs.remove(_focusedCompetitionIdKey);
+      await prefs.remove(_focusedCompetitionNameKey);
+      return;
+    }
+    await prefs.setString(_focusedCompetitionIdKey, value.id);
+    await prefs.setString(_focusedCompetitionNameKey, value.name);
+  }
+}
+
+/// Provider do campeonato em foco (persistente).
+final focusedCompetitionProvider =
+    NotifierProvider<FocusedCompetitionNotifier, FocusedCompetition?>(
+      FocusedCompetitionNotifier.new,
+    );
+
+/// Lê o campeonato em foco persistido, para semear o provider no `main`.
+FocusedCompetition? seedFocusedCompetition(SharedPreferences prefs) {
+  final id = prefs.getString(_focusedCompetitionIdKey);
+  final name = prefs.getString(_focusedCompetitionNameKey);
+  if (id == null || id.isEmpty || name == null || name.isEmpty) return null;
+  return (id: id, name: name);
+}
 
 /// Gerenciador de sessão do app público.
 ///

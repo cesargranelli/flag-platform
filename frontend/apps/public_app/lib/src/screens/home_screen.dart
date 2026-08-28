@@ -38,9 +38,15 @@ class HomeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: CompetitionCard(
                   competition: competition,
-                  onTap: () =>
-                      context.push('/competition/${competition.id}',
-                          extra: competition.name),
+                  // Definiu-se o "campeonato em foco" e navega para a aba
+                  // Campeonato (issue #389). O `go` troca de aba/página
+                  // enquanto o `push` empilharia sobre a barra inferior.
+                  onTap: () {
+                    ref.read(focusedCompetitionProvider.notifier).set(
+                      (id: competition.id, name: competition.name),
+                    );
+                    context.go('/competition/${competition.id}');
+                  },
                 ),
               );
             },

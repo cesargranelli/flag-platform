@@ -25,57 +25,53 @@ class CompetitionStandingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final title = competitionName.isEmpty ? 'Classificação' : competitionName;
     final standingsAsync = ref.watch(
       competitionStandingsProvider(competitionId),
     );
 
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(competitionStandingsProvider(competitionId));
-          await ref.read(competitionStandingsProvider(competitionId).future);
-        },
-        child: standingsAsync.when(
-          loading: () => ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: const [
-              SizedBox(height: 120),
-              AppLoading(message: 'Carregando classificação...'),
-            ],
-          ),
-          error: (error, stackTrace) => ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: [
-              const SizedBox(height: 120),
-              AppErrorState(
-                message: 'Não foi possível carregar a classificação',
-                onRetry: () =>
-                    ref.invalidate(competitionStandingsProvider(competitionId)),
-              ),
-            ],
-          ),
-          data: (standings) {
-            if (standings.isEmpty) {
-              return ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 120),
-                  AppEmptyState(
-                    message: 'Nenhuma classificação disponível',
-                    icon: Icons.leaderboard_outlined,
-                  ),
-                ],
-              );
-            }
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(competitionStandingsProvider(competitionId));
+        await ref.read(competitionStandingsProvider(competitionId).future);
+      },
+      child: standingsAsync.when(
+        loading: () => ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 120),
+            AppLoading(message: 'Carregando classificação...'),
+          ],
+        ),
+        error: (error, stackTrace) => ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            const SizedBox(height: 120),
+            AppErrorState(
+              message: 'Não foi possível carregar a classificação',
+              onRetry: () =>
+                  ref.invalidate(competitionStandingsProvider(competitionId)),
+            ),
+          ],
+        ),
+        data: (standings) {
+          if (standings.isEmpty) {
             return ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              children: [_StandingsTable(standings: standings)],
+              children: const [
+                SizedBox(height: 120),
+                AppEmptyState(
+                  message: 'Nenhuma classificação disponível',
+                  icon: Icons.leaderboard_outlined,
+                ),
+              ],
             );
-          },
-        ),
+          }
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            children: [_StandingsTable(standings: standings)],
+          );
+        },
       ),
     );
   }
