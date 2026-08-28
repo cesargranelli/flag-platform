@@ -93,19 +93,23 @@ class ScoreTimeline extends StatelessWidget {
   }
 
   Widget _eventBadge(bool isHome, int minute) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: (isHome ? AppColors.primary : AppColors.success)
-            .withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        'Ponto · $minute\'',
-        style: TextStyle(
-          fontSize: 12,
-          color: isHome ? AppColors.primary : AppColors.success,
-          fontWeight: FontWeight.bold,
+    final team = isHome ? 'time da casa' : 'time visitante';
+    return Semantics(
+      label: 'Ponto para o $team no minuto $minute',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: (isHome ? AppColors.primary : AppColors.success)
+              .withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          'Ponto · $minute\'',
+          style: TextStyle(
+            fontSize: 12,
+            color: isHome ? AppColors.primary : AppColors.success,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
