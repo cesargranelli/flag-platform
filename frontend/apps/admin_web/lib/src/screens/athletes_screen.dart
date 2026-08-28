@@ -17,19 +17,18 @@ class AthletesScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Atletas',
-      leading: BackButton(onPressed: () => context.go('/')),
       actions: [
         IconButton(
           tooltip: 'Importar CSV',
           icon: const Icon(Icons.upload_file),
           onPressed: () => context.push('/athletes/import'),
         ),
+        FilledButton.icon(
+          onPressed: () => context.go('/athletes/new'),
+          icon: const Icon(Icons.add),
+          label: const Text('Novo'),
+        ),
       ],
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Novo atleta',
-        onPressed: () => context.push('/athletes/new'),
-        child: const Icon(Icons.add),
-      ),
       body: athletes.when(
         loading: () => const AppLoading(message: 'Carregando atletas...'),
         error: (error, stackTrace) => AppErrorState(
@@ -79,7 +78,7 @@ class AthletesScreen extends ConsumerWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/athletes/${athlete.id}', extra: athlete),
+        onTap: () => context.go('/athletes/${athlete.id}', extra: athlete),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
 /// Importação em lote de atletas a partir de um arquivo CSV/TXT.
@@ -220,7 +219,6 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
 
     return AppScreen(
       title: 'Importar atletas',
-      leading: const AppBackButton(fallbackRoute: '/athletes'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

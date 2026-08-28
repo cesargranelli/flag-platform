@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
@@ -23,7 +22,6 @@ class TeamDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: team?.name ?? 'Time',
-      leading: AppBackButton(fallbackRoute: '/teams'),
       body: teamFuture == null
           ? _buildDetail(context, ref, team!)
           : teamFuture.when(
@@ -107,7 +105,7 @@ class TeamDetailScreen extends ConsumerWidget {
                     if (canEdit)
                       FilledButton.icon(
                         onPressed: () =>
-                            context.push('/teams/${team.id}/edit', extra: team),
+                            context.go('/teams/${team.id}/edit', extra: team),
                         icon: const Icon(Icons.edit_outlined),
                         label: const Text('Editar dados'),
                       )

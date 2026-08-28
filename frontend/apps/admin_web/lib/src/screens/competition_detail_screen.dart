@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
 /// Detalhe de um campeonato em sessões espelhando o wizard (#306),
@@ -61,7 +60,6 @@ class _CompetitionDetailScreenState
 
     return AppScreen(
       title: widget.competition?.name ?? 'Campeonato',
-      leading: AppBackButton(fallbackRoute: '/competitions'),
       body: Column(
         children: [
           Padding(
@@ -200,7 +198,7 @@ class _CompetitionDetailScreenState
                 runSpacing: 8,
                 children: [
                   FilledButton.icon(
-                    onPressed: () => context.push(
+                    onPressed: () => context.go(
                       '/competitions/${comp.id}/edit',
                       extra: comp,
                     ),
@@ -213,7 +211,7 @@ class _CompetitionDetailScreenState
                     onPressed: () {
                       ref.read(selectedCompetitionProvider.notifier).state =
                           comp.id;
-                      context.push('/rounds');
+                      context.go('/rounds');
                     },
                     icon: const Icon(Icons.format_list_numbered),
                     label: const Text('Rodadas'),
@@ -402,7 +400,7 @@ class _CompetitionDetailScreenState
                 onPressed: () {
                   ref.read(selectedCompetitionProvider.notifier).state =
                       comp.id;
-                  context.push('/teams/associate', extra: comp.id);
+                  context.go('/teams/associate', extra: comp.id);
                 },
                 icon: const Icon(Icons.groups),
                 label: const Text('Associar clubes'),

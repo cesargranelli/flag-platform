@@ -40,7 +40,6 @@ class GamesScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Jogos',
-      leading: BackButton(onPressed: () => context.go('/')),
       actions: [
         if (selectedRound != null && canEdit)
           IconButton(
@@ -49,22 +48,20 @@ class GamesScreen extends ConsumerWidget {
             onPressed: () =>
                 context.push('/games/import', extra: selectedRound),
           ),
+        if (effectiveComp != null && canEdit)
+          FilledButton.icon(
+            onPressed: () => context.go(
+              '/games/new',
+              extra: (
+                competitionId: effectiveComp,
+                roundId: selectedRound,
+                game: null,
+              ),
+            ),
+            icon: const Icon(Icons.add),
+            label: const Text('Novo'),
+          ),
       ],
-      floatingActionButton:
-          effectiveComp != null && canEdit
-              ? FloatingActionButton(
-                  tooltip: 'Novo jogo',
-                  onPressed: () => context.push(
-                    '/games/new',
-                    extra: (
-                      competitionId: effectiveComp,
-                      roundId: selectedRound,
-                      game: null,
-                    ),
-                  ),
-                  child: const Icon(Icons.add),
-                )
-              : null,
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -212,14 +209,14 @@ class GamesScreen extends ConsumerWidget {
                                         return _gameCard(
                                           context,
                                           game,
-                                          onTap: () => context.push(
-                                            '/games/${game.id}',
-                                            extra: (
-                                              competitionId: effectiveComp,
-                                              roundId: game.roundId,
-                                              game: game,
-                                            ),
+onTap: () => context.go(
+                                          '/games/${game.id}',
+                                          extra: (
+                                            competitionId: effectiveComp,
+                                            roundId: game.roundId,
+                                            game: game,
                                           ),
+                                        ),
                                         );
                                       },
                                     );

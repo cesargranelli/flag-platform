@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
 const _roles = ['ADMIN', 'ORGANIZER', 'MESA'];
@@ -92,7 +91,6 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
   Widget build(BuildContext context) {
     return AppScreen(
       title: 'Novo usuário',
-      leading: AppBackButton(fallbackRoute: '/users'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

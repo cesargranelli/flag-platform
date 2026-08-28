@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
 /// Detalhe de uma organização em sessões espelhando o wizard (#323),
@@ -55,7 +54,6 @@ class _OrganizationDetailScreenState
 
     return AppScreen(
       title: org?.tradeName ?? 'Organização',
-      leading: AppBackButton(fallbackRoute: '/organizations'),
       body: Column(
         children: [
           Padding(
@@ -129,8 +127,11 @@ class _OrganizationDetailScreenState
                     color: AppColors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: const Icon(Icons.business,
-                      color: AppColors.primary, size: 36),
+                  child: Icon(
+                      organizationTypeIcon(org.organizationType),
+                      color: AppColors.primary,
+                      size: 36,
+                    ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(

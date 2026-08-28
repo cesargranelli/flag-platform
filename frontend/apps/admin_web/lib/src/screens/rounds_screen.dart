@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
@@ -45,19 +44,14 @@ class RoundsScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Rodadas',
-      // Issue #259: com pilha de navegação (ex.: vindo da tela do
-      // campeonato), o voltar retorna à origem via pop; em deep link/
-      // refresh cai no fallback (home), como antes.
-      leading: const AppBackButton(fallbackRoute: '/'),
-      floatingActionButton:
-          effectiveComp != null && canManage
-              ? FloatingActionButton(
-                  tooltip: 'Nova rodada',
-                  onPressed: () =>
-                      context.push('/rounds/new', extra: effectiveComp),
-                  child: const Icon(Icons.add),
-                )
-              : null,
+      actions: [
+        if (effectiveComp != null && canManage)
+          FilledButton.icon(
+            onPressed: () => context.go('/rounds/new', extra: effectiveComp),
+            icon: const Icon(Icons.add),
+            label: const Text('Novo'),
+          ),
+      ],
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -175,7 +169,7 @@ class RoundsScreen extends ConsumerWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/rounds/${round.id}', extra: round),
+        onTap: () => context.go('/rounds/${round.id}', extra: round),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

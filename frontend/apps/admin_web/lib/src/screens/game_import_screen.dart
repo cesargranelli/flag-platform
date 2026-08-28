@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
 typedef GameImportArgs = ({String roundId, String? competitionId});
@@ -236,7 +235,6 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
 
     return AppScreen(
       title: 'Importar jogos',
-      leading: AppBackButton(fallbackRoute: '/games'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

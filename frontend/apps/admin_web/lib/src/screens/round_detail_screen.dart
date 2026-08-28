@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
@@ -23,7 +22,6 @@ class RoundDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: round?.name ?? 'Rodada',
-      leading: AppBackButton(fallbackRoute: '/rounds'),
       body: roundFuture == null
           ? _buildDetail(context, ref, round!)
           : roundFuture.when(
@@ -113,7 +111,7 @@ class RoundDetailScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
                     if (canManage) ...[
                       FilledButton.icon(
-                        onPressed: () => context.push(
+                        onPressed: () => context.go(
                           '/rounds/${round.id}/edit',
                           extra: round,
                         ),
@@ -131,7 +129,7 @@ class RoundDetailScreen extends ConsumerWidget {
                               round.competitionId;
                           ref.read(selectedRoundProvider.notifier).state =
                               round.id;
-                          context.push('/games');
+                          context.go('/games');
                         },
                         icon: const Icon(Icons.sports),
                         label: const Text('Confrontos'),

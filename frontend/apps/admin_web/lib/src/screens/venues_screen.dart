@@ -21,12 +21,13 @@ class VenuesScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Campos',
-      leading: BackButton(onPressed: () => context.go('/')),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Novo campo',
-        onPressed: () => context.push('/venues/new'),
-        child: const Icon(Icons.add),
-      ),
+      actions: [
+        FilledButton.icon(
+          onPressed: () => context.go('/venues/new'),
+          icon: const Icon(Icons.add),
+          label: const Text('Novo'),
+        ),
+      ],
       body: venues.when(
         loading: () => const AppLoading(message: 'Carregando campos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -85,7 +86,7 @@ class VenuesScreen extends ConsumerWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/venues/${venue.id}', extra: venue),
+        onTap: () => context.go('/venues/${venue.id}', extra: venue),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

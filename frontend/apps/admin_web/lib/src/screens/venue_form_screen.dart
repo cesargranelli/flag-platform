@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
 /// Formulário de criação/edição de campo de jogo.
@@ -113,7 +112,6 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
 
     return AppScreen(
       title: _isEditing ? 'Editar campo' : 'Novo campo',
-      leading: AppBackButton(fallbackRoute: '/venues'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

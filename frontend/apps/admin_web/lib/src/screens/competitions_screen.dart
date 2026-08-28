@@ -33,12 +33,13 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
 
     return AppScreen(
       title: 'Campeonatos',
-      leading: BackButton(onPressed: () => context.go('/')),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Novo campeonato',
-        onPressed: () => context.push('/competitions/new'),
-        child: const Icon(Icons.add),
-      ),
+      actions: [
+        FilledButton.icon(
+          onPressed: () => context.go('/competitions/new'),
+          icon: const Icon(Icons.add),
+          label: const Text('Novo'),
+        ),
+      ],
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -131,7 +132,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () =>
-            context.push('/competitions/${competition.id}', extra: competition),
+            context.go('/competitions/${competition.id}', extra: competition),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

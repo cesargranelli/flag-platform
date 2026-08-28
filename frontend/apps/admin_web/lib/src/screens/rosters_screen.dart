@@ -42,7 +42,6 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
 
     return AppScreen(
       title: 'Elenco',
-      leading: BackButton(onPressed: () => context.go('/')),
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -272,7 +271,7 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
   void _handleCardTap(Organization org, Team? team, String competitionId) {
     final associated = team;
     if (associated != null) {
-      context.push('/teams/${associated.id}/roster', extra: associated);
+      context.go('/teams/${associated.id}/roster', extra: associated);
     } else {
       _associate(org, competitionId);
     }
@@ -297,7 +296,7 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
         ),
       );
       if (mounted) {
-        context.push('/teams/${team.id}/roster', extra: team);
+        context.go('/teams/${team.id}/roster', extra: team);
       }
     } on RepositoryException catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));

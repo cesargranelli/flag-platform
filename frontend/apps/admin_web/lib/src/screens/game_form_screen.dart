@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
 /// Argumentos de navegação do formulário de jogo.
@@ -138,7 +137,6 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
 
     return AppScreen(
       title: _isEditing ? 'Editar jogo' : 'Novo jogo',
-      leading: AppBackButton(fallbackRoute: '/games'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(
