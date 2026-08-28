@@ -15,6 +15,7 @@ dependencies:
   go_router: ^14.2.0
   intl: ^0.20.2
   url_launcher: ^6.3.0
+  shared_preferences: ^2.3.1
   flag_core: ^0.1.0
   flag_api: ^0.1.0
   flag_domain: ^0.1.0

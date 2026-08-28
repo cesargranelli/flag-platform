@@ -29,43 +29,43 @@ class CompetitionGamesScreen extends ConsumerStatefulWidget {
 }
 
 class _CompetitionGamesScreenState
-    extends ConsumerState<CompetitionGamesScreen> {
+    extends ConsumerState<CompetitionGamesScreen>
+    with AutomaticKeepAliveClientMixin {
   /// Rodada selecionada no filtro; `null` significa "Todas".
   int? _selectedRound;
 
+  /// Mantém o filtro de rodada vivo ao trocar de aba (TabBarView).
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final gamesAsync = ref.watch(
       competitionGamesProvider(widget.competitionId),
     );
-    final title = widget.competitionName.isEmpty
-        ? 'Calendário de jogos'
-        : widget.competitionName;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: gamesAsync.when(
-        loading: () => const AppLoading(message: 'Carregando jogos...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os jogos',
-          onRetry: () =>
-              ref.invalidate(competitionGamesProvider(widget.competitionId)),
-        ),
-        data: (games) {
-          if (games.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum jogo disponível',
-              icon: Icons.sports_football,
-            );
-          }
-          return _GamesView(
-            games: games,
-            selectedRound: _selectedRound,
-            competitionName: widget.competitionName,
-            onRoundSelected: (round) => setState(() => _selectedRound = round),
-          );
-        },
+    return gamesAsync.when(
+      loading: () => const AppLoading(message: 'Carregando jogos...'),
+      error: (error, stackTrace) => AppErrorState(
+        message: 'Não foi possível carregar os jogos',
+        onRetry: () =>
+            ref.invalidate(competitionGamesProvider(widget.competitionId)),
       ),
+      data: (games) {
+        if (games.isEmpty) {
+          return const AppEmptyState(
+            message: 'Nenhum jogo disponível',
+            icon: Icons.sports_football,
+          );
+        }
+        return _GamesView(
+          games: games,
+          selectedRound: _selectedRound,
+          competitionName: widget.competitionName,
+          onRoundSelected: (round) => setState(() => _selectedRound = round),
+        );
+      },
     );
   }
 }
