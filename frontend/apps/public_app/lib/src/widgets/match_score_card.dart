@@ -168,12 +168,14 @@ class MatchScoreCard extends StatelessWidget {
                 ],
               ),
             ),
-            // Ícone de clima no canto superior direito
-            Positioned(
-              top: 12,
-              right: 12,
-              child: _WeatherIcon(venue: game.venueName),
-            ),
+            // Ícone de clima no canto superior direito — oculto quando
+            // highlighted (selo "Próximo" ocupa o mesmo canto).
+            if (!highlighted)
+              Positioned(
+                top: 12,
+                right: 12,
+                child: _WeatherIcon(venue: game.venueName),
+              ),
           ],
         ),
       ),

@@ -1,5 +1,4 @@
 import 'package:flag_core/flag_core.dart';
-import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,17 +24,18 @@ class CompetitionResultsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final gamesAsync = ref.watch(competitionGamesProvider(competitionId));
+    final gamesAsync = ref.watch(
+      fakeCompetitionResultsProvider(competitionId),
+    );
 
     return gamesAsync.when(
       loading: () => const AppLoading(message: 'Carregando resultados...'),
       error: (error, stackTrace) => AppErrorState(
         message: 'Não foi possível carregar os resultados',
         onRetry: () =>
-            ref.invalidate(competitionGamesProvider(competitionId)),
+            ref.invalidate(fakeCompetitionResultsProvider(competitionId)),
       ),
-      data: (games) {
-        final results = _finishedResults(games);
+      data: (results) {
         if (results.isEmpty) {
           return const AppEmptyState(
             message: 'Nenhum resultado disponível',
@@ -77,13 +77,5 @@ class CompetitionResultsScreen extends ConsumerWidget {
         );
       },
     );
-  }
-
-  /// Jogos encerrados, do mais recente para o mais antigo.
-  List<Game> _finishedResults(List<Game> games) {
-    final results =
-        games.where((game) => game.status == GameStatus.finished).toList()
-          ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
-    return results;
   }
 }
