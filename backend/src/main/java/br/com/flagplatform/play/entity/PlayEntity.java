@@ -3,6 +3,8 @@ package br.com.flagplatform.play.entity;
 import br.com.flagplatform.common.persistence.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,6 +29,7 @@ public class PlayEntity extends BaseEntity {
     @Column(name = "receiver_name", length = 100)
     private String receiverName;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "play_type", nullable = false, length = 30)
     private PlayType playType;
 
