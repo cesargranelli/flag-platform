@@ -311,20 +311,11 @@ class _PlayCard extends StatelessWidget {
             isTeamA ? CrossAxisAlignment.start : CrossAxisAlignment.end,
         children: [
           Text(
-            play.playerName,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
             play.description,
             textAlign: isTeamA ? TextAlign.left : TextAlign.right,
             style: const TextStyle(
               fontSize: 14,
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
           if (play.isFirstDown || play.isTouchdown || play.isTurnover) ...[
