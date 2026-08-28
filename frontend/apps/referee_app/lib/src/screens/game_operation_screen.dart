@@ -1,10 +1,15 @@
-import 'package:flag_api/flag_api.dart';
+import 'dart:async';
+
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../utils/datetime_utils.dart';
+import '../widgets/game_context_card.dart';
+import '../widgets/game_context_selector.dart';
 
 /// Operação de partida ao vivo: seleciona o jogo (contexto compartilhado com
 /// o check-in) e inicia/finaliza, com placar ao vivo.
@@ -13,147 +18,114 @@ class GameOperationScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final competitions = ref.watch(competitionsProvider);
-    final selectedComp = ref.watch(selectedCompetitionProvider);
-    final selectedRound = ref.watch(selectedRoundProvider);
-    final selectedGame = ref.watch(selectedGameProvider);
-
-    final compData = competitions.valueOrNull ?? const [];
-    final effectiveComp =
-        selectedComp ?? (compData.isNotEmpty ? compData.first.id : null);
-
-    // Fluxo único: campeonato → rodadas (categorias foram removidas, V24).
-    final rounds = effectiveComp == null
-        ? null
-        : ref.watch(roundsProvider(effectiveComp));
-    final roundData = rounds?.valueOrNull ?? const [];
-    final effectiveRound =
-        selectedRound ?? (roundData.isNotEmpty ? roundData.first.id : null);
-
-    final games = effectiveRound == null
-        ? null
-        : ref.watch(gamesByRoundProvider(effectiveRound));
-    final gamesData = games?.valueOrNull;
-    final effectiveGameId =
-        selectedGame ??
-        (gamesData?.isNotEmpty == true ? gamesData!.first.id : null);
-    Game? selectedGameObj;
-    if (effectiveGameId != null && gamesData != null) {
-      final matches = gamesData.where((g) => g.id == effectiveGameId);
-      if (matches.isNotEmpty) selectedGameObj = matches.first;
-    }
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Operação de jogo')),
-      body: competitions.when(
-        loading: () => const AppLoading(message: 'Carregando campeonatos...'),
-        error: (e, s) => AppErrorState(
-          message: 'Não foi possível carregar os campeonatos',
-          onRetry: () => ref.invalidate(competitionsProvider),
-        ),
-        data: (_) => SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _compDropdown(compData, effectiveComp, ref),
-              if (rounds != null) ...[
-                const SizedBox(height: 12),
-                rounds.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (e, s) => AppErrorState(
-                    message: 'Erro ao carregar rodadas',
-                    onRetry: () =>
-                        ref.invalidate(roundsProvider(effectiveComp!)),
-                  ),
-                  data: (_) => _roundDropdown(roundData, effectiveRound, ref),
-                ),
-              ],
-              if (games != null) ...[
-                const SizedBox(height: 12),
-                games.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (e, s) => AppErrorState(
-                    message: 'Erro ao carregar jogos',
-                    onRetry: () =>
-                        ref.invalidate(gamesByRoundProvider(effectiveRound!)),
-                  ),
-                  data: (_) => _gameDropdown(gamesData!, effectiveGameId, ref),
-                ),
-              ],
-              if (games != null) const SizedBox(height: 16),
-              if (selectedGameObj != null)
-                _buildGameActions(context, ref, selectedGameObj),
-            ],
+      appBar: AppBar(
+        title: const Text('Operação de jogo'),
+        actions: [
+          // Atalho cruzado para o check-in (issue #425#19).
+          IconButton(
+            tooltip: 'Check-in de atletas',
+            icon: const Icon(Icons.how_to_reg),
+            onPressed: () => context.push('/checkin'),
           ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            GameContextSelector(
+              builder: (context, game) => GameOperationPanel(game: game),
+            ),
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _compDropdown(List<Competition> items, String? value, WidgetRef ref) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      decoration: const InputDecoration(
-        labelText: 'Campeonato',
-        border: OutlineInputBorder(),
-      ),
-      items: items
-          .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
-          .toList(),
-      onChanged: (v) {
-        ref.read(selectedCompetitionProvider.notifier).state = v;
-        ref.read(selectedRoundProvider.notifier).state = null;
-        ref.read(selectedGameProvider.notifier).state = null;
-      },
-    );
+/// Painel de operação do jogo selecionado: inicia/finaliza, controles de
+/// placar e timeline — com auto-refresh de 10s durante jogos ao vivo.
+class GameOperationPanel extends ConsumerStatefulWidget {
+  const GameOperationPanel({super.key, required this.game});
+
+  final Game game;
+
+  @override
+  ConsumerState<GameOperationPanel> createState() =>
+      _GameOperationPanelState();
+}
+
+class _GameOperationPanelState extends ConsumerState<GameOperationPanel> {
+  Timer? _autoRefreshTimer;
+
+  /// Time com POST de ponto em andamento — trava o "+1" (issue #425#8).
+  String? _busyTeamId;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncAutoRefresh();
   }
 
-  Widget _roundDropdown(List<Round> items, String? value, WidgetRef ref) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      decoration: const InputDecoration(
-        labelText: 'Rodada',
-        border: OutlineInputBorder(),
-      ),
-      items: items
-          .map(
-            (r) => DropdownMenuItem(
-              value: r.id,
-              child: Text('Rodada ${r.number} - ${r.name}'),
+  @override
+  void didUpdateWidget(covariant GameOperationPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.game.id != widget.game.id ||
+        oldWidget.game.status != widget.game.status) {
+      _syncAutoRefresh();
+    }
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Auto-refresh de 10s apenas durante jogos ao vivo (padrão public_app,
+  /// issue #425#18). Invalida o jogo e os eventos de pontuação (#1).
+  void _syncAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = null;
+    if (widget.game.status != GameStatus.inProgress) return;
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (!mounted) return;
+      ref.invalidate(gamesByRoundProvider(widget.game.roundId));
+      ref.invalidate(gameScoreEventsProvider(widget.game.id));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final game = widget.game;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GameContextCard(game: game),
+        const SizedBox(height: 16),
+        switch (game.status) {
+          GameStatus.scheduled => FilledButton.icon(
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Iniciar partida'),
+              onPressed: () => _confirmStart(game),
             ),
-          )
-          .toList(),
-      onChanged: (v) {
-        ref.read(selectedRoundProvider.notifier).state = v;
-        ref.read(selectedGameProvider.notifier).state = null;
-      },
+          GameStatus.inProgress => _liveControls(game),
+          // Jogos encerrados/cancelados deixavam a área em branco (#12).
+          GameStatus.finished => _finishedSummary(game),
+          GameStatus.cancelled => _cancelledSummary(game),
+        },
+      ],
     );
   }
 
-  Widget _gameDropdown(List<Game> items, String? value, WidgetRef ref) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      decoration: const InputDecoration(
-        labelText: 'Jogo',
-        border: OutlineInputBorder(),
-      ),
-      items: items
-          .map(
-            (g) => DropdownMenuItem(
-              value: g.id,
-              child: Text(
-                '${g.homeTeamName ?? 'Casa'} x ${g.awayTeamName ?? 'Fora'} · '
-                '${_formatDateTime(g.scheduledAt)} · ${g.status.name}',
-              ),
-            ),
-          )
-          .toList(),
-      onChanged: (v) => ref.read(selectedGameProvider.notifier).state = v,
-    );
-  }
+  Widget _liveControls(Game game) {
+    final theme = Theme.of(context);
+    final homeLabel = game.homeTeamName ?? 'Casa';
+    final awayLabel = game.awayTeamName ?? 'Fora';
+    final isBusy = _busyTeamId != null;
 
-  Widget _buildGameActions(BuildContext context, WidgetRef ref, Game game) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -161,264 +133,300 @@ class GameOperationScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  '${game.homeTeamName ?? 'Casa'} x ${game.awayTeamName ?? 'Fora'}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _scoreTeam(
+                        label: homeLabel,
+                        // Semantics "Time da casa" em vez de "Casa" (#13).
+                        semanticsLabel: 'Time da casa: $homeLabel',
+                        score: game.homeScore ?? 0,
+                        // Desabilita "+1" quando o id do time é nulo (#13).
+                        enabled: !isBusy && game.homeTeamId != null,
+                        onAdd: () => _addPoint(game, game.homeTeamId!),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Semantics(
+                        label:
+                            'Placar: $homeLabel ${game.homeScore ?? 0} x '
+                            '${game.awayScore ?? 0} $awayLabel',
+                        child: Text(
+                          '${game.homeScore ?? 0} x ${game.awayScore ?? 0}',
+                          style: theme.textTheme.headlineSmall,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: _scoreTeam(
+                        label: awayLabel,
+                        semanticsLabel: 'Time visitante: $awayLabel',
+                        score: game.awayScore ?? 0,
+                        enabled: !isBusy && game.awayTeamId != null,
+                        onAdd: () => _addPoint(game, game.awayTeamId!),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${_formatDateTime(game.scheduledAt)} · ${_gameStatusLabel(game.status)}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  icon: const Icon(Icons.edit),
+                  label: const Text('Corrigir placar'),
+                  onPressed: () => _correctScore(game),
                 ),
               ],
             ),
           ),
         ),
         const SizedBox(height: 16),
-        if (game.status == GameStatus.inProgress) ...[
-          _buildScoreControls(context, ref, game),
-          const SizedBox(height: 16),
-          _ScoreTimelineCard(game: game),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            icon: const Icon(Icons.stop),
-            label: const Text('Finalizar partida'),
-            onPressed: () => _confirmFinish(context, ref, game),
-          ),
-        ] else if (game.status == GameStatus.scheduled)
-          FilledButton.icon(
-            icon: const Icon(Icons.play_arrow),
-            label: const Text('Iniciar partida'),
-            onPressed: () => _confirmStart(context, ref, game),
-          ),
+        _ScoreTimelineCard(game: game),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          icon: const Icon(Icons.stop),
+          label: const Text('Finalizar partida'),
+          onPressed: () => _confirmFinish(game),
+        ),
       ],
     );
   }
 
-  Widget _buildScoreControls(BuildContext context, WidgetRef ref, Game game) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _scoreTeam(
-                  'Casa',
-                  game.homeScore ?? 0,
-                  () => _addPoint(context, ref, game, game.homeTeamId!),
-                ),
-                Text(
-                  '${game.homeScore ?? 0} x ${game.awayScore ?? 0}',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                _scoreTeam(
-                  'Fora',
-                  game.awayScore ?? 0,
-                  () => _addPoint(context, ref, game, game.awayTeamId!),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              icon: const Icon(Icons.edit),
-              label: const Text('Corrigir placar'),
-              onPressed: () => _correctScore(context, ref, game),
-            ),
-          ],
-        ),
+  Widget _scoreTeam({
+    required String label,
+    required String semanticsLabel,
+    required int score,
+    required bool enabled,
+    required VoidCallback onAdd,
+  }) {
+    final theme = Theme.of(context);
+    return Semantics(
+      label: semanticsLabel,
+      child: Column(
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleSmall,
+          ),
+          Text('$score', style: theme.textTheme.titleLarge),
+          IconButton(
+            tooltip: '+1 $label',
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: enabled ? onAdd : null,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _scoreTeam(String label, int score, VoidCallback onAdd) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-        Text('$score', style: const TextStyle(fontSize: 20)),
-        IconButton(
-          tooltip: '+1 $label',
-          icon: const Icon(Icons.add_circle_outline),
-          onPressed: onAdd,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _addPoint(
-    BuildContext context,
-    WidgetRef ref,
-    Game game,
-    String teamId,
-  ) async {
+  Future<void> _addPoint(Game game, String teamId) async {
+    if (_busyTeamId != null) return; // anti-duplo-toque (#8)
+    setState(() => _busyTeamId = teamId);
     try {
       await ref.read(gameApiProvider).addScoreEvent(game.id, teamId);
+      // Invalida também os eventos de pontuação — timeline atualiza (#1).
       ref.invalidate(gamesByRoundProvider(game.roundId));
-    } catch (_) {
-      if (context.mounted) {
+      ref.invalidate(gameScoreEventsProvider(game.id));
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível registrar o ponto')),
+          SnackBar(
+            content: const Text('Ponto registrado'),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 1),
+          ),
         );
       }
+    } catch (_) {
+      if (mounted) _showSnack('Não foi possível registrar o ponto');
+    } finally {
+      if (mounted) setState(() => _busyTeamId = null);
     }
   }
 
-  Future<void> _correctScore(
-    BuildContext context,
-    WidgetRef ref,
-    Game game,
-  ) async {
+  Future<void> _correctScore(Game game) async {
     final home = TextEditingController(text: (game.homeScore ?? 0).toString());
     final away = TextEditingController(text: (game.awayScore ?? 0).toString());
+    final formKey = GlobalKey<FormState>();
+
+    // Dialog com validação no campo (issue #425#9/#22): só fecha com valor
+    // inteiro ≥ 0 — nada de converter inválido silenciosamente para 0.
     final saved = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Corrigir placar'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: home,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Casa'),
-            ),
-            TextField(
-              controller: away,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Fora'),
-            ),
-          ],
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: home,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(labelText: 'Time da casa'),
+                validator: _nonNegativeScoreValidator,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: away,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Time de fora'),
+                validator: _nonNegativeScoreValidator,
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(dialogContext, true);
+              }
+            },
             child: const Text('Salvar'),
           ),
         ],
       ),
     );
+
     if (saved == true) {
-      final h = int.tryParse(home.text) ?? 0;
-      final a = int.tryParse(away.text) ?? 0;
-      await ref
-          .read(gameApiProvider)
-          .correctScore(game.id, homeScore: h, awayScore: a);
-      ref.invalidate(gamesByRoundProvider(game.roundId));
+      try {
+        await ref.read(gameApiProvider).correctScore(
+              game.id,
+              homeScore: int.parse(home.text),
+              awayScore: int.parse(away.text),
+            );
+        ref.invalidate(gamesByRoundProvider(game.roundId));
+        ref.invalidate(gameScoreEventsProvider(game.id));
+        if (mounted) _showSnack('Placar atualizado', isError: false);
+      } catch (_) {
+        if (mounted) _showSnack('Não foi possível corrigir o placar');
+      }
     }
     home.dispose();
     away.dispose();
   }
 
-  Future<void> _confirmStart(
-    BuildContext context,
-    WidgetRef ref,
-    Game game,
-  ) async {
+  Future<void> _confirmStart(Game game) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Iniciar partida'),
         content: Text(
-          'Iniciar "${game.homeTeamName ?? 'Casa'} x ${game.awayTeamName ?? 'Fora'}" '
-          'agora?\n\n${_formatDateTime(game.scheduledAt)}',
+          'Iniciar "${game.homeTeamName ?? 'Casa'} x '
+          '${game.awayTeamName ?? 'Fora'}" agora?\n\n'
+          '${formatDateTime(game.scheduledAt)}',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Iniciar'),
           ),
         ],
       ),
     );
-    if (confirmed == true) {
-      try {
-        await ref
-            .read(gameApiProvider)
-            .updateStatus(game.id, GameStatus.inProgress);
-        ref.invalidate(gamesByRoundProvider(game.roundId));
-      } on RepositoryException catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(e.message)));
-        }
-      } catch (_) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Não foi possível iniciar a partida')),
-          );
-        }
-      }
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref
+          .read(gameApiProvider)
+          .updateStatus(game.id, GameStatus.inProgress);
+      ref.invalidate(gamesByRoundProvider(game.roundId));
+      ref.invalidate(gameScoreEventsProvider(game.id));
+    } catch (_) {
+      if (mounted) _showSnack('Não foi possível iniciar a partida');
     }
   }
 
-  Future<void> _confirmFinish(
-    BuildContext context,
-    WidgetRef ref,
-    Game game,
-  ) async {
+  Future<void> _confirmFinish(Game game) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Finalizar partida'),
         content: const Text('Tem certeza que deseja finalizar esta partida?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Finalizar'),
           ),
         ],
       ),
     );
-    if (confirmed == true) {
-      try {
-        await ref
-            .read(gameApiProvider)
-            .updateStatus(game.id, GameStatus.finished);
-        ref.invalidate(gamesByRoundProvider(game.roundId));
-      } catch (_) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Não foi possível finalizar a partida'),
-            ),
-          );
-        }
-      }
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref
+          .read(gameApiProvider)
+          .updateStatus(game.id, GameStatus.finished);
+      ref.invalidate(gamesByRoundProvider(game.roundId));
+      ref.invalidate(gameScoreEventsProvider(game.id));
+      if (mounted) _showSnack('Partida finalizada', isError: false);
+    } catch (_) {
+      if (mounted) _showSnack('Não foi possível finalizar a partida');
     }
   }
 
-  String _gameStatusLabel(GameStatus status) => switch (status) {
-    GameStatus.scheduled => 'Agendado',
-    GameStatus.inProgress => 'Ao vivo',
-    GameStatus.finished => 'Encerrado',
-    GameStatus.cancelled => 'Cancelado',
-  };
+  /// Resumo do jogo encerrado: status + placar final (issue #425#12).
+  Widget _finishedSummary(Game game) {
+    final homeLabel = game.homeTeamName ?? 'Casa';
+    final awayLabel = game.awayTeamName ?? 'Fora';
+    return AppInfoCard(
+      title: 'Resultado final',
+      icon: Icons.flag_outlined,
+      children: [
+        AppInfoRow(label: 'Status', value: game.status.label),
+        AppInfoRow(
+          label: 'Placar',
+          value: '$homeLabel ${game.homeScore ?? 0} x '
+              '${game.awayScore ?? 0} $awayLabel',
+        ),
+      ],
+    );
+  }
+
+  /// Card informativo de partida cancelada (issue #425#12).
+  Widget _cancelledSummary(Game game) {
+    return AppInfoCard(
+      title: 'Partida cancelada',
+      icon: Icons.event_busy_outlined,
+      children: [
+        AppInfoRow(label: 'Status', value: game.status.label),
+      ],
+    );
+  }
+
+  void _showSnack(String message, {bool isError = true}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.danger : AppColors.success,
+      ),
+    );
+  }
+}
+
+/// Valida um placar: inteiro ≥ 0 (issue #425#9/#22).
+String? _nonNegativeScoreValidator(String? value) {
+  final text = value?.trim() ?? '';
+  if (text.isEmpty) return 'Informe um valor';
+  final parsed = int.tryParse(text);
+  if (parsed == null || parsed < 0) return 'Use um número inteiro ≥ 0';
+  return null;
 }
 
 /// Card de timeline de pontos de uma partida (consome os score events).
@@ -430,6 +438,7 @@ class _ScoreTimelineCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final events = ref.watch(gameScoreEventsProvider(game.id));
+    final theme = Theme.of(context);
 
     return Card(
       child: Padding(
@@ -437,22 +446,20 @@ class _ScoreTimelineCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Sequência de pontos',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            Text('Sequência de pontos', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             events.when(
               loading: () => const AppLoading(message: 'Carregando pontos...'),
-              error: (e, s) => const Text(
+              error: (e, s) => Text(
                 'Não foi possível carregar os pontos',
-                style: TextStyle(fontSize: 13, color: AppColors.danger),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.danger,
+                ),
               ),
               data: (items) => items.isEmpty
-                  ? const Text(
+                  ? Text(
                       'Nenhum ponto registrado ainda',
-                      style: TextStyle(
-                        fontSize: 13,
+                      style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
                     )
@@ -464,7 +471,3 @@ class _ScoreTimelineCard extends ConsumerWidget {
     );
   }
 }
-
-String _formatDateTime(DateTime value) =>
-    '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')} '
-    '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
