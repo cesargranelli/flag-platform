@@ -205,3 +205,141 @@ final fakeLiveGamesProvider = Provider<List<Game>>((ref) {
   ];
 });
 
+/// Tipo de lance de futebol americano.
+enum PlayType {
+  run,
+  pass,
+  touchdown,
+  interception,
+  fieldGoal,
+  punt,
+  kickoff,
+  penalty,
+  firstDown,
+}
+
+/// Um lance individual (play-by-play).
+class Play {
+  final String id;
+  final String gameId;
+  final String teamId;
+  final String teamName;
+  final String playerName;
+  final String? playerPhotoUrl;
+  final PlayType type;
+  final String description;
+  final int yards;
+  final String quarter;
+  final String time;
+  final bool isFirstDown;
+  final bool isTouchdown;
+  final bool isTurnover;
+
+  const Play({
+    required this.id,
+    required this.gameId,
+    required this.teamId,
+    required this.teamName,
+    required this.playerName,
+    this.playerPhotoUrl,
+    required this.type,
+    required this.description,
+    required this.yards,
+    required this.quarter,
+    required this.time,
+    this.isFirstDown = false,
+    this.isTouchdown = false,
+    this.isTurnover = false,
+  });
+}
+
+/// Dados FAKE de lances (play-by-play) para demonstração.
+final fakePlayByPlayProvider =
+    FutureProvider.family<List<Play>, String>((ref, gameId) async {
+  // Simula latency de rede
+  await Future.delayed(const Duration(milliseconds: 300));
+
+  // Liga de exemplo: time A = laranja, time B = azul
+  final isGame1 = gameId == 'live-1';
+  final homeTeam = isGame1 ? 'Clube 01' : 'Clube 05';
+  final awayTeam = isGame1 ? 'Clube 02' : 'Clube 06';
+
+  return [
+    Play(
+      id: 'play-1',
+      gameId: gameId,
+      teamId: 'team-a',
+      teamName: homeTeam,
+      playerName: 'Carlos Silva',
+      type: PlayType.pass,
+      description: 'Passe completo → 12 jds',
+      yards: 12,
+      quarter: 'Q2',
+      time: '08:32',
+      isFirstDown: true,
+    ),
+    Play(
+      id: 'play-2',
+      gameId: gameId,
+      teamId: 'team-a',
+      teamName: homeTeam,
+      playerName: 'Pedro Costa',
+      type: PlayType.run,
+      description: 'Corrida → 5 jds',
+      yards: 5,
+      quarter: 'Q2',
+      time: '08:15',
+    ),
+    Play(
+      id: 'play-3',
+      gameId: gameId,
+      teamId: 'team-a',
+      teamName: homeTeam,
+      playerName: 'Lucas Ferreira',
+      type: PlayType.pass,
+      description: 'Passe completo → 8 jds',
+      yards: 8,
+      quarter: 'Q2',
+      time: '07:58',
+    ),
+    Play(
+      id: 'play-4',
+      gameId: gameId,
+      teamId: 'team-b',
+      teamName: awayTeam,
+      playerName: 'André Mendes',
+      type: PlayType.interception,
+      description: 'Interceptação!',
+      yards: 0,
+      quarter: 'Q2',
+      time: '07:45',
+      isTurnover: true,
+    ),
+    Play(
+      id: 'play-5',
+      gameId: gameId,
+      teamId: 'team-b',
+      teamName: awayTeam,
+      playerName: 'Rafael Santos',
+      type: PlayType.run,
+      description: 'Corrida → 3 jds',
+      yards: 3,
+      quarter: 'Q2',
+      time: '07:30',
+    ),
+    Play(
+      id: 'play-6',
+      gameId: gameId,
+      teamId: 'team-a',
+      teamName: homeTeam,
+      playerName: 'Gabriel Oliveira',
+      type: PlayType.touchdown,
+      description: 'Touchdown! Passe de 25 jds',
+      yards: 25,
+      quarter: 'Q2',
+      time: '07:12',
+      isTouchdown: true,
+    ),
+  ];
+});
+

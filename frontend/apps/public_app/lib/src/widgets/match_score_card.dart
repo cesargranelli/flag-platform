@@ -22,9 +22,11 @@ class MatchScoreCard extends StatelessWidget {
   final bool showMeta;
   final bool showRound;
   final bool showVenue;
+  final bool showPlayByPlay;
   final VoidCallback? onHomeTeamTap;
   final VoidCallback? onAwayTeamTap;
   final VoidCallback? onTap;
+  final VoidCallback? onPlayByPlayTap;
 
   const MatchScoreCard({
     super.key,
@@ -33,9 +35,11 @@ class MatchScoreCard extends StatelessWidget {
     this.showMeta = false,
     this.showRound = false,
     this.showVenue = false,
+    this.showPlayByPlay = false,
     this.onHomeTeamTap,
     this.onAwayTeamTap,
     this.onTap,
+    this.onPlayByPlayTap,
   });
 
   @override
@@ -122,6 +126,24 @@ class MatchScoreCard extends StatelessWidget {
               if (showVenue) ...[
                 const SizedBox(height: 12),
                 _VenueLine(game: game),
+              ],
+              if (showPlayByPlay && onPlayByPlayTap != null) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: onPlayByPlayTap,
+                    icon: const Icon(Icons.sports_football, size: 18),
+                    label: const Text('Lance a Lance'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ],
           ),
