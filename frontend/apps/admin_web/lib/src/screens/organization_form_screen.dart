@@ -236,7 +236,6 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       },
       child: AppScreen(
         title: 'Nova organização',
-        leading: BackButton(onPressed: _handleBack),
         body: _buildWizard(context),
       ),
     );
@@ -775,15 +774,16 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                     width: 40,
                     height: 40,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const Icon(
-                      Icons.business,
+                    errorBuilder: (_, _, _) => Icon(
+                      organizationTypeIcon(_type),
                       color: Colors.white,
                       size: 40,
                     ),
                   ),
                 )
               else
-                const Icon(Icons.business, color: Colors.white, size: 40),
+                Icon(organizationTypeIcon(_type),
+                    color: Colors.white, size: 40),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

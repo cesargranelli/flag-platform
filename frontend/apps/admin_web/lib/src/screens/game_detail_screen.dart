@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
@@ -26,7 +25,6 @@ class GameDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: game?.homeTeamName ?? 'Jogo',
-      leading: AppBackButton(fallbackRoute: '/games'),
       body: gameFuture == null
           ? _buildDetail(context, ref, game!)
           : gameFuture.when(
@@ -90,7 +88,7 @@ class GameDetailScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
                     if (canEdit)
                       FilledButton.icon(
-                        onPressed: () => context.push(
+                        onPressed: () => context.go(
                           '/games/${game.id}/edit',
                           extra: (roundId: game.roundId, game: game),
                         ),

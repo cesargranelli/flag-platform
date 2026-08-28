@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
 /// Associação de clubes (organizações) a um campeonato (issue #351).
@@ -184,7 +183,6 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
 
     return AppScreen(
       title: 'Associar clubes',
-      leading: AppBackButton(fallbackRoute: '/teams'),
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -487,23 +485,12 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(
-        _orgTypeIcon(club.organizationType),
+        organizationTypeIcon(club.organizationType),
         color: AppColors.primary,
       ),
     );
   }
 }
-
-/// Ícone correspondente ao tipo de organização (issue #363).
-IconData _orgTypeIcon(OrganizationType? type) => switch (type) {
-      OrganizationType.federation => Icons.account_balance_outlined,
-      OrganizationType.league => Icons.emoji_events_outlined,
-      OrganizationType.association => Icons.groups_outlined,
-      OrganizationType.university => Icons.school_outlined,
-      OrganizationType.club => Icons.sports_outlined,
-      OrganizationType.other => Icons.business_outlined,
-      null => Icons.business_outlined,
-    };
 
 /// Marcação visual de clube já associado (não permite re-associar).
 class _AssociatedBadge extends StatelessWidget {

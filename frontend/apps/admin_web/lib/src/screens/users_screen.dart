@@ -17,12 +17,13 @@ class UsersScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Usuários',
-      leading: BackButton(onPressed: () => context.go('/')),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Novo usuário',
-        onPressed: () => context.push('/users/new'),
-        child: const Icon(Icons.add),
-      ),
+      actions: [
+        FilledButton.icon(
+          onPressed: () => context.go('/users/new'),
+          icon: const Icon(Icons.add),
+          label: const Text('Novo'),
+        ),
+      ],
       body: users.when(
         loading: () => const AppLoading(message: 'Carregando usuários...'),
         error: (error, stackTrace) => AppErrorState(

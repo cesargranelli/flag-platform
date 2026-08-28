@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
 /// Detalhe de um atleta: apresenta os dados e oferece a edição.
@@ -26,7 +25,6 @@ class AthleteDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: athlete?.name ?? 'Atleta',
-      leading: AppBackButton(fallbackRoute: '/athletes'),
       body: athleteFuture == null
           ? _buildDetail(context, athlete!)
           : athleteFuture.when(
@@ -83,7 +81,7 @@ class AthleteDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     FilledButton.icon(
-                      onPressed: () => context.push(
+                      onPressed: () => context.go(
                         '/athletes/${athlete.id}/edit',
                         extra: athlete,
                       ),

@@ -36,12 +36,13 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
 
     return AppScreen(
       title: 'Organizações',
-      leading: BackButton(onPressed: () => context.go('/')),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Nova organização',
-        onPressed: () => context.push('/organizations/new'),
-        child: const Icon(Icons.add),
-      ),
+      actions: [
+        FilledButton.icon(
+          onPressed: () => context.go('/organizations/new'),
+          icon: const Icon(Icons.add),
+          label: const Text('Novo'),
+        ),
+      ],
       body: organizations.when(
         loading: () => const AppLoading(message: 'Carregando organizações...'),
         error: (error, stackTrace) => AppErrorState(
@@ -163,7 +164,7 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push(
+        onTap: () => context.go(
           '/organizations/${organization.id}',
           extra: organization,
         ),
@@ -182,8 +183,11 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                       color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.business,
-                        color: AppColors.primary, size: 28),
+                    child: Icon(
+                      organizationTypeIcon(organization.organizationType),
+                      color: AppColors.primary,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

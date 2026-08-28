@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
 /// Elenco de um clube (time) num campeonato (issue #360/#363).
@@ -129,7 +128,6 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
 
     return AppScreen(
       title: title,
-      leading: AppBackButton(fallbackRoute: '/rosters'),
       actions: [
         if (teamId != null)
           IconButton(

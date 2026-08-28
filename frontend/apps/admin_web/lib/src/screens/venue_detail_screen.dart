@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
 /// Detalhe de um campo de jogo: apresenta os dados e oferece a edição.
@@ -27,7 +26,6 @@ class VenueDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: venue?.name ?? 'Campo',
-      leading: AppBackButton(fallbackRoute: '/venues'),
       body: venueFuture == null
           ? _buildDetail(context, ref, venue!)
           : venueFuture.when(
@@ -98,7 +96,7 @@ class VenueDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     FilledButton.icon(
-                      onPressed: () => context.push(
+                      onPressed: () => context.go(
                         '/venues/${venue.id}/edit',
                         extra: venue,
                       ),

@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
 import '../widgets/app_screen.dart';
 
 /// Formulário de criação de time (clube inscrito em um campeonato).
@@ -110,7 +109,6 @@ class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
 
     return AppScreen(
       title: 'Novo time',
-      leading: AppBackButton(fallbackRoute: '/teams'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

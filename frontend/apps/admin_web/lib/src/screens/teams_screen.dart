@@ -45,16 +45,14 @@ class TeamsScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Times',
-      leading: BackButton(onPressed: () => context.go('/')),
-      floatingActionButton:
-          effectiveComp != null && canEdit
-              ? FloatingActionButton(
-                  tooltip: 'Novo time',
-                  onPressed: () =>
-                      context.push('/teams/new', extra: effectiveComp),
-                  child: const Icon(Icons.add),
-                )
-              : null,
+      actions: [
+        if (effectiveComp != null && canEdit)
+          FilledButton.icon(
+            onPressed: () => context.go('/teams/new', extra: effectiveComp),
+            icon: const Icon(Icons.add),
+            label: const Text('Novo'),
+          ),
+      ],
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -175,7 +173,7 @@ class TeamsScreen extends ConsumerWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/teams/${team.id}', extra: team),
+        onTap: () => context.go('/teams/${team.id}', extra: team),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
