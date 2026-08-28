@@ -72,6 +72,7 @@ class MatchScoreCard extends StatelessWidget {
           : null,
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
             Padding(
@@ -172,14 +173,6 @@ class MatchScoreCard extends StatelessWidget {
                 ],
               ),
             ),
-            // Ícone de clima no canto superior direito — oculto quando
-            // highlighted (selo "Próximo" ocupa o mesmo canto).
-            if (!highlighted)
-              Positioned(
-                top: 12,
-                right: 12,
-                child: _WeatherIcon(venue: game.venueName),
-              ),
           ],
         ),
       ),
@@ -412,65 +405,9 @@ class _VenueLine extends StatelessWidget {
   }
 }
 
-/// Ícone de clima/baseado no nome do campo (placeholder).
+/// Ícone placeholder do escudo do time — exibe as iniciais do nome.
 ///
-/// Em produção, viria de uma API de clima. Aqui usamos o nome do campo
-/// como seed para um ícone determinístico.
-class _WeatherIcon extends StatelessWidget {
-  final String? venue;
-
-  const _WeatherIcon({this.venue});
-
-  @override
-  Widget build(BuildContext context) {
-    // Gera um ícone "determinístico" baseado no nome do campo.
-    final hash = (venue ?? '').hashCode;
-    final icons = [
-      Icons.wb_sunny,        // sol
-      Icons.cloud,           // nublado
-      Icons.wb_cloudy,       // parcialmente nublado
-      Icons.thunderstorm,    // tempestade
-      Icons.grain,           // chuva leve
-      Icons.ac_unit,         // frio/neve
-    ];
-    final colors = [
-      Colors.amber,          // sol
-      AppColors.textSecondary, // nublado
-      Colors.blueGrey,       // parcialmente nublado
-      Colors.deepPurple,     // tempestade
-      Colors.blue,           // chuva
-      Colors.cyan,           // frio
-    ];
-
-    final index = hash.abs() % icons.length;
-
-    return Tooltip(
-      message: _weatherLabel(hash.abs() % icons.length),
-      child: Icon(
-        icons[index],
-        size: 16,
-        color: colors[index],
-      ),
-    );
-  }
-
-  String _weatherLabel(int index) {
-    return switch (index) {
-      0 => 'Ensolarado',
-      1 => 'Nublado',
-      2 => 'Parcialmente nublado',
-      3 => 'Tempestade',
-      4 => 'Chuvoso',
-      5 => 'Frio',
-      _ => 'Clima',
-    };
-  }
-}
-
-/// Ícone placeholder do escudo do time.
-///
-/// Gera um ícone determinístico baseado no nome do time — em produção será
-/// substituído por Image.asset/Image.network com o escudo real.
+/// Em produção será substituído por Image.asset/Image.network com o escudo real.
 class _ClubLogo extends StatelessWidget {
   final String teamName;
   final Color color;
@@ -479,16 +416,7 @@ class _ClubLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hash = teamName.hashCode;
-    final icons = [
-      Icons.shield,
-      Icons.shield_outlined,
-      Icons.emoji_events,
-      Icons.star,
-      Icons.pets,
-      Icons.local_fire_department,
-    ];
-    final index = hash.abs() % icons.length;
+    final initials = _extractInitials(teamName);
 
     return Container(
       width: 48,
@@ -497,12 +425,25 @@ class _ClubLogo extends StatelessWidget {
         color: color.withValues(alpha: 0.12),
         shape: BoxShape.circle,
       ),
-      child: Icon(
-        icons[index],
-        size: 28,
-        color: color,
+      child: Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
       ),
     );
+  }
+
+  /// Extrai até 2 iniciais do nome do time.
+  static String _extractInitials(String name) {
+    final words = name.trim().split(RegExp(r'\s+'));
+    if (words.isEmpty) return '?';
+    if (words.length == 1) return words[0].substring(0, 1).toUpperCase();
+    return '${words[0].substring(0, 1)}${words[1].substring(0, 1)}'.toUpperCase();
   }
 }
 

@@ -21,7 +21,7 @@ class AboutScreen extends StatelessWidget {
           children: [
             const SizedBox(height: 8),
             const Icon(
-              Icons.sports_soccer,
+              Icons.sports_football,
               size: 64,
               color: AppColors.primary,
             ),
@@ -47,7 +47,7 @@ class AboutScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               'Como funciona',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: AppTextStyles.headline1.copyWith(fontSize: 20),
             ),
             const SizedBox(height: 12),
             const _InfoItem(

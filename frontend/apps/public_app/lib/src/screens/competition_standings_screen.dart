@@ -90,7 +90,7 @@ class _StandingsTable extends StatelessWidget {
         border: Border.all(
           color: AppColors.textSecondary.withValues(alpha: 0.3),
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
@@ -112,7 +112,7 @@ class _TableHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.08),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: const Row(
         children: [
@@ -172,51 +172,58 @@ class _StandingRow extends StatelessWidget {
         ? '+${standing.goalDifference}'
         : '${standing.goalDifference}';
 
-    return InkWell(
-      onTap: () => openTeamDetail(
-        context,
-        teamId: standing.teamId,
-        teamName: standing.teamName,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isLeader ? AppColors.primary.withValues(alpha: 0.04) : null,
-          border: Border(
-            top: BorderSide(
-              color: AppColors.textSecondary.withValues(alpha: 0.15),
+    return Semantics(
+      label:
+          'Posição ${standing.position}, $teamLabel, ${standing.points} pontos',
+      button: true,
+      child: InkWell(
+        onTap: () => openTeamDetail(
+          context,
+          teamId: standing.teamId,
+          teamName: standing.teamName,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isLeader ? AppColors.primary.withValues(alpha: 0.04) : null,
+            border: Border(
+              top: BorderSide(
+                color: AppColors.textSecondary.withValues(alpha: 0.15),
+              ),
             ),
           ),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        child: Row(
-          children: [
-            _PositionChip(position: standing.position),
-            const SizedBox(width: 10),
-            Expanded(
-              child: SizedBox(
-                height: 48,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    teamLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: isLeader ? FontWeight.w800 : FontWeight.w600,
-                      color: AppColors.textPrimary,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          child: Row(
+            children: [
+              _PositionChip(position: standing.position),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      teamLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight:
+                            isLeader ? FontWeight.w800 : FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            SizedBox(width: 36, child: _ValueCell('${standing.played}')),
-            SizedBox(width: 36, child: _ValueCell('${standing.wins}')),
-            SizedBox(width: 36, child: _ValueCell('${standing.losses}')),
-            SizedBox(width: 44, child: _ValueCell(goalDifference)),
-            const SizedBox(width: 8),
-            _PointsCell(points: standing.points),
-          ],
+              SizedBox(width: 36, child: _ValueCell('${standing.played}')),
+              SizedBox(width: 36, child: _ValueCell('${standing.wins}')),
+              SizedBox(width: 36, child: _ValueCell('${standing.losses}')),
+              SizedBox(width: 44, child: _ValueCell(goalDifference)),
+              const SizedBox(width: 8),
+              _PointsCell(points: standing.points),
+            ],
+          ),
         ),
       ),
     );

@@ -142,7 +142,7 @@ class _RailShell extends ConsumerWidget {
 ///
 /// Seguindo o padrão Material Design 3 NavigationBar, com indicador animado
 /// e rótulos visíveis para acessibilidade.
-class _FlagBottomBar extends StatelessWidget {
+class _FlagBottomBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
 
@@ -150,6 +150,13 @@ class _FlagBottomBar extends StatelessWidget {
     required this.currentIndex,
     required this.onDestinationSelected,
   });
+
+  @override
+  State<_FlagBottomBar> createState() => _FlagBottomBarState();
+}
+
+class _FlagBottomBarState extends State<_FlagBottomBar> {
+  double? _previousIndicatorCenter;
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +185,7 @@ class _FlagBottomBar extends StatelessWidget {
             builder: (context, constraints) {
               final itemWidth = constraints.maxWidth / destinationCount;
               final indicatorCenter =
-                  itemWidth * currentIndex + itemWidth / 2;
+                  itemWidth * widget.currentIndex + itemWidth / 2;
 
               return Stack(
                 clipBehavior: Clip.none,
@@ -191,8 +198,8 @@ class _FlagBottomBar extends StatelessWidget {
                           child: _NavItem(
                             label: PublicShell._destinations[i].label,
                             icon: PublicShell._destinations[i].icon,
-                            selected: i == currentIndex,
-                            onTap: () => onDestinationSelected(i),
+                            selected: i == widget.currentIndex,
+                            onTap: () => widget.onDestinationSelected(i),
                           ),
                         ),
                     ],
@@ -201,11 +208,12 @@ class _FlagBottomBar extends StatelessWidget {
                   // Animated indicator pill (rec. 3 + 4).
                   TweenAnimationBuilder<double>(
                     tween: Tween<double>(
-                      begin: indicatorCenter,
+                      begin: _previousIndicatorCenter ?? indicatorCenter,
                       end: indicatorCenter,
                     ),
                     duration: animDuration,
                     curve: Curves.easeInOut,
+                    onEnd: () => _previousIndicatorCenter = indicatorCenter,
                     builder: (context, value, child) {
                       return Positioned(
                         left: value - 12,

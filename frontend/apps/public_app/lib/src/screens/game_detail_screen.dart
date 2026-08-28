@@ -52,12 +52,29 @@ class _GameDetailScreenState extends ConsumerState<GameDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _startAutoRefreshIfNeeded();
+  }
+
+  /// Inicia o timer de auto-refresh apenas se o jogo estiver em andamento.
+  void _startAutoRefreshIfNeeded() {
+    final game = ref.read(gameDetailProvider(widget.gameId)).valueOrNull;
+    if (game != null && game.status != GameStatus.inProgress) {
+      _timer?.cancel();
+      return;
+    }
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (mounted) {
         ref.invalidate(gameDetailProvider(widget.gameId));
         ref.invalidate(gameScoreEventsProvider(widget.gameId));
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant GameDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _startAutoRefreshIfNeeded();
   }
 
   @override
@@ -79,12 +96,18 @@ class _GameDetailScreenState extends ConsumerState<GameDetailScreen> {
           message: 'Não foi possível carregar o jogo',
           onRetry: () => ref.invalidate(gameDetailProvider(widget.gameId)),
         ),
-        data: (game) => _GameDetailContent(
-          game: game,
-          namesFrom: widget.game,
-          competitionName: widget.competitionName,
-          events: eventsAsync.valueOrNull ?? const [],
-        ),
+        data: (game) {
+          // Reavalia o timer de auto-refresh quando o jogo carrega.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _startAutoRefreshIfNeeded();
+          });
+          return _GameDetailContent(
+            game: game,
+            namesFrom: widget.game,
+            competitionName: widget.competitionName,
+            events: eventsAsync.valueOrNull ?? const [],
+          );
+        },
       ),
     );
   }

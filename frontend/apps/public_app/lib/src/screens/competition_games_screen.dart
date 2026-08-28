@@ -139,10 +139,9 @@ class _GamesView extends StatelessWidget {
         if (visibleGames.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 32),
-            child: Text(
-              'Nenhum jogo nesta rodada',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            child: AppEmptyState(
+              message: 'Nenhum jogo nesta rodada',
+              icon: Icons.sports_football,
             ),
           )
         else
@@ -170,26 +169,19 @@ class _GamesView extends StatelessWidget {
   }
 
   /// Navega conforme o status do jogo:
-  /// - `inProgress` → tela ao vivo (`/live`)
-  /// - `finished` → lance a lance (`/live/{gameId}/plays`)
+  /// - `inProgress` → detalhe do jogo (com auto-refresh)
+  /// - `finished` → detalhe do jogo (resultado final)
   /// - `scheduled` → detalhe do jogo (comportamento original)
   /// - `cancelled` → detalhe do jogo (mesmo comportamento de scheduled)
   void _openGameDetail(BuildContext context, Game game) {
-    switch (game.status) {
-      case GameStatus.inProgress:
-        context.push('/live');
-      case GameStatus.finished:
-        context.push('/live/${game.id}/plays', extra: game);
-      case GameStatus.scheduled || GameStatus.cancelled:
-        context.push(
-          '/game/${game.id}',
-          extra: GameDetailArgs(
-            gameId: game.id,
-            game: game,
-            competitionName: competitionName,
-          ),
-        );
-    }
+    context.push(
+      '/game/${game.id}',
+      extra: GameDetailArgs(
+        gameId: game.id,
+        game: game,
+        competitionName: competitionName,
+      ),
+    );
   }
 
   /// Próximos jogos agendados (status SCHEDULED e data futura), até 3,
