@@ -32,7 +32,7 @@ IconData organizationTypeIcon(OrganizationType? type) => switch (type) {
       OrganizationType.league => Icons.emoji_events_outlined,
       OrganizationType.association => Icons.groups_outlined,
       OrganizationType.university => Icons.school_outlined,
-      OrganizationType.club => Icons.sports_outlined,
+      OrganizationType.club => Icons.shield_outlined,
       OrganizationType.other => Icons.business_outlined,
       null => Icons.business_outlined,
     };
