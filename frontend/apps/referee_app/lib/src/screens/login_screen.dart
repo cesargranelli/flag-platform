@@ -42,9 +42,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             password: _passwordController.text,
           );
     } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
+      // Mesagem amigável em vez de ecoar o texto cru da API (issue #425#21).
+      setState(() {
+        _errorMessage = e.statusCode == 401
+            ? 'E-mail ou senha incorretos'
+            : 'Não foi possível entrar. Verifique sua conexão.';
+      });
     } catch (_) {
-      setState(() => _errorMessage = 'Não foi possível conectar ao servidor.');
+      setState(() => _errorMessage = 'Sem conexão com o servidor');
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -54,6 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
@@ -68,25 +74,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   Icon(Icons.sports_score, size: 64, color: AppColors.primary),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Flag Referee App',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: theme.textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Acesso da mesa',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
                   const SizedBox(height: 32),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.email],
+                    // Borda regida pelo InputDecorationTheme do tema (#25).
                     decoration: const InputDecoration(
                       labelText: 'E-mail',
                       prefixIcon: Icon(Icons.mail_outline),
-                      border: OutlineInputBorder(),
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -102,10 +113,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: true,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.password],
                     decoration: const InputDecoration(
                       labelText: 'Senha',
                       prefixIcon: Icon(Icons.lock_outline),
-                      border: OutlineInputBorder(),
                     ),
                     validator: (value) =>
                         (value == null || value.isEmpty) ? 'Informe a senha' : null,
@@ -115,9 +127,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 16),
                     Text(
                       _errorMessage!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
+                      style: const TextStyle(color: AppColors.danger),
                     ),
                   ],
                   const SizedBox(height: 24),
