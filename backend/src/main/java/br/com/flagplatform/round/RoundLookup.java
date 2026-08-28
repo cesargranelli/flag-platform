@@ -21,4 +21,16 @@ public interface RoundLookup {
 
     RoundInfo findRoundInfoById(UUID roundId);
 
+    /**
+     * Dada uma lista de roundIds, retorna um mapa roundId → competitionId.
+     * Útil para resolver competitionIds em lote sem N+1.
+     */
+    java.util.Map<UUID, UUID> findCompetitionIdsByRoundIds(java.util.Collection<UUID> roundIds);
+
+    /**
+     * Dada uma lista de roundIds, retorna um mapa roundId → RoundInfo.
+     * Útil para resolver números de rodada em lote sem N+1.
+     */
+    java.util.Map<UUID, RoundInfo> findRoundInfoByIds(java.util.Collection<UUID> roundIds);
+
 }

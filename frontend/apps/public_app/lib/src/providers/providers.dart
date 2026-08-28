@@ -221,98 +221,34 @@ class LiveGame {
   });
 }
 
-/// Dados FAKE de livescore (issue #391) — demonstração do "Ao vivo" no próprio
-/// app, sem backend. Só um Provider que gera jogos ao vivo/encerrados com
-/// datas relativas ao momento da leitura e metadados de filtro.
-final fakeLiveGamesProvider = Provider<List<LiveGame>>((ref) {
-  final now = DateTime.now();
-
-  LiveGame live(
-    String id,
-    String home,
-    String away,
-    int homeScore,
-    int awayScore,
-    String venue,
-    int round,
-    Duration ago, {
-    required String competition,
-    required Modality modality,
-    required Gender gender,
-  }) {
-    return LiveGame(
-      game: Game(
-        id: id,
-        roundId: 'round-$round',
-        competitionId: 'fake-${competition.hashCode}',
-        roundNumber: round,
-        homeTeamId: 'team-$id-h',
-        awayTeamId: 'team-$id-a',
-        homeTeamName: home,
-        awayTeamName: away,
-        venueId: 'venue-$id',
-        venueName: venue,
-        scheduledAt: now.subtract(ago),
-        status: GameStatus.inProgress,
-        homeScore: homeScore,
-        awayScore: awayScore,
-      ),
-      competitionName: competition,
-      modality: modality,
-      gender: gender,
-    );
-  }
-
-  LiveGame finished(
-    String id,
-    String home,
-    String away,
-    int homeScore,
-    int awayScore,
-    String venue,
-    int round,
-    Duration ago, {
-    required String competition,
-    required Modality modality,
-    required Gender gender,
-  }) {
-    return LiveGame(
-      game: Game(
-        id: id,
-        roundId: 'round-$round',
-        competitionId: 'fake-${competition.hashCode}',
-        roundNumber: round,
-        homeTeamId: 'team-$id-h',
-        awayTeamId: 'team-$id-a',
-        homeTeamName: home,
-        awayTeamName: away,
-        venueId: 'venue-$id',
-        venueName: venue,
-        scheduledAt: now.subtract(ago),
-        status: GameStatus.finished,
-        homeScore: homeScore,
-        awayScore: awayScore,
-      ),
-      competitionName: competition,
-      modality: modality,
-      gender: gender,
-    );
-  }
-
-  return [
-    live('live-1', 'Tigers', 'Lynx', 14, 8, 'Campo Central', 1, const Duration(minutes: 35),
-        competition: 'Copa Brasil', modality: Modality.flag5x5, gender: Gender.male),
-    live('live-2', 'Eagles', 'Hawks', 0, 6, 'Campo Norte', 1, const Duration(minutes: 12),
-        competition: 'Copa Brasil', modality: Modality.flag8x8, gender: Gender.male),
-    live('live-3', 'Wolves', 'Bears', 21, 14, 'Campo Sul', 2, const Duration(minutes: 55),
-        competition: 'Liga Regional', modality: Modality.flag5x5, gender: Gender.female),
-    live('live-4', 'Falcons', 'Panthers', 7, 7, 'Campo Leste', 2, const Duration(hours: 1, minutes: 18),
-        competition: 'Liga Regional', modality: Modality.flag9x9, gender: Gender.female),
-    finished('done-1', 'Sharks', 'Dolphins', 21, 0, 'Campo Central', 3, const Duration(hours: 2),
-        competition: 'Copa Brasil', modality: Modality.flag5x5, gender: Gender.mixed),
-    finished('done-2', 'Lions', 'Tigers', 12, 22, 'Campo Norte', 3, const Duration(hours: 2, minutes: 40),
-        competition: 'Copa Brasil', modality: Modality.flag9x9, gender: Gender.male),
-  ];
+/// Jogos ao vivo reais, consumindo `GET /api/v1/games/live`.
+final liveGamesProvider = FutureProvider<List<LiveGame>>((ref) async {
+  final responses = await ref.watch(gameApiProvider).findLiveGames();
+  return responses
+      .map(
+        (r) => LiveGame(
+          game: Game(
+            id: r.id,
+            roundId: r.roundId ?? '',
+            competitionId: r.competitionId,
+            roundNumber: r.roundNumber,
+            homeTeamName: r.homeTeamName,
+            awayTeamName: r.awayTeamName,
+            venueId: r.venueId,
+            venueName: r.venueName,
+            venueAddress: r.venueAddress,
+            venueMapsUrl: r.venueMapsUrl,
+            scheduledAt: r.scheduledAt,
+            status: GameStatus.fromJson(r.status),
+            homeScore: r.homeScore,
+            awayScore: r.awayScore,
+          ),
+          competitionName: r.competitionName ?? '',
+          modality: Modality.fromJson(r.modality ?? 'FLAG_5X5'),
+          gender: Gender.fromJson(r.gender ?? 'MALE'),
+        ),
+      )
+      .toList();
 });
 
 /// Filtro ativo na tela Ao vivo.

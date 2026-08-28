@@ -25,4 +25,18 @@ public interface CompetitionLookup {
      * pode ser alterada. Caso contr&aacute;rio, lan&ccedil;a 409.
      */
     void assertEditable(UUID competitionId);
+
+    /**
+     * Retorna uma projeção p&uacute;blica do campeonato (id, nome, modalidade, g&ecirc;nero)
+     * para uso por outros módulos. Lan&ccedil;a {@code CompetitionNotFoundException}
+     * caso o id n&atilde;o exista.
+     */
+    CompetitionInfo findCompetitionInfoById(UUID id);
+
+    /**
+     * Retorna projeções p&uacute;blicas de v&aacute;rios campeonatos em lote,
+     * indexadas por id. Útil para queries que resolvem v&aacute;rios competitionIds
+     * sem N+1.
+     */
+    java.util.Map<UUID, CompetitionInfo> findCompetitionInfoByIds(java.util.Collection<UUID> ids);
 }

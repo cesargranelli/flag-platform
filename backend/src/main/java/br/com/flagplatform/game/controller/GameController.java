@@ -11,6 +11,7 @@ import br.com.flagplatform.game.dto.request.UpdateScoreRequest;
 import br.com.flagplatform.game.dto.response.GameResponse;
 import br.com.flagplatform.game.dto.response.GameBatchResponse;
 import br.com.flagplatform.game.dto.response.GameSummaryResponse;
+import br.com.flagplatform.game.dto.response.LiveGameResponse;
 import br.com.flagplatform.game.dto.response.ScoreEventResponse;
 import br.com.flagplatform.game.service.GameService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,6 +41,15 @@ import java.util.UUID;
 public class GameController {
 
     private final GameService service;
+
+    @Operation(
+            summary = "Listar jogos ao vivo",
+            description = "Retorna jogos IN_PROGRESS e finalizados nas últimas 24h, com metadados da competição (modalidade, gênero). Acesso público."
+    )
+    @GetMapping("/api/v1/games/live")
+    public List<LiveGameResponse> findLiveGames() {
+        return service.findLiveGames();
+    }
 
     @Operation(
             summary = "Criar jogo",

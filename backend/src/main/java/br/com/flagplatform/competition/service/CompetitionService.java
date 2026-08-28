@@ -2,6 +2,7 @@ package br.com.flagplatform.competition.service;
 
 import br.com.flagplatform.common.enums.CompetitionStatus;
 import br.com.flagplatform.common.enums.GroupingType;
+import br.com.flagplatform.competition.CompetitionInfo;
 import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.common.pagination.PagedResponse;
 import br.com.flagplatform.competition.dto.request.CreateCompetitionRequest;
@@ -26,8 +27,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -169,6 +173,22 @@ public class CompetitionService implements CompetitionLookup {
         if (entity.getStatus() != CompetitionStatus.DRAFT) {
             throw new CompetitionNotEditableException(entity.getStatus());
         }
+    }
+
+    @Override
+    public CompetitionInfo findCompetitionInfoById(UUID id) {
+        CompetitionEntity entity = findEntityById(id);
+        return new CompetitionInfo(entity.getId(), entity.getName(), entity.getModality(), entity.getGender());
+    }
+
+    @Override
+    public Map<UUID, CompetitionInfo> findCompetitionInfoByIds(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Map.of();
+        }
+        return repository.findAllById(ids).stream()
+                .map(entity -> new CompetitionInfo(entity.getId(), entity.getName(), entity.getModality(), entity.getGender()))
+                .collect(Collectors.toMap(CompetitionInfo::id, info -> info));
     }
 
     private CompetitionEntity findEntityById(UUID id) {
