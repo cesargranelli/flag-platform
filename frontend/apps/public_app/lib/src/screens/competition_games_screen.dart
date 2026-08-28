@@ -107,6 +107,7 @@ class _GamesView extends StatelessWidget {
           selectedRound: selectedRound,
           onSelected: onRoundSelected,
         ),
+        const SizedBox(height: 16),
         if (upcoming.isNotEmpty) ...[
           const SizedBox(height: 20),
           const _SectionTitle('Próximos jogos'),
@@ -172,16 +173,27 @@ class _GamesView extends StatelessWidget {
     );
   }
 
-  /// Navega para o detalhe do jogo passando o objeto completo via `extra`.
+  /// Navega conforme o status do jogo:
+  /// - `inProgress` → tela ao vivo (`/live`)
+  /// - `finished` → lance a lance (`/live/{gameId}/plays`)
+  /// - `scheduled` → detalhe do jogo (comportamento original)
+  /// - `cancelled` → detalhe do jogo (mesmo comportamento de scheduled)
   void _openGameDetail(BuildContext context, Game game) {
-    context.push(
-      '/game/${game.id}',
-      extra: GameDetailArgs(
-        gameId: game.id,
-        game: game,
-        competitionName: competitionName,
-      ),
-    );
+    switch (game.status) {
+      case GameStatus.inProgress:
+        context.push('/live');
+      case GameStatus.finished:
+        context.push('/live/${game.id}/plays', extra: game);
+      case GameStatus.scheduled || GameStatus.cancelled:
+        context.push(
+          '/game/${game.id}',
+          extra: GameDetailArgs(
+            gameId: game.id,
+            game: game,
+            competitionName: competitionName,
+          ),
+        );
+    }
   }
 
   /// Próximos jogos agendados (status SCHEDULED e data futura), até 3,
@@ -240,23 +252,59 @@ class _RoundFilter extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: const Text('Todas'),
+            child: _RoundChip(
+              label: 'Todas',
               selected: selectedRound == null,
-              onSelected: (_) => onSelected(null),
+              onTap: () => onSelected(null),
             ),
           ),
           for (final round in rounds)
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text('Rodada $round'),
+              child: _RoundChip(
+                label: 'Rodada $round',
                 selected: selectedRound == round,
-                onSelected: (_) => onSelected(round),
+                onTap: () => onSelected(round),
               ),
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Chip de seleção de rodada seguindo o design system.
+///
+/// Selecionado: fundo `AppColors.primary`, texto branco.
+/// Não selecionado: fundo `AppColors.grayFill`, texto `AppColors.textSecondary`,
+/// sem contorno preto.
+class _RoundChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _RoundChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      selectedColor: AppColors.primary,
+      checkmarkColor: Colors.white,
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : AppColors.textSecondary,
+        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+      ),
+      side: BorderSide(
+        color: selected ? AppColors.primary : AppColors.grayFill,
+      ),
+      backgroundColor: AppColors.grayFill,
     );
   }
 }

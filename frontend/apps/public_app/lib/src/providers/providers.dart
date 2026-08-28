@@ -80,6 +80,79 @@ final competitionsProvider = FutureProvider<List<Competition>>(
   (ref) => ref.watch(competitionApiProvider).listAll(),
 );
 
+// ---------------------------------------------------------------------------
+// Fake providers — dados mock para Resultados e Classificação (issue #26/#27)
+// ---------------------------------------------------------------------------
+
+/// Jogos encerrados FAKE de uma competição (para a tela Resultados).
+///
+/// Retorna 8 jogos finalizados com placares variados, ignorando o
+/// `competitionId` real (demonstração sem backend).
+final fakeCompetitionResultsProvider =
+    FutureProvider.family<List<Game>, String>((ref, competitionId) async {
+  await Future.delayed(const Duration(milliseconds: 200));
+  final now = DateTime.now();
+
+  Game finished({
+    required String id,
+    required String home,
+    required String away,
+    required int homeScore,
+    required int awayScore,
+    required int round,
+    required Duration ago,
+    String venue = 'Campo Central',
+  }) {
+    return Game(
+      id: 'res-$id',
+      roundId: 'round-$round',
+      competitionId: competitionId,
+      roundNumber: round,
+      homeTeamId: 'team-$id-h',
+      awayTeamId: 'team-$id-a',
+      homeTeamName: home,
+      awayTeamName: away,
+      venueId: 'venue-$id',
+      venueName: venue,
+      scheduledAt: now.subtract(ago),
+      status: GameStatus.finished,
+      homeScore: homeScore,
+      awayScore: awayScore,
+    );
+  }
+
+  return [
+    finished(id: '1', home: 'Tigers', away: 'Lynx', homeScore: 28, awayScore: 21, round: 1, ago: const Duration(days: 6)),
+    finished(id: '2', home: 'Eagles', away: 'Hawks', homeScore: 14, awayScore: 14, round: 1, ago: const Duration(days: 6, hours: 3), venue: 'Campo Norte'),
+    finished(id: '3', home: 'Sharks', away: 'Dolphins', homeScore: 35, awayScore: 7, round: 2, ago: const Duration(days: 5)),
+    finished(id: '4', home: 'Wolves', away: 'Bears', homeScore: 21, awayScore: 28, round: 2, ago: const Duration(days: 5, hours: 2), venue: 'Campo Sul'),
+    finished(id: '5', home: 'Falcons', away: 'Panthers', homeScore: 42, awayScore: 14, round: 3, ago: const Duration(days: 4)),
+    finished(id: '6', home: 'Lions', away: 'Tigers', homeScore: 7, awayScore: 21, round: 3, ago: const Duration(days: 4, hours: 1), venue: 'Campo Leste'),
+    finished(id: '7', home: 'Hawks', away: 'Sharks', homeScore: 14, awayScore: 35, round: 4, ago: const Duration(days: 3)),
+    finished(id: '8', home: 'Dolphins', away: 'Eagles', homeScore: 21, awayScore: 0, round: 4, ago: const Duration(days: 3, hours: 2), venue: 'Campo Norte'),
+  ];
+});
+
+/// Tabela de classificação FAKE de uma competição (para a tela Classificação).
+///
+/// Retorna 8 posições com dados consistentes, ignorando o `competitionId`
+/// real (demonstração sem backend).
+final fakeCompetitionStandingsProvider =
+    FutureProvider.family<List<Standing>, String>((ref, competitionId) async {
+  await Future.delayed(const Duration(milliseconds: 200));
+
+  return const [
+    Standing(position: 1, teamId: 'team-1', teamName: 'Sharks', played: 4, wins: 3, draws: 0, losses: 1, goalsFor: 70, goalsAgainst: 28, goalDifference: 42, points: 9),
+    Standing(position: 2, teamId: 'team-2', teamName: 'Tigers', played: 4, wins: 3, draws: 0, losses: 1, goalsFor: 56, goalsAgainst: 49, goalDifference: 7, points: 9),
+    Standing(position: 3, teamId: 'team-3', teamName: 'Dolphins', played: 4, wins: 2, draws: 1, losses: 1, goalsFor: 42, goalsAgainst: 35, goalDifference: 7, points: 7),
+    Standing(position: 4, teamId: 'team-4', teamName: 'Wolves', played: 4, wins: 2, draws: 0, losses: 2, goalsFor: 49, goalsAgainst: 42, goalDifference: 7, points: 6),
+    Standing(position: 5, teamId: 'team-5', teamName: 'Eagles', played: 4, wins: 1, draws: 1, losses: 2, goalsFor: 28, goalsAgainst: 35, goalDifference: -7, points: 4),
+    Standing(position: 6, teamId: 'team-6', teamName: 'Hawks', played: 4, wins: 1, draws: 1, losses: 2, goalsFor: 28, goalsAgainst: 56, goalDifference: -28, points: 4),
+    Standing(position: 7, teamId: 'team-7', teamName: 'Lynx', played: 4, wins: 1, draws: 0, losses: 3, goalsFor: 21, goalsAgainst: 49, goalDifference: -28, points: 3),
+    Standing(position: 8, teamId: 'team-8', teamName: 'Bears', played: 4, wins: 0, draws: 1, losses: 3, goalsFor: 21, goalsAgainst: 70, goalDifference: -49, points: 1),
+  ];
+});
+
 /// Serviço de jogos.
 final gameApiProvider = Provider<GameApi>(
   (ref) => GameApi(ref.watch(apiClientProvider)),
