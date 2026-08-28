@@ -4,7 +4,6 @@ import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/providers.dart';
@@ -132,12 +131,6 @@ class _GameDetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final display = _mergeDisplay(game, namesFrom);
-    final dateLabel = DateFormat(
-      'dd/MM/yyyy \'às\' HH:mm',
-    ).format(game.scheduledAt);
-    final metaLabel = game.roundNumber != null
-        ? 'Rodada ${game.roundNumber} · $dateLabel'
-        : dateLabel;
     final venueName = display.venueName?.trim();
     final venueAddress = display.venueAddress?.trim();
 
@@ -183,28 +176,6 @@ class _GameDetailContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.schedule,
-              size: 16,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                metaLabel,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
         if (events.isNotEmpty) ...[
           _InfoCard(
             icon: Icons.timeline,
