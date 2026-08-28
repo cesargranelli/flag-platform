@@ -53,6 +53,7 @@ class CompetitionResultsScreen extends ConsumerWidget {
                   showMeta: true,
                   showRound: true,
                   showVenue: true,
+                  showClubLogos: true,
                   onTap: () => context.push(
                     '/game/${game.id}',
                     extra: GameDetailArgs(

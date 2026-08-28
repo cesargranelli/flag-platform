@@ -120,6 +120,7 @@ class _GamesView extends StatelessWidget {
                 highlighted: true,
                 showMeta: true,
                 showVenue: true,
+                showClubLogos: true,
                 onTap: () => _openGameDetail(context, game),
                 onHomeTeamTap: () => openTeamDetail(
                   context,
@@ -155,6 +156,7 @@ class _GamesView extends StatelessWidget {
                 game: game,
                 showMeta: true,
                 showVenue: true,
+                showClubLogos: true,
                 onTap: () => _openGameDetail(context, game),
                 onHomeTeamTap: () => openTeamDetail(
                   context,

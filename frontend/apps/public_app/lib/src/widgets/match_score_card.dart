@@ -110,7 +110,9 @@ class MatchScoreCard extends StatelessWidget {
                         score: showScores ? game.homeScore : null,
                         color: game.status == GameStatus.finished
                             ? AppColors.success
-                            : AppColors.textPrimary,
+                            : game.status == GameStatus.inProgress
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
                       ),
                       const SizedBox(width: 10),
                       _CenterInfo(
@@ -123,7 +125,9 @@ class MatchScoreCard extends StatelessWidget {
                         score: showScores ? game.awayScore : null,
                         color: game.status == GameStatus.finished
                             ? AppColors.success
-                            : AppColors.textPrimary,
+                            : game.status == GameStatus.inProgress
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -188,7 +192,8 @@ class MatchScoreCard extends StatelessWidget {
   }
 }
 
-/// Linha superior do card: data/hora (+ rodada) e selo "Próximo".
+/// Linha superior do card: ícone de status, data/hora (+ rodada),
+/// label "AO VIVO" para jogos em andamento e selo "Próximo".
 class _MetaLine extends StatelessWidget {
   final Game game;
   final bool showRound;
@@ -209,8 +214,27 @@ class _MetaLine extends StatelessWidget {
 
     return Row(
       children: [
-        const Icon(Icons.schedule, size: 16, color: AppColors.textSecondary),
-        const SizedBox(width: 4),
+        _StatusIcon(status: game.status),
+        const SizedBox(width: 6),
+        if (game.status == GameStatus.inProgress) ...[
+          const Text(
+            'AO VIVO',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.danger,
+            ),
+          ),
+          const SizedBox(width: 4),
+          const Text(
+            '·',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
         Expanded(
           child: Text(
             metaLabel,
@@ -479,5 +503,87 @@ class _ClubLogo extends StatelessWidget {
         color: color,
       ),
     );
+  }
+}
+
+/// Indicador pulsante para jogos ao vivo (decorativo, sutil).
+///
+/// Animação de opacidade que repete indefinidamente, sinalizando que o
+/// jogo está em andamento. Usado na linha meta do card e como componente
+/// reutilizável.
+class _PulsingDot extends StatefulWidget {
+  const _PulsingDot();
+
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween<double>(
+        begin: 0.35,
+        end: 1,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
+      child: ExcludeSemantics(
+        child: Container(
+          width: 8,
+          height: 8,
+          decoration: const BoxDecoration(
+            color: AppColors.danger,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Ícone de status na linha meta: ponto pulsante (ao vivo), calendário
+/// (agendado), checkmark (encerrado) ou x (cancelado).
+class _StatusIcon extends StatelessWidget {
+  final GameStatus status;
+
+  const _StatusIcon({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (status) {
+      GameStatus.inProgress => const _PulsingDot(),
+      GameStatus.scheduled => const Icon(
+        Icons.calendar_today,
+        size: 16,
+        color: AppColors.textSecondary,
+      ),
+      GameStatus.finished => const Icon(
+        Icons.check_circle,
+        size: 16,
+        color: AppColors.success,
+      ),
+      GameStatus.cancelled => const Icon(
+        Icons.cancel,
+        size: 16,
+        color: AppColors.textSecondary,
+      ),
+    };
   }
 }

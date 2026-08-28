@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flag_core/flag_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -87,7 +85,8 @@ class _BottomShell extends ConsumerWidget {
       body: navigationShell,
       bottomNavigationBar: _FlagBottomBar(
         currentIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) => _goToTab(context, ref, navigationShell, index),
+        onDestinationSelected: (index) =>
+            _goToTab(context, ref, navigationShell, index),
       ),
     );
   }
@@ -109,7 +108,8 @@ class _RailShell extends ConsumerWidget {
             child: NavigationRail(
               backgroundColor: AppColors.surface,
               selectedIndex: navigationShell.currentIndex,
-              onDestinationSelected: (index) => _goToTab(context, ref, navigationShell, index),
+              onDestinationSelected: (index) =>
+                  _goToTab(context, ref, navigationShell, index),
               labelType: NavigationRailLabelType.none,
               groupAlignment: -0.8,
               indicatorColor: AppColors.primary.withValues(alpha: 0.12),
@@ -138,10 +138,11 @@ class _RailShell extends ConsumerWidget {
   }
 }
 
-/// Barra inferior flutuante (fiel ao Figma Shifty): fundo PRETO `#1B1D21`,
-/// raio 20, margem lateral 16, sombra para cima (`0x17201F1F` blur 56 offset
-/// (0,−7)), respeitando a safe area inferior. `clipBehavior: Clip.none` para o
-/// círculo branco do item ativo "flutuar" acima da barra.
+/// Barra inferior flutuante (estilo Shifty): fundo `#1B1D21`, raio 20,
+/// margem lateral 16, sombra para cima, com indicador animado.
+///
+/// O indicador ativo é um pill primário que desliza suavemente entre as abas
+/// quando o usuário troca de aba (rec. 3 e 4).
 class _FlagBottomBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onDestinationSelected;
@@ -154,6 +155,11 @@ class _FlagBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final animDuration =
+        reduceMotion ? Duration.zero : const Duration(milliseconds: 250);
+    final destinationCount = PublicShell._destinations.length;
+
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
@@ -172,18 +178,57 @@ class _FlagBottomBar extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          child: Row(
-            children: [
-              for (var i = 0; i < PublicShell._destinations.length; i++)
-                Expanded(
-                  child: _NavItem(
-                    label: PublicShell._destinations[i].label,
-                    icon: PublicShell._destinations[i].icon,
-                    selected: i == currentIndex,
-                    onTap: () => onDestinationSelected(i),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = constraints.maxWidth / destinationCount;
+              final indicatorCenter =
+                  itemWidth * currentIndex + itemWidth / 2;
+
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Tab items row.
+                  Row(
+                    children: [
+                      for (var i = 0; i < destinationCount; i++)
+                        Expanded(
+                          child: _NavItem(
+                            label: PublicShell._destinations[i].label,
+                            icon: PublicShell._destinations[i].icon,
+                            selected: i == currentIndex,
+                            onTap: () => onDestinationSelected(i),
+                          ),
+                        ),
+                    ],
                   ),
-                ),
-            ],
+
+                  // Animated indicator pill (rec. 3 + 4).
+                  TweenAnimationBuilder<double>(
+                    tween: Tween<double>(
+                      begin: indicatorCenter,
+                      end: indicatorCenter,
+                    ),
+                    duration: animDuration,
+                    curve: Curves.easeInOut,
+                    builder: (context, value, child) {
+                      return Positioned(
+                        left: value - 12,
+                        bottom: 0,
+                        child: child!,
+                      );
+                    },
+                    child: Container(
+                      width: 24,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -192,8 +237,10 @@ class _FlagBottomBar extends StatelessWidget {
 }
 
 /// Item da navegação: ícone + rótulo; quando ativo, o ícone fica dentro de um
-/// **círculo branco 69px** (que flutua sobre a barra) `AppColors.primary` e
-/// há uma **barrinha `#333333`** abaixo.
+/// **círculo branco 44px** que flutua sobre a barra, com o ícone na cor
+/// primária. Rótulos são sempre visíveis para melhorar a acessibilidade
+/// (rec. 1). Ícones inativos usam `AppColors.grayLabel` para criar hierarquia
+/// visual (rec. 2).
 class _NavItem extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -216,36 +263,43 @@ class _NavItem extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                height: 60,
-                child: Center(
-                  child: selected
-                      ? _ActiveBadge(icon: icon)
-                      : ExcludeSemantics(
-                          child: Icon(icon, size: 24, color: Colors.white),
-                        ),
-                ),
-              ),
-              if (selected) ...[
-                const SizedBox(height: 4),
-                LayoutBuilder(
-                  builder: (context, constraints) => Container(
-                    width: math.min(100.0, constraints.maxWidth),
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF333333),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48), // rec. 5
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  height: 60,
+                  child: Center(
+                    child: selected
+                        ? _ActiveBadge(icon: icon)
+                        : ExcludeSemantics(
+                            child: Icon(
+                              icon,
+                              size: 24,
+                              color: AppColors.grayLabel, // rec. 2
+                            ),
+                          ),
                   ),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  label, // rec. 1 — always visible
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.grayLabel,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -253,9 +307,8 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-/// Item ativo: círculo branco 52px (Ellipse 6) sobre um **halo cinza `#C4C4C4`
-/// de 64px** (Ellipse 5), centrados no mesmo ponto, "flutuando" ~8px acima da
-/// barra (estilo Shifty), com o ícone primário dentro.
+/// Item ativo: círculo branco 44px sobre a barra, com o ícone primário.
+/// O halo cinza 64px foi removido para simplificar o indicador (rec. 3).
 class _ActiveBadge extends StatelessWidget {
   final IconData icon;
 
@@ -265,41 +318,23 @@ class _ActiveBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Transform.translate(
       offset: const Offset(0, -8),
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          // Halo cinza 64x64 (Ellipse 5) atrás do círculo branco.
-          const SizedBox(
-            width: 64,
-            height: 64,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Color(0xFFC4C4C4),
-                shape: BoxShape.circle,
-              ),
+      child: Container(
+        width: 44, // rec. 3 — reduced from 52px
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x33202020),
+              blurRadius: 12,
+              offset: Offset(0, 4),
             ),
-          ),
-          // Círculo branco 52x52 (Ellipse 6) com o ícone primário.
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x33202020),
-                  blurRadius: 12,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ExcludeSemantics(
-              child: Icon(icon, size: 24, color: AppColors.primary),
-            ),
-          ),
-        ],
+          ],
+        ),
+        child: ExcludeSemantics(
+          child: Icon(icon, size: 24, color: AppColors.primary),
+        ),
       ),
     );
   }
