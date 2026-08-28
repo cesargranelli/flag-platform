@@ -1,4 +1,6 @@
+import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../screens/about_screen.dart';
@@ -22,6 +24,32 @@ class AppRouter {
   /// de navegação entre builds/testes.
   static GoRouter build() => GoRouter(
     initialLocation: '/live',
+    errorBuilder: (context, state) => Scaffold(
+      appBar: AppBar(title: const Text('Página não encontrada')),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.location_off, size: 56, color: AppColors.danger),
+            const SizedBox(height: 12),
+            Text(
+              'Página não encontrada',
+              style: AppTextStyles.headline1.copyWith(fontSize: 20),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'O link que você acessou não existe.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton(
+              onPressed: () => context.go('/live'),
+              child: const Text('Voltar ao início'),
+            ),
+          ],
+        ),
+      ),
+    ),
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

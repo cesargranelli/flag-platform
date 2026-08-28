@@ -21,142 +21,125 @@ class LiveScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Ao vivo')),
-      body: asyncGames.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 48,
-                  color: AppColors.danger,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Erro ao carregar jogos ao vivo',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '$error',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(liveGamesProvider);
+          await ref.read(liveGamesProvider.future);
+        },
+        child: asyncGames.when(
+          loading: () =>
+              const AppLoading(message: 'Carregando jogos ao vivo...'),
+          error: (error, _) => ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: const [
+              SizedBox(height: 120),
+              AppErrorState(
+                message: 'Não foi possível carregar os jogos ao vivo',
+              ),
+            ],
           ),
-        ),
-        data: (allGames) {
-          final live = allGames
-              .where((lg) => lg.game.status == GameStatus.inProgress)
-              .toList();
-          final recent = allGames
-              .where((lg) => lg.game.status == GameStatus.finished)
-              .toList();
+          data: (allGames) {
+            final live = allGames
+                .where((lg) => lg.game.status == GameStatus.inProgress)
+                .toList();
+            final recent = allGames
+                .where((lg) => lg.game.status == GameStatus.finished)
+                .toList();
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              if (live.isNotEmpty) ...[
-                Row(
-                  children: const [
-                    _LiveDot(),
-                    SizedBox(width: 8),
-                    Text(
-                      'AO VIVO AGORA',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.1,
-                        color: AppColors.danger,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Acompanhe os jogos em andamento em tempo real',
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 16),
-                ...live.map(
-                  (lg) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: MatchScoreCard(
-                      game: lg.game,
-                      showPlayByPlay: true,
-                      onPlayByPlayTap: () => context.push(
-                        '/live/${lg.game.id}/plays',
-                        extra: lg.game,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              if (live.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 32),
-                  child: Column(
-                    children: [
-                      const Icon(
-                        Icons.videocam_off_outlined,
-                        size: 48,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Nenhum jogo ao vivo no momento',
-                        textAlign: TextAlign.center,
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                if (live.isNotEmpty) ...[
+                  Row(
+                    children: const [
+                      _LiveDot(),
+                      SizedBox(width: 8),
+                      Text(
+                        'AO VIVO AGORA',
                         style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Volte mais tarde para acompanhar os jogos em tempo real',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.1,
+                          color: AppColors.danger,
                         ),
                       ),
                     ],
                   ),
-                ),
-              if (recent.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _SectionTitle('Recentemente'),
-                const SizedBox(height: 8),
-                ...recent.map(
-                  (lg) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: MatchScoreCard(
-                      game: lg.game,
-                      showPlayByPlay: true,
-                      onPlayByPlayTap: () => context.push(
-                        '/live/${lg.game.id}/plays',
-                        extra: lg.game,
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Acompanhe os jogos em andamento em tempo real',
+                    style:
+                        TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 16),
+                  ...live.map(
+                    (lg) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: MatchScoreCard(
+                        game: lg.game,
+                        showPlayByPlay: true,
+                        onPlayByPlayTap: () => context.push(
+                          '/live/${lg.game.id}/plays',
+                          extra: lg.game,
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
+                if (live.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 32),
+                    child: Column(
+                      children: [
+                        const Icon(
+                          Icons.videocam_off_outlined,
+                          size: 48,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Nenhum jogo ao vivo no momento',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Confira os resultados na aba Campeonato',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (recent.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _SectionTitle('Recentemente'),
+                  const SizedBox(height: 8),
+                  ...recent.map(
+                    (lg) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: MatchScoreCard(
+                        game: lg.game,
+                        showPlayByPlay: true,
+                        onPlayByPlayTap: () => context.push(
+                          '/live/${lg.game.id}/plays',
+                          extra: lg.game,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -186,12 +169,15 @@ class _LiveDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: const BoxDecoration(
-        color: AppColors.danger,
-        shape: BoxShape.circle,
+    return Semantics(
+      label: 'Indicador de jogo ao vivo',
+      child: Container(
+        width: 10,
+        height: 10,
+        decoration: const BoxDecoration(
+          color: AppColors.danger,
+          shape: BoxShape.circle,
+        ),
       ),
     );
   }

@@ -31,64 +31,59 @@ class PlayByPlayScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Lance a Lance'),
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.danger,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _LiveIndicator(),
-                SizedBox(width: 4),
-                Text(
-                  'AO VIVO',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+          if (gameData?.status == GameStatus.inProgress)
+            Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.danger,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Semantics(
+                label: 'Jogo ao vivo',
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _LiveIndicator(),
+                    SizedBox(width: 4),
+                    Text(
+                      'AO VIVO',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
         ],
       ),
       body: Column(
         children: [
           // Header do jogo (placar)
-          if (gameData != null) _GameHeader(game: gameData),
+          if (gameData != null)
+            _GameHeader(
+              game: gameData,
+              currentQuarter: playsAsync.valueOrNull?.isNotEmpty == true
+                  ? playsAsync.valueOrNull!.last.quarter
+                  : null,
+            ),
 
           // Lista de lances
           Expanded(
             child: playsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
-                    const SizedBox(height: 12),
-                    Text('Erro ao carregar lances: $error'),
-                  ],
-                ),
+              loading: () => const AppLoading(message: 'Carregando lances...'),
+              error: (error, stack) => AppErrorState(
+                message: 'Não foi possível carregar os lances',
+                onRetry: () => ref.invalidate(playByPlayProvider(gameId)),
               ),
               data: (plays) {
                 if (plays.isEmpty) {
-                  return const Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.sports_football_outlined, size: 48, color: AppColors.textSecondary),
-                        SizedBox(height: 12),
-                        Text(
-                          'Nenhum lance registrado',
-                          style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
+                  return const AppEmptyState(
+                    message: 'Nenhum lance registrado',
+                    icon: Icons.sports_football_outlined,
                   );
                 }
 
@@ -130,8 +125,9 @@ class PlayByPlayScreen extends ConsumerWidget {
 /// Header do jogo com placar e times.
 class _GameHeader extends StatelessWidget {
   final Game game;
+  final String? currentQuarter;
 
-  const _GameHeader({required this.game});
+  const _GameHeader({required this.game, this.currentQuarter});
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +195,7 @@ class _GameHeader extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  'Q2 · ${game.roundNumber ?? 1}ª rodada',
+                  '${currentQuarter ?? 'Q1'} · ${game.roundNumber ?? 1}ª rodada',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -217,12 +213,12 @@ class _GameHeader extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1),
+                    color: AppColors.secondary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.shield,
-                    color: Colors.blue,
+                    color: AppColors.secondary,
                     size: 24,
                   ),
                 ),
@@ -289,7 +285,7 @@ class _PlayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTeamA = play.teamId == 'team-a';
-    final teamColor = isTeamA ? AppColors.primary : Colors.blue;
+    final teamColor = isTeamA ? AppColors.primary : AppColors.secondary;
 
     final iconWidget = Container(
       width: 40,
@@ -334,39 +330,42 @@ class _PlayCard extends StatelessWidget {
       ),
     );
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border(
-          left: isTeamA ? BorderSide(color: teamColor, width: 3) : BorderSide.none,
-          right: isTeamA ? BorderSide.none : BorderSide(color: teamColor, width: 3),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
+    return Semantics(
+      label: '${play.teamName}: ${play.description}',
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border(
+            left: isTeamA ? BorderSide(color: teamColor, width: 3) : BorderSide.none,
+            right: isTeamA ? BorderSide.none : BorderSide(color: teamColor, width: 3),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            if (isTeamA) ...[
-              iconWidget,
-              const SizedBox(width: 12),
-              contentWidget,
-              timeWidget,
-            ] else ...[
-              timeWidget,
-              const SizedBox(width: 12),
-              contentWidget,
-              const SizedBox(width: 12),
-              iconWidget,
-            ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              if (isTeamA) ...[
+                iconWidget,
+                const SizedBox(width: 12),
+                contentWidget,
+                timeWidget,
+              ] else ...[
+                timeWidget,
+                const SizedBox(width: 12),
+                contentWidget,
+                const SizedBox(width: 12),
+                iconWidget,
+              ],
+            ],
+          ),
         ),
       ),
     );
