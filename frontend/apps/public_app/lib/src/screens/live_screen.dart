@@ -58,9 +58,6 @@ class LiveScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: MatchScoreCard(
                   game: lg.game,
-                  showMeta: true,
-                  showVenue: true,
-                  showClubLogos: true,
                   showPlayByPlay: true,
                   onPlayByPlayTap: () => context.push(
                     '/live/${lg.game.id}/plays',
@@ -111,9 +108,6 @@ class LiveScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: MatchScoreCard(
                   game: lg.game,
-                  showMeta: true,
-                  showVenue: true,
-                  showClubLogos: true,
                   showPlayByPlay: true,
                   onPlayByPlayTap: () => context.push(
                     '/live/${lg.game.id}/plays',

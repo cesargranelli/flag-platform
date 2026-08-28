@@ -50,10 +50,6 @@ class CompetitionResultsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: MatchScoreCard(
                   game: game,
-                  showMeta: true,
-                  showRound: true,
-                  showVenue: true,
-                  showClubLogos: true,
                   onTap: () => context.push(
                     '/game/${game.id}',
                     extra: GameDetailArgs(

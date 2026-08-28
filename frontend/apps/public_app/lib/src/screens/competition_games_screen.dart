@@ -118,9 +118,6 @@ class _GamesView extends StatelessWidget {
               child: MatchScoreCard(
                 game: game,
                 highlighted: true,
-                showMeta: true,
-                showVenue: true,
-                showClubLogos: true,
                 onTap: () => _openGameDetail(context, game),
                 onHomeTeamTap: () => openTeamDetail(
                   context,
@@ -154,9 +151,6 @@ class _GamesView extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12),
               child: MatchScoreCard(
                 game: game,
-                showMeta: true,
-                showVenue: true,
-                showClubLogos: true,
                 onTap: () => _openGameDetail(context, game),
                 onHomeTeamTap: () => openTeamDetail(
                   context,
