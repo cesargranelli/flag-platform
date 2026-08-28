@@ -1,4 +1,5 @@
 import 'package:flag_core/flag_core.dart';
+import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,7 +26,7 @@ class CompetitionResultsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gamesAsync = ref.watch(
-      fakeCompetitionResultsProvider(competitionId),
+      competitionGamesProvider(competitionId),
     );
 
     return gamesAsync.when(
@@ -33,9 +34,14 @@ class CompetitionResultsScreen extends ConsumerWidget {
       error: (error, stackTrace) => AppErrorState(
         message: 'Não foi possível carregar os resultados',
         onRetry: () =>
-            ref.invalidate(fakeCompetitionResultsProvider(competitionId)),
+            ref.invalidate(competitionGamesProvider(competitionId)),
       ),
-      data: (results) {
+      data: (games) {
+        final results = games
+            .where((g) => g.status == GameStatus.finished)
+            .toList()
+          ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+
         if (results.isEmpty) {
           return const AppEmptyState(
             message: 'Nenhum resultado disponível',
