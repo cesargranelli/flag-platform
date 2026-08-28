@@ -7,117 +7,156 @@ import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 import '../widgets/match_score_card.dart';
 
-/// Aba "Ao vivo" (issue #391): lista de jogos ao vivo com dados FAKE do próprio
-/// app (sem backend), para visualizar como ficará o livescore no MVP.
+/// Aba "Ao vivo" (issue #391): lista de jogos ao vivo consumindo a API real.
 ///
 /// Mostra "Ao vivo agora" (jogos `inProgress`) e "Recentemente" (jogos
 /// encerrados). Cada card tem um botão "Lance a Lance" para ver a timeline.
+/// Exibe estados de carregamento e erro com feedback adequado ao usuário.
 class LiveScreen extends ConsumerWidget {
   const LiveScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final allGames = ref.watch(fakeLiveGamesProvider);
-
-    final live = allGames
-        .where((lg) => lg.game.status == GameStatus.inProgress)
-        .toList();
-    final recent = allGames
-        .where((lg) => lg.game.status == GameStatus.finished)
-        .toList();
+    final asyncGames = ref.watch(liveGamesProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Ao vivo')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (live.isNotEmpty) ...[
-            Row(
-              children: const [
-                _LiveDot(),
-                SizedBox(width: 8),
-                Text(
-                  'AO VIVO AGORA',
+      body: asyncGames.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: AppColors.danger,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Erro ao carregar jogos ao vivo',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.1,
-                    color: AppColors.danger,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$error',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            const Text(
-              'Acompanhe os jogos em andamento em tempo real',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            ...live.map(
-              (lg) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: MatchScoreCard(
-                  game: lg.game,
-                  showPlayByPlay: true,
-                  onPlayByPlayTap: () => context.push(
-                    '/live/${lg.game.id}/plays',
-                    extra: lg.game,
-                  ),
+          ),
+        ),
+        data: (allGames) {
+          final live = allGames
+              .where((lg) => lg.game.status == GameStatus.inProgress)
+              .toList();
+          final recent = allGames
+              .where((lg) => lg.game.status == GameStatus.finished)
+              .toList();
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              if (live.isNotEmpty) ...[
+                Row(
+                  children: const [
+                    _LiveDot(),
+                    SizedBox(width: 8),
+                    Text(
+                      'AO VIVO AGORA',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.1,
+                        color: AppColors.danger,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ),
-          ],
-          if (live.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.videocam_off_outlined,
-                    size: 48,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Nenhum jogo ao vivo no momento',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                const SizedBox(height: 4),
+                const Text(
+                  'Acompanhe os jogos em andamento em tempo real',
+                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 16),
+                ...live.map(
+                  (lg) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: MatchScoreCard(
+                      game: lg.game,
+                      showPlayByPlay: true,
+                      onPlayByPlayTap: () => context.push(
+                        '/live/${lg.game.id}/plays',
+                        extra: lg.game,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Volte mais tarde para acompanhar os jogos em tempo real',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (recent.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            _SectionTitle('Recentemente'),
-            const SizedBox(height: 8),
-            ...recent.map(
-              (lg) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: MatchScoreCard(
-                  game: lg.game,
-                  showPlayByPlay: true,
-                  onPlayByPlayTap: () => context.push(
-                    '/live/${lg.game.id}/plays',
-                    extra: lg.game,
+                ),
+              ],
+              if (live.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.videocam_off_outlined,
+                        size: 48,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Nenhum jogo ao vivo no momento',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Volte mais tarde para acompanhar os jogos em tempo real',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ),
-          ],
-        ],
+              if (recent.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _SectionTitle('Recentemente'),
+                const SizedBox(height: 8),
+                ...recent.map(
+                  (lg) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: MatchScoreCard(
+                      game: lg.game,
+                      showPlayByPlay: true,
+                      onPlayByPlayTap: () => context.push(
+                        '/live/${lg.game.id}/plays',
+                        extra: lg.game,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
       ),
     );
   }
