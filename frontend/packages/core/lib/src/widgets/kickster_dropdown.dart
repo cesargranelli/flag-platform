@@ -7,21 +7,19 @@ import 'app_dropdown.dart';
 /// Dropdown no estilo do kit Kickster (issues #441/#445/#451).
 ///
 /// Menu customizado — o `DropdownButtonFormField` padrão do Flutter não
-/// permite o estilo de lista do kit (itens com checkbox + borda no
-/// selecionado). O campo fechado é um pill de 52px com raio 24 e fundo
-/// `#F6F8FE` ([AppColors.surfaceMuted]); a lista aberta mostra itens em
-/// pills de 48px com checkbox circular do kit e borda `primary` no item
-/// selecionado.
+/// permite o estilo de lista do kit (itens com checkbox + divisores). O
+/// campo fechado é um pill de 52px com raio 24 e fundo `#F6F8FE`
+/// ([AppColors.surfaceMuted]); a lista aberta é um **container único
+/// segmentado** (itens juntos, divididos por `Divider` `#E3E7EC`).
 ///
-/// Medidas EXATAS do Figma (nodes `29931:1077` fechado / `29931:1085`
-/// aberto):
+/// Medidas EXATAS do Figma (node `30020:3316` aberto):
 /// - **Campo fechado**: 327×52, raio 24, fundo `#F6F8FE`, valor 12px
 ///   Regular `#9CA4AB`, seta 24×24 `#9CA4AB` à direita.
-/// - **Lista aberta**: itens 327×48, raio 24, fundo `#F6F8FE`;
-///   **selecionado** = borda `#083879` 1px + checkbox circular marcado
-///   (24px primary + check branco) + texto `#111111`; **não selecionado** =
-///   borda `#E3E7EC` + checkbox vazio (borda `#E3E9ED`); espaçamento ~16px
-///   entre itens.
+/// - **Lista aberta**: container único 327×N, raio **12**, fundo `surface`,
+///   borda `line` 1px (`#E3E7EC`); itens de 48px sem espaço entre si, com
+///   `Divider` 1px `line` entre eles; **selecionado** = checkbox circular
+///   marcado (24px primary + check branco) à direita + texto `#111111`;
+///   **não selecionado** = checkbox vazio (borda `#E3E9ED`).
 ///
 /// Mantém a API migrada: aceita itens prontos ([items]) ou a forma
 /// declarativa [values] + [labels] (+ [icons] opcional); com ícones, os
@@ -292,7 +290,9 @@ class _KicksterMenuEntry<T> {
   final String? labelText;
 }
 
-/// Overlay do menu aberto: lista de pills posicionada sob o campo.
+/// Overlay do menu aberto: container único segmentado sob o campo (modelo
+/// do kit, node `30020:3316`) — raio 12, fundo `surface`, borda `line` e
+/// itens juntos com divisores internos.
 class _KicksterMenuOverlay<T> extends StatelessWidget {
   const _KicksterMenuOverlay({
     required this.anchorOffset,
@@ -310,8 +310,8 @@ class _KicksterMenuOverlay<T> extends StatelessWidget {
   final T? selectedValue;
   final ValueChanged<T?> onSelect;
 
-  /// Altura máxima da lista: 6 itens de 48px + 5 gaps de 16px + padding.
-  static const double _maxMenuHeight = 6 * 48 + 5 * 16 + 8;
+  /// Altura máxima da lista: 6 itens de 48px + 5 divisores de 1px + bordas.
+  static const double _maxMenuHeight = 6 * 48 + 5 * 1 + 2;
 
   @override
   Widget build(BuildContext context) {
@@ -325,19 +325,33 @@ class _KicksterMenuOverlay<T> extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: _maxMenuHeight),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (var i = 0; i < entries.length; i++) ...[
-                      _KicksterMenuItem<T>(
-                        entry: entries[i],
-                        selected: entries[i].value == selectedValue,
-                        onTap: () => onSelect(entries[i].value),
-                      ),
-                      if (i < entries.length - 1) const SizedBox(height: 16),
+                // Container único com divisores internos (sem pills/gap).
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.line, width: 1),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var i = 0; i < entries.length; i++) ...[
+                        _KicksterMenuItem<T>(
+                          entry: entries[i],
+                          selected: entries[i].value == selectedValue,
+                          onTap: () => onSelect(entries[i].value),
+                        ),
+                        if (i < entries.length - 1)
+                          const Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: AppColors.line,
+                          ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -348,7 +362,9 @@ class _KicksterMenuOverlay<T> extends StatelessWidget {
   }
 }
 
-/// Item do menu aberto: pill 48px, raio 24, checkbox circular + rótulo.
+/// Item do menu aberto: linha de 48px dentro do container segmentado, com
+/// o checkbox circular à direita como destaque do selecionado (o item em si
+/// não tem borda — os cantos são clippados pelo container pai).
 class _KicksterMenuItem<T> extends StatelessWidget {
   const _KicksterMenuItem({
     required this.entry,
@@ -370,22 +386,11 @@ class _KicksterMenuItem<T> extends StatelessWidget {
         type: MaterialType.transparency,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
           child: Ink(
             height: 48,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceMuted,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: selected ? AppColors.primary : AppColors.line,
-                width: 1,
-              ),
-            ),
             child: Row(
               children: [
-                _KicksterCheckCircle(checked: selected),
-                const SizedBox(width: 12),
                 Expanded(
                   child: DefaultTextStyle(
                     style: const TextStyle(
@@ -397,6 +402,8 @@ class _KicksterMenuItem<T> extends StatelessWidget {
                     child: entry.child,
                   ),
                 ),
+                const SizedBox(width: 12),
+                _KicksterCheckCircle(checked: selected),
               ],
             ),
           ),
