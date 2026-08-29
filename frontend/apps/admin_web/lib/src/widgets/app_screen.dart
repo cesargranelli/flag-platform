@@ -96,38 +96,13 @@ class _UserHeader extends ConsumerWidget {
 
           const Spacer(),
 
-          // Bell icon
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                IconButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Sem notificações novas')),
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.notifications_outlined,
-                    size: 22,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.danger,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
+          // Home icon
+          IconButton(
+            onPressed: () => context.go('/'),
+            icon: const Icon(
+              Icons.home_outlined,
+              size: 22,
+              color: AppColors.textPrimary,
             ),
           ),
         ],
