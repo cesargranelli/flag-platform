@@ -126,13 +126,16 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     final teamName = widget.team?.name ?? teamFuture?.valueOrNull?.name;
     final title = teamName ?? 'Elenco';
 
+    final breadcrumb = [
+      const BreadcrumbItem('Início', route: '/'),
+      const BreadcrumbItem(AppStrings.teams, route: '/teams'),
+      if (teamName != null) BreadcrumbItem(teamName),
+      const BreadcrumbItem('Elenco'),
+    ];
+
     return AppScreen(
       title: title,
-      breadcrumb: const [
-        BreadcrumbItem('Início', route: '/'),
-        BreadcrumbItem(AppStrings.teams, route: '/teams'),
-        BreadcrumbItem('Elenco'),
-      ],
+      breadcrumb: breadcrumb,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

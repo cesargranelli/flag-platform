@@ -189,11 +189,8 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
         BreadcrumbItem(AppStrings.rosters, route: '/rosters'),
         BreadcrumbItem('Importar'),
       ],
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: AppLayout.form(
+      body: Expanded(
+        child: AppLayout.form(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -259,8 +256,6 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
             ],
           ),
         ),
-      ),
-      ],
       ),
     );
   }

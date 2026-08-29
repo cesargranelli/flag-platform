@@ -57,8 +57,6 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // No title in body
-          const SizedBox(height: 16),
           Expanded(
             child: competitions.when(
               loading: () =>
