@@ -6,7 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
-/// Fluxo "Esqueci a senha": passo 1 (e-mail) e passo 2 (confirmação).
+/// Fluxo "Esqueci a senha" no visual do kit Kickster (issue #443):
+/// passo 1 (e-mail) e passo 2 (confirmação).
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -54,13 +55,23 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(leading: BackButton(onPressed: () => context.go('/login'))),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: _sent ? _buildSent() : _buildForm(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.surfaceMuted, AppColors.background],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: _sent ? _buildSent() : _buildForm(),
+              ),
+            ),
           ),
         ),
       ),
@@ -71,27 +82,26 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     return Form(
       key: _formKey,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.lock_reset, size: 56, color: AppColors.primary),
-          const SizedBox(height: 16),
+          // Seta voltar (kit: Arrow Back no topo, alinhado à esquerda).
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppBackLink(onPressed: () => context.go('/login')),
+          ),
+          const SizedBox(height: 24),
           const Text(
             'Esqueci a senha',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-            ),
+            style: AppTextStyles.headline1,
           ),
           const SizedBox(height: 8),
           const Text(
-            'Informe seu e-mail para receber o link de redefinição.',
+            'Recupere a senha da sua conta',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style: AppTextStyles.subtitle,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           KicksterInput(
             label: AppStrings.loginEmail,
             controller: _emailController,
@@ -121,7 +131,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           ],
           const SizedBox(height: 24),
           KicksterButton(
-            label: 'Enviar link de redefinição',
+            label: 'Enviar link',
             onPressed: _submitting ? null : _submit,
             loading: _submitting,
           ),
