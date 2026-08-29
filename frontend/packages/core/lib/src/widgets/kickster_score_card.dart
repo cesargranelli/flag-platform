@@ -105,7 +105,10 @@ class KicksterScoreCard extends StatelessWidget {
       shadowColor: AppColors.black.withValues(alpha: 0.08),
       color: AppColors.surface,
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.line, width: 1),
+      ),
       child: onTap == null ? body : InkWell(onTap: onTap, child: body),
     );
   }
