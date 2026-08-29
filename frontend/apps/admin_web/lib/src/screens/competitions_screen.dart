@@ -34,6 +34,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
   @override
   Widget build(BuildContext context) {
     final isAdmin = ref.watch(authControllerProvider).state.user?.role == 'ADMIN';
+    final user = ref.watch(authControllerProvider).state.user;
     final showDisabled = isAdmin && _showDisabled;
     final competitions = showDisabled
         ? ref.watch(competitionsAdminProvider(true))
@@ -166,7 +167,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
                           itemBuilder: (context, index) {
                             final competition = filtered[index];
                             return _competitionCard(
-                                context, competition);
+                                context, competition, user);
                           },
                         );
                       },
@@ -184,7 +185,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
   /// nome (+ organização como subtítulo) e menu de gestão para quem pode
   /// editar (#261). Badges de modalidade/gênero/faixa e status continuam
   /// visíveis no detalhe.
-  Widget _competitionCard(BuildContext context, Competition competition) {
+  Widget _competitionCard(BuildContext context, Competition competition, dynamic user) {
     final isDisabled = competition.status == CompetitionStatus.disabled;
     return KicksterCard(
       icon: Icons.emoji_events_outlined,
@@ -198,7 +199,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
       // Issue #261: ações de gestão (desativar/reativar) exigem
       // ser criador do campeonato ou ADMIN — o backend já bloqueia.
       trailing: canEditCompetition(
-        ref.watch(authControllerProvider).state.user,
+        user,
         competition,
       )
           ? PopupMenuButton<String>(

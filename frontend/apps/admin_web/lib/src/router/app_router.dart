@@ -386,14 +386,18 @@ class AppRouter {
                 GoRoute(
                   path: '/teams',
                   name: 'teams',
-                  builder: (context, state) =>
-                      TeamsScreen(lockedCompetitionId: state.extra as String?),
+                  builder: (context, state) => TeamsScreen(
+                      lockedCompetitionId: state.extra is String
+                          ? state.extra as String
+                          : null),
                   routes: [
                     GoRoute(
                       path: 'associate',
                       name: 'teamAssociate',
                       builder: (context, state) => AssociateClubsScreen(
-                        lockedCompetitionId: state.extra as String?,
+                        lockedCompetitionId: state.extra is String
+                            ? state.extra as String
+                            : null,
                       ),
                     ),
                     GoRoute(

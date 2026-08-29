@@ -92,7 +92,7 @@ class _UserHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authControllerProvider).state.user;
+    final user = ref.watch(authControllerProvider.select((a) => a.state.user));
     final name = (user?.name ?? '').trim();
     final email = (user?.email ?? '').trim();
     final displayName = name.isNotEmpty ? name : email;

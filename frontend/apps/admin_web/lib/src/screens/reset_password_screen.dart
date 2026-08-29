@@ -47,11 +47,11 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             token: widget.token,
             newPassword: _passwordController.text,
           );
-      setState(() => _done = true);
+      if (mounted) setState(() => _done = true);
     } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
+      if (mounted) setState(() => _errorMessage = e.message);
     } catch (_) {
-      setState(() => _errorMessage = AppStrings.loginConnectionError);
+      if (mounted) setState(() => _errorMessage = AppStrings.loginConnectionError);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

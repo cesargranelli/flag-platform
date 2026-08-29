@@ -10,9 +10,5 @@ class AdminShell extends StatelessWidget {
   final Widget navigationShell;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: navigationShell,
-    );
-  }
+  Widget build(BuildContext context) => navigationShell;
 }

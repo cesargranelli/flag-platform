@@ -93,7 +93,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   void _markDirty() {
-    if (_saved) return;
+    if (_saved || _hasChanges) return;
     setState(() => _hasChanges = true);
   }
 

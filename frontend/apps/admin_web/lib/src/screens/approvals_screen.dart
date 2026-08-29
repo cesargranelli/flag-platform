@@ -226,6 +226,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
     try {
       await ref.read(authApiProvider).approveUser(user.id);
       ref.invalidate(pendingUsersProvider);
+      ref.invalidate(usersProvider);
       if (context.mounted) {
         messenger.showSnackBar(
           SnackBar(content: Text('${user.name} aprovado!')),
@@ -258,6 +259,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
     try {
       await ref.read(authApiProvider).rejectUser(user.id);
       ref.invalidate(pendingUsersProvider);
+      ref.invalidate(usersProvider);
       if (context.mounted) {
         messenger.showSnackBar(
           SnackBar(content: Text('${user.name} rejeitado.')),

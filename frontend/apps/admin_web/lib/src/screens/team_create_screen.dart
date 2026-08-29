@@ -74,7 +74,7 @@ class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
         documentType: _documentType,
         logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
       );
-      ref.invalidate(teamsProvider);
+      ref.invalidate(teamsProvider(_competitionId ?? ''));
       if (mounted) {
         context.pop();
       }

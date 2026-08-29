@@ -42,11 +42,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       await ref
           .read(authApiProvider)
           .forgotPassword(_emailController.text.trim());
-      setState(() => _sent = true);
+      if (mounted) setState(() => _sent = true);
     } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
+      if (mounted) setState(() => _errorMessage = e.message);
     } catch (_) {
-      setState(() => _errorMessage = AppStrings.loginConnectionError);
+      if (mounted) setState(() => _errorMessage = AppStrings.loginConnectionError);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

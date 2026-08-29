@@ -84,7 +84,7 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
         documentType: _documentType,
         logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
       );
-      ref.invalidate(teamsProvider);
+      ref.invalidate(teamsProvider(_competitionId ?? ''));
       if (mounted) {
         ref.invalidate(teamProvider(id));
         context.go('/teams/$id');
