@@ -34,6 +34,10 @@ class AppColors {
   /// Borda de repouso dos campos do kit (issue #445) — #DADADA.
   static const Color fieldBorder = Color(0xFFDADADA);
 
+  /// Borda clara de repouso dos seletores (checkbox/radio) do kit (issue
+  /// #447) — Gray/G30 #E3E9ED.
+  static const Color fieldBorderLight = Color(0xFFE3E9ED);
+
   /// BG Secundário — fundo azulado de cards/áreas.
   static const Color surfaceMuted = Color(0xFFF6F8FE);
 

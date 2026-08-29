@@ -166,20 +166,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Checkbox(
-                                value: _keepConnected,
-                                onChanged: (value) => setState(
-                                    () => _keepConnected = value ?? false),
-                              ),
-                              Text(
-                                'Manter conectado',
-                                style: AppTextStyles.labelMedium
-                                    .copyWith(color: AppColors.textPrimary),
-                              ),
-                            ],
+                          KicksterCheckbox(
+                            value: _keepConnected,
+                            onChanged: (value) => setState(
+                                () => _keepConnected = value),
+                            label: 'Manter conectado',
                           ),
                           TextButton(
                             onPressed: () => context.go('/forgot-password'),
