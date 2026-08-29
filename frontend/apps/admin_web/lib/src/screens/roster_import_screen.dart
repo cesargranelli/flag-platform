@@ -192,22 +192,6 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
-          const Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Importar elenco',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
           Expanded(
             child: AppLayout.form(
           child: Column(

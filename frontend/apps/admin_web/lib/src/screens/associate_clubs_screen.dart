@@ -191,22 +191,6 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
-          const Row(
-            children: [
-               Expanded(
-                child: Text(
-                  'Associar clubes',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
           Expanded(
             child: competitions.when(
               loading: () =>

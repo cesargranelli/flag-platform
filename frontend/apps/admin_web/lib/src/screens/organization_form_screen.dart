@@ -213,28 +213,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
           BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
           BreadcrumbItem('Nova'),
         ],
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Título + actions
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Nova organização',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Formulário
-            AppLayout.form(
-              child: Form(
+        body: AppLayout.form(
+          child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -321,8 +301,6 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
             ),
           ),
         ),
-      ],
-      ),
       ),
     );
   }

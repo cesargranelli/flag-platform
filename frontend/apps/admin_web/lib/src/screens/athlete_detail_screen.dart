@@ -25,30 +25,14 @@ class AthleteDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: athlete?.name ?? 'Atleta',
-      breadcrumb: const [
-        BreadcrumbItem('Início', route: '/'),
-        BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
-        BreadcrumbItem('Detalhe'),
+      breadcrumb: [
+        const BreadcrumbItem('Início', route: '/'),
+        const BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
+        if (athlete?.name != null) BreadcrumbItem(athlete!.name),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  athlete?.name ?? 'Atleta',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
           // Conteúdo
           athleteFuture == null
               ? _buildDetail(context, athlete!)

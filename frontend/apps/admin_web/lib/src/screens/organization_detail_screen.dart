@@ -28,49 +28,31 @@ class OrganizationDetailScreen extends ConsumerWidget {
     final orgFuture =
         org != null ? null : ref.watch(organizationProvider(organizationId!));
 
+    // Breadcrumb dinâmico com nome da organização
+    final orgName = org?.tradeName;
+    final breadcrumb = [
+      const BreadcrumbItem('Início', route: '/'),
+      const BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
+      if (orgName != null) BreadcrumbItem(orgName),
+    ];
+
     return AppScreen(
       title: org?.tradeName ?? 'Organização',
-      breadcrumb: const [
-        BreadcrumbItem('Início', route: '/'),
-        BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
-        BreadcrumbItem('Detalhe'),
-      ],
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Título + actions
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  org?.tradeName ?? 'Organização',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+      breadcrumb: breadcrumb,
+      body: orgFuture == null
+          ? _buildDetail(context, org!)
+          : orgFuture.when(
+              loading: () => const AppLoading(
+                message: 'Carregando organização...',
+              ),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar a organização',
+                onRetry: () => ref.invalidate(
+                  organizationProvider(organizationId!),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Conteúdo
-          orgFuture == null
-              ? _buildDetail(context, org!)
-              : orgFuture.when(
-                  loading: () => const AppLoading(
-                    message: 'Carregando organização...',
-                  ),
-                  error: (error, stackTrace) => AppErrorState(
-                    message: 'Não foi possível carregar a organização',
-                    onRetry: () => ref.invalidate(
-                      organizationProvider(organizationId!),
-                    ),
-                  ),
-                  data: (org) => _buildDetail(context, org),
-                ),
-        ],
-      ),
+              data: (org) => _buildDetail(context, org),
+            ),
     );
   }
 

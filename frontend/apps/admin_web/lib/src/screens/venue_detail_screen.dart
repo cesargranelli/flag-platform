@@ -26,30 +26,14 @@ class VenueDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: venue?.name ?? 'Campo',
-      breadcrumb: const [
-        BreadcrumbItem('Início', route: '/'),
-        BreadcrumbItem(AppStrings.venues, route: '/venues'),
-        BreadcrumbItem('Detalhe'),
+      breadcrumb: [
+        const BreadcrumbItem('Início', route: '/'),
+        const BreadcrumbItem(AppStrings.venues, route: '/venues'),
+        if (venue?.name != null) BreadcrumbItem(venue!.name),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  venue?.name ?? 'Campo',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
           // Conteúdo
           venueFuture == null
               ? _buildDetail(context, ref, venue!)

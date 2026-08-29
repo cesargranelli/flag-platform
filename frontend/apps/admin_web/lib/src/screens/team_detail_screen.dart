@@ -22,30 +22,14 @@ class TeamDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: team?.name ?? 'Time',
-      breadcrumb: const [
-        BreadcrumbItem('Início', route: '/'),
-        BreadcrumbItem(AppStrings.teams, route: '/teams'),
-        BreadcrumbItem('Detalhe'),
+      breadcrumb: [
+        const BreadcrumbItem('Início', route: '/'),
+        const BreadcrumbItem(AppStrings.teams, route: '/teams'),
+        if (team?.name != null) BreadcrumbItem(team!.name),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  team?.name ?? 'Time',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
           // Conteúdo
           teamFuture == null
               ? _buildDetail(context, ref, team!)

@@ -136,19 +136,9 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
+              const Spacer(),
               if (teamId != null)
                 IconButton(
                   tooltip: 'Importar CSV',

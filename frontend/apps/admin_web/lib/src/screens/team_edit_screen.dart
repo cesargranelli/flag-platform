@@ -128,22 +128,6 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
-          const Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Editar time',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
           AppLayout.form(
           child: Form(
             key: _formKey,

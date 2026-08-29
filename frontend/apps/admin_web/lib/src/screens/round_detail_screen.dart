@@ -22,30 +22,14 @@ class RoundDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: round?.name ?? 'Rodada',
-      breadcrumb: const [
-        BreadcrumbItem('Início', route: '/'),
-        BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
-        BreadcrumbItem('Detalhe'),
+      breadcrumb: [
+        const BreadcrumbItem('Início', route: '/'),
+        const BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
+        if (round?.name != null) BreadcrumbItem(round!.name),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  round?.name ?? 'Rodada',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
           // Conteúdo
           roundFuture == null
               ? _buildDetail(context, ref, round!)

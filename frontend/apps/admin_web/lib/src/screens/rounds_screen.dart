@@ -61,19 +61,10 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
+          // Actions
           Row(
             children: [
-              const Expanded(
-                child: Text(
-                  'Rodadas',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
+              const Spacer(),
               if (effectiveComp != null && canManage)
                 KicksterButton(
                   label: 'Novo',

@@ -61,19 +61,10 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
+          // Actions
           Row(
             children: [
-              const Expanded(
-                child: Text(
-                  'Jogos',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
+              const Spacer(),
               if (selectedRound != null && canEdit)
                 KicksterButton(
                   label: 'Importar',

@@ -37,30 +37,15 @@ class _CompetitionDetailScreenState
 
     return AppScreen(
       title: widget.competition?.name ?? 'Campeonato',
-      breadcrumb: const [
-        BreadcrumbItem('Início', route: '/'),
-        BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
-        BreadcrumbItem('Detalhe'),
+      breadcrumb: [
+        const BreadcrumbItem('Início', route: '/'),
+        const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+        if (widget.competition?.name != null)
+          BreadcrumbItem(widget.competition!.name),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  widget.competition?.name ?? 'Campeonato',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
           // Conteúdo
           compFuture == null
               ? _buildDetail(context, widget.competition!)

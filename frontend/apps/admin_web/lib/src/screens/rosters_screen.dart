@@ -57,21 +57,7 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
-          const Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Elencos',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          // No title in body
           const SizedBox(height: 16),
           Expanded(
             child: competitions.when(

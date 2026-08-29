@@ -25,30 +25,14 @@ class GameDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: game?.homeTeamName ?? 'Jogo',
-      breadcrumb: const [
-        BreadcrumbItem('Início', route: '/'),
-        BreadcrumbItem(AppStrings.games, route: '/games'),
-        BreadcrumbItem('Detalhe'),
+      breadcrumb: [
+        const BreadcrumbItem('Início', route: '/'),
+        const BreadcrumbItem(AppStrings.games, route: '/games'),
+        if (game?.homeTeamName != null) BreadcrumbItem(game!.homeTeamName!),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  game?.homeTeamName ?? 'Jogo',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
           // Conteúdo
           gameFuture == null
               ? _buildDetail(context, ref, game!)

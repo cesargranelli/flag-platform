@@ -38,19 +38,10 @@ class _AthletesScreenState extends ConsumerState<AthletesScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Título + actions
+          // Actions
           Row(
             children: [
-              const Expanded(
-                child: Text(
-                  'Atletas',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
+              const Spacer(),
               KicksterButton(
                 label: 'Importar',
                 icon: Icons.upload_file,

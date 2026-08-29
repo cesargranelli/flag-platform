@@ -333,19 +333,21 @@ class _CompetitionEditScreenState
       return asyncComp.when(
         loading: () => AppScreen(
           title: 'Editar campeonato',
-          breadcrumb: const [
-            BreadcrumbItem('Início', route: '/'),
-            BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
-            BreadcrumbItem('Editar'),
+          breadcrumb: [
+            const BreadcrumbItem('Início', route: '/'),
+            const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+            if (widget.competition?.name != null)
+              BreadcrumbItem(widget.competition!.name),
           ],
           body: const AppLoading(message: 'Carregando campeonato...'),
         ),
         error: (error, stackTrace) => AppScreen(
           title: 'Editar campeonato',
-          breadcrumb: const [
-            BreadcrumbItem('Início', route: '/'),
-            BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
-            BreadcrumbItem('Editar'),
+          breadcrumb: [
+            const BreadcrumbItem('Início', route: '/'),
+            const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+            if (widget.competition?.name != null)
+              BreadcrumbItem(widget.competition!.name),
           ],
           body: AppErrorState(
             message: 'Não foi possível carregar o campeonato',
@@ -359,8 +361,10 @@ class _CompetitionEditScreenState
           if (!canEditCompetition(user, competition)) {
             return AppScreen(
               title: 'Editar campeonato',
-              breadcrumb: const [
-                BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+              breadcrumb: [
+                const BreadcrumbItem('Início', route: '/'),
+                const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+                BreadcrumbItem(competition.name),
               ],
               body: const AppEmptyState(
                 message: 'Você não tem permissão para editar este campeonato.',
@@ -372,8 +376,10 @@ class _CompetitionEditScreenState
           if (competition.status != CompetitionStatus.draft) {
             return AppScreen(
               title: 'Editar campeonato',
-              breadcrumb: const [
-                BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+              breadcrumb: [
+                const BreadcrumbItem('Início', route: '/'),
+                const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+                BreadcrumbItem(competition.name),
               ],
               body: AppEmptyState(
                 message: competition.status == CompetitionStatus.published
@@ -401,28 +407,14 @@ class _CompetitionEditScreenState
       },
       child: AppScreen(
         title: 'Editar campeonato',
-        breadcrumb: const [
-          BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+        breadcrumb: [
+          const BreadcrumbItem('Início', route: '/'),
+          const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+          if (_name.text.isNotEmpty) BreadcrumbItem(_name.text),
         ],
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Título + actions
-            const Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Editar campeonato',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
             AppLayout.form(
               child: Form(
                 key: _formKey,
