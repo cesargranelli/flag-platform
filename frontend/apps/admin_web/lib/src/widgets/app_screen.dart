@@ -4,20 +4,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import 'kickster_breadcrumb.dart';
 
 /// Item da trilha de navegação do [AppScreen].
 class BreadcrumbItem {
-  const BreadcrumbItem(this.label, {this.route});
+  const BreadcrumbItem(this.label, {this.route, this.icon});
 
   final String label;
 
   /// Rota da listagem do módulo. Quando nula, o item é texto estático.
   final String? route;
+
+  /// Ícone opcional antes do texto (ex: home_outlined).
+  final IconData? icon;
 }
 
 /// Scaffold padrão das telas autenticadas do Admin Web.
 ///
-/// - **Header pessoal**: avatar + nome + greeting + bell icon (sticky)
+/// - **Header pessoal**: avatar + nome + greeting + home icon (sticky)
 /// - **Breadcrumb** (quando houver): abaixo do header pessoal
 /// - **Page Body** (scrollável, padding 24px): conteúdo da tela
 class AppScreen extends StatelessWidget {
@@ -37,7 +41,6 @@ class AppScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final crumbs = breadcrumb ?? const <BreadcrumbItem>[];
-    final isWide = MediaQuery.sizeOf(context).width >= 960;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -46,7 +49,16 @@ class AppScreen extends StatelessWidget {
         if (showUserHeader) const _UserHeader(),
         // Breadcrumb (se houver)
         if (crumbs.isNotEmpty)
-          _BreadcrumbBar(crumbs: crumbs, isWide: isWide),
+          KicksterBreadcrumb(
+            items: [
+              for (final c in crumbs)
+                KicksterBreadcrumbItem(
+                  label: c.label,
+                  route: c.route,
+                  icon: c.icon,
+                ),
+            ],
+          ),
         // Page body
         Expanded(
           child: SingleChildScrollView(
@@ -131,188 +143,6 @@ class _UserHeader extends ConsumerWidget {
     if (parts.length == 1) return parts[0][0].toUpperCase();
     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
   }
-}
-
-// ---------------------------------------------------------------------------
-// Breadcrumb Bar
-// ---------------------------------------------------------------------------
-
-/// Barra de breadcrumb abaixo do header pessoal.
-class _BreadcrumbBar extends StatelessWidget {
-  const _BreadcrumbBar({required this.crumbs, required this.isWide});
-
-  final List<BreadcrumbItem> crumbs;
-  final bool isWide;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          bottom: BorderSide(color: AppColors.line, width: 1),
-        ),
-      ),
-      child: Row(
-        children: [
-          isWide
-              ? _BreadcrumbTrail(crumbs: crumbs)
-              : _BackCrumb(
-                  label: crumbs.first.label,
-                  route: crumbs.first.route,
-                ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Breadcrumb components
-// ---------------------------------------------------------------------------
-
-/// Trilha de breadcrumb: `Módulo › Nome` em desktop.
-class _BreadcrumbTrail extends StatelessWidget {
-  const _BreadcrumbTrail({required this.crumbs});
-
-  final List<BreadcrumbItem> crumbs;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 6,
-      runSpacing: 4,
-      children: [
-        for (var i = 0; i < crumbs.length; i++) ...[
-          if (i > 0) _crumbSeparator(),
-          _CrumbLink(label: crumbs[i].label, route: crumbs[i].route),
-        ],
-      ],
-    );
-  }
-
-  static Widget _crumbSeparator() => const Text(
-        '›',
-        style: TextStyle(
-          fontSize: 14,
-          height: 1,
-          color: AppColors.textSecondary,
-        ),
-      );
-}
-
-/// Navega para a listagem do módulo (breadcrumb/back).
-void _goToListing(BuildContext context, String? route) {
-  final target = route;
-  if (target == null) return;
-  context.go(target);
-}
-
-/// Link de nível do breadcrumb.
-class _CrumbLink extends StatefulWidget {
-  const _CrumbLink({required this.label, this.route});
-
-  final String label;
-  final String? route;
-
-  @override
-  State<_CrumbLink> createState() => _CrumbLinkState();
-}
-
-class _CrumbLinkState extends State<_CrumbLink> {
-  bool _hovered = false;
-  bool _focused = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final clickable = widget.route != null;
-    return Focus(
-      canRequestFocus: clickable,
-      onFocusChange: (focused) => setState(() => _focused = focused),
-      child: MouseRegion(
-        cursor: clickable ? SystemMouseCursors.click : MouseCursor.defer,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: InkWell(
-          onTap: clickable
-              ? () => _goToListing(context, widget.route)
-              : null,
-          hoverColor: Colors.transparent,
-          focusColor: Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-            child: Text(
-              widget.label,
-              style: _crumbTextStyle(clickable: clickable).copyWith(
-                decoration: clickable && (_hovered || _focused)
-                    ? TextDecoration.underline
-                    : TextDecoration.none,
-                decorationColor: AppColors.primary,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Back button do breadcrumb em viewports < 960px.
-class _BackCrumb extends StatelessWidget {
-  const _BackCrumb({required this.label, this.route});
-
-  final String label;
-  final String? route;
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Tooltip(
-        message: 'Voltar para $label',
-        child: InkWell(
-          onTap: route == null ? null : () => _goToListing(context, route),
-          hoverColor: Colors.transparent,
-          focusColor: Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-            child: Semantics(
-              label: 'Voltar para $label',
-              button: true,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.arrow_back,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(label, style: _crumbTextStyle(clickable: true)),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Estilo dos níveis do breadcrumb.
-TextStyle _crumbTextStyle({required bool clickable}) {
-  return TextStyle(
-    fontSize: 14,
-    height: 22 / 14,
-    fontWeight: FontWeight.w500,
-    letterSpacing: 0.07,
-    color: clickable ? AppColors.primary : AppColors.textSecondary,
-  );
 }
 
 // ── User menu (estilo KicksterDropdown) ─────────────────────────────────────
