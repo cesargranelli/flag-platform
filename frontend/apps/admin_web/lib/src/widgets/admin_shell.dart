@@ -5,13 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 
-/// Shell do Admin Web (issue #427), com sidebar esquerda no desktop (issue #457).
+/// Shell do Admin Web (issue #427).
 ///
-/// **Desktop (>=960px):** `Row > [Sidebar(256px), Expanded(navigationShell)]`.
-/// A sidebar contém a marca, itens de navegação e chip de usuário no rodapé.
-///
-/// **Mobile (<960px):** `Column > [Header, Expanded(navigationShell)]`.
-/// Mantém o header horizontal atual com marca + menu + chip de usuário.
+/// **Desktop e Mobile:** `Column > [Header, Expanded(navigationShell)]`.
+/// O header contém a marca, menu de navegação e chip de usuário.
 class AdminShell extends ConsumerWidget {
   const AdminShell({
     super.key,
@@ -24,22 +21,6 @@ class AdminShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isAdmin =
         ref.watch(authControllerProvider).state.user?.role == 'ADMIN';
-    final isDesktop = MediaQuery.sizeOf(context).width >= 960;
-
-    if (isDesktop) {
-      return Scaffold(
-        body: Row(
-          children: [
-            _Sidebar(
-              navigationShell: navigationShell,
-              isAdmin: isAdmin,
-              onLogout: () => _confirmLogout(context, ref),
-            ),
-            Expanded(child: navigationShell),
-          ],
-        ),
-      );
-    }
 
     return Scaffold(
       body: Column(

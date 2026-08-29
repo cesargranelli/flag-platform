@@ -10,8 +10,7 @@ import '../widgets/app_screen.dart';
 ///
 /// Layout:
 /// 1. **Header pessoal**: avatar 40px + nome w600 + greeting w400 + bell icon
-/// 2. **Card destaque**: card grande r=12 com fundo primary, boas-vindas
-/// 3. **Seção "Módulos"**: título 16px w600 + grid de KicksterCards
+/// 2. **Seção "Módulos"**: título 16px w600 + grid de KicksterCards
 class AdminHomeScreen extends ConsumerWidget {
   const AdminHomeScreen({super.key});
 
@@ -58,11 +57,7 @@ class AdminHomeScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
-          // ── 2. Card destaque (Kickster: featured match card)
-          _FeaturedCard(name: name),
-          const SizedBox(height: 24),
-
-          // ── 3. Seção "Módulos" (Kickster: section title + content)
+          // ── 2. Seção "Módulos" (Kickster: section title + content)
           _SectionHeader(title: 'Módulos'),
           const SizedBox(height: 12),
           LayoutBuilder(
@@ -213,116 +208,6 @@ class _NotificationButton extends StatelessWidget {
                 color: AppColors.danger,
                 shape: BoxShape.circle,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Card destaque ───────────────────────────────────────────────────────────
-
-/// Card destaque (Kickster: featured match card r=12, fundo primary).
-///
-/// No contexto admin, exibe uma mensagem de boas-vindas sobre fundo primary
-/// com o nome do usuário.
-class _FeaturedCard extends StatelessWidget {
-  const _FeaturedCard({required this.name});
-
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    final displayName = name.isNotEmpty ? name.split(' ').first : 'Admin';
-
-    return Container(
-      height: 160,
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Background pattern (subtle)
-          Positioned(
-            right: -20,
-            top: -20,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 40,
-            bottom: -30,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
-            ),
-          ),
-
-          // Content
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Badge de saudação (Kickster: date badge r=6)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'Bem-vindo de volta',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Título principal
-                Text(
-                  'Olá, $displayName!',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-
-                // Subtítulo
-                Text(
-                  'Gerencie suas organizações, campeonatos e times.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
-                ),
-              ],
             ),
           ),
         ],
