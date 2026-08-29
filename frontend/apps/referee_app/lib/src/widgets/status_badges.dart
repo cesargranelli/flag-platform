@@ -78,6 +78,11 @@ class CheckInStatusBadge extends StatelessWidget {
         Icons.schedule,
       ),
     };
+    // Conteúdo (ícone + texto) escuro quando a cor semântica é o amarelo
+    // `warning` (#FACC15): o tom é claro demais para texto/ícone na própria
+    // cor sobre o fundo @12% (issue #431 — contraste).
+    final contentColor =
+        color == AppColors.warning ? AppColors.textPrimary : color;
     return Semantics(
       label: 'Status do atleta: $label',
       child: Container(
@@ -89,13 +94,13 @@ class CheckInStatusBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: color),
+            Icon(icon, size: 14, color: contentColor),
             const SizedBox(width: 4),
             Text(
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: color,
+                color: contentColor,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.2,
               ),

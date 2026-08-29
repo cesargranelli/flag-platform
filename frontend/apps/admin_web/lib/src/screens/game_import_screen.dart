@@ -327,13 +327,17 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
   }
 
   Widget _chip(String text, Color color) {
+    // Amarelo `warning` (#FACC15) é claro demais para texto na própria cor
+    // sobre o fundo @12%: usa texto escuro (issue #431 — contraste).
+    final textColor =
+        color == AppColors.warning ? AppColors.textPrimary : color;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Text(text, style: TextStyle(fontSize: 13, color: color)),
+      child: Text(text, style: TextStyle(fontSize: 13, color: textColor)),
     );
   }
 
