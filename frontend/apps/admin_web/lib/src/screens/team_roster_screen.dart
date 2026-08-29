@@ -123,13 +123,13 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
         : teamId != null
             ? ref.watch(teamProvider(teamId))
             : null;
-    final title =
-        widget.team?.name ?? teamFuture?.valueOrNull?.name ?? 'Elenco';
+    final teamName = widget.team?.name ?? teamFuture?.valueOrNull?.name;
+    final title = teamName ?? 'Elenco';
 
     return AppScreen(
       title: title,
       backTarget: teamId == null ? null : '/teams/$teamId',
-      backLabel: 'Detalhe',
+      backLabel: teamName ?? 'Times',
       actions: [
         if (teamId != null)
           IconButton(

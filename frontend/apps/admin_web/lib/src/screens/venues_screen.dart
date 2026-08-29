@@ -21,6 +21,7 @@ class VenuesScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Campos',
+      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         FilledButton.icon(
           onPressed: () => context.go('/venues/new'),

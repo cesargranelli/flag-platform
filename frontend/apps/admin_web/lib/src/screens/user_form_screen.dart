@@ -135,13 +135,10 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                       : null,
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: _role,
-                  decoration: const InputDecoration(
-                    labelText: 'Papel',
-                    helperText: 'Mesa: opera partidas ao vivo',
-                    border: OutlineInputBorder(),
-                  ),
+                KicksterDropdown<String>(
+                  label: 'Papel',
+                  helperText: 'Mesa: opera partidas ao vivo',
+                  value: _role,
                   items: _roles
                       .map((r) =>
                           DropdownMenuItem(value: r, child: Text(_roleLabel(r))))

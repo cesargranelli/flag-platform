@@ -473,9 +473,9 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _typeDropdown() {
-    return DropdownButtonFormField<OrganizationType>(
-      initialValue: _type,
-      decoration: const InputDecoration(labelText: 'Tipo'),
+    return KicksterDropdown<OrganizationType>(
+      label: 'Tipo',
+      value: _type,
       items: OrganizationType.values
           .map((t) => DropdownMenuItem(
                 value: t,
@@ -623,13 +623,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _countryDropdown() {
-    return DropdownButtonFormField<String>(
-      initialValue: _country,
-      decoration: const InputDecoration(labelText: 'País'),
-      items: [
-        for (final c in _countryOptions)
-          DropdownMenuItem(value: c.code, child: Text(c.name)),
-      ],
+    return KicksterDropdown<String>(
+      label: 'País',
+      value: _country,
+      values: [for (final c in _countryOptions) c.code],
+      labels: [for (final c in _countryOptions) c.name],
       onChanged: (value) {
         if (value == null) return;
         setState(() {
@@ -642,17 +640,12 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _stateDropdown() {
-    return DropdownButtonFormField<String>(
-      initialValue: _state.text.isEmpty ? null : _state.text,
-      decoration: const InputDecoration(
-        labelText: 'Estado',
-        hintText: 'Selecione o estado',
-      ),
-      items: [
-        for (final uf in _ufs)
-          DropdownMenuItem(
-              value: uf.$1, child: Text('${uf.$2} (${uf.$1})')),
-      ],
+    return KicksterDropdown<String>(
+      label: 'Estado',
+      hint: 'Selecione o estado',
+      value: _state.text.isEmpty ? null : _state.text,
+      values: [for (final uf in _ufs) uf.$1],
+      labels: [for (final uf in _ufs) '${uf.$2} (${uf.$1})'],
       onChanged: (value) {
         setState(() {
           _state.text = value ?? '';
@@ -727,13 +720,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _localeDropdown() {
-    return DropdownButtonFormField<String>(
-      initialValue: _locale.text,
-      decoration: const InputDecoration(labelText: 'Idioma'),
-      items: [
-        for (final l in _localeOptions)
-          DropdownMenuItem(value: l.code, child: Text(l.name)),
-      ],
+    return KicksterDropdown<String>(
+      label: 'Idioma',
+      value: _locale.text,
+      values: [for (final l in _localeOptions) l.code],
+      labels: [for (final l in _localeOptions) l.name],
       onChanged: (value) {
         if (value == null) return;
         setState(() => _locale.text = value);

@@ -9,9 +9,9 @@ import '../providers/providers.dart';
 ///
 /// Sem banda de boas-vindas, sem ações rápidas e sem título de página: cada
 /// card tem ícone grande + título do módulo (`KicksterCard` do core — raio
-/// 12, fundo `surface`, elevação sutil). A navegação entre módulos é feita
-/// por aqui — o header global ficou apenas com marca + usuário. Grade
-/// responsiva: `>=960px` → 4 colunas; abaixo → 2 colunas.
+/// 12, fundo `surface`, elevação sutil). A navegação entre módulos também é
+/// feita por aqui (o header tem menu discreto acima de 960px — issue #449).
+/// Grade responsiva: `>=960px` → 4 colunas; abaixo → 2 colunas.
 class AdminHomeScreen extends ConsumerWidget {
   const AdminHomeScreen({super.key});
 
@@ -33,7 +33,8 @@ class AdminHomeScreen extends ConsumerWidget {
       ),
       _Module(Icons.sports_soccer, AppStrings.venues, '/venues'),
       _Module(Icons.person_outline, AppStrings.athletes, '/athletes'),
-      _Module(Icons.groups_outlined, AppStrings.rosters, '/rosters'),
+      _Module(Icons.groups_outlined, AppStrings.teams, '/teams'),
+      _Module(Icons.groups_2_outlined, AppStrings.rosters, '/rosters'),
       if (isAdmin)
         _Module(Icons.fact_check_outlined, 'Aprovações', '/approvals'),
       if (isAdmin)

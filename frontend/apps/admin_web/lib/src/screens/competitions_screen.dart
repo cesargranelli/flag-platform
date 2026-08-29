@@ -33,6 +33,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
 
     return AppScreen(
       title: 'Campeonatos',
+      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         FilledButton.icon(
           onPressed: () => context.go('/competitions/new'),

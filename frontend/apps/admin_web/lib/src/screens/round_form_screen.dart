@@ -119,7 +119,7 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
       backTarget: _isEditing
           ? '/rounds/${widget.roundId ?? widget.round?.id}'
           : '/rounds',
-      backLabel: _isEditing ? 'Detalhe' : 'Rodadas',
+      backLabel: _isEditing ? (widget.round?.name ?? 'Rodadas') : 'Rodadas',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(
@@ -128,12 +128,9 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                DropdownButtonFormField<String>(
-                  initialValue: effectiveComp,
-                  decoration: const InputDecoration(
-                    labelText: 'Campeonato',
-                    border: OutlineInputBorder(),
-                  ),
+                KicksterDropdown<String>(
+                  label: 'Campeonato',
+                  value: effectiveComp,
                   items: compItems
                       .map(
                         (c) =>
@@ -175,14 +172,11 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
                       : null,
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<RoundType>(
-                  initialValue: _type,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo',
-                    helperText:
-                        'Fases: Regular, Playoffs, Wildcard, Semifinal, Final',
-                    border: OutlineInputBorder(),
-                  ),
+                KicksterDropdown<RoundType>(
+                  label: 'Tipo',
+                  helperText:
+                      'Fases: Regular, Playoffs, Wildcard, Semifinal, Final',
+                  value: _type,
                   items: RoundType.values
                       .map(
                         (t) => DropdownMenuItem(value: t, child: Text(t.label)),

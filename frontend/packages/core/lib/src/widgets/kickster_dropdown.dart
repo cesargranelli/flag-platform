@@ -22,6 +22,7 @@ class KicksterDropdown<T> extends StatelessWidget {
     this.icons,
     this.onChanged,
     this.hint,
+    this.helperText,
     this.validator,
   }) : assert(
           (items != null && values == null && labels == null) ||
@@ -51,6 +52,10 @@ class KicksterDropdown<T> extends StatelessWidget {
   /// Texto de dica exibido quando nada está selecionado.
   final String? hint;
 
+  /// Texto de ajuda abaixo do campo (mantém `helperText` dos formulários
+  /// nativos migrados, ex.: descrição das opções).
+  final String? helperText;
+
   final String? Function(T?)? validator;
 
   @override
@@ -58,7 +63,11 @@ class KicksterDropdown<T> extends StatelessWidget {
     return DropdownButtonFormField<T>(
       initialValue: value,
       isDense: true,
-      decoration: kicksterFieldDecoration(labelText: label, hintText: hint),
+      decoration: kicksterFieldDecoration(
+        labelText: label,
+        hintText: hint,
+        helperText: helperText,
+      ),
       items: items ?? _buildItems(),
       onChanged: onChanged,
       validator: validator,

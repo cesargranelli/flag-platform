@@ -36,6 +36,7 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
 
     return AppScreen(
       title: 'Organizações',
+      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         FilledButton.icon(
           onPressed: () => context.go('/organizations/new'),

@@ -17,6 +17,7 @@ class UsersScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Usuários',
+      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         FilledButton.icon(
           onPressed: () => context.go('/users/new'),

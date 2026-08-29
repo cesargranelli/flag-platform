@@ -45,6 +45,7 @@ class TeamsScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Times',
+      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         if (effectiveComp != null && canEdit)
           FilledButton.icon(
@@ -75,13 +76,9 @@ class TeamsScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      DropdownButtonFormField<String>(
-                        initialValue: effectiveComp,
-                        decoration: InputDecoration(
-                          labelText:
-                              locked ? 'Campeonato (travado)' : 'Campeonato',
-                          border: const OutlineInputBorder(),
-                        ),
+                      KicksterDropdown<String>(
+                        label: locked ? 'Campeonato (travado)' : 'Campeonato',
+                        value: effectiveComp,
                         items: compItems
                             .map(
                               (c) => DropdownMenuItem(

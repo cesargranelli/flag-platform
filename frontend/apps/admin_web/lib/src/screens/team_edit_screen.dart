@@ -121,7 +121,7 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
     return AppScreen(
       title: 'Editar time',
       backTarget: '/teams/${widget.teamId ?? widget.team?.id}',
-      backLabel: 'Detalhe',
+      backLabel: widget.team?.name ?? 'Times',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(
@@ -157,12 +157,9 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
                         ),
                       );
                     }
-                    return DropdownButtonFormField<String>(
-                      initialValue: _organizationId,
-                      decoration: const InputDecoration(
-                        labelText: 'Organização (clube)',
-                        border: OutlineInputBorder(),
-                      ),
+                    return KicksterDropdown<String>(
+                      label: 'Organização (clube)',
+                      value: _organizationId,
                       items: items,
                       onChanged: (value) =>
                           setState(() => _organizationId = value),
@@ -173,12 +170,9 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: effectiveComp,
-                  decoration: const InputDecoration(
-                    labelText: 'Campeonato',
-                    border: OutlineInputBorder(),
-                  ),
+                KicksterDropdown<String>(
+                  label: 'Campeonato',
+                  value: effectiveComp,
                   items: compItems
                       .map(
                         (c) =>
@@ -217,12 +211,9 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<DocumentType>(
-                  initialValue: _documentType,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo de documento',
-                    border: OutlineInputBorder(),
-                  ),
+                KicksterDropdown<DocumentType>(
+                  label: 'Tipo de documento',
+                  value: _documentType,
                   items: DocumentType.values
                       .map(
                         (d) => DropdownMenuItem(value: d, child: Text(d.label)),

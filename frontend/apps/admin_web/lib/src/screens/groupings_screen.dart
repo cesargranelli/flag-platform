@@ -30,6 +30,7 @@ class GroupingsScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Conferências e divisões',
+      titleVariant: AppScreenTitleVariant.titleLg,
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
@@ -166,12 +167,9 @@ class _GroupingsBody extends ConsumerWidget {
               alignment: Alignment.centerLeft,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 360),
-                child: DropdownButtonFormField<String>(
-                  initialValue: competition.id,
-                  decoration: const InputDecoration(
-                    labelText: 'Campeonato',
-                    border: OutlineInputBorder(),
-                  ),
+                child: KicksterDropdown<String>(
+                  label: 'Campeonato',
+                  value: competition.id,
                   items: competitions
                       .map(
                         (c) => DropdownMenuItem(

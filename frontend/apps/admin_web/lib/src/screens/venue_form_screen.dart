@@ -115,7 +115,7 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
       backTarget: _isEditing
           ? '/venues/${widget.venueId ?? widget.venue?.id}'
           : '/venues',
-      backLabel: _isEditing ? 'Detalhe' : 'Campos',
+      backLabel: _isEditing ? (widget.venue?.name ?? 'Campos') : 'Campos',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(
@@ -137,12 +137,9 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
                         icon: Icons.business,
                       );
                     }
-                    return DropdownButtonFormField<String>(
-                      initialValue: _organizationId,
-                      decoration: const InputDecoration(
-                        labelText: 'Organização',
-                        border: OutlineInputBorder(),
-                      ),
+                    return KicksterDropdown<String>(
+                      label: 'Organização',
+                      value: _organizationId,
                       items: orgs
                           .map((o) => DropdownMenuItem(
                                 value: o.id,

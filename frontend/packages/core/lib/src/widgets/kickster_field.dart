@@ -16,12 +16,17 @@ import '../theme/app_text_styles.dart';
 InputDecoration kicksterFieldDecoration({
   String? labelText,
   String? hintText,
+  String? helperText,
   IconData? prefixIcon,
   Widget? suffixIcon,
 }) {
   return InputDecoration(
     labelText: labelText,
     hintText: hintText,
+    helperText: helperText,
+    helperStyle: AppTextStyles.fieldLabel.copyWith(
+      color: AppColors.textSecondary,
+    ),
     filled: true,
     fillColor: AppColors.surface,
     floatingLabelBehavior: FloatingLabelBehavior.auto,
