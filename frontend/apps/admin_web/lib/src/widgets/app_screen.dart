@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 /// Scaffold padrão das telas autenticadas do Admin Web.
 ///
-/// Com o shell global ([AdminShell]) assumindo o header (marca, menu de
-/// módulos e chip de usuário), o [AppScreen] ficou enxuto (issue #427):
-/// renderiza o título da página como H1 (semântica `header`) + ações da tela
-/// (ex.: botão "Novo") e o corpo. A navegação de voltar fica a cargo do
-/// navegador/breadcrumb do shell — sem `leading`, sem AppBar duplicada e sem
-/// FAB (padrão mobile substituído por botões web no cabeçalho).
+/// Com o shell global ([AdminShell]) assumindo o header (marca e chip de
+/// usuário), o [AppScreen] ficou enxuto (issue #427): renderiza o título da
+/// página como H1 (semântica `header`) + ações da tela (ex.: botão "Novo") e
+/// o corpo. A navegação de voltar fica a cargo do navegador/brand do shell
+/// (volta à home) — sem `leading`, sem AppBar duplicada e sem FAB (padrão
+/// mobile substituído por botões web no cabeçalho).
 class AppScreen extends StatelessWidget {
   const AppScreen({
     super.key,

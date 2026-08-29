@@ -151,15 +151,12 @@ class AppRouter {
           ),
         ),
         // ---------------------------------------------------------------- //
-        // Shell do site (header global + breadcrumb) com branches por módulo.
-        // A ordem das branches espelha AdminShell._destinations.
+        // Shell do site (header global: marca + usuário) com branches por
+        // módulo. A navegação entre módulos é feita pelos cards da home.
         // ---------------------------------------------------------------- //
         StatefulShellRoute.indexedStack(
-          builder: (context, state, navigationShell) => AdminShell(
-            navigationShell: navigationShell,
-            location: state.uri.path,
-            extra: state.extra,
-          ),
+          builder: (context, state, navigationShell) =>
+              AdminShell(navigationShell: navigationShell),
           branches: [
             // Branch Início.
             StatefulShellBranch(
