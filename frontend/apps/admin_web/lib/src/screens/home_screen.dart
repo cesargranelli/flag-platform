@@ -4,150 +4,107 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_screen.dart';
 
-/// Tela inicial do Admin Web: dashboard (issue #431).
+/// Tela inicial do Admin Web (issue #433): grade de cards no estilo Kickster.
 ///
-/// Banda de boas-vindas (nome, data e papel) + 4 ações rápidas
-/// ([FilledButton.icon] com rotas existentes) + grade de módulos mantida
-/// como atalho. Tudo na paleta Kickster via [AppColors] — nada hardcoded.
+/// Sem banda de boas-vindas, sem ações rápidas e sem título de página: cada
+/// card tem ícone grande + título do módulo, com raio 12 e fundo `surface`
+/// (elevação sutil). A navegação entre módulos é feita por aqui — o header
+/// global ficou apenas com marca + usuário. Grade responsiva: `>=960px` → 4
+/// colunas; abaixo → 2 colunas.
 class AdminHomeScreen extends ConsumerWidget {
   const AdminHomeScreen({super.key});
 
-  static const List<String> _months = [
-    'janeiro',
-    'fevereiro',
-    'março',
-    'abril',
-    'maio',
-    'junho',
-    'julho',
-    'agosto',
-    'setembro',
-    'outubro',
-    'novembro',
-    'dezembro',
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authControllerProvider);
-    final userName = auth.state.user?.name;
-    final isAdmin = auth.state.user?.role == 'ADMIN';
-    final role = isAdmin ? 'ADMIN' : 'Organizador';
-    final now = DateTime.now();
-    final date = '${now.day} de ${_months[now.month - 1]} de ${now.year}';
+    final isAdmin =
+        ref.watch(authControllerProvider).state.user?.role == 'ADMIN';
 
-    final quickActions = <_QuickAction>[
-      _QuickAction(
-        AppStrings.newCompetition,
-        Icons.emoji_events_outlined,
-        '/competitions/new',
-      ),
-      _QuickAction(
-        AppStrings.newGame,
-        Icons.sports_score_outlined,
-        '/games/new',
-      ),
-      _QuickAction(
-        AppStrings.importAthletes,
-        Icons.upload_file_outlined,
-        '/athletes/import',
-      ),
-      _QuickAction(
-        AppStrings.newOrganization,
+    final modules = <_Module>[
+      _Module(
         Icons.business_outlined,
-        '/organizations/new',
+        AppStrings.organizations,
+        '/organizations',
       ),
-    ];
-
-    final modules = <_MenuItem>[
-      _MenuItem(Icons.business, AppStrings.organizations, '/organizations'),
-      _MenuItem(
+      _Module(
         Icons.emoji_events_outlined,
         AppStrings.competitions,
         '/competitions',
       ),
-      _MenuItem(Icons.sports_soccer, AppStrings.venues, '/venues'),
-      _MenuItem(Icons.person_outline, AppStrings.athletes, '/athletes'),
-      _MenuItem(Icons.groups_outlined, AppStrings.rosters, '/rosters'),
+      _Module(Icons.sports_soccer, AppStrings.venues, '/venues'),
+      _Module(Icons.person_outline, AppStrings.athletes, '/athletes'),
+      _Module(Icons.groups_outlined, AppStrings.rosters, '/rosters'),
       if (isAdmin)
-        _MenuItem(Icons.fact_check_outlined, 'Aprovações', '/approvals'),
+        _Module(Icons.fact_check_outlined, 'Aprovações', '/approvals'),
       if (isAdmin)
-        _MenuItem(Icons.admin_panel_settings, AppStrings.users, '/users'),
+        _Module(Icons.admin_panel_settings, AppStrings.users, '/users'),
     ];
 
-    return AppScreen(
-      title: 'Início',
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 960;
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _WelcomeBand(name: userName ?? 'organizador', date: date, role: role),
-              const SizedBox(height: 24),
-              Text(
-                AppStrings.quickActions,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  for (final action in quickActions)
-                    FilledButton.icon(
-                      onPressed: () => context.go(action.route),
-                      icon: Icon(action.icon, size: 18),
-                      label: Text(action.label),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Text(
-                AppStrings.modules,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: wide ? 4 : 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: wide ? 1.4 : 1.5,
-                children: [
-                  for (final module in modules)
-                    _menuCard(
-                      context,
-                      icon: module.icon,
-                      title: module.title,
-                      onTap: () => context.go(module.route),
-                    ),
-                ],
-              ),
-            ],
-          );
-        },
+    return Scaffold(
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 960;
+            return GridView.count(
+              padding: const EdgeInsets.all(16),
+              crossAxisCount: wide ? 4 : 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: wide ? 1.6 : 1.3,
+              children: [
+                for (final module in modules)
+                  _KicksterCard(
+                    icon: module.icon,
+                    title: module.title,
+                    onTap: () => context.go(module.route),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
+}
 
-  Widget _menuCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
+/// Card de módulo no estilo do kit Kickster (issue #433).
+///
+/// Raio 12, fundo `surface` branco com elevação sutil; ícone grande em
+/// `primary` sobre um círculo `primary` @10% centralizado acima do título.
+/// Sem descrição — estrutura simples, como no kit.
+class _KicksterCard extends StatelessWidget {
+  const _KicksterCard({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     return Card(
+      elevation: 1,
+      shadowColor: AppColors.black.withValues(alpha: 0.08),
+      color: AppColors.surface,
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 40, color: AppColors.primary),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 28, color: AppColors.primary),
+            ),
             const SizedBox(height: 12),
             Flexible(
               child: FittedBox(
@@ -160,6 +117,7 @@ class AdminHomeScreen extends ConsumerWidget {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -172,75 +130,10 @@ class AdminHomeScreen extends ConsumerWidget {
   }
 }
 
-/// Banda de boas-vindas do dashboard: "Olá, {nome}!" + data + papel.
-class _WelcomeBand extends StatelessWidget {
-  const _WelcomeBand({
-    required this.name,
-    required this.date,
-    required this.role,
-  });
-
-  final String name;
-  final String date;
-  final String role;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${AppStrings.hello}, $name!',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(color: AppColors.surface),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '$date · $role',
-                  style: TextStyle(
-                    color: AppColors.surface.withValues(alpha: 0.85),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.07,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.sports_score,
-            size: 56,
-            color: AppColors.surface.withValues(alpha: 0.25),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MenuItem {
+class _Module {
   final IconData icon;
   final String title;
   final String route;
 
-  const _MenuItem(this.icon, this.title, this.route);
-}
-
-class _QuickAction {
-  final String label;
-  final IconData icon;
-  final String route;
-
-  const _QuickAction(this.label, this.icon, this.route);
+  const _Module(this.icon, this.title, this.route);
 }
