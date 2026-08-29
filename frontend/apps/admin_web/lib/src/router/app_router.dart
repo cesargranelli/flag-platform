@@ -56,484 +56,521 @@ class AppRouter {
   ///
   /// O [auth] é usado como `refreshListenable`: qualquer mudança de estado de
   /// autenticação reavalia o redirect (login/logout/proteção de rotas).
-  static GoRouter build(AuthController auth) => GoRouter(
-    initialLocation: '/',
-    refreshListenable: auth,
-    redirect: (context, state) {
-      final authenticated = auth.state.authenticated;
-      final location = state.matchedLocation;
-      final isPublicAuth =
-          location == '/login' ||
-          location == '/signup' ||
-          location == '/forgot-password' ||
-          location == '/reset-password';
+  static GoRouter build(AuthController auth) {
+    // Destino original antes do redirect para o login (issue #429):
+    // após autenticar, o usuário volta para onde tentava ir.
+    String? pendingDestination;
 
-      // Não autenticado só acessa telas públicas de autenticação.
-      if (!authenticated && !isPublicAuth) return '/login';
-      // Autenticado não precisa ver telas de autenticação.
-      if (authenticated && isPublicAuth) return '/';
+    return GoRouter(
+      initialLocation: '/',
+      refreshListenable: auth,
+      redirect: (context, state) {
+        final authState = auth.state;
 
-      return null;
-    },
-    errorBuilder: (context, state) => Scaffold(
-      appBar: AppBar(title: const Text('Página não encontrada')),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.location_off, size: 56, color: AppColors.danger),
-            const SizedBox(height: 12),
-            Text(
-              'Página não encontrada',
-              style: AppTextStyles.headline1.copyWith(fontSize: 20),
+        // Restaurando a sessão: mantém a tela de boot até decidir (#429).
+        if (authState.restoring) return '/boot';
+
+        final authenticated = authState.authenticated;
+        final location = state.matchedLocation;
+        final isPublicAuth =
+            location == '/login' ||
+            location == '/signup' ||
+            location == '/forgot-password' ||
+            location == '/reset-password';
+        final isBoot = location == '/boot';
+
+        // Não autenticado: guarda o destino e vai para o login (#429).
+        if (!authenticated) {
+          if (!isPublicAuth && !isBoot) pendingDestination = location;
+          return isPublicAuth ? null : '/login';
+        }
+
+        // Autenticado: sai das telas de autenticação e segue ao destino.
+        if (isPublicAuth || isBoot) {
+          final destination = pendingDestination;
+          pendingDestination = null;
+          return destination ?? '/';
+        }
+        return null;
+      },
+      errorBuilder: (context, state) => Scaffold(
+        appBar: AppBar(title: const Text('Página não encontrada')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.location_off, size: 56, color: AppColors.danger),
+              const SizedBox(height: 12),
+              Text(
+                'Página não encontrada',
+                style: AppTextStyles.headline1.copyWith(fontSize: 20),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'O link que você acessou não existe.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              OutlinedButton(
+                onPressed: () => context.go('/'),
+                child: const Text('Voltar ao início'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      routes: [
+        // ---------------------------------------------------------------- //
+        // Telas públicas de autenticação (fora da shell).
+        // ---------------------------------------------------------------- //
+        GoRoute(
+          path: '/boot',
+          name: 'boot',
+          builder: (context, state) => const _BootScreen(),
+        ),
+        GoRoute(
+          path: '/login',
+          name: 'login',
+          builder: (context, state) => const LoginScreen(),
+        ),
+        GoRoute(
+          path: '/signup',
+          name: 'signup',
+          builder: (context, state) => const SignupScreen(),
+        ),
+        GoRoute(
+          path: '/forgot-password',
+          name: 'forgotPassword',
+          builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+        GoRoute(
+          path: '/reset-password',
+          name: 'resetPassword',
+          builder: (context, state) => ResetPasswordScreen(
+            token: state.uri.queryParameters['token'] ?? '',
+          ),
+        ),
+        // ---------------------------------------------------------------- //
+        // Shell do site (header global + breadcrumb) com branches por módulo.
+        // A ordem das branches espelha AdminShell._destinations.
+        // ---------------------------------------------------------------- //
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) => AdminShell(
+            navigationShell: navigationShell,
+            location: state.uri.path,
+            extra: state.extra,
+          ),
+          branches: [
+            // Branch Início.
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/',
+                  name: 'home',
+                  builder: (context, state) => const AdminHomeScreen(),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'O link que você acessou não existe.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            // Branch Organizações.
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/organizations',
+                  name: 'organizations',
+                  builder: (context, state) => const OrganizationsScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'new',
+                      name: 'organizationNew',
+                      builder: (context, state) =>
+                          const OrganizationFormScreen(),
+                    ),
+                    GoRoute(
+                      path: ':id',
+                      name: 'organizationDetail',
+                      builder: (context, state) {
+                        final org = state.extra is Organization
+                            ? state.extra as Organization
+                            : null;
+                        return OrganizationDetailScreen(
+                          organizationId: state.pathParameters['id'],
+                          organization: org,
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
-            OutlinedButton(
-              onPressed: () => context.go('/'),
-              child: const Text('Voltar ao início'),
+            // Branch Campeonatos (inclui conferências/divisões, rodadas e
+            // jogos — acessados por contexto de campeonato).
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/competitions',
+                  name: 'competitions',
+                  builder: (context, state) => const CompetitionsScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'new',
+                      name: 'competitionNew',
+                      builder: (context, state) =>
+                          const CompetitionCreateScreen(),
+                    ),
+                    GoRoute(
+                      path: ':id',
+                      name: 'competitionDetail',
+                      builder: (context, state) {
+                        final competition = state.extra is Competition
+                            ? state.extra as Competition
+                            : null;
+                        return CompetitionDetailScreen(
+                          competitionId: state.pathParameters['id'],
+                          competition: competition,
+                        );
+                      },
+                      routes: [
+                        GoRoute(
+                          path: 'edit',
+                          name: 'competitionEdit',
+                          builder: (context, state) {
+                            final competition = state.extra is Competition
+                                ? state.extra as Competition
+                                : null;
+                            return CompetitionEditScreen(
+                              competitionId: state.pathParameters['id'],
+                              competition: competition,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                GoRoute(
+                  path: '/groupings',
+                  name: 'groupings',
+                  builder: (context, state) => const GroupingsScreen(),
+                ),
+                GoRoute(
+                  path: '/rounds',
+                  name: 'rounds',
+                  builder: (context, state) => const RoundsScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'new',
+                      name: 'roundNew',
+                      builder: (context, state) => RoundFormScreen(),
+                    ),
+                    GoRoute(
+                      path: ':id',
+                      name: 'roundDetail',
+                      builder: (context, state) {
+                        final round = state.extra is Round
+                            ? state.extra as Round
+                            : null;
+                        return RoundDetailScreen(
+                          roundId: state.pathParameters['id'],
+                          round: round,
+                        );
+                      },
+                      routes: [
+                        GoRoute(
+                          path: 'edit',
+                          name: 'roundEdit',
+                          builder: (context, state) {
+                            final round = state.extra is Round
+                                ? state.extra as Round
+                                : null;
+                            return RoundFormScreen(
+                              roundId: state.pathParameters['id'],
+                              round: round,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                GoRoute(
+                  path: '/games',
+                  name: 'games',
+                  builder: (context, state) => const GamesScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'new',
+                      name: 'gameNew',
+                      builder: (context, state) => GameFormScreen(
+                        args: state.extra is GameFormArgs
+                            ? state.extra as GameFormArgs
+                            : null,
+                      ),
+                    ),
+                    GoRoute(
+                      path: 'import',
+                      name: 'gameImport',
+                      builder: (context, state) => GameImportScreen(
+                        roundId: state.extra is String
+                            ? state.extra as String
+                            : '',
+                      ),
+                    ),
+                    GoRoute(
+                      path: ':id',
+                      name: 'gameDetail',
+                      builder: (context, state) => GameDetailScreen(
+                        gameId: state.pathParameters['id'],
+                        game: state.extra is Game ? state.extra as Game : null,
+                        args: null,
+                      ),
+                      routes: [
+                        GoRoute(
+                          path: 'edit',
+                          name: 'gameEdit',
+                          builder: (context, state) => GameFormScreen(
+                            args: state.extra is GameFormArgs
+                                ? state.extra as GameFormArgs
+                                : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            // Branch Campos (venues).
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/venues',
+                  name: 'venues',
+                  builder: (context, state) => const VenuesScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'new',
+                      name: 'venueNew',
+                      builder: (context, state) => const VenueFormScreen(),
+                    ),
+                    GoRoute(
+                      path: ':id',
+                      name: 'venueDetail',
+                      builder: (context, state) {
+                        final venue = state.extra is Venue
+                            ? state.extra as Venue
+                            : null;
+                        return VenueDetailScreen(
+                          venueId: state.pathParameters['id'],
+                          venue: venue,
+                        );
+                      },
+                      routes: [
+                        GoRoute(
+                          path: 'edit',
+                          name: 'venueEdit',
+                          builder: (context, state) {
+                            final venue = state.extra is Venue
+                                ? state.extra as Venue
+                                : null;
+                            return VenueFormScreen(
+                              venueId: state.pathParameters['id'],
+                              venue: venue,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            // Branch Times.
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/teams',
+                  name: 'teams',
+                  builder: (context, state) =>
+                      TeamsScreen(lockedCompetitionId: state.extra as String?),
+                  routes: [
+                    GoRoute(
+                      path: 'associate',
+                      name: 'teamAssociate',
+                      builder: (context, state) => AssociateClubsScreen(
+                        lockedCompetitionId: state.extra as String?,
+                      ),
+                    ),
+                    GoRoute(
+                      path: 'new',
+                      name: 'teamNew',
+                      builder: (context, state) => const TeamCreateScreen(),
+                    ),
+                    GoRoute(
+                      path: ':id',
+                      name: 'teamDetail',
+                      builder: (context, state) {
+                        final team = state.extra is Team
+                            ? state.extra as Team
+                            : null;
+                        return TeamDetailScreen(
+                          teamId: state.pathParameters['id'],
+                          team: team,
+                        );
+                      },
+                      routes: [
+                        GoRoute(
+                          path: 'edit',
+                          name: 'teamEdit',
+                          builder: (context, state) {
+                            final team = state.extra is Team
+                                ? state.extra as Team
+                                : null;
+                            return TeamEditScreen(
+                              teamId: state.pathParameters['id'],
+                              team: team,
+                            );
+                          },
+                        ),
+                        GoRoute(
+                          path: 'roster',
+                          name: 'teamRoster',
+                          builder: (context, state) {
+                            final team = state.extra is Team
+                                ? state.extra as Team
+                                : null;
+                            return TeamRosterScreen(
+                              team: team,
+                              teamId: state.pathParameters['id'],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            // Branch Atletas.
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/athletes',
+                  name: 'athletes',
+                  builder: (context, state) => const AthletesScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'new',
+                      name: 'athleteNew',
+                      builder: (context, state) => const AthleteFormScreen(),
+                    ),
+                    GoRoute(
+                      path: 'import',
+                      name: 'athleteImport',
+                      builder: (context, state) => const AthleteImportScreen(),
+                    ),
+                    GoRoute(
+                      path: ':id',
+                      name: 'athleteDetail',
+                      builder: (context, state) {
+                        final athlete = state.extra is Athlete
+                            ? state.extra as Athlete
+                            : null;
+                        return AthleteDetailScreen(
+                          athleteId: state.pathParameters['id'],
+                          athlete: athlete,
+                        );
+                      },
+                      routes: [
+                        GoRoute(
+                          path: 'edit',
+                          name: 'athleteEdit',
+                          builder: (context, state) {
+                            final athlete = state.extra is Athlete
+                                ? state.extra as Athlete
+                                : null;
+                            return AthleteFormScreen(
+                              athleteId: state.pathParameters['id'],
+                              athlete: athlete,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            // Branch Elencos.
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/rosters',
+                  name: 'rosters',
+                  builder: (context, state) => const RostersScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'import',
+                      name: 'rosterImport',
+                      builder: (context, state) => RosterImportScreen(
+                        teamId: state.extra is String
+                            ? state.extra as String
+                            : '',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            // Branch Aprovações (somente ADMIN — protegida no backend).
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/approvals',
+                  name: 'approvals',
+                  builder: (context, state) => const ApprovalsScreen(),
+                ),
+              ],
+            ),
+            // Branch Usuários (somente ADMIN).
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/users',
+                  name: 'users',
+                  builder: (context, state) => const UsersScreen(),
+                  routes: [
+                    GoRoute(
+                      path: 'new',
+                      name: 'userNew',
+                      builder: (context, state) => const UserFormScreen(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            // Branch Teste visual (somente ADMIN).
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/visual-test',
+                  name: 'visualTest',
+                  builder: (context, state) => const VisualTestScreen(),
+                ),
+              ],
             ),
           ],
         ),
-      ),
-    ),
-    routes: [
-      // ---------------------------------------------------------------- //
-      // Telas públicas de autenticação (fora da shell).
-      // ---------------------------------------------------------------- //
-      GoRoute(
-        path: '/login',
-        name: 'login',
-        builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/signup',
-        name: 'signup',
-        builder: (context, state) => const SignupScreen(),
-      ),
-      GoRoute(
-        path: '/forgot-password',
-        name: 'forgotPassword',
-        builder: (context, state) => const ForgotPasswordScreen(),
-      ),
-      GoRoute(
-        path: '/reset-password',
-        name: 'resetPassword',
-        builder: (context, state) => ResetPasswordScreen(
-          token: state.uri.queryParameters['token'] ?? '',
-        ),
-      ),
-      // ---------------------------------------------------------------- //
-      // Shell do site (header global + breadcrumb) com branches por módulo.
-      // A ordem das branches espelha AdminShell._destinations.
-      // ---------------------------------------------------------------- //
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => AdminShell(
-          navigationShell: navigationShell,
-          location: state.uri.path,
-          extra: state.extra,
-        ),
-        branches: [
-          // Branch Início.
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/',
-                name: 'home',
-                builder: (context, state) => const AdminHomeScreen(),
-              ),
-            ],
-          ),
-          // Branch Organizações.
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/organizations',
-                name: 'organizations',
-                builder: (context, state) => const OrganizationsScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'new',
-                    name: 'organizationNew',
-                    builder: (context, state) =>
-                        const OrganizationFormScreen(),
-                  ),
-                  GoRoute(
-                    path: ':id',
-                    name: 'organizationDetail',
-                    builder: (context, state) {
-                      final org = state.extra is Organization
-                          ? state.extra as Organization
-                          : null;
-                      return OrganizationDetailScreen(
-                        organizationId: state.pathParameters['id'],
-                        organization: org,
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Branch Campeonatos (inclui conferências/divisões, rodadas e
-          // jogos — acessados por contexto de campeonato).
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/competitions',
-                name: 'competitions',
-                builder: (context, state) => const CompetitionsScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'new',
-                    name: 'competitionNew',
-                    builder: (context, state) =>
-                        const CompetitionCreateScreen(),
-                  ),
-                  GoRoute(
-                    path: ':id',
-                    name: 'competitionDetail',
-                    builder: (context, state) {
-                      final competition = state.extra is Competition
-                          ? state.extra as Competition
-                          : null;
-                      return CompetitionDetailScreen(
-                        competitionId: state.pathParameters['id'],
-                        competition: competition,
-                      );
-                    },
-                    routes: [
-                      GoRoute(
-                        path: 'edit',
-                        name: 'competitionEdit',
-                        builder: (context, state) {
-                          final competition = state.extra is Competition
-                              ? state.extra as Competition
-                              : null;
-                          return CompetitionEditScreen(
-                            competitionId: state.pathParameters['id'],
-                            competition: competition,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              GoRoute(
-                path: '/groupings',
-                name: 'groupings',
-                builder: (context, state) => const GroupingsScreen(),
-              ),
-              GoRoute(
-                path: '/rounds',
-                name: 'rounds',
-                builder: (context, state) => const RoundsScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'new',
-                    name: 'roundNew',
-                    builder: (context, state) => RoundFormScreen(),
-                  ),
-                  GoRoute(
-                    path: ':id',
-                    name: 'roundDetail',
-                    builder: (context, state) {
-                      final round = state.extra is Round
-                          ? state.extra as Round
-                          : null;
-                      return RoundDetailScreen(
-                        roundId: state.pathParameters['id'],
-                        round: round,
-                      );
-                    },
-                    routes: [
-                      GoRoute(
-                        path: 'edit',
-                        name: 'roundEdit',
-                        builder: (context, state) {
-                          final round = state.extra is Round
-                              ? state.extra as Round
-                              : null;
-                          return RoundFormScreen(
-                            roundId: state.pathParameters['id'],
-                            round: round,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              GoRoute(
-                path: '/games',
-                name: 'games',
-                builder: (context, state) => const GamesScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'new',
-                    name: 'gameNew',
-                    builder: (context, state) => GameFormScreen(
-                      args: state.extra is GameFormArgs
-                          ? state.extra as GameFormArgs
-                          : null,
-                    ),
-                  ),
-                  GoRoute(
-                    path: 'import',
-                    name: 'gameImport',
-                    builder: (context, state) => GameImportScreen(
-                      roundId: state.extra is String ? state.extra as String : '',
-                    ),
-                  ),
-                  GoRoute(
-                    path: ':id',
-                    name: 'gameDetail',
-                    builder: (context, state) => GameDetailScreen(
-                      gameId: state.pathParameters['id'],
-                      game: state.extra is Game ? state.extra as Game : null,
-                      args: null,
-                    ),
-                    routes: [
-                      GoRoute(
-                        path: 'edit',
-                        name: 'gameEdit',
-                        builder: (context, state) => GameFormScreen(
-                          args: state.extra is GameFormArgs
-                              ? state.extra as GameFormArgs
-                              : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Branch Campos (venues).
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/venues',
-                name: 'venues',
-                builder: (context, state) => const VenuesScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'new',
-                    name: 'venueNew',
-                    builder: (context, state) => const VenueFormScreen(),
-                  ),
-                  GoRoute(
-                    path: ':id',
-                    name: 'venueDetail',
-                    builder: (context, state) {
-                      final venue = state.extra is Venue
-                          ? state.extra as Venue
-                          : null;
-                      return VenueDetailScreen(
-                        venueId: state.pathParameters['id'],
-                        venue: venue,
-                      );
-                    },
-                    routes: [
-                      GoRoute(
-                        path: 'edit',
-                        name: 'venueEdit',
-                        builder: (context, state) {
-                          final venue = state.extra is Venue
-                              ? state.extra as Venue
-                              : null;
-                          return VenueFormScreen(
-                            venueId: state.pathParameters['id'],
-                            venue: venue,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Branch Times.
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/teams',
-                name: 'teams',
-                builder: (context, state) => TeamsScreen(
-                  lockedCompetitionId: state.extra as String?,
-                ),
-                routes: [
-                  GoRoute(
-                    path: 'associate',
-                    name: 'teamAssociate',
-                    builder: (context, state) => AssociateClubsScreen(
-                      lockedCompetitionId: state.extra as String?,
-                    ),
-                  ),
-                  GoRoute(
-                    path: 'new',
-                    name: 'teamNew',
-                    builder: (context, state) => const TeamCreateScreen(),
-                  ),
-                  GoRoute(
-                    path: ':id',
-                    name: 'teamDetail',
-                    builder: (context, state) {
-                      final team = state.extra is Team
-                          ? state.extra as Team
-                          : null;
-                      return TeamDetailScreen(
-                        teamId: state.pathParameters['id'],
-                        team: team,
-                      );
-                    },
-                    routes: [
-                      GoRoute(
-                        path: 'edit',
-                        name: 'teamEdit',
-                        builder: (context, state) {
-                          final team = state.extra is Team
-                              ? state.extra as Team
-                              : null;
-                          return TeamEditScreen(
-                            teamId: state.pathParameters['id'],
-                            team: team,
-                          );
-                        },
-                      ),
-                      GoRoute(
-                        path: 'roster',
-                        name: 'teamRoster',
-                        builder: (context, state) {
-                          final team = state.extra is Team
-                              ? state.extra as Team
-                              : null;
-                          return TeamRosterScreen(
-                            team: team,
-                            teamId: state.pathParameters['id'],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Branch Atletas.
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/athletes',
-                name: 'athletes',
-                builder: (context, state) => const AthletesScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'new',
-                    name: 'athleteNew',
-                    builder: (context, state) => const AthleteFormScreen(),
-                  ),
-                  GoRoute(
-                    path: 'import',
-                    name: 'athleteImport',
-                    builder: (context, state) => const AthleteImportScreen(),
-                  ),
-                  GoRoute(
-                    path: ':id',
-                    name: 'athleteDetail',
-                    builder: (context, state) {
-                      final athlete = state.extra is Athlete
-                          ? state.extra as Athlete
-                          : null;
-                      return AthleteDetailScreen(
-                        athleteId: state.pathParameters['id'],
-                        athlete: athlete,
-                      );
-                    },
-                    routes: [
-                      GoRoute(
-                        path: 'edit',
-                        name: 'athleteEdit',
-                        builder: (context, state) {
-                          final athlete = state.extra is Athlete
-                              ? state.extra as Athlete
-                              : null;
-                          return AthleteFormScreen(
-                            athleteId: state.pathParameters['id'],
-                            athlete: athlete,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Branch Elencos.
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/rosters',
-                name: 'rosters',
-                builder: (context, state) => const RostersScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'import',
-                    name: 'rosterImport',
-                    builder: (context, state) => RosterImportScreen(
-                      teamId: state.extra is String ? state.extra as String : '',
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Branch Aprovações (somente ADMIN — protegida no backend).
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/approvals',
-                name: 'approvals',
-                builder: (context, state) => const ApprovalsScreen(),
-              ),
-            ],
-          ),
-          // Branch Usuários (somente ADMIN).
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/users',
-                name: 'users',
-                builder: (context, state) => const UsersScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'new',
-                    name: 'userNew',
-                    builder: (context, state) => const UserFormScreen(),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Branch Teste visual (somente ADMIN).
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/visual-test',
-                name: 'visualTest',
-                builder: (context, state) => const VisualTestScreen(),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ],
-  );
+      ],
+    );
+  }
+}
+
+/// Tela de boot exibida enquanto a sessão é restaurada (issue #429).
+class _BootScreen extends StatelessWidget {
+  const _BootScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: AppLoading(message: 'Restaurando sessão...'));
+  }
 }
