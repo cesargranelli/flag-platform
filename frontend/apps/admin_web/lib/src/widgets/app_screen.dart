@@ -93,9 +93,13 @@ class AppScreen extends StatelessWidget {
             if (actions != null && actions!.isNotEmpty || !showMobileBack)
               _Toolbar(
                 title: title,
-                showTitle: showMobileBack,
+                showTitle: true,
                 actions: actions,
               ),
+
+            // Bug #1: espaçamento top quando não há breadcrumb para evitar
+            // conteúdo colado ao topo do SafeArea.
+            if (crumbs.isEmpty) const SizedBox(height: 24),
 
             Expanded(child: body),
           ],
