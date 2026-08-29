@@ -14,11 +14,25 @@ import '../widgets/edit_restriction_note.dart';
 /// O fluxo agora é: campeonato → divisão → rodada → jogo.
 /// As categories foram removidas; a associação competition→round
 /// ocorre diretamente pela competition_id (migração V24).
-class GamesScreen extends ConsumerWidget {
+class GamesScreen extends ConsumerStatefulWidget {
   const GamesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GamesScreen> createState() => _GamesScreenState();
+}
+
+class _GamesScreenState extends ConsumerState<GamesScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
     final selectedCompetition = ref.watch(selectedCompetitionProvider);
     final selectedRound = ref.watch(selectedRoundProvider);
@@ -50,7 +64,9 @@ class GamesScreen extends ConsumerWidget {
                 context.push('/games/import', extra: selectedRound),
           ),
         if (effectiveComp != null && canEdit)
-          FilledButton.icon(
+          KicksterButton(
+            label: 'Novo',
+            icon: Icons.add,
             onPressed: () => context.go(
               '/games/new',
               extra: (
@@ -59,8 +75,6 @@ class GamesScreen extends ConsumerWidget {
                 game: null,
               ),
             ),
-            icon: const Icon(Icons.add),
-            label: const Text('Novo'),
           ),
       ],
       body: competitions.when(
@@ -71,9 +85,15 @@ class GamesScreen extends ConsumerWidget {
         ),
         data: (_) {
           if (compItems.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum campeonato cadastrado',
+            return KicksterEmptyState(
               icon: Icons.emoji_events_outlined,
+              message: 'Nenhum campeonato cadastrado',
+              description: 'Crie um campeonato para adicionar jogos.',
+              action: KicksterButton(
+                label: 'Criar campeonato',
+                icon: Icons.add,
+                onPressed: () => context.go('/competitions/new'),
+              ),
             );
           }
           return Column(
@@ -179,44 +199,130 @@ class GamesScreen extends ConsumerWidget {
                             ),
                             data: (items) {
                               if (items.isEmpty) {
-                                return const AppEmptyState(
-                                  message: 'Nenhum jogo cadastrado',
+                                return KicksterEmptyState(
                                   icon: Icons.sports,
+                                  message: 'Nenhum jogo cadastrado',
+                                  description:
+                                      'Crie o primeiro jogo desta rodada.',
+                                  action: KicksterButton(
+                                    label: 'Criar jogo',
+                                    icon: Icons.add,
+                                    onPressed: () => context.go(
+                                      '/games/new',
+                                      extra: (
+                                        competitionId: effectiveComp,
+                                        roundId: selectedRound,
+                                        game: null,
+                                      ),
+                                    ),
+                                  ),
                                 );
                               }
+                              final query = _query.trim().toLowerCase();
+                              final filtered = query.isEmpty
+                                  ? items
+                                  : items
+                                      .where(
+                                        (g) =>
+                                            (g.homeTeamName ?? '')
+                                                .toLowerCase()
+                                                .contains(query) ||
+                                            (g.awayTeamName ?? '')
+                                                .toLowerCase()
+                                                .contains(query),
+                                      )
+                                      .toList(growable: false);
+
                               return AppLayout.content(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final columns = constraints.maxWidth >= 600
-                                        ? 2
-                                        : 1;
-                                    return GridView.builder(
-                                      padding: const EdgeInsets.all(16),
-                                      itemCount: items.length,
-                                      gridDelegate:
-                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount: columns,
-                                            crossAxisSpacing: 12,
-                                            mainAxisSpacing: 12,
-                                            mainAxisExtent: 120,
-                                          ),
-                                      itemBuilder: (context, index) {
-                                        final game = items[index];
-                                        return _gameCard(
-                                          context,
-                                          game,
-                                          onTap: () => context.go(
-                                            '/games/${game.id}',
-                                            extra: (
-                                              competitionId: effectiveComp,
-                                              roundId: game.roundId,
-                                              game: game,
+                                child: Column(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          16, 16, 16, 0),
+                                      child: Row(
+                                        children: [
+                                          if (query.isNotEmpty)
+                                            Text(
+                                              '${filtered.length} '
+                                              '${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color:
+                                                    AppColors.textSecondary,
+                                              ),
+                                            )
+                                          else
+                                            Text(
+                                              '${items.length} '
+                                              '${items.length == 1 ? 'jogo' : 'jogos'}',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color:
+                                                    AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          const Spacer(),
+                                          SizedBox(
+                                            width: 280,
+                                            child: KicksterSearchField(
+                                              controller: _searchController,
+                                              onChanged: (value) => setState(
+                                                  () => _query = value),
                                             ),
                                           ),
-                                        );
-                                      },
-                                    );
-                                  },
+                                        ],
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: filtered.isEmpty
+                                          ? const AppEmptyState(
+                                              message:
+                                                  'Nenhum jogo encontrado',
+                                              icon: Icons.search_off,
+                                            )
+                                          : LayoutBuilder(
+                                              builder:
+                                                  (context, constraints) {
+                                                final columns =
+                                                    constraints.maxWidth >= 600
+                                                        ? 2
+                                                        : 1;
+                                                return GridView.builder(
+                                                  padding:
+                                                      const EdgeInsets.all(16),
+                                                  itemCount: filtered.length,
+                                                  gridDelegate:
+                                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                                        crossAxisCount:
+                                                            columns,
+                                                        crossAxisSpacing: 12,
+                                                        mainAxisSpacing: 12,
+                                                        mainAxisExtent: 120,
+                                                      ),
+                                                  itemBuilder:
+                                                      (context, index) {
+                                                    final game =
+                                                        filtered[index];
+                                                    return _gameCard(
+                                                      context,
+                                                      game,
+                                                      onTap: () =>
+                                                          context.go(
+                                                        '/games/${game.id}',
+                                                        extra: (
+                                                          competitionId:
+                                                              effectiveComp,
+                                                          roundId: game.roundId,
+                                                          game: game,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                );
+                                              },
+                                            ),
+                                    ),
+                                  ],
                                 ),
                               );
                             },

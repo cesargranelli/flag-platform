@@ -29,6 +29,14 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
   /// Ids de organizações com associação à temporada em andamento
   /// (desabilita o card durante o POST).
   final Set<String> _associatingOrgIds = {};
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,36 +156,96 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
     }
 
     if (clubs.isEmpty) {
-      return const AppEmptyState(
-        message: 'Nenhum clube ou universidade seu cadastrado na plataforma',
+      return KicksterEmptyState(
         icon: Icons.groups_outlined,
+        message: 'Nenhum clube ou universidade seu cadastrado na plataforma',
+        description: 'Crie a organização clube/universidade para começar.',
+        action: KicksterButton(
+          label: 'Criar organização',
+          icon: Icons.add,
+          onPressed: () => context.go('/organizations/new'),
+        ),
       );
     }
 
+    final query = _query.trim().toLowerCase();
+    final filtered = query.isEmpty
+        ? clubs
+        : clubs
+            .where(
+              (c) =>
+                  c.tradeName.toLowerCase().contains(query) ||
+                  (c.city ?? '').toLowerCase().contains(query),
+            )
+            .toList(growable: false);
+
     return AppLayout.content(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final columns = constraints.maxWidth >= 600 ? 2 : 1;
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: clubs.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: columns,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              mainAxisExtent: 96,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Row(
+              children: [
+                if (query.isNotEmpty)
+                  Text(
+                    '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  )
+                else
+                  Text(
+                    '${clubs.length} '
+                    '${clubs.length == 1 ? 'clube' : 'clubes e universidades'}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                const Spacer(),
+                SizedBox(
+                  width: 280,
+                  child: KicksterSearchField(
+                    controller: _searchController,
+                    onChanged: (value) => setState(() => _query = value),
+                  ),
+                ),
+              ],
             ),
-            itemBuilder: (context, index) {
-              final org = clubs[index];
-              return _clubCard(
-                context,
-                org,
-                team: teamByOrgId[org.id],
-                competitionId: competitionId,
-              );
-            },
-          );
-        },
+          ),
+          Expanded(
+            child: filtered.isEmpty
+                ? const AppEmptyState(
+                    message: 'Nenhum clube encontrado',
+                    icon: Icons.search_off,
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = constraints.maxWidth >= 600 ? 2 : 1;
+                      return GridView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filtered.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          mainAxisExtent: 96,
+                        ),
+                        itemBuilder: (context, index) {
+                          final org = filtered[index];
+                          return _clubCard(
+                            context,
+                            org,
+                            team: teamByOrgId[org.id],
+                            competitionId: competitionId,
+                          );
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }

@@ -14,11 +14,25 @@ import '../widgets/edit_restriction_note.dart';
 /// O fluxo agora é: campeonato → rodadas.
 /// As categories foram removidas; as rodadas associam-se diretamente
 /// ao competition_id (migração V24).
-class RoundsScreen extends ConsumerWidget {
+class RoundsScreen extends ConsumerStatefulWidget {
   const RoundsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RoundsScreen> createState() => _RoundsScreenState();
+}
+
+class _RoundsScreenState extends ConsumerState<RoundsScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
     final selectedCompetition = ref.watch(selectedCompetitionProvider);
 
@@ -47,10 +61,10 @@ class RoundsScreen extends ConsumerWidget {
       titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         if (effectiveComp != null && canManage)
-          FilledButton.icon(
+          KicksterButton(
+            label: 'Novo',
+            icon: Icons.add,
             onPressed: () => context.go('/rounds/new', extra: effectiveComp),
-            icon: const Icon(Icons.add),
-            label: const Text('Novo'),
           ),
       ],
       body: competitions.when(
@@ -61,9 +75,15 @@ class RoundsScreen extends ConsumerWidget {
         ),
         data: (_) {
           if (compItems.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum campeonato cadastrado',
+            return KicksterEmptyState(
               icon: Icons.emoji_events_outlined,
+              message: 'Nenhum campeonato cadastrado',
+              description: 'Crie um campeonato para adicionar rodadas.',
+              action: KicksterButton(
+                label: 'Criar campeonato',
+                icon: Icons.add,
+                onPressed: () => context.go('/competitions/new'),
+              ),
             );
           }
           return Column(
@@ -120,33 +140,110 @@ class RoundsScreen extends ConsumerWidget {
                             ),
                             data: (items) {
                               if (items.isEmpty) {
-                                return const AppEmptyState(
-                                  message: 'Nenhuma rodada cadastrada',
+                                return KicksterEmptyState(
                                   icon: Icons.format_list_numbered,
+                                  message: 'Nenhuma rodada cadastrada',
+                                  description:
+                                      'Crie a primeira rodada do campeonato.',
+                                  action: KicksterButton(
+                                    label: 'Criar rodada',
+                                    icon: Icons.add,
+                                    onPressed: () => context.go(
+                                      '/rounds/new',
+                                      extra: effectiveComp,
+                                    ),
+                                  ),
                                 );
                               }
+                              final query = _query.trim().toLowerCase();
+                              final filtered = query.isEmpty
+                                  ? items
+                                  : items
+                                      .where(
+                                        (r) => r.name
+                                            .toLowerCase()
+                                            .contains(query),
+                                      )
+                                      .toList(growable: false);
+
                               return AppLayout.content(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final columns = constraints.maxWidth >= 600
-                                        ? 2
-                                        : 1;
-                                    return GridView.builder(
-                                      padding: const EdgeInsets.all(16),
-                                      itemCount: items.length,
-                                      gridDelegate:
-                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount: columns,
-                                            crossAxisSpacing: 12,
-                                            mainAxisSpacing: 12,
-                                            mainAxisExtent: 96,
+                                child: Column(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          16, 16, 16, 0),
+                                      child: Row(
+                                        children: [
+                                          if (query.isNotEmpty)
+                                            Text(
+                                              '${filtered.length} '
+                                              '${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color:
+                                                    AppColors.textSecondary,
+                                              ),
+                                            )
+                                          else
+                                            Text(
+                                              '${items.length} '
+                                              '${items.length == 1 ? 'rodada' : 'rodadas'}',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color:
+                                                    AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          const Spacer(),
+                                          SizedBox(
+                                            width: 280,
+                                            child: KicksterSearchField(
+                                              controller: _searchController,
+                                              onChanged: (value) => setState(
+                                                  () => _query = value),
+                                            ),
                                           ),
-                                      itemBuilder: (context, index) {
-                                        final round = items[index];
-                                        return _roundCard(context, round);
-                                      },
-                                    );
-                                  },
+                                        ],
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: filtered.isEmpty
+                                          ? const AppEmptyState(
+                                              message:
+                                                  'Nenhuma rodada encontrada',
+                                              icon: Icons.search_off,
+                                            )
+                                          : LayoutBuilder(
+                                              builder:
+                                                  (context, constraints) {
+                                                final columns =
+                                                    constraints.maxWidth >= 600
+                                                        ? 2
+                                                        : 1;
+                                                return GridView.builder(
+                                                  padding:
+                                                      const EdgeInsets.all(16),
+                                                  itemCount: filtered.length,
+                                                  gridDelegate:
+                                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                                        crossAxisCount:
+                                                            columns,
+                                                        crossAxisSpacing: 12,
+                                                        mainAxisSpacing: 12,
+                                                        mainAxisExtent: 96,
+                                                      ),
+                                                  itemBuilder:
+                                                      (context, index) {
+                                                    final round =
+                                                        filtered[index];
+                                                    return _roundCard(
+                                                        context, round);
+                                                  },
+                                                );
+                                              },
+                                            ),
+                                    ),
+                                  ],
                                 ),
                               );
                             },
