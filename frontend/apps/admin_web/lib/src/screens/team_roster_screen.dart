@@ -246,7 +246,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
   }) {
     if (athletes.isEmpty) {
       return const AppEmptyState(
-        message: 'Nenhum atleta encontrado',
+        message: 'Nenhum atleta cadastrado',
         icon: Icons.person_outline,
       );
     }

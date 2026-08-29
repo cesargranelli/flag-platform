@@ -514,7 +514,7 @@ class AppRouter {
                       builder: (context, state) => RosterImportScreen(
                         teamId: state.extra is String
                             ? state.extra as String
-                            : '',
+                            : null,
                       ),
                     ),
                   ],

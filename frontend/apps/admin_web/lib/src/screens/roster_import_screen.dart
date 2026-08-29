@@ -17,9 +17,9 @@ import '../widgets/app_screen.dart';
 /// a resolução nome -> id acontece aqui, tratando homônimos sem resolução
 /// silenciosa.
 class RosterImportScreen extends ConsumerStatefulWidget {
-  const RosterImportScreen({super.key, required this.teamId});
+  const RosterImportScreen({super.key, this.teamId});
 
-  final String teamId;
+  final String? teamId;
 
   @override
   ConsumerState<RosterImportScreen> createState() =>
@@ -146,6 +146,9 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
   }
 
   Future<void> _import() async {
+    final teamId = widget.teamId;
+    if (teamId == null || teamId.isEmpty) return;
+
     final resolved = _resolved;
     final names = _atletaNames;
     if (resolved == null || names == null) return;
@@ -162,8 +165,8 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
     try {
       final result = await ref
           .read(rosterApiProvider)
-          .createBatch(widget.teamId, items);
-      ref.invalidate(rosterProvider(widget.teamId));
+          .createBatch(teamId, items);
+      ref.invalidate(rosterProvider(teamId));
       if (mounted) setState(() => _result = result);
     } on RepositoryException catch (e) {
       if (mounted) setState(() => _errorMessage = e.message);
@@ -178,9 +181,36 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final teamId = widget.teamId;
     final names = _atletaNames;
     final resolved = _resolved;
     final result = _result;
+
+    // Deep-link direto para /rosters/import sem contexto de time: mostra
+    // estado vazio em vez de chamar a API com ID vazio (#457).
+    if (teamId == null || teamId.isEmpty) {
+      return AppScreen(
+        title: 'Importar elenco',
+        breadcrumb: const [
+          BreadcrumbItem('Início', route: '/'),
+          BreadcrumbItem(AppStrings.rosters, route: '/rosters'),
+          BreadcrumbItem('Importar'),
+        ],
+        body: AppLayout.form(
+          child: KicksterEmptyState(
+            icon: Icons.groups_outlined,
+            message: 'Time não identificado',
+            description:
+                'Selecione um time no módulo Elencos para importar atletas.',
+            action: KicksterButton(
+              label: 'Ir para Elencos',
+              icon: Icons.arrow_back,
+              onPressed: () => context.go('/rosters'),
+            ),
+          ),
+        ),
+      );
+    }
 
     return AppScreen(
       title: 'Importar elenco',
