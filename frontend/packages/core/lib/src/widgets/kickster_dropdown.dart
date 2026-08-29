@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 
 import 'app_dropdown.dart';
+import 'kickster_field.dart';
 
-/// Dropdown genérico no estilo do kit Kickster (issue #441).
+/// Dropdown genérico no estilo do kit Kickster (issue #441/#445).
 ///
-/// Wrapper de `DropdownButtonFormField` sobre o tema (raio 16, preenchido
-/// `surface`, rótulo sempre visível) — **não sobrescreve bordas**. Aceita
-/// itens prontos ([items]) ou a forma declarativa [values] + [labels] (+
-/// [icons] opcional); com ícones, os itens usam o `appDropdownItem` do core
-/// (ícone à esquerda + rótulo com ellipsis).
+/// Wrapper de `DropdownButtonFormField` com `decoration` próprio do kit
+/// (raio 24 pill, altura ~52px, borda `#DADADA` em repouso, rótulo 14px
+/// SemiBold `grayLabel` quando não focado). Aceita itens prontos ([items])
+/// ou a forma declarativa [values] + [labels] (+ [icons] opcional); com
+/// ícones, os itens usam o `appDropdownItem` do core (ícone à esquerda +
+/// rótulo com ellipsis).
 class KicksterDropdown<T> extends StatelessWidget {
   const KicksterDropdown({
     super.key,
@@ -55,7 +57,8 @@ class KicksterDropdown<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return DropdownButtonFormField<T>(
       initialValue: value,
-      decoration: InputDecoration(labelText: label, hintText: hint),
+      isDense: true,
+      decoration: kicksterFieldDecoration(labelText: label, hintText: hint),
       items: items ?? _buildItems(),
       onChanged: onChanged,
       validator: validator,

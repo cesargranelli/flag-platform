@@ -10,18 +10,22 @@ import '../theme/app_colors.dart';
 /// coluna alinhada à esquerda, com gap 12 entre título e linhas. As linhas
 /// são dadas pelos helpers [AppInfoRow]/[AppInfoColorRow] (ou qualquer widget).
 ///
+/// [title] é opcional (issue #445): quando nulo o card mostra apenas o
+/// conteúdo (sem cabeçalho) e não aplica a altura mínima — usado nas telas
+/// de detalhe cujo título de seção é redundante com a navegação por sessões.
+///
 /// Largura máxima é controlada pelo chamador via `AppLayout.detail` (720).
 class AppInfoCard extends StatelessWidget {
   const AppInfoCard({
     super.key,
-    required this.title,
+    this.title,
     required this.children,
     this.minHeight = 144,
     this.padding = const EdgeInsets.all(16),
     this.icon,
   });
 
-  final String title;
+  final String? title;
   final List<Widget> children;
   final double? minHeight;
   final EdgeInsetsGeometry padding;
@@ -29,28 +33,33 @@ class AppInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasTitle = title != null;
     final titleStyle =
         Theme.of(context).textTheme.titleSmall ??
             const TextStyle(fontSize: 14, fontWeight: FontWeight.w700);
     return Card(
       margin: EdgeInsets.zero,
       child: Container(
-        constraints: BoxConstraints(minHeight: minHeight ?? 0),
+        constraints: BoxConstraints(
+          minHeight: hasTitle ? (minHeight ?? 0) : 0,
+        ),
         padding: padding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (icon != null)
-              Row(
-                children: [
-                  Icon(icon, size: 20, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Text(title, style: titleStyle),
-                ],
-              )
-            else
-              Text(title, style: titleStyle),
-            const SizedBox(height: 12),
+            if (hasTitle) ...[
+              if (icon != null)
+                Row(
+                  children: [
+                    Icon(icon, size: 20, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Text(title!, style: titleStyle),
+                  ],
+                )
+              else
+                Text(title!, style: titleStyle),
+              const SizedBox(height: 12),
+            ],
             ...children,
           ],
         ),
