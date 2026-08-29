@@ -205,25 +205,10 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
         AppLayout.content(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextField(
+            child: KicksterSearchField(
               controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Buscar atleta',
-                hintText: 'Busque pelo nome',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _query.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        tooltip: 'Limpar busca',
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _query = '');
-                        },
-                      ),
-                border: const OutlineInputBorder(),
-              ),
               onChanged: (value) => setState(() => _query = value),
+              hint: 'Buscar atleta',
             ),
           ),
         ),
@@ -519,24 +504,18 @@ class _RosterDetailsDialogState extends State<_RosterDetailsDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextFormField(
+            KicksterInput(
+              label: 'Apelido',
               controller: _nicknameController,
               maxLength: 100,
-              decoration: const InputDecoration(
-                labelText: 'Apelido',
-                hintText: 'Ex.: "Veloz"',
-                border: OutlineInputBorder(),
-              ),
+              hintText: 'Ex.: "Veloz"',
             ),
             const SizedBox(height: 12),
-            TextFormField(
+            KicksterInput(
+              label: 'Número da camisa',
               controller: _numberController,
               keyboardType: TextInputType.number,
               maxLength: 3,
-              decoration: const InputDecoration(
-                labelText: 'Número da camisa',
-                border: OutlineInputBorder(),
-              ),
               validator: _validateNumber,
             ),
           ],

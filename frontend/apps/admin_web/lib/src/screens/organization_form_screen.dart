@@ -883,14 +883,12 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
+            KicksterInput(
+              label: 'Código hex',
               controller: _hex,
-              decoration: const InputDecoration(
-                labelText: 'Código hex',
-                hintText: 'FD6B22',
-                prefixText: '#',
-                suffixIcon: Icon(Icons.circle, color: Colors.black26),
-              ),
+              hintText: 'FD6B22',
+              prefix: const Text('#'),
+              suffixIcon: const Icon(Icons.circle, color: Colors.black26),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9a-fA-F]')),
                 LengthLimitingTextInputFormatter(6),

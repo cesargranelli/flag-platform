@@ -92,33 +92,29 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          TextFormField(
+          KicksterInput(
+            label: 'Nova senha',
             controller: _passwordController,
             obscureText: _obscurePassword,
-            decoration: InputDecoration(
-              labelText: 'Nova senha',
-              prefixIcon: const Icon(Icons.lock_outline),
-              suffixIcon: IconButton(
-                tooltip: _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
-                icon: Icon(_obscurePassword
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined),
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
-              ),
+            prefixIcon: Icons.lock_outline,
+            suffixIcon: IconButton(
+              tooltip: _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
+              icon: Icon(_obscurePassword
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
             validator: (value) => (value == null || value.length < 6)
                 ? 'Mínimo de 6 caracteres'
                 : null,
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          KicksterInput(
+            label: 'Confirmar nova senha',
             controller: _confirmController,
             obscureText: _obscurePassword,
-            decoration: const InputDecoration(
-              labelText: 'Confirmar nova senha',
-              prefixIcon: Icon(Icons.lock_outline),
-            ),
+            prefixIcon: Icons.lock_outline,
             validator: (value) => (value != _passwordController.text)
                 ? 'As senhas não coincidem'
                 : null,

@@ -216,33 +216,15 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: TextField(
+                      child: KicksterSearchField(
                         controller: _searchController,
-                        decoration: InputDecoration(
-                          labelText: 'Buscar clube',
-                          hintText: 'Busque pelo nome fantasia',
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: _query.isEmpty
-                              ? null
-                              : IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  tooltip: 'Limpar busca',
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {
-                                      _query = '';
-                                      _selectedOrgIds.clear();
-                                    });
-                                  },
-                                ),
-                          border: const OutlineInputBorder(),
-                        ),
                         onChanged: (value) => setState(() {
                           _query = value;
                           // A seleção pode conter clubes que saíram do filtro;
                           // limpa para evitar seleções "fantasma".
                           _selectedOrgIds.clear();
                         }),
+                        hint: 'Buscar clube',
                       ),
                     ),
                     _buildClubList(effectiveComp),

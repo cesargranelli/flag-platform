@@ -103,10 +103,9 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
   Widget _positionsField() {
     final maxed = _positions.length >= 3;
     return InputDecorator(
-      decoration: const InputDecoration(
+      decoration: kicksterFieldDecoration(
         labelText: 'Posições',
         helperText: 'Selecione até 3 posições',
-        border: OutlineInputBorder(),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

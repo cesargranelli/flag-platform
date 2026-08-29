@@ -118,15 +118,11 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextFormField(
+              KicksterInput(
+                label: 'Nome',
                 controller: _name,
                 maxLength: 100,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Nome',
-                  helperText: 'Ex.: Conferência Leste',
-                  border: OutlineInputBorder(),
-                ),
+                hintText: 'Ex.: Conferência Leste',
                 validator: (value) => (value == null || value.trim().isEmpty)
                     ? 'Informe o nome'
                     : null,
