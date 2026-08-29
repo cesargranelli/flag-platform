@@ -360,8 +360,16 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shadowColor: AppColors.black.withValues(alpha: 0.08),
+      color: AppColors.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.line, width: 1),
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             // Apenas clubes não associados são selecionáveis para o lote.
@@ -393,6 +401,7 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   if (club.city != null && club.city!.isNotEmpty) ...[
@@ -465,10 +474,10 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
 
   Widget _clubAvatar(Organization club) {
     return Container(
-      width: 44,
-      height: 44,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.12),
+        color: AppColors.primary.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(

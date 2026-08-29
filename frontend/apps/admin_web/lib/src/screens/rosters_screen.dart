@@ -272,66 +272,27 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
     final associating = _associatingOrgIds.contains(org.id);
     final isAssociated = team != null;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _handleCardTap(org, team, competitionId),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              _typeIcon(org.organizationType),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      org.tradeName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+    return KicksterCard(
+      icon: organizationTypeIcon(org.organizationType),
+      title: org.tradeName,
+      subtitle: subtitle.isEmpty ? null : subtitle,
+      trailing: !isAssociated
+          ? (associating
+                ? const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (!isAssociated) ...[
-                const SizedBox(width: 8),
-                associating
-                    ? const Padding(
-                        padding: EdgeInsets.all(8),
-                        child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : KicksterButton(
-                        label: 'Associar',
-                        variant: KicksterButtonVariant.outline,
-                        onPressed: () => _associate(org, competitionId),
-                      ),
-              ],
-            ],
-          ),
-        ),
-      ),
+                  )
+                : KicksterButton(
+                    label: 'Associar',
+                    variant: KicksterButtonVariant.outline,
+                    onPressed: () => _associate(org, competitionId),
+                  ))
+          : null,
+      onTap: () => _handleCardTap(org, team, competitionId),
     );
   }
 
@@ -375,16 +336,4 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
     }
   }
 
-  /// Ícone destacado com o tipo de organização (fundo primary 12% + ícone).
-  Widget _typeIcon(OrganizationType? type) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(organizationTypeIcon(type), color: AppColors.primary),
-    );
   }
-}

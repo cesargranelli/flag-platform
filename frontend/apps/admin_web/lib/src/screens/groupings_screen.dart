@@ -207,8 +207,16 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
   ) {
     return Card(
       margin: EdgeInsets.zero,
+      elevation: 1,
+      shadowColor: AppColors.black.withValues(alpha: 0.08),
+      color: AppColors.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.line, width: 1),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -219,8 +227,8 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(16),
+                    color: AppColors.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
                     Icons.emoji_events_outlined,
@@ -234,12 +242,17 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
                     children: [
                       Text(
                         competition.name,
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         _countersLabel(conferences, divisions),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        style: const TextStyle(
+                          fontSize: 13,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -407,6 +420,14 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
         const SizedBox(height: 12),
         Card(
           margin: EdgeInsets.zero,
+          elevation: 1,
+          shadowColor: AppColors.black.withValues(alpha: 0.08),
+          color: AppColors.surface,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppColors.line, width: 1),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: divisions.when(
@@ -539,7 +560,14 @@ class _ConferenceCardState extends State<_ConferenceCard> {
     final conference = widget.conference;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shadowColor: AppColors.black.withValues(alpha: 0.08),
+      color: AppColors.surface,
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.line, width: 1),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -550,15 +578,27 @@ class _ConferenceCardState extends State<_ConferenceCard> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.account_tree_outlined,
-                    color: AppColors.primary,
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.account_tree_outlined,
+                      color: AppColors.primary,
+                    ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       conference.name,
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),

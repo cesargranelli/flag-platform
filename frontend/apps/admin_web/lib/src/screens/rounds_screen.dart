@@ -271,7 +271,14 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
 
   Widget _roundCard(BuildContext context, Round round) {
     return Card(
+      elevation: 1,
+      shadowColor: AppColors.black.withValues(alpha: 0.08),
+      color: AppColors.surface,
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.line, width: 1),
+      ),
       child: InkWell(
         onTap: () => context.push('/rounds/${round.id}', extra: round),
         child: Padding(
@@ -282,7 +289,7 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
+                  color: AppColors.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -309,6 +316,7 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
