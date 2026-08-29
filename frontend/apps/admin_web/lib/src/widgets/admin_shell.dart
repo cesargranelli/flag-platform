@@ -7,11 +7,10 @@ import '../providers/providers.dart';
 
 /// Shell do Admin Web (issue #427), simplificado na issue #433.
 ///
-/// Header global fixo (marca + menu de módulos + chip de usuário) sobre o
-/// conteúdo da branch ativa ([StatefulNavigationShell]). O menu horizontal
-/// (issue #449) devolve o contexto de navegação entre módulos ao header,
-/// sem dropdown nem hambúrguer; a marca leva de volta ao início
-/// (`context.go('/')`). O estado de cada módulo é preservado pelo
+/// Header global fixo (menu de módulos + chip de usuário) sobre o conteúdo
+/// da branch ativa ([StatefulNavigationShell]). O menu horizontal (issue
+/// #449) devolve o contexto de navegação entre módulos ao header, sem
+/// dropdown nem hambúrguer. O estado de cada módulo é preservado pelo
 /// IndexedStack do GoRouter.
 class AdminShell extends ConsumerWidget {
   const AdminShell({
@@ -64,14 +63,15 @@ class AdminShell extends ConsumerWidget {
   }
 }
 
-/// Header global: marca + menu de módulos (>=960px) + chip de usuário.
+/// Header global: menu de módulos (>=960px) + chip de usuário.
 ///
 /// O menu horizontal (issue #449) devolve o contexto de navegação entre
 /// módulos ao header, sem dropdown nem hambúrguer: itens discretos em branco
 /// translúcido sobre o fundo `primary`, com o item ativo em pill branco @14%.
 /// Times/Rodadas/Jogos/Conferências ficam fora — são módulos contextuais
 /// acessados a partir do detalhe do campeonato. Abaixo de 960px o menu é
-/// ocultado (resta marca + chip), pois os cards da home já cobrem a navegação.
+/// ocultado (resta o chip de usuário), pois os cards da home já cobrem a
+/// navegação.
 class _Header extends StatelessWidget {
   const _Header({
     required this.onLogout,
@@ -105,39 +105,41 @@ class _Header extends StatelessWidget {
         height: 64,
         child: Row(
           children: [
-            _Brand(onTap: () => context.go('/')),
-            if (showModules) ...[
-              const SizedBox(width: 12),
+            if (showModules)
               Expanded(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        for (final item in _items)
-                          if (!item.requiresAdmin || isAdmin)
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4),
-                              child: _ModuleNavItem(
-                                label: item.label,
-                                active:
-                                    navigationShell.currentIndex == item.index,
-                                onTap: () => navigationShell.goBranch(
-                                  item.index,
-                                  initialLocation:
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (final item in _items)
+                            if (!item.requiresAdmin || isAdmin)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                child: _ModuleNavItem(
+                                  label: item.label,
+                                  active:
                                       navigationShell.currentIndex ==
                                           item.index,
+                                  onTap: () => navigationShell.goBranch(
+                                    item.index,
+                                    initialLocation:
+                                        navigationShell.currentIndex ==
+                                            item.index,
+                                  ),
                                 ),
                               ),
-                            ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ] else
+              )
+            else
               const Spacer(),
             AdminUserChip(onLogout: onLogout),
           ],
@@ -222,40 +224,6 @@ class _ModuleNavItemState extends State<_ModuleNavItem> {
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Marca: escudo + nome do produto; toque volta ao início.
-class _Brand extends StatelessWidget {
-  const _Brand({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.shield_outlined, color: Colors.white, size: 28),
-            const SizedBox(width: 8),
-            const Text(
-              'Admin Web',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
-              ),
-            ),
-          ],
         ),
       ),
     );
