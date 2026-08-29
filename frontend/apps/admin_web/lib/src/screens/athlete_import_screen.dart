@@ -222,9 +222,7 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+      body: AppLayout.form(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -303,7 +301,6 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 

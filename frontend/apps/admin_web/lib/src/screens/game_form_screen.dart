@@ -156,9 +156,7 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.games, route: '/games'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+      body: AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -288,7 +286,6 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 }

@@ -69,74 +69,71 @@ class _VenuesScreenState extends ConsumerState<VenuesScreen> {
                   .where((v) => v.name.toLowerCase().contains(query))
                   .toList(growable: false);
 
-          return AppLayout.content(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Row(
-                    children: [
-                      if (query.isNotEmpty)
-                        Text(
-                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        )
-                      else
-                        Text(
-                          '${items.length} ${items.length == 1 ? 'campo' : 'campos'}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      const Spacer(),
-                      SizedBox(
-                        width: 280,
-                        child: KicksterSearchField(
-                          controller: _searchController,
-                          onChanged: (value) =>
-                              setState(() => _query = value),
-                        ),
+          return Column(
+            children: [
+              Row(
+                children: [
+                  if (query.isNotEmpty)
+                    Text(
+                      '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
                       ),
-                    ],
+                    )
+                  else
+                    Text(
+                      '${items.length} ${items.length == 1 ? 'campo' : 'campos'}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  const Spacer(),
+                  SizedBox(
+                    width: 280,
+                    child: KicksterSearchField(
+                      controller: _searchController,
+                      onChanged: (value) =>
+                          setState(() => _query = value),
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (filtered.isEmpty)
+                const AppEmptyState(
+                  message: 'Nenhum campo encontrado',
+                  icon: Icons.search_off,
+                )
+              else
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth >= 600 ? 2 : 1;
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filtered.length,
+                      gridDelegate:
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        mainAxisExtent: 96,
+                      ),
+                      itemBuilder: (context, index) {
+                        final venue = filtered[index];
+                        return _venueCard(
+                          context,
+                          venue,
+                          orgNames,
+                        );
+                      },
+                    );
+                  },
                 ),
-                Expanded(
-                  child: filtered.isEmpty
-                      ? const AppEmptyState(
-                          message: 'Nenhum campo encontrado',
-                          icon: Icons.search_off,
-                        )
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                            return GridView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: filtered.length,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: columns,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                mainAxisExtent: 96,
-                              ),
-                              itemBuilder: (context, index) {
-                                final venue = filtered[index];
-                                return _venueCard(
-                                  context,
-                                  venue,
-                                  orgNames,
-                                );
-                              },
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
+            ],
           );
         },
       ),

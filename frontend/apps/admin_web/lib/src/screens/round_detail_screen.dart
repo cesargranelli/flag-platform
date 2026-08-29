@@ -58,9 +58,7 @@ class RoundDetailScreen extends ConsumerWidget {
     );
     final canManage = canEdit && isDraft;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
+    return AppLayout.detail(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -166,7 +164,6 @@ class RoundDetailScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
     );
   }
 

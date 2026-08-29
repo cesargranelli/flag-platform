@@ -211,94 +211,91 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         breadcrumb: const [
           BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
         ],
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: AppLayout.form(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_errorMessage != null) _errorBanner(_errorMessage!),
-                  _section('Dados básicos', Icons.business_outlined, [
-                    _field('Nome fantasia', _tradeName,
-                        hint: 'Informe o nome fantasia',
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Informe o nome fantasia'
-                            : null),
-                    const SizedBox(height: 12),
-                    _field('Razão social', _legalName,
-                        hint: 'Informe a razão social',
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Informe a razão social'
-                            : null),
-                    const SizedBox(height: 12),
-                    _field('Sigla (opcional)', _abbreviation),
-                    const SizedBox(height: 12),
-                    _typeDropdown(),
-                    const SizedBox(height: 12),
-                    _documentField(),
-                  ]),
-                  _section('Presidente', Icons.person_outline, [
-                    _field('Nome do presidente', _presidentName,
-                        hint: 'Informe o nome do presidente',
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Informe o nome do presidente'
-                            : null),
-                    const SizedBox(height: 12),
-                    _presidentCpfField(),
-                  ]),
-                  _section('Contato', Icons.contact_mail_outlined, [
-                    _emailField(),
-                    const SizedBox(height: 12),
-                    _phoneField(),
-                    const SizedBox(height: 12),
-                    _websiteField(),
-                    const SizedBox(height: 12),
-                    _instagramField(),
-                  ]),
-                  _section('Localização', Icons.location_on_outlined, [
-                    _countryDropdown(),
-                    const SizedBox(height: 12),
-                    if (_country == 'BR')
-                      _stateDropdown()
-                    else
-                      _field('Estado (opcional)', _state),
-                    const SizedBox(height: 12),
-                    _field('Cidade (opcional)', _city),
-                  ]),
-                  _section('Identidade', Icons.palette_outlined, [
-                    _brandPreview(),
-                    const SizedBox(height: 16),
-                    _logoField(),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _colorField('Cor primária (opcional)', _primaryColor),
-                        const SizedBox(width: 12),
-                        _colorField('Cor secundária (opcional)', _secondaryColor),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _colorField('Cor terciária (opcional)', _tertiaryColor),
-                        const SizedBox(width: 12),
-                        _colorField('Cor quaternária (opcional)', _quaternaryColor),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _localeDropdown(),
-                  ]),
-                  const SizedBox(height: 8),
-                  KicksterButton(
-                    label: 'Criar organização',
-                    icon: Icons.check,
-                    loading: _submitting,
-                    onPressed: _submitting ? null : _save,
+        body: AppLayout.form(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_errorMessage != null) _errorBanner(_errorMessage!),
+                _section('Dados básicos', Icons.business_outlined, [
+                  _field('Nome fantasia', _tradeName,
+                      hint: 'Informe o nome fantasia',
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Informe o nome fantasia'
+                          : null),
+                  const SizedBox(height: 12),
+                  _field('Razão social', _legalName,
+                      hint: 'Informe a razão social',
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Informe a razão social'
+                          : null),
+                  const SizedBox(height: 12),
+                  _field('Sigla (opcional)', _abbreviation),
+                  const SizedBox(height: 12),
+                  _typeDropdown(),
+                  const SizedBox(height: 12),
+                  _documentField(),
+                ]),
+                _section('Presidente', Icons.person_outline, [
+                  _field('Nome do presidente', _presidentName,
+                      hint: 'Informe o nome do presidente',
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Informe o nome do presidente'
+                          : null),
+                  const SizedBox(height: 12),
+                  _presidentCpfField(),
+                ]),
+                _section('Contato', Icons.contact_mail_outlined, [
+                  _emailField(),
+                  const SizedBox(height: 12),
+                  _phoneField(),
+                  const SizedBox(height: 12),
+                  _websiteField(),
+                  const SizedBox(height: 12),
+                  _instagramField(),
+                ]),
+                _section('Localização', Icons.location_on_outlined, [
+                  _countryDropdown(),
+                  const SizedBox(height: 12),
+                  if (_country == 'BR')
+                    _stateDropdown()
+                  else
+                    _field('Estado (opcional)', _state),
+                  const SizedBox(height: 12),
+                  _field('Cidade (opcional)', _city),
+                ]),
+                _section('Identidade', Icons.palette_outlined, [
+                  _brandPreview(),
+                  const SizedBox(height: 16),
+                  _logoField(),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _colorField('Cor primária (opcional)', _primaryColor),
+                      const SizedBox(width: 12),
+                      _colorField('Cor secundária (opcional)', _secondaryColor),
+                    ],
                   ),
-                ],
-              ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _colorField('Cor terciária (opcional)', _tertiaryColor),
+                      const SizedBox(width: 12),
+                      _colorField('Cor quaternária (opcional)', _quaternaryColor),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _localeDropdown(),
+                ]),
+                const SizedBox(height: 8),
+                KicksterButton(
+                  label: 'Criar organização',
+                  icon: Icons.check,
+                  loading: _submitting,
+                  onPressed: _submitting ? null : _save,
+                ),
+              ],
             ),
           ),
         ),

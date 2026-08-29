@@ -88,170 +88,160 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppLayout.content(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      KicksterDropdown<String>(
-                        key: ValueKey('comp-$effectiveComp'),
-                        label: 'Campeonato',
-                        value: effectiveComp,
-                        items: compItems
-                            .map(
-                              (c) => DropdownMenuItem(
-                                value: c.id,
-                                child: Text(c.name),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          ref.read(selectedCompetitionProvider.notifier).state =
-                              value;
-                          ref.read(selectedRoundProvider.notifier).state = null;
-                        },
-                      ),
-                      if (!canManage)
-                        EditRestrictionNote(
-                          message: !isDraft
-                              ? 'Campeonato publicado — as rodadas estão '
-                                  'travadas.'
-                              : 'Apenas o criador do campeonato pode '
-                                  'gerenciar rodadas.',
-                        ),
-                    ],
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  KicksterDropdown<String>(
+                    key: ValueKey('comp-$effectiveComp'),
+                    label: 'Campeonato',
+                    value: effectiveComp,
+                    items: compItems
+                        .map(
+                          (c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Text(c.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      ref.read(selectedCompetitionProvider.notifier).state =
+                          value;
+                      ref.read(selectedRoundProvider.notifier).state = null;
+                    },
                   ),
-                ),
+                  if (!canManage)
+                    EditRestrictionNote(
+                      message: !isDraft
+                          ? 'Campeonato publicado — as rodadas estão '
+                              'travadas.'
+                          : 'Apenas o criador do campeonato pode '
+                              'gerenciar rodadas.',
+                    ),
+                ],
               ),
-              Expanded(
-                child: effectiveComp != null
-                    ? ref
-                          .watch(roundsProvider(effectiveComp))
-                          .when(
-                            loading: () => const AppLoading(
-                              message: 'Carregando rodadas...',
-                            ),
-                            error: (error, stackTrace) => AppErrorState(
-                              message: 'Não foi possível carregar as rodadas',
-                              onRetry: () =>
-                                  ref.invalidate(roundsProvider(effectiveComp)),
-                            ),
-                            data: (items) {
-                              if (items.isEmpty) {
-                                return KicksterEmptyState(
-                                  icon: Icons.format_list_numbered,
-                                  message: 'Nenhuma rodada cadastrada',
-                                  description:
-                                      'Crie a primeira rodada do campeonato.',
-                                  action: KicksterButton(
-                                    label: 'Criar rodada',
-                                    icon: Icons.add,
-                                    onPressed: () => context.go(
-                                      '/rounds/new',
-                                      extra: effectiveComp,
-                                    ),
-                                  ),
-                                );
-                              }
-                              final query = _query.trim().toLowerCase();
-                              final filtered = query.isEmpty
-                                  ? items
-                                  : items
-                                      .where(
-                                        (r) => r.name
-                                            .toLowerCase()
-                                            .contains(query),
-                                      )
-                                      .toList(growable: false);
+              if (effectiveComp != null)
+                ref
+                      .watch(roundsProvider(effectiveComp))
+                      .when(
+                        loading: () => const AppLoading(
+                          message: 'Carregando rodadas...',
+                        ),
+                        error: (error, stackTrace) => AppErrorState(
+                          message: 'Não foi possível carregar as rodadas',
+                          onRetry: () =>
+                              ref.invalidate(roundsProvider(effectiveComp)),
+                        ),
+                        data: (items) {
+                          if (items.isEmpty) {
+                            return KicksterEmptyState(
+                              icon: Icons.format_list_numbered,
+                              message: 'Nenhuma rodada cadastrada',
+                              description:
+                                  'Crie a primeira rodada do campeonato.',
+                              action: KicksterButton(
+                                label: 'Criar rodada',
+                                icon: Icons.add,
+                                onPressed: () => context.go(
+                                  '/rounds/new',
+                                  extra: effectiveComp,
+                                ),
+                              ),
+                            );
+                          }
+                          final query = _query.trim().toLowerCase();
+                          final filtered = query.isEmpty
+                              ? items
+                              : items
+                                  .where(
+                                    (r) => r.name
+                                        .toLowerCase()
+                                        .contains(query),
+                                  )
+                                  .toList(growable: false);
 
-                              return AppLayout.content(
-                                child: Column(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                          16, 16, 16, 0),
-                                      child: Row(
-                                        children: [
-                                          if (query.isNotEmpty)
-                                            Text(
-                                              '${filtered.length} '
-                                              '${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                color:
-                                                    AppColors.textSecondary,
-                                              ),
-                                            )
-                                          else
-                                            Text(
-                                              '${items.length} '
-                                              '${items.length == 1 ? 'rodada' : 'rodadas'}',
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                color:
-                                                    AppColors.textSecondary,
-                                              ),
-                                            ),
-                                          const Spacer(),
-                                          SizedBox(
-                                            width: 280,
-                                            child: KicksterSearchField(
-                                              controller: _searchController,
-                                              onChanged: (value) => setState(
-                                                  () => _query = value),
-                                            ),
-                                          ),
-                                        ],
+                          return Column(
+                            children: [
+                              Row(
+                                children: [
+                                  if (query.isNotEmpty)
+                                    Text(
+                                      '${filtered.length} '
+                                      '${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color:
+                                            AppColors.textSecondary,
+                                      ),
+                                    )
+                                  else
+                                    Text(
+                                      '${items.length} '
+                                      '${items.length == 1 ? 'rodada' : 'rodadas'}',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color:
+                                            AppColors.textSecondary,
                                       ),
                                     ),
-                                    Expanded(
-                                      child: filtered.isEmpty
-                                          ? const AppEmptyState(
-                                              message:
-                                                  'Nenhuma rodada encontrada',
-                                              icon: Icons.search_off,
-                                            )
-                                          : LayoutBuilder(
-                                              builder:
-                                                  (context, constraints) {
-                                                final columns =
-                                                    constraints.maxWidth >= 600
-                                                        ? 2
-                                                        : 1;
-                                                return GridView.builder(
-                                                  padding:
-                                                      const EdgeInsets.all(16),
-                                                  itemCount: filtered.length,
-                                                  gridDelegate:
-                                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                                        crossAxisCount:
-                                                            columns,
-                                                        crossAxisSpacing: 12,
-                                                        mainAxisSpacing: 12,
-                                                        mainAxisExtent: 96,
-                                                      ),
-                                                  itemBuilder:
-                                                      (context, index) {
-                                                    final round =
-                                                        filtered[index];
-                                                    return _roundCard(
-                                                        context, round);
-                                                  },
-                                                );
-                                              },
-                                            ),
+                                  const Spacer(),
+                                  SizedBox(
+                                    width: 280,
+                                    child: KicksterSearchField(
+                                      controller: _searchController,
+                                      onChanged: (value) => setState(
+                                          () => _query = value),
                                     ),
-                                  ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              if (filtered.isEmpty)
+                                const AppEmptyState(
+                                  message:
+                                      'Nenhuma rodada encontrada',
+                                  icon: Icons.search_off,
+                                )
+                              else
+                                LayoutBuilder(
+                                  builder:
+                                      (context, constraints) {
+                                    final columns =
+                                        constraints.maxWidth >= 600
+                                            ? 2
+                                            : 1;
+                                    return GridView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      padding:
+                                          const EdgeInsets.all(16),
+                                      itemCount: filtered.length,
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount:
+                                                columns,
+                                            crossAxisSpacing: 12,
+                                            mainAxisSpacing: 12,
+                                            mainAxisExtent: 96,
+                                          ),
+                                      itemBuilder:
+                                          (context, index) {
+                                            final round =
+                                                filtered[index];
+                                            return _roundCard(
+                                                context, round);
+                                          },
+                                    );
+                                  },
                                 ),
-                              );
-                            },
-                          )
-                    : const AppEmptyState(
-                        message: 'Nenhuma rodada cadastrada',
-                        icon: Icons.format_list_numbered,
-                      ),
-              ),
+                            ],
+                          );
+                        },
+                      )
+              else
+                const AppEmptyState(
+                    message: 'Nenhuma rodada cadastrada',
+                    icon: Icons.format_list_numbered,
+                  ),
             ],
           );
         },

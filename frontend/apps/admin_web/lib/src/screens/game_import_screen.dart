@@ -238,9 +238,7 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.games, route: '/games'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+      body: AppLayout.form(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -314,7 +312,6 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 

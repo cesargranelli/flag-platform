@@ -65,9 +65,7 @@ class _CompetitionDetailScreenState
     );
     final isDraft = comp.status == CompetitionStatus.draft;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
+    return AppLayout.detail(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -108,7 +106,6 @@ class _CompetitionDetailScreenState
             ),
           ],
         ),
-      ),
     );
   }
 

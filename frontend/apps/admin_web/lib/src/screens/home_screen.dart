@@ -49,38 +49,33 @@ class AdminHomeScreen extends ConsumerWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-            child: AppLayout.content(
-              child: Text(
-                name.isEmpty ? 'Olá!' : 'Olá, $name!',
-                style: AppTextStyles.paragraph.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
+          Text(
+            name.isEmpty ? 'Olá!' : 'Olá, $name!',
+            style: AppTextStyles.paragraph.copyWith(
+              color: AppColors.textSecondary,
             ),
           ),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final wide = constraints.maxWidth >= 960;
-                return GridView.count(
-                  padding: const EdgeInsets.all(16),
-                  crossAxisCount: wide ? 4 : 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: wide ? 1.6 : 1.3,
-                  children: [
-                    for (final module in modules)
-                      KicksterCard(
-                        icon: module.icon,
-                        title: module.title,
-                        onTap: () => context.go(module.route),
-                      ),
-                  ],
-                );
-              },
-            ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 960;
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: wide ? 4 : 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: wide ? 1.6 : 1.3,
+                children: [
+                  for (final module in modules)
+                    KicksterCard(
+                      icon: module.icon,
+                      title: module.title,
+                      onTap: () => context.go(module.route),
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),

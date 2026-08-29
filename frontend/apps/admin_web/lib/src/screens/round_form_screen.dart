@@ -119,9 +119,7 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+      body: AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -201,7 +199,6 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 }

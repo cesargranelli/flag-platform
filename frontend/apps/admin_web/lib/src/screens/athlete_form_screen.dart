@@ -182,9 +182,7 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+      body: AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -261,7 +259,6 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 }

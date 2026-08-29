@@ -115,12 +115,10 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.venues, route: '/venues'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
-          child: Form(
-            key: _formKey,
-            child: Column(
+      body: AppLayout.form(
+        child: Form(
+          key: _formKey,
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 organizations.when(
@@ -193,7 +191,6 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 }

@@ -50,9 +50,7 @@ class VenueDetailScreen extends ConsumerWidget {
             .firstOrNull ??
         '';
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
+    return AppLayout.detail(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -135,7 +133,6 @@ class VenueDetailScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
     );
   }
 

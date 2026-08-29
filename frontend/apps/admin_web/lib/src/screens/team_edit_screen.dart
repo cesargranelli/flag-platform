@@ -123,9 +123,7 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.teams, route: '/teams'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+      body: AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -278,7 +276,6 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 }

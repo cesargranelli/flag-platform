@@ -57,9 +57,7 @@ class GameDetailScreen extends ConsumerWidget {
       competition,
     );
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
+    return AppLayout.detail(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -126,7 +124,6 @@ class GameDetailScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
     );
   }
 

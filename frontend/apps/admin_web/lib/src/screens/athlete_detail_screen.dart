@@ -42,9 +42,7 @@ class AthleteDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildDetail(BuildContext context, Athlete athlete) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
+    return AppLayout.detail(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -113,7 +111,6 @@ class AthleteDetailScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
     );
   }
 

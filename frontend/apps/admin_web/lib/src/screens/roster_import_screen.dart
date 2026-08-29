@@ -187,9 +187,7 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.rosters, route: '/rosters'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+      body: AppLayout.form(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -255,7 +253,6 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 

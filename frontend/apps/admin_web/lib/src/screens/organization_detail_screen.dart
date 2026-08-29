@@ -52,39 +52,36 @@ class OrganizationDetailScreen extends ConsumerWidget {
 
   /// Página única: seções empilhadas, scroll do body (#455).
   Widget _buildDetail(BuildContext context, Organization org) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _section(
-              title: 'Identificação',
-              icon: Icons.business_outlined,
-              child: _identificacaoCard(org),
-            ),
-            _section(
-              title: 'Presidente',
-              icon: Icons.person_outline,
-              child: _presidenteCard(org),
-            ),
-            _section(
-              title: 'Contato',
-              icon: Icons.contact_mail_outlined,
-              child: _contatoCard(org),
-            ),
-            _section(
-              title: 'Localização',
-              icon: Icons.location_on_outlined,
-              child: _localizacaoCard(org),
-            ),
-            _section(
-              title: 'Identidade',
-              icon: Icons.palette_outlined,
-              child: _identidadeCard(org),
-            ),
-          ],
-        ),
+    return AppLayout.detail(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _section(
+            title: 'Identificação',
+            icon: Icons.business_outlined,
+            child: _identificacaoCard(org),
+          ),
+          _section(
+            title: 'Presidente',
+            icon: Icons.person_outline,
+            child: _presidenteCard(org),
+          ),
+          _section(
+            title: 'Contato',
+            icon: Icons.contact_mail_outlined,
+            child: _contatoCard(org),
+          ),
+          _section(
+            title: 'Localização',
+            icon: Icons.location_on_outlined,
+            child: _localizacaoCard(org),
+          ),
+          _section(
+            title: 'Identidade',
+            icon: Icons.palette_outlined,
+            child: _identidadeCard(org),
+          ),
+        ],
       ),
     );
   }
