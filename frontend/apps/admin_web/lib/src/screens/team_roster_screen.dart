@@ -128,6 +128,8 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
 
     return AppScreen(
       title: title,
+      backTarget: teamId == null ? null : '/teams/$teamId',
+      backLabel: 'Detalhe',
       actions: [
         if (teamId != null)
           IconButton(

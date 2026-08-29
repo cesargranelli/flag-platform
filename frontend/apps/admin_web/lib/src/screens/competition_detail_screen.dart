@@ -60,6 +60,8 @@ class _CompetitionDetailScreenState
 
     return AppScreen(
       title: widget.competition?.name ?? 'Campeonato',
+      backTarget: '/competitions',
+      backLabel: 'Campeonatos',
       body: Column(
         children: [
           Padding(

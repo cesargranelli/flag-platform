@@ -116,6 +116,10 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
 
     return AppScreen(
       title: _isEditing ? 'Editar rodada' : 'Nova rodada',
+      backTarget: _isEditing
+          ? '/rounds/${widget.roundId ?? widget.round?.id}'
+          : '/rounds',
+      backLabel: _isEditing ? 'Detalhe' : 'Rodadas',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

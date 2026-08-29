@@ -54,6 +54,8 @@ class _OrganizationDetailScreenState
 
     return AppScreen(
       title: org?.tradeName ?? 'Organização',
+      backTarget: '/organizations',
+      backLabel: 'Organizações',
       body: Column(
         children: [
           Padding(

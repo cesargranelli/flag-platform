@@ -25,6 +25,8 @@ class AthleteDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: athlete?.name ?? 'Atleta',
+      backTarget: '/athletes',
+      backLabel: 'Atletas',
       body: athleteFuture == null
           ? _buildDetail(context, athlete!)
           : athleteFuture.when(
