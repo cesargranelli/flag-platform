@@ -14,4 +14,5 @@ export 'src/widgets/app_session_nav.dart';
 export 'src/widgets/app_step_indicator.dart';
 export 'src/widgets/score_timeline.dart';
 export 'src/widgets/app_dropdown.dart';
+export 'src/widgets/kickster_card.dart';
 export 'src/session/session_manager.dart';
