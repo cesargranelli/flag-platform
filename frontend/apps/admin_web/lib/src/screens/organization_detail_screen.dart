@@ -31,7 +31,9 @@ class OrganizationDetailScreen extends ConsumerWidget {
     return AppScreen(
       title: org?.tradeName ?? 'Organização',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
+        BreadcrumbItem('Detalhe'),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

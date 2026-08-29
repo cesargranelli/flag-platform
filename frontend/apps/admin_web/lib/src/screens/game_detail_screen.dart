@@ -26,7 +26,9 @@ class GameDetailScreen extends ConsumerWidget {
     return AppScreen(
       title: game?.homeTeamName ?? 'Jogo',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.games, route: '/games'),
+        BreadcrumbItem('Detalhe'),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

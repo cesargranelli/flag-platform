@@ -220,7 +220,9 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
     return AppScreen(
       title: 'Importar atletas',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
+        BreadcrumbItem('Importar'),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

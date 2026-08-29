@@ -184,7 +184,9 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
     return AppScreen(
       title: 'Associar clubes',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.teams, route: '/teams'),
+        BreadcrumbItem('Associar clubes'),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

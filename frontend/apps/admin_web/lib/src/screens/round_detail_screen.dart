@@ -23,7 +23,9 @@ class RoundDetailScreen extends ConsumerWidget {
     return AppScreen(
       title: round?.name ?? 'Rodada',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
+        BreadcrumbItem('Detalhe'),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

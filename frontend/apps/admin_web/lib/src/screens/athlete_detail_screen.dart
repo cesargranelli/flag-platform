@@ -26,7 +26,9 @@ class AthleteDetailScreen extends ConsumerWidget {
     return AppScreen(
       title: athlete?.name ?? 'Atleta',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
+        BreadcrumbItem('Detalhe'),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

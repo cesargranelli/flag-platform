@@ -185,7 +185,9 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
     return AppScreen(
       title: 'Importar elenco',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.rosters, route: '/rosters'),
+        BreadcrumbItem('Importar'),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

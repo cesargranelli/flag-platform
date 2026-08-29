@@ -121,7 +121,9 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
     return AppScreen(
       title: 'Editar time',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.teams, route: '/teams'),
+        BreadcrumbItem('Editar'),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

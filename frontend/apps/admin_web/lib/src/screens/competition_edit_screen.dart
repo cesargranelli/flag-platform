@@ -334,14 +334,18 @@ class _CompetitionEditScreenState
         loading: () => AppScreen(
           title: 'Editar campeonato',
           breadcrumb: const [
+            BreadcrumbItem('Início', route: '/'),
             BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+            BreadcrumbItem('Editar'),
           ],
           body: const AppLoading(message: 'Carregando campeonato...'),
         ),
         error: (error, stackTrace) => AppScreen(
           title: 'Editar campeonato',
           breadcrumb: const [
+            BreadcrumbItem('Início', route: '/'),
             BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+            BreadcrumbItem('Editar'),
           ],
           body: AppErrorState(
             message: 'Não foi possível carregar o campeonato',

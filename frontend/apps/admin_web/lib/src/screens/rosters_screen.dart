@@ -50,7 +50,10 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
 
     return AppScreen(
       title: 'Elencos',
-      breadcrumb: const [BreadcrumbItem('Início', route: '/')],
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem('Elencos'),
+      ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

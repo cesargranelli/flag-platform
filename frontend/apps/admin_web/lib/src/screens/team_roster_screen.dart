@@ -129,7 +129,9 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     return AppScreen(
       title: title,
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.teams, route: '/teams'),
+        BreadcrumbItem('Elenco'),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

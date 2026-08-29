@@ -60,7 +60,10 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
 
     return AppScreen(
       title: 'Times',
-      breadcrumb: const [BreadcrumbItem('Início', route: '/')],
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem('Times'),
+      ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

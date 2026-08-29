@@ -38,7 +38,9 @@ class _CompetitionDetailScreenState
     return AppScreen(
       title: widget.competition?.name ?? 'Campeonato',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+        BreadcrumbItem('Detalhe'),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

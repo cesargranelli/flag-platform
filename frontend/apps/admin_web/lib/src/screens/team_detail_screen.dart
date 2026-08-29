@@ -23,7 +23,9 @@ class TeamDetailScreen extends ConsumerWidget {
     return AppScreen(
       title: team?.name ?? 'Time',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.teams, route: '/teams'),
+        BreadcrumbItem('Detalhe'),
       ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
