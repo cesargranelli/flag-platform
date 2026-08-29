@@ -8,11 +8,25 @@ import '../providers/providers.dart';
 import '../widgets/app_screen.dart';
 
 /// Tela exclusiva do super usuário (ADMIN) para aprovar/rejeitar contas.
-class ApprovalsScreen extends ConsumerWidget {
+class ApprovalsScreen extends ConsumerStatefulWidget {
   const ApprovalsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ApprovalsScreen> createState() => _ApprovalsScreenState();
+}
+
+class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final pending = ref.watch(pendingUsersProvider);
 
     return AppScreen(
@@ -31,25 +45,81 @@ class ApprovalsScreen extends ConsumerWidget {
               icon: Icons.verified_outlined,
             );
           }
+          final query = _query.trim().toLowerCase();
+          final filtered = query.isEmpty
+              ? items
+              : items
+                  .where(
+                    (u) =>
+                        u.name.toLowerCase().contains(query) ||
+                        u.email.toLowerCase().contains(query),
+                  )
+                  .toList(growable: false);
+
           return AppLayout.content(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: items.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    mainAxisExtent: 200,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Row(
+                    children: [
+                      if (query.isNotEmpty)
+                        Text(
+                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      else
+                        Text(
+                          '${items.length} '
+                          '${items.length == 1 ? 'conta' : 'contas'} pendentes',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      const Spacer(),
+                      SizedBox(
+                        width: 280,
+                        child: KicksterSearchField(
+                          controller: _searchController,
+                          onChanged: (value) =>
+                              setState(() => _query = value),
+                        ),
+                      ),
+                    ],
                   ),
-                  itemBuilder: (context, index) {
-                    final user = items[index];
-                    return _approvalCard(context, ref, user);
-                  },
-                );
-              },
+                ),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? const AppEmptyState(
+                          message: 'Nenhuma conta encontrada',
+                          icon: Icons.search_off,
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final columns = constraints.maxWidth >= 600 ? 2 : 1;
+                            return GridView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: filtered.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columns,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                mainAxisExtent: 200,
+                              ),
+                              itemBuilder: (context, index) {
+                                final user = filtered[index];
+                                return _approvalCard(context, ref, user);
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
           );
         },
@@ -167,23 +237,12 @@ class ApprovalsScreen extends ConsumerWidget {
   }
 
   Future<void> _reject(BuildContext context, WidgetRef ref, User user) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showKicksterConfirm(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Rejeitar conta'),
-        content: Text('Rejeitar ${user.email}?\nA conta será recusada.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-            child: const Text('Rejeitar'),
-          ),
-        ],
-      ),
+      title: 'Rejeitar conta',
+      content: 'Rejeitar ${user.email}?\nA conta será recusada.',
+      confirmLabel: 'Rejeitar',
+      danger: true,
     );
     if (confirmed != true || !context.mounted) return;
 

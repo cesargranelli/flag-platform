@@ -8,11 +8,25 @@ import '../providers/providers.dart';
 import '../widgets/app_screen.dart';
 
 /// Gestão de atletas: cards e navegação para o detalhe.
-class AthletesScreen extends ConsumerWidget {
+class AthletesScreen extends ConsumerStatefulWidget {
   const AthletesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AthletesScreen> createState() => _AthletesScreenState();
+}
+
+class _AthletesScreenState extends ConsumerState<AthletesScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final athletes = ref.watch(athletesProvider);
 
     return AppScreen(
@@ -24,10 +38,10 @@ class AthletesScreen extends ConsumerWidget {
           icon: const Icon(Icons.upload_file),
           onPressed: () => context.push('/athletes/import'),
         ),
-        FilledButton.icon(
+        KicksterButton(
+          label: 'Novo',
+          icon: Icons.add,
           onPressed: () => context.go('/athletes/new'),
-          icon: const Icon(Icons.add),
-          label: const Text('Novo'),
         ),
       ],
       body: athletes.when(
@@ -38,30 +52,87 @@ class AthletesScreen extends ConsumerWidget {
         ),
         data: (items) {
           if (items.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum atleta cadastrado',
+            return KicksterEmptyState(
               icon: Icons.person_outline,
+              message: 'Nenhum atleta cadastrado',
+              description: 'Crie o primeiro atleta para começar a usar.',
+              action: KicksterButton(
+                label: 'Criar atleta',
+                icon: Icons.add,
+                onPressed: () => context.go('/athletes/new'),
+              ),
             );
           }
+          final query = _query.trim().toLowerCase();
+          final filtered = query.isEmpty
+              ? items
+              : items
+                  .where((a) => a.name.toLowerCase().contains(query))
+                  .toList(growable: false);
+
           return AppLayout.content(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: items.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    mainAxisExtent: 96,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Row(
+                    children: [
+                      if (query.isNotEmpty)
+                        Text(
+                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      else
+                        Text(
+                          '${items.length} ${items.length == 1 ? 'atleta' : 'atletas'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      const Spacer(),
+                      SizedBox(
+                        width: 280,
+                        child: KicksterSearchField(
+                          controller: _searchController,
+                          onChanged: (value) =>
+                              setState(() => _query = value),
+                        ),
+                      ),
+                    ],
                   ),
-                  itemBuilder: (context, index) {
-                    final athlete = items[index];
-                    return _athleteCard(context, athlete);
-                  },
-                );
-              },
+                ),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? const AppEmptyState(
+                          message: 'Nenhum atleta encontrado',
+                          icon: Icons.search_off,
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final columns = constraints.maxWidth >= 600 ? 2 : 1;
+                            return GridView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: filtered.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columns,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                mainAxisExtent: 96,
+                              ),
+                              itemBuilder: (context, index) {
+                                final athlete = filtered[index];
+                                return _athleteCard(context, athlete);
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
           );
         },

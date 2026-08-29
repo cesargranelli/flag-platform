@@ -22,9 +22,17 @@ class OrganizationsScreen extends ConsumerStatefulWidget {
 class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   OrganizationType? _typeFilter;
   bool _showDisabled = false;
+  final _searchController = TextEditingController();
+  String _query = '';
 
   bool get _isAdmin =>
       ref.read(authControllerProvider).state.user?.role == 'ADMIN';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +46,10 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
       title: 'Organizações',
       titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
-        FilledButton.icon(
+        KicksterButton(
+          label: 'Novo',
+          icon: Icons.add,
           onPressed: () => context.go('/organizations/new'),
-          icon: const Icon(Icons.add),
-          label: const Text('Novo'),
         ),
       ],
       body: organizations.when(
@@ -54,16 +62,28 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
         ),
         data: (items) {
           if (items.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhuma organização cadastrada',
+            return KicksterEmptyState(
               icon: Icons.business,
+              message: 'Nenhuma organização cadastrada',
+              description: 'Crie a primeira organização para começar a usar.',
+              action: KicksterButton(
+                label: 'Criar organização',
+                icon: Icons.add,
+                onPressed: () => context.go('/organizations/new'),
+              ),
             );
           }
-          final filtered = _typeFilter == null
-              ? items
-              : items
-                  .where((o) => o.organizationType == _typeFilter)
-                  .toList(growable: false);
+          final query = _query.trim().toLowerCase();
+          final filtered = items
+              .where((o) {
+                if (_typeFilter != null && o.organizationType != _typeFilter) {
+                  return false;
+                }
+                if (query.isEmpty) return true;
+                return o.tradeName.toLowerCase().contains(query) ||
+                    o.legalName.toLowerCase().contains(query);
+              })
+              .toList(growable: false);
 
           return AppLayout.content(
             child: Column(
@@ -72,13 +92,22 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: Row(
                     children: [
-                      Text(
-                        '${filtered.length} de ${items.length}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
+                      if (query.isNotEmpty)
+                        Text(
+                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      else
+                        Text(
+                          '${filtered.length} de ${items.length}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                      ),
                       const Spacer(),
                       if (isAdmin)
                         Tooltip(
@@ -105,10 +134,20 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                           ],
                           icons: [
                             null,
-                            ...OrganizationType.values.map(organizationTypeIcon),
+                            ...OrganizationType.values
+                                .map(organizationTypeIcon),
                           ],
                           onChanged: (value) =>
                               setState(() => _typeFilter = value),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 220,
+                        child: KicksterSearchField(
+                          controller: _searchController,
+                          onChanged: (value) =>
+                              setState(() => _query = value),
                         ),
                       ),
                     ],
@@ -117,8 +156,8 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                 Expanded(
                   child: filtered.isEmpty
                       ? const AppEmptyState(
-                          message: 'Nenhuma organização neste tipo',
-                          icon: Icons.filter_alt_off_outlined,
+                          message: 'Nenhuma organização encontrada',
+                          icon: Icons.search_off,
                         )
                       : LayoutBuilder(
                           builder: (context, constraints) {
@@ -217,25 +256,12 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   }
 
   Future<bool?> _confirm(BuildContext context, String title, String message) {
-    return showDialog<bool>(
+    return showKicksterConfirm(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-            ),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Desativar'),
-          ),
-        ],
-      ),
+      title: title,
+      content: message,
+      confirmLabel: 'Desativar',
+      danger: true,
     );
   }
 
