@@ -32,5 +32,7 @@ export 'src/widgets/kickster_error_state.dart';
 export 'src/widgets/kickster_section_title.dart';
 export 'src/widgets/kickster_nav_bar.dart';
 export 'src/widgets/kickster_top_bar.dart';
+export 'src/widgets/kickster_checkbox.dart';
+export 'src/widgets/kickster_radio_button.dart';
 export 'src/widgets/kickster_social_auth.dart';
 export 'src/session/session_manager.dart';
