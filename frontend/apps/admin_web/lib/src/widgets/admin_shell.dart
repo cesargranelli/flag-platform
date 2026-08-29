@@ -94,6 +94,12 @@ class _Header extends StatelessWidget {
         height: 64,
         child: Row(
           children: [
+            // Mini-marca à esquerda (issue #455): escudo + nome; clicável
+            // volta para a home (issue #433). O label colapsa <960px.
+            _BrandMark(
+              showLabel: showModules,
+              onTap: () => context.go('/'),
+            ),
             if (showModules)
               Expanded(
                 child: Padding(
@@ -132,6 +138,58 @@ class _Header extends StatelessWidget {
               const Spacer(),
             AdminUserChip(onLogout: onLogout),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Mini-marca do Admin Web no header (issue #455): escudo + "Flag Platform".
+///
+/// Clicável, volta para a home (issue #433 — "home pela marca no header").
+/// O label colapsa em viewports < 960px, restando apenas o escudo. O hover
+/// usa o mesmo branco translúcido @8% dos itens do menu.
+class _BrandMark extends StatelessWidget {
+  const _BrandMark({required this.showLabel, required this.onTap});
+
+  final bool showLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        hoverColor: Colors.white.withValues(alpha: 0.08),
+        focusColor: Colors.white.withValues(alpha: 0.08),
+        child: SizedBox(
+          height: 48,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.shield_outlined,
+                  size: 24,
+                  color: Colors.white,
+                ),
+                if (showLabel) ...[
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Flag Platform',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
