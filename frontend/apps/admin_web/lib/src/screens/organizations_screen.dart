@@ -89,7 +89,10 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Row(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       if (query.isNotEmpty)
                         Text(
@@ -107,7 +110,6 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                             color: AppColors.textSecondary,
                           ),
                         ),
-                      const Spacer(),
                       if (isAdmin)
                         Tooltip(
                           message: 'Exibir organizações desativadas',
@@ -120,7 +122,6 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                                 () => _showDisabled = !_showDisabled),
                           ),
                         ),
-                      const SizedBox(width: 8),
                       SizedBox(
                         width: 260,
                         child: KicksterDropdown<OrganizationType?>(
@@ -140,7 +141,6 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                               setState(() => _typeFilter = value),
                         ),
                       ),
-                      const SizedBox(width: 8),
                       SizedBox(
                         width: 220,
                         child: KicksterSearchField(
