@@ -25,6 +25,8 @@ class GameDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: game?.homeTeamName ?? 'Jogo',
+      backTarget: '/games',
+      backLabel: 'Jogos',
       body: gameFuture == null
           ? _buildDetail(context, ref, game!)
           : gameFuture.when(
