@@ -122,13 +122,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 8),
               Text(AppStrings.loginSubtitle, style: AppTextStyles.subtitle),
               const SizedBox(height: 32),
-              TextFormField(
+              KicksterInput(
+                label: AppStrings.loginEmail,
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: AppStrings.loginEmail,
-                  prefixIcon: Icon(Icons.mail_outline),
-                ),
+                prefixIcon: Icons.mail_outline,
+                autofillHints: const [AutofillHints.username, AutofillHints.email],
+                textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return AppStrings.loginRequiredEmail;
@@ -140,21 +140,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              KicksterInput(
+                label: AppStrings.loginPassword,
                 controller: _passwordController,
                 obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: AppStrings.loginPassword,
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    tooltip: _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
-                    icon: Icon(_obscurePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                  ),
+                prefixIcon: Icons.lock_outline,
+                suffixIcon: IconButton(
+                  tooltip:
+                      _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
+                  icon: Icon(_obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
+                autofillHints: const [AutofillHints.password],
+                textInputAction: TextInputAction.done,
                 validator: (value) => (value == null || value.isEmpty)
                     ? AppStrings.loginRequiredPassword
                     : null,
@@ -190,16 +191,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              FilledButton(
+              KicksterButton(
+                label: AppStrings.loginSubmit,
                 onPressed: _submitting ? null : _submit,
-                child: _submitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text(AppStrings.loginSubmit,
-                        style: AppTextStyles.buttonText),
+                loading: _submitting,
               ),
               const SizedBox(height: 24),
               _buildDivider(),

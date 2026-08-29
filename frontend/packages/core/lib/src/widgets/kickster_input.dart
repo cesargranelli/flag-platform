@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 ///
 /// Wrapper de `TextFormField` sobre o `InputDecorationTheme` do tema (raio
 /// 16, preenchido `surface`, rótulo sempre visível) — **não sobrescreve
-/// bordas nem estilos**. Aceita validação e teclado tipado.
+/// bordas nem estilos**. Aceita validação, teclado tipado, autofill, ação de
+/// submissão e ícones de prefixo/sufixo (ex.: olho de visibilidade de senha).
 class KicksterInput extends StatelessWidget {
   const KicksterInput({
     super.key,
@@ -14,7 +15,11 @@ class KicksterInput extends StatelessWidget {
     this.validator,
     this.keyboardType,
     this.prefixIcon,
+    this.suffixIcon,
     this.enabled = true,
+    this.autofillHints,
+    this.textInputAction,
+    this.onFieldSubmitted,
   });
 
   final String label;
@@ -23,7 +28,11 @@ class KicksterInput extends StatelessWidget {
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
   final IconData? prefixIcon;
+  final Widget? suffixIcon;
   final bool enabled;
+  final Iterable<String>? autofillHints;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onFieldSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +42,13 @@ class KicksterInput extends StatelessWidget {
       validator: validator,
       keyboardType: keyboardType,
       enabled: enabled,
+      autofillHints: autofillHints,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onFieldSubmitted,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: prefixIcon == null ? null : Icon(prefixIcon),
+        suffixIcon: suffixIcon,
       ),
     );
   }
