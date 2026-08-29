@@ -9,13 +9,27 @@ import '../widgets/app_screen.dart';
 
 /// Gestão de campos de jogo: cards e navegação para o detalhe.
 ///
-/// Listagem em grid de cards (padrão web); clicar navega para a tela de
-/// detalhe do campo.
-class VenuesScreen extends ConsumerWidget {
+/// Listagem em grid de cards (padrão web) com busca por nome; clicar navega
+/// para a tela de detalhe do campo.
+class VenuesScreen extends ConsumerStatefulWidget {
   const VenuesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VenuesScreen> createState() => _VenuesScreenState();
+}
+
+class _VenuesScreenState extends ConsumerState<VenuesScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final venues = ref.watch(venuesProvider);
     final organizations = ref.watch(organizationsProvider);
 
@@ -23,10 +37,10 @@ class VenuesScreen extends ConsumerWidget {
       title: 'Campos',
       titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
-        FilledButton.icon(
+        KicksterButton(
+          label: 'Novo',
+          icon: Icons.add,
           onPressed: () => context.go('/venues/new'),
-          icon: const Icon(Icons.add),
-          label: const Text('Novo'),
         ),
       ],
       body: venues.when(
@@ -37,35 +51,92 @@ class VenuesScreen extends ConsumerWidget {
         ),
         data: (items) {
           if (items.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum campo cadastrado',
+            return KicksterEmptyState(
               icon: Icons.sports_soccer,
+              message: 'Nenhum campo cadastrado',
+              description: 'Crie o primeiro campo para começar a usar.',
+              action: KicksterButton(
+                label: 'Criar campo',
+                icon: Icons.add,
+                onPressed: () => context.go('/venues/new'),
+              ),
             );
           }
           final orgNames = organizations.valueOrNull ?? const <Organization>[];
+          final query = _query.trim().toLowerCase();
+          final filtered = query.isEmpty
+              ? items
+              : items
+                  .where((v) => v.name.toLowerCase().contains(query))
+                  .toList(growable: false);
+
           return AppLayout.content(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: items.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    mainAxisExtent: 96,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Row(
+                    children: [
+                      if (query.isNotEmpty)
+                        Text(
+                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      else
+                        Text(
+                          '${items.length} ${items.length == 1 ? 'campo' : 'campos'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      const Spacer(),
+                      SizedBox(
+                        width: 280,
+                        child: KicksterSearchField(
+                          controller: _searchController,
+                          onChanged: (value) =>
+                              setState(() => _query = value),
+                        ),
+                      ),
+                    ],
                   ),
-                  itemBuilder: (context, index) {
-                    final venue = items[index];
-                    return _venueCard(
-                      context,
-                      venue,
-                      orgNames,
-                    );
-                  },
-                );
-              },
+                ),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? const AppEmptyState(
+                          message: 'Nenhum campo encontrado',
+                          icon: Icons.search_off,
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final columns = constraints.maxWidth >= 600 ? 2 : 1;
+                            return GridView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: filtered.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columns,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                mainAxisExtent: 96,
+                              ),
+                              itemBuilder: (context, index) {
+                                final venue = filtered[index];
+                                return _venueCard(
+                                  context,
+                                  venue,
+                                  orgNames,
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
           );
         },
@@ -90,7 +161,7 @@ class VenuesScreen extends ConsumerWidget {
       icon: Icons.sports_soccer,
       title: venue.name,
       subtitle: subtitle.isEmpty ? null : subtitle,
-      onTap: () => context.go('/venues/${venue.id}', extra: venue),
+      onTap: () => context.push('/venues/${venue.id}', extra: venue),
     );
   }
 

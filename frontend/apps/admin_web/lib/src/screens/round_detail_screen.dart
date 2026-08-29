@@ -22,6 +22,9 @@ class RoundDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: round?.name ?? 'Rodada',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
+      ],
       body: roundFuture == null
           ? _buildDetail(context, ref, round!)
           : roundFuture.when(
@@ -110,18 +113,21 @@ class RoundDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     if (canManage) ...[
-                      FilledButton.icon(
+                      KicksterButton(
+                        label: 'Editar dados',
+                        icon: Icons.edit_outlined,
                         onPressed: () => context.go(
                           '/rounds/${round.id}/edit',
                           extra: round,
                         ),
-                        icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Editar dados'),
                       ),
                       const SizedBox(height: 8),
                       // Issue #347: confrontos/jogos geridos via contexto do
                       // campeonato (rodada → jogos), sem atalho global da home.
-                      FilledButton.icon(
+                      KicksterButton(
+                        label: 'Confrontos',
+                        icon: Icons.sports,
+                        variant: KicksterButtonVariant.outline,
                         onPressed: () {
                           ref
                                   .read(selectedCompetitionProvider.notifier)
@@ -131,8 +137,6 @@ class RoundDetailScreen extends ConsumerWidget {
                               round.id;
                           context.go('/games');
                         },
-                        icon: const Icon(Icons.sports),
-                        label: const Text('Confrontos'),
                       ),
                     ] else
                       EditRestrictionNote(

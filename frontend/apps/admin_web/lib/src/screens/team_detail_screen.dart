@@ -22,6 +22,9 @@ class TeamDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: team?.name ?? 'Time',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.teams, route: '/teams'),
+      ],
       body: teamFuture == null
           ? _buildDetail(context, ref, team!)
           : teamFuture.when(
@@ -103,11 +106,11 @@ class TeamDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     if (canEdit)
-                      FilledButton.icon(
+                      KicksterButton(
+                        label: 'Editar dados',
+                        icon: Icons.edit_outlined,
                         onPressed: () =>
                             context.go('/teams/${team.id}/edit', extra: team),
-                        icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Editar dados'),
                       )
                     else
                       const EditRestrictionNote(

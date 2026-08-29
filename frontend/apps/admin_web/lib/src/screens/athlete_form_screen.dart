@@ -179,6 +179,9 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
   Widget build(BuildContext context) {
     return AppScreen(
       title: _isEditing ? 'Editar atleta' : 'Novo atleta',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(
@@ -187,68 +190,55 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextFormField(
+                KicksterInput(
+                  label: 'Nome',
                   controller: _name,
                   maxLength: 100,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Informe o nome'
-                      : null,
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty)
+                          ? 'Informe o nome'
+                          : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'CPF',
                   controller: _cpf,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'CPF',
-                    hintText: '000.000.000-00',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: '000.000.000-00',
                   onChanged: (value) {
                     final masked = DocumentUtils.maskCpf(value);
                     if (masked != value) {
                       _cpf.value = TextEditingValue(
                         text: masked,
-                        selection: TextSelection.collapsed(offset: masked.length),
+                        selection:
+                            TextSelection.collapsed(offset: masked.length),
                       );
                     }
                   },
                   validator: _validateCpf,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Apelido',
                   controller: _nickname,
                   maxLength: 100,
-                  decoration: const InputDecoration(
-                    labelText: 'Apelido',
-                    border: OutlineInputBorder(),
-                  ),
                 ),
                 const SizedBox(height: 12),
                 _positionsField(),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Número da camisa',
                   controller: _number,
                   keyboardType: TextInputType.number,
                   maxLength: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Número da camisa',
-                    border: OutlineInputBorder(),
-                  ),
                   validator: _validateNumber,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'URL da foto',
                   controller: _photoUrl,
                   keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    labelText: 'URL da foto',
-                    helperText: 'Ex.: https://...',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: 'Ex.: https://...',
                   validator: _validatePhotoUrl,
                 ),
                 if (_errorMessage != null) ...[
@@ -261,15 +251,11 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
                   ),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
+                KicksterButton(
+                  label: 'Salvar',
+                  icon: Icons.check,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _save,
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Salvar'),
                 ),
               ],
             ),

@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_screen.dart';
 
 /// Tela inicial do Admin Web (issue #433): grade de cards no estilo Kickster.
 ///
-/// Sem banda de boas-vindas, sem ações rápidas e sem título de página: cada
+/// Com o [AppScreen] (issue #455) ganhou o título "Início" (semântica header)
+/// e o subtítulo "Olá, {nome}!" (14px `textSecondary`) acima da grade. Cada
 /// card tem ícone grande + título do módulo (`KicksterCard` do core — raio
 /// 12, fundo `surface`, elevação sutil). A navegação entre módulos também é
 /// feita por aqui (o header tem menu discreto acima de 960px — issue #449).
@@ -17,8 +19,9 @@ class AdminHomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isAdmin =
-        ref.watch(authControllerProvider).state.user?.role == 'ADMIN';
+    final authState = ref.watch(authControllerProvider).state;
+    final isAdmin = authState.user?.role == 'ADMIN';
+    final name = (authState.user?.name ?? '').trim();
 
     final modules = <_Module>[
       _Module(
@@ -41,28 +44,46 @@ class AdminHomeScreen extends ConsumerWidget {
         _Module(Icons.admin_panel_settings, AppStrings.users, '/users'),
     ];
 
-    return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 960;
-            return GridView.count(
-              padding: const EdgeInsets.all(16),
-              crossAxisCount: wide ? 4 : 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: wide ? 1.6 : 1.3,
-              children: [
-                for (final module in modules)
-                  KicksterCard(
-                    icon: module.icon,
-                    title: module.title,
-                    onTap: () => context.go(module.route),
-                  ),
-              ],
-            );
-          },
-        ),
+    return AppScreen(
+      title: 'Início',
+      titleVariant: AppScreenTitleVariant.titleLg,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: AppLayout.content(
+              child: Text(
+                name.isEmpty ? 'Olá!' : 'Olá, $name!',
+                style: AppTextStyles.paragraph.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final wide = constraints.maxWidth >= 960;
+                return GridView.count(
+                  padding: const EdgeInsets.all(16),
+                  crossAxisCount: wide ? 4 : 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: wide ? 1.6 : 1.3,
+                  children: [
+                    for (final module in modules)
+                      KicksterCard(
+                        icon: module.icon,
+                        title: module.title,
+                        onTap: () => context.go(module.route),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

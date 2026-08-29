@@ -116,6 +116,9 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
 
     return AppScreen(
       title: _isEditing ? 'Editar rodada' : 'Nova rodada',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(
@@ -142,30 +145,25 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
                       : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Número',
                   controller: _number,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   maxLength: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Número',
-                    helperText: 'Ex.: 1',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: 'Ex.: 1',
                   validator: _validateNumber,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Nome',
                   controller: _name,
                   maxLength: 100,
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Informe o nome'
-                      : null,
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty)
+                          ? 'Informe o nome'
+                          : null,
                 ),
                 const SizedBox(height: 12),
                 KicksterDropdown<RoundType>(
@@ -193,15 +191,11 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
                   ),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
+                KicksterButton(
+                  label: 'Salvar',
+                  icon: Icons.check,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _save,
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Salvar'),
                 ),
               ],
             ),

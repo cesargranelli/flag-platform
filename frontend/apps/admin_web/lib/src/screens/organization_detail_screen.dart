@@ -6,105 +6,107 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
 import '../widgets/app_screen.dart';
 
-/// Detalhe de uma organização em sessões espelhando o wizard (#323),
-/// com navegação por cards no topo: tocar em uma sessão troca o bloco
-/// exibido — a tela mostra APENAS o conteúdo da sessão ativa (#326).
+/// Detalhe de uma organização em página única (#455): todas as seções
+/// (identificação, presidente, contato, localização, identidade) empilhadas
+/// com títulos de seção — o scroll é do body, sem barras internas.
 ///
 /// A edição é uma ação explícita na tela (organizações não são editáveis
 /// após a criação — V250).
-class OrganizationDetailScreen extends ConsumerStatefulWidget {
-  const OrganizationDetailScreen({super.key, this.organizationId, this.organization});
+class OrganizationDetailScreen extends ConsumerWidget {
+  const OrganizationDetailScreen({
+    super.key,
+    this.organizationId,
+    this.organization,
+  });
 
   final String? organizationId;
   final Organization? organization;
 
   @override
-  ConsumerState<OrganizationDetailScreen> createState() =>
-      _OrganizationDetailScreenState();
-}
-
-class _OrganizationDetailScreenState
-    extends ConsumerState<OrganizationDetailScreen> {
-  static const _sessions = [
-    'Identificação',
-    'Presidente',
-    'Contato',
-    'Localização',
-    'Identidade',
-  ];
-
-  /// Ícones das sessões (issue #326), paralelos a [_sessions].
-  static const _sessionIcons = <IconData>[
-    Icons.business_outlined,
-    Icons.person_outline,
-    Icons.contact_mail_outlined,
-    Icons.location_on_outlined,
-    Icons.palette_outlined,
-  ];
-
-  /// Índice da sessão ativa — único bloco exibido no corpo da tela (#326).
-  int _activeSession = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    final org = widget.organization;
-    final orgFuture = org != null
-        ? null
-        : ref.watch(organizationProvider(widget.organizationId!));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final org = organization;
+    final orgFuture =
+        org != null ? null : ref.watch(organizationProvider(organizationId!));
 
     return AppScreen(
       title: org?.tradeName ?? 'Organização',
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: AppLayout.form(
-              child: AppStepIndicator(
-                titles: _sessions,
-                icons: _sessionIcons,
-                currentStep: _activeSession,
-                showDoneState: false,
-                onStepTap: (index) => setState(() => _activeSession = index),
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
+      ],
+      body: orgFuture == null
+          ? _buildDetail(context, org!)
+          : orgFuture.when(
+              loading: () => const AppLoading(
+                message: 'Carregando organização...',
               ),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar a organização',
+                onRetry: () => ref.invalidate(
+                  organizationProvider(organizationId!),
+                ),
+              ),
+              data: (org) => _buildDetail(context, org),
             ),
-          ),
-          Expanded(
-            child: orgFuture == null
-                ? _buildDetail(context, org!)
-                : orgFuture.when(
-                    loading: () => const AppLoading(
-                      message: 'Carregando organização...',
-                    ),
-                    error: (error, stackTrace) => AppErrorState(
-                      message: 'Não foi possível carregar a organização',
-                      onRetry: () => ref.invalidate(
-                        organizationProvider(widget.organizationId!),
-                      ),
-                    ),
-                    data: (org) => _buildDetail(context, org),
-                  ),
-          ),
-        ],
-      ),
     );
   }
 
+  /// Página única: seções empilhadas, scroll do body (#455).
   Widget _buildDetail(BuildContext context, Organization org) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: AppLayout.detail(
-        child: switch (_activeSession) {
-          0 => _identificacaoCard(org),
-          1 => _presidenteCard(org),
-          2 => _contatoCard(org),
-          3 => _localizacaoCard(org),
-          _ => _identidadeCard(org),
-        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _section(
+              title: 'Identificação',
+              icon: Icons.business_outlined,
+              child: _identificacaoCard(org),
+            ),
+            _section(
+              title: 'Presidente',
+              icon: Icons.person_outline,
+              child: _presidenteCard(org),
+            ),
+            _section(
+              title: 'Contato',
+              icon: Icons.contact_mail_outlined,
+              child: _contatoCard(org),
+            ),
+            _section(
+              title: 'Localização',
+              icon: Icons.location_on_outlined,
+              child: _localizacaoCard(org),
+            ),
+            _section(
+              title: 'Identidade',
+              icon: Icons.palette_outlined,
+              child: _identidadeCard(org),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// Sessão 1 — Identificação (#323): card hero consolidado + dados.
+  /// Título de seção (titleMedium) + card, separados por espaçamento padrão.
+  Widget _section({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KicksterSectionTitle(title: title, icon: icon),
+        const SizedBox(height: 12),
+        child,
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  /// Seção 1 — Identificação (#323): card hero consolidado + dados.
   Widget _identificacaoCard(Organization org) {
     return Card(
       child: Container(
@@ -170,7 +172,7 @@ class _OrganizationDetailScreenState
     );
   }
 
-  /// Sessão 2 — Presidente (#323).
+  /// Seção 2 — Presidente (#323).
   Widget _presidenteCard(Organization org) {
     return AppInfoCard(
       children: [
@@ -182,7 +184,7 @@ class _OrganizationDetailScreenState
     );
   }
 
-  /// Sessão 3 — Contato (#323).
+  /// Seção 3 — Contato (#323).
   Widget _contatoCard(Organization org) {
     return AppInfoCard(
       children: [
@@ -198,7 +200,7 @@ class _OrganizationDetailScreenState
     );
   }
 
-  /// Sessão 4 — Localização (#323): movida de Identificação.
+  /// Seção 4 — Localização (#323): movida de Identificação.
   Widget _localizacaoCard(Organization org) {
     return AppInfoCard(
       children: [
@@ -211,7 +213,7 @@ class _OrganizationDetailScreenState
     );
   }
 
-  /// Sessão 5 — Identidade (#323): renomeado de 'Visual'.
+  /// Seção 5 — Identidade (#323): renomeado de 'Visual'.
   Widget _identidadeCard(Organization org) {
     return AppInfoCard(
       children: [

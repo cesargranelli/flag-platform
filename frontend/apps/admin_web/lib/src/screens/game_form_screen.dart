@@ -29,6 +29,7 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
   String? _awayTeamId;
   String? _venueId;
   DateTime? _scheduledAt;
+  late final TextEditingController _scheduleController;
   bool _submitting = false;
   String? _errorMessage;
 
@@ -43,6 +44,20 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
     _awayTeamId = game?.awayTeamId;
     _venueId = game?.venueId;
     _scheduledAt = game?.scheduledAt ?? DateTime.now();
+    _scheduleController = TextEditingController(text: _formatSchedule());
+  }
+
+  @override
+  void dispose() {
+    _scheduleController.dispose();
+    super.dispose();
+  }
+
+  String _formatSchedule() {
+    final scheduledAt = _scheduledAt;
+    return scheduledAt == null
+        ? ''
+        : '${_formatDate(scheduledAt)} ${_formatTime(scheduledAt)}';
   }
 
   Future<void> _pickSchedule() async {
@@ -70,6 +85,7 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
         time.hour,
         time.minute,
       );
+      _scheduleController.text = _formatSchedule();
     });
   }
 
@@ -137,6 +153,9 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
 
     return AppScreen(
       title: _isEditing ? 'Editar jogo' : 'Novo jogo',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.games, route: '/games'),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(
@@ -241,17 +260,13 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Horário',
+                  controller: _scheduleController,
                   readOnly: true,
                   onTap: _pickSchedule,
-                  decoration: InputDecoration(
-                    labelText: 'Horário',
-                    suffixIcon: const Icon(Icons.schedule),
-                    border: const OutlineInputBorder(),
-                    hintText: _scheduledAt == null
-                        ? 'Selecione data e hora'
-                        : '${_formatDate(_scheduledAt!)} ${_formatTime(_scheduledAt!)}',
-                  ),
+                  hintText: 'Selecione data e hora',
+                  suffixIcon: const Icon(Icons.schedule),
                 ),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 16),
@@ -263,15 +278,11 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                   ),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
+                KicksterButton(
+                  label: 'Salvar',
+                  icon: Icons.check,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _save,
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Salvar'),
                 ),
               ],
             ),

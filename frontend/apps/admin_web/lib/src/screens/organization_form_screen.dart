@@ -9,7 +9,10 @@ import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 import '../widgets/app_screen.dart';
 
-/// Formulário de criação de organização em etapas (wizard).
+/// Formulário de criação de organização em página única (#455): todas as
+/// seções (dados básicos, presidente, contato, localização, identidade)
+/// empilhadas com títulos de seção — o scroll é do body, sem barras internas.
+/// A validação cobre TODAS as seções no submit.
 ///
 /// V250: organizações não são editáveis após a criação — este formulário
 /// apenas cria. Alterações de cadastro não são suportadas.
@@ -48,19 +51,10 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
 
   OrganizationType? _type;
   DocumentType? _documentType;
-  int _step = 0;
   bool _submitting = false;
   bool _saved = false;
   bool _hasChanges = false;
   String? _errorMessage;
-
-  static const _titles = [
-    'Identificação',
-    'Presidente',
-    'Contato',
-    'Localização',
-    'Identidade',
-  ];
 
   @override
   void initState() {
@@ -151,6 +145,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       };
 
   Future<void> _save() async {
+    // Valida TODAS as seções (form único) — não por etapa.
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -180,20 +175,6 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     }
   }
 
-  bool _validateStep() {
-    return _formKey.currentState!.validate();
-  }
-
-  void _next() {
-    if (_validateStep()) {
-      if (_step < _titles.length - 1) {
-        setState(() => _step += 1);
-      } else {
-        _save();
-      }
-    }
-  }
-
   void _goBack() {
     if (context.canPop()) {
       context.pop();
@@ -204,22 +185,13 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
 
   Future<void> _handleBack() async {
     if (_hasChanges && !_submitting && !_saved) {
-      final discard = await showDialog<bool>(
+      final discard = await showKicksterConfirm(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Descartar alterações?'),
-          content: const Text('As alterações não salvas serão perdidas.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Continuar editando'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Descartar'),
-            ),
-          ],
-        ),
+        title: 'Descartar alterações?',
+        content: 'As alterações não salvas serão perdidas.',
+        confirmLabel: 'Descartar',
+        cancelLabel: 'Continuar editando',
+        danger: true,
       );
       if (discard != true) return;
       _saved = true;
@@ -236,88 +208,100 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       },
       child: AppScreen(
         title: 'Nova organização',
-        body: _buildWizard(context),
-      ),
-    );
-  }
-
-  Widget _buildWizard(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          Expanded(
-            child: AppLayout.form(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-                    child: AppStepIndicator(
-                      titles: _titles,
-                      currentStep: _step,
-                      onStepTap: _handleStepTap,
-                    ),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (_errorMessage != null)
-                            _errorBanner(_errorMessage!),
-                          _stepContent(context, _step),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: AppLayout.form(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _submitting
-                        ? null
-                        : () {
-                            if (_step == 0) {
-                              _handleBack();
-                            } else {
-                              setState(() => _step -= 1);
-                            }
-                          },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
-                      minimumSize: const Size(120, 56),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(16)),
-                      ),
-                    ),
-                    icon: Icon(_step == 0 ? Icons.close : Icons.arrow_back),
-                    label: Text(_step == 0 ? 'Cancelar' : 'Voltar'),
-                  ),
-                  FilledButton.icon(
-                    onPressed: _submitting ? null : _next,
-                    icon: _submitting
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.arrow_forward),
-                    label: Text(_step == _titles.length - 1 ? 'Salvar' : 'Continuar'),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        breadcrumb: const [
+          BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
         ],
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: AppLayout.form(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_errorMessage != null) _errorBanner(_errorMessage!),
+                  _section('Dados básicos', Icons.business_outlined, [
+                    _field('Nome fantasia', _tradeName,
+                        hint: 'Informe o nome fantasia',
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Informe o nome fantasia'
+                            : null),
+                    const SizedBox(height: 12),
+                    _field('Razão social', _legalName,
+                        hint: 'Informe a razão social',
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Informe a razão social'
+                            : null),
+                    const SizedBox(height: 12),
+                    _field('Sigla (opcional)', _abbreviation),
+                    const SizedBox(height: 12),
+                    _typeDropdown(),
+                    const SizedBox(height: 12),
+                    _documentField(),
+                  ]),
+                  _section('Presidente', Icons.person_outline, [
+                    _field('Nome do presidente', _presidentName,
+                        hint: 'Informe o nome do presidente',
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Informe o nome do presidente'
+                            : null),
+                    const SizedBox(height: 12),
+                    _presidentCpfField(),
+                  ]),
+                  _section('Contato', Icons.contact_mail_outlined, [
+                    _emailField(),
+                    const SizedBox(height: 12),
+                    _phoneField(),
+                    const SizedBox(height: 12),
+                    _websiteField(),
+                    const SizedBox(height: 12),
+                    _instagramField(),
+                  ]),
+                  _section('Localização', Icons.location_on_outlined, [
+                    _countryDropdown(),
+                    const SizedBox(height: 12),
+                    if (_country == 'BR')
+                      _stateDropdown()
+                    else
+                      _field('Estado (opcional)', _state),
+                    const SizedBox(height: 12),
+                    _field('Cidade (opcional)', _city),
+                  ]),
+                  _section('Identidade', Icons.palette_outlined, [
+                    _brandPreview(),
+                    const SizedBox(height: 16),
+                    _logoField(),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _colorField('Cor primária (opcional)', _primaryColor),
+                        const SizedBox(width: 12),
+                        _colorField('Cor secundária (opcional)', _secondaryColor),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _colorField('Cor terciária (opcional)', _tertiaryColor),
+                        const SizedBox(width: 12),
+                        _colorField('Cor quaternária (opcional)', _quaternaryColor),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _localeDropdown(),
+                  ]),
+                  const SizedBox(height: 8),
+                  KicksterButton(
+                    label: 'Criar organização',
+                    icon: Icons.check,
+                    loading: _submitting,
+                    onPressed: _submitting ? null : _save,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -346,22 +330,22 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     );
   }
 
-  /// Tocar em uma etapa do indicador: avança apenas sequencialmente (com
-  /// validação da etapa atual) e volta livremente (#323).
-  void _handleStepTap(int index) {
-    if (index == _step) return;
-    // Só permite avançar um passo por vez, validando o passo atual
-    // antes (os passos intermediários só são validados na sequência).
-    if (index > _step) {
-      if (index > _step + 1) return;
-      if (!_validateStep()) return;
-    }
-    setState(() => _step = index);
+  /// Seção empilhada: título (titleMedium) + card (#455).
+  Widget _section(String title, IconData icon, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KicksterSectionTitle(title: title, icon: icon),
+        const SizedBox(height: 12),
+        _card(null, children),
+        const SizedBox(height: 20),
+      ],
+    );
   }
 
   Widget _card(String? title, List<Widget> children) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -385,90 +369,6 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     );
   }
 
-  Widget _stepContent(BuildContext context, int step) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (step == 0) ...[
-          _card('Dados básicos', [
-            _field('Nome fantasia', _tradeName,
-                hint: 'Informe o nome fantasia',
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Informe o nome fantasia'
-                    : null),
-            const SizedBox(height: 12),
-            _field('Razão social', _legalName,
-                hint: 'Informe a razão social',
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Informe a razão social'
-                    : null),
-            const SizedBox(height: 12),
-            _field('Sigla (opcional)', _abbreviation),
-            const SizedBox(height: 12),
-            _typeDropdown(),
-            const SizedBox(height: 12),
-            _documentField(),
-          ]),
-        ] else if (step == 1) ...[
-          _card('Presidente', [
-            _field('Nome do presidente', _presidentName,
-                hint: 'Informe o nome do presidente',
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Informe o nome do presidente'
-                    : null),
-            const SizedBox(height: 12),
-            _presidentCpfField(),
-          ]),
-        ] else if (step == 2) ...[
-          _card('Contato', [
-            _emailField(),
-            const SizedBox(height: 12),
-            _phoneField(),
-            const SizedBox(height: 12),
-            _websiteField(),
-            const SizedBox(height: 12),
-            _instagramField(),
-          ]),
-        ] else if (step == 3) ...[
-          _card('Localização', [
-            _countryDropdown(),
-            const SizedBox(height: 12),
-            if (_country == 'BR')
-              _stateDropdown()
-            else
-              _field('Estado (opcional)', _state),
-            const SizedBox(height: 12),
-            _field('Cidade (opcional)', _city),
-          ]),
-        ] else ...[
-          _card(null, [
-            _brandPreview(),
-            const SizedBox(height: 16),
-            _logoField(),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _colorField('Cor primária (opcional)', _primaryColor),
-                const SizedBox(width: 12),
-                _colorField('Cor secundária (opcional)', _secondaryColor),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _colorField('Cor terciária (opcional)', _tertiaryColor),
-                const SizedBox(width: 12),
-                _colorField('Cor quaternária (opcional)', _quaternaryColor),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _localeDropdown(),
-          ]),
-        ],
-      ],
-    );
-  }
-
   Widget _typeDropdown() {
     return KicksterDropdown<OrganizationType>(
       label: 'Tipo',
@@ -487,14 +387,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _documentField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'CNPJ (opcional)',
       controller: _document,
       keyboardType: TextInputType.number,
-      decoration: const InputDecoration(
-        labelText: 'CNPJ (opcional)',
-        hintText: '00.000.000/0000-00',
-        border: OutlineInputBorder(),
-      ),
+      hintText: '00.000.000/0000-00',
       onChanged: (value) {
         final masked = DocumentUtils.maskCnpj(value);
         if (masked != value) {
@@ -512,14 +409,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _presidentCpfField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'CPF do presidente',
       controller: _presidentCpf,
       keyboardType: TextInputType.number,
-      decoration: const InputDecoration(
-        labelText: 'CPF do presidente',
-        hintText: '000.000.000-00',
-        border: OutlineInputBorder(),
-      ),
+      hintText: '000.000.000-00',
       onChanged: (value) {
         final masked = DocumentUtils.maskCpf(value);
         if (masked != value) {
@@ -537,13 +431,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _emailField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'E-mail (opcional)',
       controller: _email,
       keyboardType: TextInputType.emailAddress,
-      decoration: const InputDecoration(
-        labelText: 'E-mail (opcional)',
-        hintText: 'contato@exemplo.com',
-      ),
+      hintText: 'contato@exemplo.com',
       validator: (v) {
         if (v == null || v.trim().isEmpty) return null;
         return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim())
@@ -554,13 +446,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _phoneField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'Telefone (opcional)',
       controller: _phone,
       keyboardType: TextInputType.phone,
-      decoration: const InputDecoration(
-        labelText: 'Telefone (opcional)',
-        hintText: '(11) 99999-9999',
-      ),
+      hintText: '(11) 99999-9999',
       onChanged: (value) {
         final masked = _maskPhone(value);
         if (masked != value) {
@@ -581,13 +471,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _websiteField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'Site (opcional)',
       controller: _website,
       keyboardType: TextInputType.url,
-      decoration: const InputDecoration(
-        labelText: 'Site (opcional)',
-        hintText: 'https://exemplo.com.br',
-      ),
+      hintText: 'https://exemplo.com.br',
       validator: (v) {
         if (v == null || v.trim().isEmpty) return null;
         final t = v.trim();
@@ -603,12 +491,10 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _instagramField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'Instagram (opcional)',
       controller: _instagram,
-      decoration: const InputDecoration(
-        labelText: 'Instagram (opcional)',
-        hintText: '@meuclube',
-      ),
+      hintText: '@meuclube',
       validator: (v) {
         if (v == null || v.trim().isEmpty) return null;
         final t = v.trim().replaceFirst('@', '');
@@ -653,13 +539,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _logoField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'URL do logo (opcional)',
       controller: _logoUrl,
       keyboardType: TextInputType.url,
-      decoration: const InputDecoration(
-        labelText: 'URL do logo (opcional)',
-        hintText: 'https://exemplo.com/logo.png',
-      ),
+      hintText: 'https://exemplo.com/logo.png',
       validator: (v) {
         if (v == null || v.trim().isEmpty) return null;
         final uri = Uri.tryParse(v.trim());
@@ -674,7 +558,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
 
   Widget _colorField(String label, TextEditingController controller) {
     return Expanded(
-      child: TextFormField(
+      child: KicksterInput(
+        label: label,
         controller: controller,
         inputFormatters: [
           FilteringTextInputFormatter.allow(RegExp(r'[#0-9a-fA-F]')),
@@ -695,20 +580,17 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
               ? null
               : 'Use #RRGGBB';
         },
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: '#FD6B22',
-          prefixIcon: IconButton(
-            tooltip: 'Escolher cor',
-            onPressed: () => _openColorPicker(controller),
-            icon: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: _parseHex(controller.text) ?? AppColors.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.black26),
-              ),
+        hintText: '#FD6B22',
+        prefix: IconButton(
+          tooltip: 'Escolher cor',
+          onPressed: () => _openColorPicker(controller),
+          icon: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: _parseHex(controller.text) ?? AppColors.primary,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.black26),
             ),
           ),
         ),
@@ -843,13 +725,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     String? Function(String?)? validator,
     TextInputType? keyboardType,
   }) {
-    return TextFormField(
+    return KicksterInput(
+      label: label,
       controller: controller,
       keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-      ),
+      hintText: hint,
       validator: validator,
     );
   }

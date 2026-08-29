@@ -14,7 +14,7 @@ import '../widgets/edit_restriction_note.dart';
 /// O fluxo agora é: campeonato → times.
 /// Os times associam-se diretamente ao competition_id (migração V24);
 /// as categories foram removidas.
-class TeamsScreen extends ConsumerWidget {
+class TeamsScreen extends ConsumerStatefulWidget {
   const TeamsScreen({super.key, this.lockedCompetitionId});
 
   /// Quando informado, a tela fica "travada" nesse campeonato (dropdown
@@ -22,10 +22,25 @@ class TeamsScreen extends ConsumerWidget {
   final String? lockedCompetitionId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TeamsScreen> createState() => _TeamsScreenState();
+}
+
+class _TeamsScreenState extends ConsumerState<TeamsScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
     final selectedCompetition = ref.watch(selectedCompetitionProvider);
 
+    final lockedCompetitionId = widget.lockedCompetitionId;
     final compItems = competitions.valueOrNull ?? const [];
     final effectiveComp =
         lockedCompetitionId ??
@@ -48,10 +63,10 @@ class TeamsScreen extends ConsumerWidget {
       titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         if (effectiveComp != null && canEdit)
-          FilledButton.icon(
+          KicksterButton(
+            label: 'Novo',
+            icon: Icons.add,
             onPressed: () => context.go('/teams/new', extra: effectiveComp),
-            icon: const Icon(Icons.add),
-            label: const Text('Novo'),
           ),
       ],
       body: competitions.when(
@@ -62,9 +77,15 @@ class TeamsScreen extends ConsumerWidget {
         ),
         data: (_) {
           if (compItems.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum campeonato cadastrado',
+            return KicksterEmptyState(
               icon: Icons.emoji_events_outlined,
+              message: 'Nenhum campeonato cadastrado',
+              description: 'Crie um campeonato para inscrever times.',
+              action: KicksterButton(
+                label: 'Criar campeonato',
+                icon: Icons.add,
+                onPressed: () => context.go('/competitions/new'),
+              ),
             );
           }
           return Column(
@@ -123,33 +144,109 @@ class TeamsScreen extends ConsumerWidget {
                             ),
                             data: (items) {
                               if (items.isEmpty) {
-                                return const AppEmptyState(
-                                  message: 'Nenhum time cadastrado',
+                                return KicksterEmptyState(
                                   icon: Icons.groups_outlined,
+                                  message: 'Nenhum time cadastrado',
+                                  description:
+                                      'Inscreva o primeiro time no campeonato.',
+                                  action: KicksterButton(
+                                    label: 'Criar time',
+                                    icon: Icons.add,
+                                    onPressed: () => context.go(
+                                      '/teams/new',
+                                      extra: effectiveComp,
+                                    ),
+                                  ),
                                 );
                               }
+                              final query = _query.trim().toLowerCase();
+                              final filtered = query.isEmpty
+                                  ? items
+                                  : items
+                                      .where(
+                                        (t) =>
+                                            t.name.toLowerCase().contains(query),
+                                      )
+                                      .toList(growable: false);
+
                               return AppLayout.content(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final columns = constraints.maxWidth >= 600
-                                        ? 2
-                                        : 1;
-                                    return GridView.builder(
-                                      padding: const EdgeInsets.all(16),
-                                      itemCount: items.length,
-                                      gridDelegate:
-                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount: columns,
-                                            crossAxisSpacing: 12,
-                                            mainAxisSpacing: 12,
-                                            mainAxisExtent: 96,
+                                child: Column(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          16, 16, 16, 0),
+                                      child: Row(
+                                        children: [
+                                          if (query.isNotEmpty)
+                                            Text(
+                                              '${filtered.length} '
+                                              '${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color:
+                                                    AppColors.textSecondary,
+                                              ),
+                                            )
+                                          else
+                                            Text(
+                                              '${items.length} '
+                                              '${items.length == 1 ? 'time' : 'times'}',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color:
+                                                    AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          const Spacer(),
+                                          SizedBox(
+                                            width: 280,
+                                            child: KicksterSearchField(
+                                              controller: _searchController,
+                                              onChanged: (value) => setState(
+                                                  () => _query = value),
+                                            ),
                                           ),
-                                      itemBuilder: (context, index) {
-                                        final team = items[index];
-                                        return _teamCard(context, team);
-                                      },
-                                    );
-                                  },
+                                        ],
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: filtered.isEmpty
+                                          ? const AppEmptyState(
+                                              message:
+                                                  'Nenhum time encontrado',
+                                              icon: Icons.search_off,
+                                            )
+                                          : LayoutBuilder(
+                                              builder:
+                                                  (context, constraints) {
+                                                final columns =
+                                                    constraints.maxWidth >= 600
+                                                        ? 2
+                                                        : 1;
+                                                return GridView.builder(
+                                                  padding:
+                                                      const EdgeInsets.all(16),
+                                                  itemCount: filtered.length,
+                                                  gridDelegate:
+                                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                                        crossAxisCount:
+                                                            columns,
+                                                        crossAxisSpacing: 12,
+                                                        mainAxisSpacing: 12,
+                                                        mainAxisExtent: 96,
+                                                      ),
+                                                  itemBuilder:
+                                                      (context, index) {
+                                                    final team =
+                                                        filtered[index];
+                                                    return _teamCard(
+                                                        context, team);
+                                                  },
+                                                );
+                                              },
+                                            ),
+                                    ),
+                                  ],
                                 ),
                               );
                             },
@@ -178,7 +275,7 @@ class TeamsScreen extends ConsumerWidget {
       icon: Icons.groups_outlined,
       title: team.name,
       subtitle: subtitle,
-      onTap: () => context.go('/teams/${team.id}', extra: team),
+      onTap: () => context.push('/teams/${team.id}', extra: team),
     );
   }
 }

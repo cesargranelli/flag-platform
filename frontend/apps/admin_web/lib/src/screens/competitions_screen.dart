@@ -22,6 +22,14 @@ class CompetitionsScreen extends ConsumerStatefulWidget {
 
 class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
   bool _showDisabled = false;
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,10 +43,10 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
       title: 'Campeonatos',
       titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
-        FilledButton.icon(
+        KicksterButton(
+          label: 'Novo',
+          icon: Icons.add,
           onPressed: () => context.go('/competitions/new'),
-          icon: const Icon(Icons.add),
-          label: const Text('Novo'),
         ),
       ],
       body: competitions.when(
@@ -51,11 +59,24 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
         ),
         data: (items) {
           if (items.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum campeonato cadastrado',
+            return KicksterEmptyState(
               icon: Icons.emoji_events_outlined,
+              message: 'Nenhum campeonato cadastrado',
+              description: 'Crie o primeiro campeonato para começar a usar.',
+              action: KicksterButton(
+                label: 'Criar campeonato',
+                icon: Icons.add,
+                onPressed: () => context.go('/competitions/new'),
+              ),
             );
           }
+          final query = _query.trim().toLowerCase();
+          final filtered = query.isEmpty
+              ? items
+              : items
+                  .where((c) => c.name.toLowerCase().contains(query))
+                  .toList(growable: false);
+
           return AppLayout.content(
             child: Column(
               children: [
@@ -63,13 +84,22 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: Row(
                     children: [
-                      Text(
-                        '${items.length} campeonatos',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
+                      if (query.isNotEmpty)
+                        Text(
+                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      else
+                        Text(
+                          '${items.length} campeonatos',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                      ),
                       const Spacer(),
                       if (isAdmin)
                         Tooltip(
@@ -83,30 +113,45 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
                                 setState(() => _showDisabled = !_showDisabled),
                           ),
                         ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 280,
+                        child: KicksterSearchField(
+                          controller: _searchController,
+                          onChanged: (value) =>
+                              setState(() => _query = value),
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                      return GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: items.length,
-                        gridDelegate:
-                            SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: columns,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          mainAxisExtent: 96,
+                  child: filtered.isEmpty
+                      ? const AppEmptyState(
+                          message: 'Nenhum campeonato encontrado',
+                          icon: Icons.search_off,
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final columns = constraints.maxWidth >= 600 ? 2 : 1;
+                            return GridView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: filtered.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columns,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                mainAxisExtent: 96,
+                              ),
+                              itemBuilder: (context, index) {
+                                final competition = filtered[index];
+                                return _competitionCard(
+                                    context, competition);
+                              },
+                            );
+                          },
                         ),
-                        itemBuilder: (context, index) {
-                          final competition = items[index];
-                          return _competitionCard(context, competition);
-                        },
-                      );
-                    },
-                  ),
                 ),
               ],
             ),
@@ -130,7 +175,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
               ? competition.organizationName
               : null,
       onTap: () =>
-          context.go('/competitions/${competition.id}', extra: competition),
+          context.push('/competitions/${competition.id}', extra: competition),
       // Issue #261: ações de gestão (desativar/reativar) exigem
       // ser criador do campeonato ou ADMIN — o backend já bloqueia.
       trailing: canEditCompetition(
@@ -170,23 +215,12 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
   }
 
   Future<bool?> _confirm(BuildContext context, String title, String message) {
-    return showDialog<bool>(
+    return showKicksterConfirm(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Desativar'),
-          ),
-        ],
-      ),
+      title: title,
+      content: message,
+      confirmLabel: 'Desativar',
+      danger: true,
     );
   }
 

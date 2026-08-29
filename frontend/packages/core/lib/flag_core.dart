@@ -36,4 +36,5 @@ export 'src/widgets/kickster_radio_button.dart';
 export 'src/widgets/kickster_toggle.dart';
 export 'src/widgets/kickster_status_chip.dart';
 export 'src/widgets/kickster_social_auth.dart';
+export 'src/widgets/search_field.dart';
 export 'src/session/session_manager.dart';

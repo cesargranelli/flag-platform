@@ -25,6 +25,9 @@ class AthleteDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: athlete?.name ?? 'Atleta',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
+      ],
       body: athleteFuture == null
           ? _buildDetail(context, athlete!)
           : athleteFuture.when(
@@ -80,13 +83,13 @@ class AthleteDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    FilledButton.icon(
+                    KicksterButton(
+                      label: 'Editar dados',
+                      icon: Icons.edit_outlined,
                       onPressed: () => context.go(
                         '/athletes/${athlete.id}/edit',
                         extra: athlete,
                       ),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Editar dados'),
                     ),
                   ],
                 ),

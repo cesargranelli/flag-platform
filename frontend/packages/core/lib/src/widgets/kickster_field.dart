@@ -19,6 +19,7 @@ InputDecoration kicksterFieldDecoration({
   String? helperText,
   IconData? prefixIcon,
   Widget? suffixIcon,
+  Widget? prefix,
 }) {
   return InputDecoration(
     labelText: labelText,
@@ -42,9 +43,10 @@ InputDecoration kicksterFieldDecoration({
       color: AppColors.primary,
     ),
     hintStyle: AppTextStyles.fieldLabel.copyWith(color: AppColors.disabled),
-    prefixIcon: prefixIcon == null
-        ? null
-        : Icon(prefixIcon, size: 18, color: AppColors.disabled),
+    prefixIcon: prefix ??
+        (prefixIcon == null
+            ? null
+            : Icon(prefixIcon, size: 18, color: AppColors.disabled)),
     prefixIconColor: AppColors.disabled,
     suffixIcon: suffixIcon == null
         ? null

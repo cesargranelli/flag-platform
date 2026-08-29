@@ -235,6 +235,9 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
 
     return AppScreen(
       title: 'Importar jogos',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.games, route: '/games'),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

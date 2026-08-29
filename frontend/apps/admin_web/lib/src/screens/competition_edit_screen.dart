@@ -12,8 +12,13 @@ import '../widgets/selectable_card.dart';
 
 /// Edição de campeonato (issue #287) — classe separada da criação.
 ///
+/// Página única (#455): todas as seções (campeonato, modalidade, categoria,
+/// temporada, conferências, agrupamento) empilhadas com títulos de seção — o
+/// scroll é do body, sem barras internas. A validação cobre TODAS as seções
+/// no submit.
+///
 /// Editável apenas em RASCUNHO. O status não é campo de formulário:
-/// fica em uma faixa de estado acima do wizard com a ação "Publicar"
+/// fica em uma faixa de estado no topo com a ação "Publicar"
 /// (único caminho de publicação, com confirmação).
 class CompetitionEditScreen extends ConsumerStatefulWidget {
   const CompetitionEditScreen({
@@ -47,7 +52,6 @@ class _CompetitionEditScreenState
   AgeGroup? _ageGroup;
 
   CompetitionStatus _status = CompetitionStatus.draft;
-  int _step = 0;
   bool _submitting = false;
   bool _saved = false;
   bool _hasChanges = false;
@@ -67,26 +71,6 @@ class _CompetitionEditScreenState
   bool _declinedStructure = false;
   GroupingType? _groupingChoice;
   String? _conferenceId;
-
-  static const _titles = [
-    'Campeonato',
-    'Modalidade',
-    'Categoria',
-    'Temporada',
-    'Conferências',
-    'Agrupamento',
-  ];
-
-  /// Ícones das etapas (paralelo a [_titles]), no mesmo modelo da tela de
-  /// detalhes (#326/#381).
-  static const _titlesIcons = <IconData>[
-    Icons.emoji_events_outlined,
-    Icons.sports_football_outlined,
-    Icons.groups_outlined,
-    Icons.date_range,
-    Icons.account_tree_outlined,
-    Icons.hub_outlined,
-  ];
 
   @override
   void initState() {
@@ -200,30 +184,24 @@ class _CompetitionEditScreenState
 
   DateTime? get _parsedStartDate => DateTime.tryParse(_startDate.text.trim());
 
-  bool _validateStep() {
-    var valid = true;
-    if (_step == 0) {
-      valid = _formKey.currentState!.validate();
-    } else if (_step == 1 && _modality == null) {
+  /// Valida TODAS as seções no submit (#455): form (identidade + datas),
+  /// modalidade e categoria — como o wizard exigia antes de salvar.
+  bool _validateAll() {
+    if (!_formKey.currentState!.validate()) return false;
+    if (_modality == null) {
       setState(() => _modalityError = 'Selecione a modalidade');
-      valid = false;
-    } else if (_step == 2 && (_gender == null || _ageGroup == null)) {
-      valid = false;
+      return false;
     }
-    return valid;
-  }
-
-  void _next() {
-    if (!_validateStep()) return;
-    if (_step < _titles.length - 1) {
-      setState(() => _step += 1);
-    } else {
-      _save();
+    if (_gender == null || _ageGroup == null) {
+      setState(() => _categoryError =
+          _gender == null ? 'Selecione o gênero' : 'Selecione a faixa etária');
+      return false;
     }
+    return true;
   }
 
   Future<void> _save() async {
-    if (!_validateStep()) return;
+    if (!_validateAll()) return;
 
     setState(() {
       _submitting = true;
@@ -272,25 +250,12 @@ class _CompetitionEditScreenState
   /// Publica o campeonato (DRAFT → PUBLISHED), ação irreversível com
   /// confirmação. Após publicar, retorna ao detalhe (edição fica travada).
   Future<void> _publish() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showKicksterConfirm(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Publicar campeonato'),
-        content: const Text(
-          'Após publicar, o campeonato não poderá mais ser editado.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Publicar'),
-          ),
-        ],
-      ),
+      title: 'Publicar campeonato',
+      content: 'Após publicar, o campeonato não poderá mais ser editado.',
+      confirmLabel: 'Publicar',
+      danger: true,
     );
     if (confirmed != true || !mounted) return;
 
@@ -335,34 +300,15 @@ class _CompetitionEditScreenState
     }
   }
 
-  /// Voltar: sessão anterior dentro do wizard; na primeira, sai da rota.
+  /// Sair da rota com proteção de descarte (M3).
   Future<void> _handleBack() async {
-    if (_step > 0) {
-      setState(() {
-        _step -= 1;
-        _modalityError = null;
-        _categoryError = null;
-      });
-      return;
-    }
     if (_hasChanges && !_submitting && !_saved) {
-      final discard = await showDialog<bool>(
+      final discard = await showKicksterConfirm(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Descartar alterações?'),
-          content: const Text('As alterações não salvas serão perdidas.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Descartar'),
-            ),
-          ],
-        ),
+        title: 'Descartar alterações?',
+        content: 'As alterações não salvas serão perdidas.',
+        confirmLabel: 'Descartar',
+        danger: true,
       );
       if (discard != true) return;
       if (!mounted) return;
@@ -387,10 +333,16 @@ class _CompetitionEditScreenState
       return asyncComp.when(
         loading: () => AppScreen(
           title: 'Editar campeonato',
+          breadcrumb: const [
+            BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+          ],
           body: const AppLoading(message: 'Carregando campeonato...'),
         ),
         error: (error, stackTrace) => AppScreen(
           title: 'Editar campeonato',
+          breadcrumb: const [
+            BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+          ],
           body: AppErrorState(
             message: 'Não foi possível carregar o campeonato',
             onRetry: () =>
@@ -403,6 +355,9 @@ class _CompetitionEditScreenState
           if (!canEditCompetition(user, competition)) {
             return AppScreen(
               title: 'Editar campeonato',
+              breadcrumb: const [
+                BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+              ],
               body: const AppEmptyState(
                 message: 'Você não tem permissão para editar este campeonato.',
                 icon: Icons.lock_outline,
@@ -413,6 +368,9 @@ class _CompetitionEditScreenState
           if (competition.status != CompetitionStatus.draft) {
             return AppScreen(
               title: 'Editar campeonato',
+              breadcrumb: const [
+                BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+              ],
               body: AppEmptyState(
                 message: competition.status == CompetitionStatus.published
                     ? 'Campeonato publicado — não é mais editável.'
@@ -439,115 +397,82 @@ class _CompetitionEditScreenState
       },
       child: AppScreen(
         title: 'Editar campeonato',
-        body: _buildWizard(context),
-      ),
-    );
-  }
-
-  Widget _buildWizard(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          Expanded(
-            child: AppLayout.form(
+        breadcrumb: const [
+          BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+        ],
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: AppLayout.form(
+            child: Form(
+              key: _formKey,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Faixa de estado do status (issue #287): chip + Publicar.
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.grayFill.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.grayFill),
+                    ),
                     child: Row(
                       children: [
                         _statusChip(_status),
                         const Spacer(),
-                        OutlinedButton.icon(
+                        KicksterButton(
+                          label: 'Publicar',
+                          icon: Icons.publish_outlined,
+                          variant: KicksterButtonVariant.outline,
                           onPressed: _submitting ? null : _publish,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: const BorderSide(color: AppColors.primary),
-                          ),
-                          icon: const Icon(Icons.publish_outlined, size: 18),
-                          label: const Text('Publicar'),
                         ),
                       ],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 16,
-                    ),
-                    child: AppStepIndicator(
-                      titles: _titles,
-                      icons: _titlesIcons,
-                      currentStep: _step,
-                      showDoneState: false,
-                      onStepTap: _handleStepTap,
-                    ),
+                  const SizedBox(height: 20),
+                  if (_errorMessage != null) _errorBanner(_errorMessage!),
+                  _section(
+                    title: 'Campeonato',
+                    icon: Icons.emoji_events_outlined,
+                    child: _identityStep(context),
                   ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            'Etapa ${_step + 1} de ${_titles.length}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          if (_errorMessage != null)
-                            _errorBanner(_errorMessage!),
-                          _stepContent(context),
-                        ],
-                      ),
-                    ),
+                  _section(
+                    title: 'Modalidade',
+                    icon: Icons.sports_football_outlined,
+                    child: _modalityStep(context),
                   ),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: AppLayout.form(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _submitting ? null : _handleBack,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
-                      minimumSize: const Size(120, 56),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(16)),
-                      ),
-                    ),
-                    icon: Icon(_step == 0 ? Icons.close : Icons.arrow_back),
-                    label: Text(_step == 0 ? 'Cancelar' : 'Voltar'),
+                  _section(
+                    title: 'Categoria',
+                    icon: Icons.groups_outlined,
+                    child: _categoryStep(context),
                   ),
-                  FilledButton.icon(
-                    onPressed: _submitting ? null : _next,
-                    icon: _submitting
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.arrow_forward),
-                    label: Text(
-                      _step == _titles.length - 1 ? 'Salvar' : 'Continuar',
-                    ),
+                  _section(
+                    title: 'Temporada',
+                    icon: Icons.date_range,
+                    child: _seasonStep(context),
+                  ),
+                  _section(
+                    title: 'Conferências',
+                    icon: Icons.account_tree_outlined,
+                    child: _conferencesStep(context),
+                  ),
+                  _section(
+                    title: 'Agrupamento',
+                    icon: Icons.hub_outlined,
+                    child: _structureStep(context),
+                  ),
+                  const SizedBox(height: 8),
+                  KicksterButton(
+                    label: 'Salvar',
+                    icon: Icons.check,
+                    loading: _submitting,
+                    onPressed: _submitting ? null : _save,
                   ),
                 ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -594,11 +519,27 @@ class _CompetitionEditScreenState
     );
   }
 
-  /// Tocar em uma etapa do indicador: navegação LIVRE (#381) — o usuário
-  /// escolhe qualquer etapa sem restrição sequencial nem validação.
-  void _handleStepTap(int index) {
-    if (index == _step) return;
-    setState(() => _step = index);
+  /// Seção empilhada: título (titleMedium) + card (#455).
+  Widget _section({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KicksterSectionTitle(title: title, icon: icon),
+        const SizedBox(height: 12),
+        Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: child,
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
   }
 
   Widget _groupLabel(String text) {
@@ -627,23 +568,6 @@ class _CompetitionEditScreenState
       text,
       style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
     );
-  }
-
-  Widget _stepContent(BuildContext context) {
-    switch (_step) {
-      case 0:
-        return _identityStep(context);
-      case 1:
-        return _modalityStep(context);
-      case 2:
-        return _categoryStep(context);
-      case 3:
-        return _seasonStep(context);
-      case 4:
-        return _conferencesStep(context);
-      default:
-        return _structureStep(context);
-    }
   }
 
   Widget _identityStep(BuildContext context) {
@@ -744,23 +668,17 @@ class _CompetitionEditScreenState
           },
         ),
         const SizedBox(height: 12),
-        TextFormField(
+        KicksterInput(
+          label: 'Nome',
           controller: _name,
-          decoration: const InputDecoration(
-            labelText: 'Nome',
-            border: OutlineInputBorder(),
-          ),
           validator: (value) => (value == null || value.trim().isEmpty)
               ? 'Informe o nome'
               : null,
         ),
         const SizedBox(height: 12),
-        TextFormField(
+        KicksterInput(
+          label: 'Descrição',
           controller: _description,
-          decoration: const InputDecoration(
-            labelText: 'Descrição',
-            border: OutlineInputBorder(),
-          ),
           maxLines: 3,
         ),
       ],
@@ -888,28 +806,22 @@ class _CompetitionEditScreenState
         Row(
           children: [
             Expanded(
-              child: TextFormField(
+              child: KicksterInput(
+                label: 'Início (opcional)',
                 controller: _startDate,
                 readOnly: true,
                 onTap: () => _pickDate(_startDate),
-                decoration: const InputDecoration(
-                  labelText: 'Início (opcional)',
-                  suffixIcon: Icon(Icons.calendar_today),
-                  border: OutlineInputBorder(),
-                ),
+                suffixIcon: const Icon(Icons.calendar_today),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: TextFormField(
+              child: KicksterInput(
+                label: 'Fim (opcional)',
                 controller: _endDate,
                 readOnly: true,
                 onTap: () => _pickDate(_endDate, minDate: _parsedStartDate),
-                decoration: const InputDecoration(
-                  labelText: 'Fim (opcional)',
-                  suffixIcon: Icon(Icons.calendar_today),
-                  border: OutlineInputBorder(),
-                ),
+                suffixIcon: const Icon(Icons.calendar_today),
                 validator: (value) {
                   final start = _parsedStartDate;
                   final end = value == null || value.isEmpty
@@ -1004,7 +916,7 @@ class _CompetitionEditScreenState
     }
   }
 
-  // Sessão 5 — Conferências (#345): replicar o fluxo do cadastro em edição.
+  // Seção 5 — Conferências (#345): replicar o fluxo do cadastro em edição.
   Widget _conferencesStep(BuildContext context) {
     final conferences = ref.watch(conferencesProvider(widget.competitionId!));
 
@@ -1043,13 +955,10 @@ class _CompetitionEditScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: TextField(
+                child: KicksterInput(
+                  label: 'Nome da conferência',
                   controller: _conferenceName,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome da conferência',
-                    border: OutlineInputBorder(),
-                  ),
-                  onSubmitted: (_) => _addConference(),
+                  onFieldSubmitted: (_) => _addConference(),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1098,7 +1007,7 @@ class _CompetitionEditScreenState
     );
   }
 
-  // Sessão 6 — Agrupamento (#345/#338): Divisões OU Grupos, com declínio.
+  // Seção 6 — Agrupamento (#345/#338): Divisões OU Grupos, com declínio.
   Widget _structureStep(BuildContext context) {
     final divisions = ref.watch(divisionsProvider(widget.competitionId!));
     final conferences = ref.watch(conferencesProvider(widget.competitionId!));
@@ -1188,13 +1097,10 @@ class _CompetitionEditScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: TextField(
+                child: KicksterInput(
+                  label: 'Nome ($_groupingChoice)',
                   controller: _divisionName,
-                  decoration: InputDecoration(
-                    labelText: 'Nome ($_groupingChoice)',
-                    border: const OutlineInputBorder(),
-                  ),
-                  onSubmitted: (_) => _addDivision(),
+                  onFieldSubmitted: (_) => _addDivision(),
                 ),
               ),
               const SizedBox(width: 12),

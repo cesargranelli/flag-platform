@@ -8,21 +8,35 @@ import '../providers/providers.dart';
 import '../widgets/app_screen.dart';
 
 /// Gestão de usuários (somente ADMIN): lista e acesso ao formulário.
-class UsersScreen extends ConsumerWidget {
+class UsersScreen extends ConsumerStatefulWidget {
   const UsersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UsersScreen> createState() => _UsersScreenState();
+}
+
+class _UsersScreenState extends ConsumerState<UsersScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final users = ref.watch(usersProvider);
 
     return AppScreen(
       title: 'Usuários',
       titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
-        FilledButton.icon(
+        KicksterButton(
+          label: 'Novo',
+          icon: Icons.add,
           onPressed: () => context.go('/users/new'),
-          icon: const Icon(Icons.add),
-          label: const Text('Novo'),
         ),
       ],
       body: users.when(
@@ -33,30 +47,91 @@ class UsersScreen extends ConsumerWidget {
         ),
         data: (items) {
           if (items.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum usuário cadastrado',
+            return KicksterEmptyState(
               icon: Icons.people_outline,
+              message: 'Nenhum usuário cadastrado',
+              description: 'Crie o primeiro usuário para começar a usar.',
+              action: KicksterButton(
+                label: 'Criar usuário',
+                icon: Icons.add,
+                onPressed: () => context.go('/users/new'),
+              ),
             );
           }
+          final query = _query.trim().toLowerCase();
+          final filtered = query.isEmpty
+              ? items
+              : items
+                  .where(
+                    (u) =>
+                        u.name.toLowerCase().contains(query) ||
+                        u.email.toLowerCase().contains(query),
+                  )
+                  .toList(growable: false);
+
           return AppLayout.content(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: items.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    mainAxisExtent: 96,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Row(
+                    children: [
+                      if (query.isNotEmpty)
+                        Text(
+                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      else
+                        Text(
+                          '${items.length} ${items.length == 1 ? 'usuário' : 'usuários'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      const Spacer(),
+                      SizedBox(
+                        width: 280,
+                        child: KicksterSearchField(
+                          controller: _searchController,
+                          onChanged: (value) =>
+                              setState(() => _query = value),
+                        ),
+                      ),
+                    ],
                   ),
-                  itemBuilder: (context, index) {
-                    final user = items[index];
-                    return _userCard(context, user);
-                  },
-                );
-              },
+                ),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? const AppEmptyState(
+                          message: 'Nenhum usuário encontrado',
+                          icon: Icons.search_off,
+                        )
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final columns = constraints.maxWidth >= 600 ? 2 : 1;
+                            return GridView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: filtered.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columns,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                mainAxisExtent: 96,
+                              ),
+                              itemBuilder: (context, index) {
+                                final user = filtered[index];
+                                return _userCard(context, user);
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
             ),
           );
         },
