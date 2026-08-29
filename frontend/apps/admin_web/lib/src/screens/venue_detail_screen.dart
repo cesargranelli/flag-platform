@@ -89,7 +89,7 @@ class VenueDetailScreen extends ConsumerWidget {
                               Text(
                                 venue.name,
                                 style: const TextStyle(
-                                    fontSize: 22, fontWeight: FontWeight.bold),
+                                    fontSize: 20, fontWeight: FontWeight.w700),
                               ),
                               const SizedBox(height: 4),
                               if (orgName.isNotEmpty)

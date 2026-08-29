@@ -402,7 +402,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
                   _initials(athlete.name),
                   style: TextStyle(
                     color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                     fontSize: size * 0.4,
                   ),
                 ),
@@ -413,7 +413,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
                 _initials(athlete.name),
                 style: TextStyle(
                   color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   fontSize: size * 0.4,
                 ),
               ),

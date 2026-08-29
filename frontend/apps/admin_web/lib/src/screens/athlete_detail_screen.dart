@@ -73,7 +73,7 @@ class AthleteDetailScreen extends ConsumerWidget {
                               Text(
                                 athlete.name,
                                 style: const TextStyle(
-                                    fontSize: 22, fontWeight: FontWeight.bold),
+                                    fontSize: 20, fontWeight: FontWeight.w700),
                               ),
                               if (athlete.nickname != null &&
                                   athlete.nickname!.isNotEmpty) ...[
@@ -146,7 +146,7 @@ class AthleteDetailScreen extends ConsumerWidget {
                   _initials(athlete.name),
                   style: TextStyle(
                       color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       fontSize: size * 0.4),
                 ),
               ),
@@ -156,7 +156,7 @@ class AthleteDetailScreen extends ConsumerWidget {
                 _initials(athlete.name),
                 style: TextStyle(
                     color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                     fontSize: size * 0.4),
               ),
             ),

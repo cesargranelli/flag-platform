@@ -297,7 +297,7 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
                     '${round.number}',
                     style: const TextStyle(
                       fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.primary,
                     ),
                   ),

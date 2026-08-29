@@ -92,8 +92,8 @@ class TeamDetailScreen extends ConsumerWidget {
                               Text(
                                 team.name,
                                 style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                               const SizedBox(height: 4),

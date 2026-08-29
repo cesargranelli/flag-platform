@@ -182,7 +182,7 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
                   const SizedBox(height: 8),
                   Text(
                     _errorMessage!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(color: AppColors.danger),
                   ),
                 ],
                 const SizedBox(height: 24),

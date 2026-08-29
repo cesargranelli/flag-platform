@@ -276,7 +276,7 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                      color: AppColors.danger,
                     ),
                   ),
                 ],

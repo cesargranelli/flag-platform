@@ -355,7 +355,7 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
       children: [
         const Text(
           'Pré-visualização (linhas válidas)',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         if (validLines.isEmpty)
@@ -382,7 +382,7 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
       children: [
         const Text(
           'Resultado por linha',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         for (final line in result.lines)

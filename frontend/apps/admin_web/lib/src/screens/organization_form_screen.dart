@@ -355,7 +355,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                 title,
                 style: const TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -589,7 +589,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
             decoration: BoxDecoration(
               color: _parseHex(controller.text) ?? AppColors.primary,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.black26),
+              border: Border.all(color: AppColors.line),
             ),
           ),
         ),
@@ -624,7 +624,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
           'Prévia da marca',
           style: TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
             color: AppColors.textSecondary,
           ),
         ),
@@ -669,7 +669,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
                     ),
@@ -888,7 +888,7 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
               controller: _hex,
               hintText: 'FD6B22',
               prefix: const Text('#'),
-              suffixIcon: const Icon(Icons.circle, color: Colors.black26),
+              suffixIcon: const Icon(Icons.circle, color: AppColors.line),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9a-fA-F]')),
                 LengthLimitingTextInputFormatter(6),

@@ -88,7 +88,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 24,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 24),
@@ -126,7 +126,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               _errorMessage!,
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: Theme.of(context).colorScheme.error, fontSize: 14),
+                  color: AppColors.danger, fontSize: 14),
             ),
           ],
           const SizedBox(height: 24),
@@ -153,7 +153,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 20,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 24),

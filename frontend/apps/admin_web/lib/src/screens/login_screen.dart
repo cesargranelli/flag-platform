@@ -98,7 +98,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             'Flag Platform',
                             style: TextStyle(
                               color: AppColors.textPrimary,
-                              fontSize: 17,
+                              fontSize: 18,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.3,
                             ),

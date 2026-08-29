@@ -82,7 +82,7 @@ class GameDetailScreen extends ConsumerWidget {
                           child: Text(
                             '${game.homeTeamName ?? 'Casa'} x ${game.awayTeamName ?? 'Fora'}',
                             style: const TextStyle(
-                                fontSize: 22, fontWeight: FontWeight.bold),
+                                fontSize: 20, fontWeight: FontWeight.w700),
                           ),
                         ),
                         _statusChip(game.status),

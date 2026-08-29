@@ -499,7 +499,7 @@ class _CompetitionCreateScreenState
       text,
       style: const TextStyle(
         fontSize: 14,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
       ),
     );

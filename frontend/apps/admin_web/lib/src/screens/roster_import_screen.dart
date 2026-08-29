@@ -311,7 +311,7 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
         const SizedBox(height: 8),
         const Text(
           'Pré-visualização',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 4),
         for (final name in names.take(15))
@@ -351,7 +351,7 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
       children: [
         const Text(
           'Resultado por linha',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         for (final line in result.lines)

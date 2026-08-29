@@ -91,7 +91,7 @@ class RoundDetailScreen extends ConsumerWidget {
                               '${round.number}',
                               style: const TextStyle(
                                   fontSize: 24,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w700,
                                   color: AppColors.primary),
                             ),
                           ),
@@ -104,7 +104,7 @@ class RoundDetailScreen extends ConsumerWidget {
                               Text(
                                 round.name,
                                 style: const TextStyle(
-                                    fontSize: 22, fontWeight: FontWeight.bold),
+                                    fontSize: 20, fontWeight: FontWeight.w700),
                               ),
                               const SizedBox(height: 4),
                               Text(
