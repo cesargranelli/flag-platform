@@ -32,9 +32,10 @@ class _AthletesScreenState extends ConsumerState<AthletesScreen> {
     return AppScreen(
       title: 'Atletas',
       actions: [
-        IconButton(
-          tooltip: 'Importar CSV',
-          icon: const Icon(Icons.upload_file),
+        KicksterButton(
+          label: 'Importar',
+          icon: Icons.upload_file,
+          variant: KicksterButtonVariant.outline,
           onPressed: () => context.push('/athletes/import'),
         ),
         KicksterButton(

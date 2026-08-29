@@ -56,9 +56,10 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
       title: 'Jogos',
       actions: [
         if (selectedRound != null && canEdit)
-          IconButton(
-            tooltip: 'Importar CSV',
-            icon: const Icon(Icons.upload_file),
+          KicksterButton(
+            label: 'Importar',
+            icon: Icons.upload_file,
+            variant: KicksterButtonVariant.outline,
             onPressed: () =>
                 context.push('/games/import', extra: selectedRound),
           ),
