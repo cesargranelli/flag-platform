@@ -41,5 +41,23 @@ class AppColors {
   /// BG Secundário — fundo azulado de cards/áreas.
   static const Color surfaceMuted = Color(0xFFF6F8FE);
 
+  /// Toggle (issue #449) — trilho desligado do Figma (Element 23:169):
+  /// `#EDF2F7`.
+  static const Color toggleOff = Color(0xFFEDF2F7);
+
+  // Chips de status (issue #449) — fundo + texto por variante (Figma,
+  // Element 23:169). Textos em tom escuro da mesma cor para contraste
+  // adequado sobre os fundos claros (WCAG AA).
+  static const Color chipSuccessBg = Color(0xFFE6F9F0);
+  static const Color chipSuccessFg = Color(0xFF1E8E4E);
+  static const Color chipPendingBg = Color(0xFFFFF2ED);
+  static const Color chipPendingFg = Color(0xFFB54708);
+  static const Color chipRefundBg = Color(0xFFFFFAE8);
+  static const Color chipRefundFg = Color(0xFF854D0E);
+  static const Color chipFailedBg = Color(0xFFFFEDED);
+  static const Color chipFailedFg = Color(0xFFC62828);
+  static const Color chipUnpaidBg = Color(0xFFF4F0FF);
+  static const Color chipUnpaidFg = Color(0xFF4F3BA8);
+
   const AppColors._();
 }
