@@ -29,6 +29,7 @@ Marca única adotada (2026-08-29, issue #431): paleta do UI Kit **Kickster** (pr
 | `color.text.secondary` | `#66707A` | Legendas, metadados, placeholders (4.6:1 sobre surface — AA) |
 | `color.text.muted` | `rgba(0,0,0,.6)` | Subtítulos de tela e rodapé (issue #269) |
 | `color.gray.g100` | `#78828A` | Labels curtas em caixa alta (divisor "OU") |
+| `color.field.border` | `#DADADA` | Borda de repouso dos campos do kit (inputs/dropdowns) |
 | `color.surface.muted` | `#F6F8FE` | BG secundário — fundo azulado de cards/áreas |
 
 ### Semântica esportiva
