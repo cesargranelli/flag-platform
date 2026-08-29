@@ -137,6 +137,8 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
 
     return AppScreen(
       title: _isEditing ? 'Editar jogo' : 'Novo jogo',
+      backTarget: _isEditing ? '/games/${widget.args?.game?.id}' : '/games',
+      backLabel: _isEditing ? 'Detalhe' : 'Jogos',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(
