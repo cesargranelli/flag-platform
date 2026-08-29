@@ -68,6 +68,8 @@ class AthletesScreen extends ConsumerWidget {
     );
   }
 
+  /// Card de atleta no padrão Kickster (core #439): ícone de pessoa, nome e
+  /// subtítulo com número + posições.
   Widget _athleteCard(BuildContext context, Athlete athlete) {
     final positions = athlete.positionsLabel;
     final subtitle = [
@@ -75,92 +77,11 @@ class AthletesScreen extends ConsumerWidget {
       if (positions.isNotEmpty) positions,
     ].join(' · ');
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.go('/athletes/${athlete.id}', extra: athlete),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              _avatar(athlete, size: 48, radius: 12),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      athlete.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 13, color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return KicksterCard(
+      icon: Icons.person_outline,
+      title: athlete.name,
+      subtitle: subtitle.isEmpty ? null : subtitle,
+      onTap: () => context.go('/athletes/${athlete.id}', extra: athlete),
     );
-  }
-
-  Widget _avatar(Athlete athlete, {required double size, required double radius}) {
-    final photo = athlete.photoUrl;
-    final validPhoto = photo != null &&
-        photo.isNotEmpty &&
-        (Uri.tryParse(photo)?.hasScheme ?? false);
-    return Container(
-      width: size,
-      height: size,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-      ),
-      child: validPhoto
-          ? Image.network(
-              photo,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Center(
-                child: Text(
-                  _initials(athlete.name),
-                  style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: size * 0.4),
-                ),
-              ),
-            )
-          : Center(
-              child: Text(
-                _initials(athlete.name),
-                style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: size * 0.4),
-              ),
-            ),
-    );
-  }
-
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '?';
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
-        .toUpperCase();
   }
 }

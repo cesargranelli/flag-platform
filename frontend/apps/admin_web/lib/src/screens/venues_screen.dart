@@ -72,6 +72,8 @@ class VenuesScreen extends ConsumerWidget {
     );
   }
 
+  /// Card de campo no padrão Kickster (core #439): ícone de futebol, nome
+  /// e subtítulo com organização + endereço.
   Widget _venueCard(
     BuildContext context,
     Venue venue,
@@ -83,54 +85,11 @@ class VenuesScreen extends ConsumerWidget {
       if (venue.address != null && venue.address!.isNotEmpty) venue.address!,
     ].join(' • ');
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.go('/venues/${venue.id}', extra: venue),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.sports_soccer,
-                    color: AppColors.primary, size: 28),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      venue.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 13, color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return KicksterCard(
+      icon: Icons.sports_soccer,
+      title: venue.name,
+      subtitle: subtitle.isEmpty ? null : subtitle,
+      onTap: () => context.go('/venues/${venue.id}', extra: venue),
     );
   }
 

@@ -159,101 +159,53 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
     );
   }
 
+  /// Card de organização no padrão Kickster (core #439): ícone do tipo,
+  /// nome fantasia + nome legal e, à direita, badge de desativada (quando
+  /// inativa) e menu de gestão para ADMIN.
   Widget _organizationCard(BuildContext context, Organization organization) {
     final isDisabled = organization.status == OrganizationStatus.inactive;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.go(
-          '/organizations/${organization.id}',
-          extra: organization,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      organizationTypeIcon(organization.organizationType),
-                      color: AppColors.primary,
-                      size: 28,
-                    ),
+    return KicksterCard(
+      icon: organizationTypeIcon(organization.organizationType),
+      title: organization.tradeName,
+      subtitle: organization.legalName,
+      onTap: () => context.go(
+        '/organizations/${organization.id}',
+        extra: organization,
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isDisabled) _disabledBadge(),
+          if (_isAdmin)
+            PopupMenuButton<String>(
+              tooltip: 'Ações',
+              onSelected: (value) async {
+                if (value == 'deactivate') {
+                  final ok = await _confirm(
+                    context,
+                    'Desativar organização',
+                    '"${organization.tradeName}" ficará invisível '
+                        'para os demais usuários até ser reativada.',
+                  );
+                  if (ok == true) await _deactivate(organization);
+                } else if (value == 'reactivate') {
+                  await _reactivate(organization);
+                }
+              },
+              itemBuilder: (_) => [
+                if (!isDisabled)
+                  const PopupMenuItem(
+                    value: 'deactivate',
+                    child: Text('Desativar'),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          organization.tradeName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: isDisabled
-                                ? AppColors.textSecondary
-                                : AppColors.textPrimary,
-                            decoration:
-                                isDisabled ? TextDecoration.lineThrough : null,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          organization.legalName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontSize: 13, color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
+                if (isDisabled)
+                  const PopupMenuItem(
+                    value: 'reactivate',
+                    child: Text('Reativar'),
                   ),
-                  if (isDisabled) _disabledBadge(),
-                  if (_isAdmin)
-                    PopupMenuButton<String>(
-                      tooltip: 'Ações',
-                      onSelected: (value) async {
-                        if (value == 'deactivate') {
-                          final ok = await _confirm(
-                            context,
-                            'Desativar organização',
-                            '"${organization.tradeName}" ficará invisível '
-                                'para os demais usuários até ser reativada.',
-                          );
-                          if (ok == true) await _deactivate(organization);
-                        } else if (value == 'reactivate') {
-                          await _reactivate(organization);
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        if (!isDisabled)
-                          const PopupMenuItem(
-                            value: 'deactivate',
-                            child: Text('Desativar'),
-                          ),
-                        if (isDisabled)
-                          const PopupMenuItem(
-                            value: 'reactivate',
-                            child: Text('Reativar'),
-                          ),
-                      ],
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
+              ],
+            ),
+        ],
       ),
     );
   }

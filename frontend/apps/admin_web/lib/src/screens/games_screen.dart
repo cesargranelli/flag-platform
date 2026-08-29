@@ -202,21 +202,21 @@ class GamesScreen extends ConsumerWidget {
                                             crossAxisCount: columns,
                                             crossAxisSpacing: 12,
                                             mainAxisSpacing: 12,
-                                            mainAxisExtent: 104,
+                                            mainAxisExtent: 120,
                                           ),
                                       itemBuilder: (context, index) {
                                         final game = items[index];
                                         return _gameCard(
                                           context,
                                           game,
-onTap: () => context.go(
-                                          '/games/${game.id}',
-                                          extra: (
-                                            competitionId: effectiveComp,
-                                            roundId: game.roundId,
-                                            game: game,
+                                          onTap: () => context.go(
+                                            '/games/${game.id}',
+                                            extra: (
+                                              competitionId: effectiveComp,
+                                              roundId: game.roundId,
+                                              game: game,
+                                            ),
                                           ),
-                                        ),
                                         );
                                       },
                                     );
@@ -233,81 +233,20 @@ onTap: () => context.go(
     );
   }
 
+  /// Card de jogo no padrão Kickster (core #439): confronto com placar em
+  /// destaque e badge de status semântico.
   Widget _gameCard(
     BuildContext context,
     Game game, {
     required VoidCallback onTap,
   }) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${game.homeTeamName ?? 'Casa'} x ${game.awayTeamName ?? 'Fora'}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _statusChip(game.status),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '${_formatDateTime(game.scheduledAt)}'
-                '${game.venueName != null ? ' · ${game.venueName}' : ''}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              if (game.homeScore != null || game.awayScore != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Placar: ${game.homeScore ?? 0} x ${game.awayScore ?? 0}',
-                  style: const TextStyle(fontSize: 13),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _statusChip(GameStatus status) {
-    final (label, color) = switch (status) {
-      GameStatus.scheduled => ('Agendado', AppColors.textSecondary),
-      GameStatus.inProgress => ('Ao vivo', AppColors.success),
-      GameStatus.finished => ('Encerrado', AppColors.danger),
-      GameStatus.cancelled => ('Cancelado', AppColors.disabled),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(label, style: TextStyle(fontSize: 12, color: color)),
+    return KicksterScoreCard(
+      homeTeamName: game.homeTeamName ?? 'Casa',
+      awayTeamName: game.awayTeamName ?? 'Fora',
+      homeScore: game.homeScore ?? 0,
+      awayScore: game.awayScore ?? 0,
+      status: game.status,
+      onTap: onTap,
     );
   }
 }
-
-String _formatDateTime(DateTime value) =>
-    '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year} '
-    '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';

@@ -97,12 +97,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
                           crossAxisCount: columns,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          // 156: margem do Card (8) + padding (32) + 4 linhas
-                          // de conteúdo (nome ~19 + org ~16 + badges ~18–42
-                          // com quebra do Wrap + status ~18) + gaps (12) +
-                          // folga p/ métricas de fonte. Extent fixo mantido
-                          // pela performance do grid.
-                          mainAxisExtent: 156,
+                          mainAxisExtent: 96,
                         ),
                         itemBuilder: (context, index) {
                           final competition = items[index];
@@ -120,121 +115,56 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
     );
   }
 
+  /// Card de campeonato no padrão Kickster (core #439): ícone do troféu,
+  /// nome (+ organização como subtítulo) e menu de gestão para quem pode
+  /// editar (#261). Badges de modalidade/gênero/faixa e status continuam
+  /// visíveis no detalhe.
   Widget _competitionCard(BuildContext context, Competition competition) {
     final isDisabled = competition.status == CompetitionStatus.disabled;
-    final badges = <String>[
-      if (competition.modality != null) competition.modality!.label,
-      if (competition.gender != null) _genderLabel(competition.gender!),
-      // Null-aware: valor ausente/desconhecido simplesmente omite a badge.
-      ?_ageGroupLabel(competition.ageGroup),
-    ];
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () =>
-            context.go('/competitions/${competition.id}', extra: competition),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.emoji_events_outlined,
-                  color: AppColors.primary,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      competition.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: isDisabled
-                            ? AppColors.textSecondary
-                            : AppColors.textPrimary,
-                        decoration:
-                            isDisabled ? TextDecoration.lineThrough : null,
-                      ),
-                    ),
-                    if (competition.organizationName?.isNotEmpty ?? false) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        competition.organizationName!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 6),
-                    if (badges.isNotEmpty) ...[
-                      Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: [
-                          for (final label in badges) _attributeBadge(label),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                    ],
-                    _statusChip(competition.status),
-                  ],
-                ),
-              ),
-              // Issue #261: ações de gestão (desativar/reativar) exigem
-              // ser criador do campeonato ou ADMIN — o backend já bloqueia.
-              if (canEditCompetition(
-                ref.watch(authControllerProvider).state.user,
-                competition,
-              ))
-                PopupMenuButton<String>(
-                  tooltip: 'Ações',
-                  onSelected: (value) async {
-                    if (value == 'deactivate') {
-                      final ok = await _confirm(
-                        context,
-                        'Desativar campeonato',
-                        '"${competition.name}" ficará invisível para os '
-                            'demais usuários até ser reativado.',
-                      );
-                      if (ok == true) await _deactivate(competition);
-                    } else if (value == 'reactivate') {
-                      await _reactivate(competition);
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    if (!isDisabled)
-                      const PopupMenuItem(
-                        value: 'deactivate',
-                        child: Text('Desativar'),
-                      ),
-                    if (isDisabled)
-                      const PopupMenuItem(
-                        value: 'reactivate',
-                        child: Text('Reativar'),
-                      ),
-                  ],
-                ),
-            ],
-          ),
-        ),
-      ),
+    return KicksterCard(
+      icon: Icons.emoji_events_outlined,
+      title: competition.name,
+      subtitle:
+          (competition.organizationName?.isNotEmpty ?? false)
+              ? competition.organizationName
+              : null,
+      onTap: () =>
+          context.go('/competitions/${competition.id}', extra: competition),
+      // Issue #261: ações de gestão (desativar/reativar) exigem
+      // ser criador do campeonato ou ADMIN — o backend já bloqueia.
+      trailing: canEditCompetition(
+        ref.watch(authControllerProvider).state.user,
+        competition,
+      )
+          ? PopupMenuButton<String>(
+              tooltip: 'Ações',
+              onSelected: (value) async {
+                if (value == 'deactivate') {
+                  final ok = await _confirm(
+                    context,
+                    'Desativar campeonato',
+                    '"${competition.name}" ficará invisível para os '
+                        'demais usuários até ser reativado.',
+                  );
+                  if (ok == true) await _deactivate(competition);
+                } else if (value == 'reactivate') {
+                  await _reactivate(competition);
+                }
+              },
+              itemBuilder: (_) => [
+                if (!isDisabled)
+                  const PopupMenuItem(
+                    value: 'deactivate',
+                    child: Text('Desativar'),
+                  ),
+                if (isDisabled)
+                  const PopupMenuItem(
+                    value: 'reactivate',
+                    child: Text('Reativar'),
+                  ),
+              ],
+            )
+          : null,
     );
   }
 
@@ -300,61 +230,5 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
         );
       }
     }
-  }
-
-  /// Badge leve de atributo (modalidade, gênero, faixa etária), no mesmo
-  /// padrão estrutural do [_statusChip] (Container + BoxDecoration raio 10).
-  /// Substitui o widget Material `Chip`, cuja altura mínima e largura
-  /// intrínseca causavam overflow nos cards estreitos do grid.
-  Widget _attributeBadge(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(fontSize: 12, color: AppColors.primary),
-      ),
-    );
-  }
-
-  String _genderLabel(String gender) => switch (gender) {
-        'MALE' => 'Masculino',
-        'FEMALE' => 'Feminino',
-        _ => 'Misto',
-      };
-
-  /// Mapeamento tolerante: valor desconhecido vindo da API apenas omite a
-  /// badge (o enum `AgeGroup.fromJson` lançaria exceção e derrubaria a lista).
-  String? _ageGroupLabel(String? ageGroup) => switch (ageGroup) {
-        'SUB11' => 'Sub-11',
-        'SUB13' => 'Sub-13',
-        'SUB14' => 'Sub-14',
-        'SUB15' => 'Sub-15',
-        'SUB17' => 'Sub-17',
-        'SUB20' => 'Sub-20',
-        'ADULT' => 'Adulto',
-        'MASTER' => 'Master',
-        'OPEN' => 'Livre',
-        _ => null,
-      };
-
-  Widget _statusChip(CompetitionStatus status) {
-    final (label, color) = switch (status) {
-      CompetitionStatus.draft => ('Rascunho', AppColors.textSecondary),
-      CompetitionStatus.published => ('Publicado', AppColors.success),
-      CompetitionStatus.finished => ('Encerrado', AppColors.danger),
-      CompetitionStatus.disabled => ('Desativado', AppColors.textSecondary),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(label, style: TextStyle(fontSize: 12, color: color)),
-    );
   }
 }
