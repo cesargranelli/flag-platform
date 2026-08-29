@@ -47,26 +47,33 @@ class AppScreen extends StatelessWidget {
       children: [
         // Header pessoal (sticky)
         if (showUserHeader) const _UserHeader(),
-        // Breadcrumb (se houver)
-        if (crumbs.isNotEmpty)
-          KicksterBreadcrumb(
-            items: [
-              for (var i = 0; i < crumbs.length; i++)
-                KicksterBreadcrumbItem(
-                  label: crumbs[i].label,
-                  route: crumbs[i].route,
-                  icon: crumbs[i].icon ??
-                      (i == 0 && crumbs[i].route == '/'
-                          ? Icons.home_outlined
-                          : null),
-                ),
-            ],
-          ),
-        // Page body
+        // Page body (breadcrumb + conteúdo, scrollável)
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: body,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Breadcrumb inline (sem barra separada)
+                if (crumbs.isNotEmpty) ...[
+                  KicksterBreadcrumb(
+                    items: [
+                      for (var i = 0; i < crumbs.length; i++)
+                        KicksterBreadcrumbItem(
+                          label: crumbs[i].label,
+                          route: crumbs[i].route,
+                          icon: crumbs[i].icon ??
+                              (i == 0 && crumbs[i].route == '/'
+                                  ? Icons.home_outlined
+                                  : null),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                body,
+              ],
+            ),
           ),
         ),
       ],
