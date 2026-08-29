@@ -179,6 +179,9 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
   Widget build(BuildContext context) {
     return AppScreen(
       title: _isEditing ? 'Editar atleta' : 'Novo atleta',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

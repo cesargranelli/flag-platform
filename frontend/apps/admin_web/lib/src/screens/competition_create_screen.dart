@@ -381,6 +381,9 @@ class _CompetitionCreateScreenState
       },
       child: AppScreen(
         title: 'Novo campeonato',
+        breadcrumb: const [
+          BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+        ],
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: AppLayout.form(

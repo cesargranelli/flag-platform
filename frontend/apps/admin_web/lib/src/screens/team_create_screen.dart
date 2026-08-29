@@ -109,6 +109,9 @@ class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
 
     return AppScreen(
       title: 'Novo time',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.teams, route: '/teams'),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

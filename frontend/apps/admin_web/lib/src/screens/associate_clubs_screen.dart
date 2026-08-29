@@ -183,6 +183,9 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
 
     return AppScreen(
       title: 'Associar clubes',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.teams, route: '/teams'),
+      ],
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(

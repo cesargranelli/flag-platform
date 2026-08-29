@@ -31,6 +31,9 @@ class GroupingsScreen extends ConsumerWidget {
     return AppScreen(
       title: 'Conferências e divisões',
       titleVariant: AppScreenTitleVariant.titleLg,
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+      ],
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(

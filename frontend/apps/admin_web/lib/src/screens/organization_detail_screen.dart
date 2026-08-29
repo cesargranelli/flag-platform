@@ -30,6 +30,9 @@ class OrganizationDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: org?.tradeName ?? 'Organização',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
+      ],
       body: orgFuture == null
           ? _buildDetail(context, org!)
           : orgFuture.when(

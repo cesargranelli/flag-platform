@@ -128,6 +128,9 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
 
     return AppScreen(
       title: title,
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.teams, route: '/teams'),
+      ],
       actions: [
         if (teamId != null)
           IconButton(

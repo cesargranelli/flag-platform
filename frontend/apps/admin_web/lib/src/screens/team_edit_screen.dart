@@ -120,6 +120,9 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
 
     return AppScreen(
       title: 'Editar time',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.teams, route: '/teams'),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

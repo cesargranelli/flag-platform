@@ -219,6 +219,9 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
 
     return AppScreen(
       title: 'Importar atletas',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

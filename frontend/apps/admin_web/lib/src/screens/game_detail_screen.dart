@@ -25,6 +25,9 @@ class GameDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: game?.homeTeamName ?? 'Jogo',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.games, route: '/games'),
+      ],
       body: gameFuture == null
           ? _buildDetail(context, ref, game!)
           : gameFuture.when(

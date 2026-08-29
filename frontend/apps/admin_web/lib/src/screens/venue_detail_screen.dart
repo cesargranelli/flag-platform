@@ -26,6 +26,9 @@ class VenueDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: venue?.name ?? 'Campo',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.venues, route: '/venues'),
+      ],
       body: venueFuture == null
           ? _buildDetail(context, ref, venue!)
           : venueFuture.when(

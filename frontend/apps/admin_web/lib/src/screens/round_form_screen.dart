@@ -116,6 +116,9 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
 
     return AppScreen(
       title: _isEditing ? 'Editar rodada' : 'Nova rodada',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

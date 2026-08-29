@@ -112,6 +112,9 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
 
     return AppScreen(
       title: _isEditing ? 'Editar campo' : 'Novo campo',
+      breadcrumb: const [
+        BreadcrumbItem(AppStrings.venues, route: '/venues'),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

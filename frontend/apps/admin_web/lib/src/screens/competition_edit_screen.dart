@@ -333,10 +333,16 @@ class _CompetitionEditScreenState
       return asyncComp.when(
         loading: () => AppScreen(
           title: 'Editar campeonato',
+          breadcrumb: const [
+            BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+          ],
           body: const AppLoading(message: 'Carregando campeonato...'),
         ),
         error: (error, stackTrace) => AppScreen(
           title: 'Editar campeonato',
+          breadcrumb: const [
+            BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+          ],
           body: AppErrorState(
             message: 'Não foi possível carregar o campeonato',
             onRetry: () =>
@@ -349,6 +355,9 @@ class _CompetitionEditScreenState
           if (!canEditCompetition(user, competition)) {
             return AppScreen(
               title: 'Editar campeonato',
+              breadcrumb: const [
+                BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+              ],
               body: const AppEmptyState(
                 message: 'Você não tem permissão para editar este campeonato.',
                 icon: Icons.lock_outline,
@@ -359,6 +368,9 @@ class _CompetitionEditScreenState
           if (competition.status != CompetitionStatus.draft) {
             return AppScreen(
               title: 'Editar campeonato',
+              breadcrumb: const [
+                BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+              ],
               body: AppEmptyState(
                 message: competition.status == CompetitionStatus.published
                     ? 'Campeonato publicado — não é mais editável.'
@@ -385,6 +397,9 @@ class _CompetitionEditScreenState
       },
       child: AppScreen(
         title: 'Editar campeonato',
+        breadcrumb: const [
+          BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+        ],
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: AppLayout.form(
