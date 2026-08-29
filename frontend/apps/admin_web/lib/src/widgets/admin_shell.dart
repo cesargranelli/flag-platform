@@ -122,10 +122,11 @@ class _Brand extends StatelessWidget {
 ///
 /// Composição: avatar circular de 32px (fundo `surface`, iniciais em
 /// `primary` — ou ícone persona quando o nome está vazio/null) + nome em
-/// branco, 13px w600, com ellipsis. O chip tem um scrim escuro sutil
-/// (preto @25%): sobre o header `primary` (azul royal #083879, branco
-/// ~7.7:1), o scrim reforça ainda mais o contraste do texto branco e delimita
-/// visualmente o alvo de toque (raio `radius.chip` = 10).
+/// branco, 13px w600, com ellipsis. Sobre o header `primary` (azul royal
+/// #083879, branco ~7.7:1), o fundo é branco translúcido suave (@10% —
+/// refinamento #439): apenas delimita o alvo de toque (raio `radius.chip` =
+/// 10) sem escurecer o azul. Ações via menu discreto (`PopupMenuButton`)
+/// com "Sair" (ícone logout + texto).
 class AdminUserChip extends ConsumerWidget {
   const AdminUserChip({super.key, required this.onLogout});
 
@@ -182,7 +183,7 @@ class AdminUserChip extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.25),
+                color: Colors.white.withValues(alpha: 0.10),
                 borderRadius: const BorderRadius.all(Radius.circular(10)),
               ),
               child: Row(
