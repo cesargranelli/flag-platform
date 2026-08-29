@@ -9,12 +9,15 @@ import '../providers/providers.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/selectable_card.dart';
 
-/// Wizard de CRIAÇÃO de campeonato em 6 sessões (issues #287/#304).
+/// CRIAÇÃO de campeonato em página única (#455): todas as seções
+/// (campeonato, modalidade, categoria, temporada, conferências, agrupamento)
+/// empilhadas com títulos de seção — o scroll é do body, sem barras internas.
 ///
-/// Sessões 1–4 montam o cadastro; o botão "Criar rascunho" grava o
-/// campeonato (sempre RASCUNHO) e habilita as sessões de estrutura
+/// O botão "Criar campeonato" valida as seções de cadastro e grava o
+/// campeonato (sempre RASCUNHO), habilitando a seguir as seções de estrutura
 /// (Conferências → Agrupamento: Divisões ou Grupos), ambas com opção de
-/// declínio — o fluxo nunca trava.
+/// declínio — o fluxo nunca trava. Após configurar, "Concluir" persiste a
+/// escolha de agrupamento e vai ao detalhe (issues #287/#304/#338).
 class CompetitionCreateScreen extends ConsumerStatefulWidget {
   const CompetitionCreateScreen({super.key});
 
@@ -39,7 +42,7 @@ class _CompetitionCreateScreenState
   Gender? _gender;
   AgeGroup? _ageGroup;
 
-  /// Campeonato recém-criado — alimenta as sessões de estrutura (#304).
+  /// Campeonato recém-criado — alimenta as seções de estrutura (#304).
   Competition? _created;
 
   bool _declinedConferences = false;
@@ -49,7 +52,6 @@ class _CompetitionCreateScreenState
   /// Conferência selecionada para associar a nova divisão/grupo (#338).
   String? _conferenceId;
 
-  int _step = 0;
   bool _submitting = false;
   bool _saved = false;
   bool _hasChanges = false;
@@ -59,15 +61,6 @@ class _CompetitionCreateScreenState
   String? _modalityError;
   String? _categoryError;
   String? _errorMessage;
-
-  static const _titles = [
-    'Campeonato',
-    'Modalidade',
-    'Categoria',
-    'Temporada',
-    'Conferências',
-    'Agrupamento',
-  ];
 
   @override
   void initState() {
@@ -150,44 +143,29 @@ class _CompetitionCreateScreenState
 
   DateTime? get _parsedStartDate => DateTime.tryParse(_startDate.text.trim());
 
-  bool _validateStep() {
-    var valid = true;
-    if (_step == 0) {
-      valid = _formKey.currentState!.validate();
-    } else if (_step == 1 && _modality == null) {
+  /// Ação principal: antes do rascunho criado, valida TODAS as seções de
+  /// cadastro (form + modalidade + categoria) e grava o RASCUNHO; depois,
+  /// persiste a escolha de agrupamento e vai ao detalhe (#455).
+  Future<void> _submit() async {
+    if (_created != null) {
+      await _finish();
+      return;
+    }
+    if (!_formKey.currentState!.validate()) return;
+    if (_modality == null) {
       setState(() => _modalityError = 'Selecione a modalidade');
-      valid = false;
-    } else if (_step == 2 && (_gender == null || _ageGroup == null)) {
+      return;
+    }
+    if (_gender == null || _ageGroup == null) {
       setState(() => _categoryError =
           _gender == null ? 'Selecione o gênero' : 'Selecione a faixa etária');
-      valid = false;
+      return;
     }
-    return valid;
+    await _createDraft();
   }
 
-  void _next() {
-    if (!_validateStep()) return;
-    if (_step < _titles.length - 1) {
-      // Sessão Temporada cria o rascunho antes das sessões de estrutura.
-      if (_step == 3) {
-        _createDraft();
-        return;
-      }
-      setState(() => _step += 1);
-    } else {
-      _finish();
-    }
-  }
-
-  String get _draftLabel =>
-      _step == 3 ? 'Criar rascunho' : (_step == 5 ? 'Concluir' : 'Continuar');
-
-  /// Cria o campeonato em RASCUNHO e avança para a estrutura (#304).
-  ///
-  /// [targetStep] permite navegar direto à etapa desejada ao avançar pelo
-  /// indicador (ex.: Agrupamento) — senão o rascunho não é criado e os botões
-  /// "Adicionar" da estrutura ficam desabilitados (#338).
-  Future<void> _createDraft({int? targetStep}) async {
+  /// Cria o campeonato em RASCUNHO e habilita as seções de estrutura (#304).
+  Future<void> _createDraft() async {
     setState(() {
       _submitting = true;
       _errorMessage = null;
@@ -219,7 +197,7 @@ class _CompetitionCreateScreenState
       );
       setState(() {
         _created = created;
-        _step = targetStep ?? _step + 1;
+        _errorMessage = null;
       });
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
@@ -368,17 +346,8 @@ class _CompetitionCreateScreenState
     }
   }
 
-  /// Voltar: navega para a sessão anterior quando dentro do wizard;
-  /// na primeira sessão, sai da rota com proteção de descarte (M3).
+  /// Sair da rota com proteção de descarte (M3).
   Future<void> _handleBack() async {
-    if (_step > 0) {
-      setState(() {
-        _step -= 1;
-        _modalityError = null;
-        _categoryError = null;
-      });
-      return;
-    }
     if (_hasChanges && !_submitting && !_saved) {
       final discard = await showDialog<bool>(
         context: context,
@@ -423,92 +392,57 @@ class _CompetitionCreateScreenState
       },
       child: AppScreen(
         title: 'Novo campeonato',
-        body: _buildWizard(context),
-      ),
-    );
-  }
-
-  Widget _buildWizard(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          Expanded(
-            child: AppLayout.form(
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: AppLayout.form(
+            child: Form(
+              key: _formKey,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 16,
-                    ),
-                    child: AppStepIndicator(
-                      titles: _titles,
-                      currentStep: _step,
-                      onStepTap: _handleStepTap,
-                    ),
+                  if (_errorMessage != null) _errorBanner(_errorMessage!),
+                  _section(
+                    title: 'Campeonato',
+                    icon: Icons.emoji_events_outlined,
+                    child: _identityStep(context),
                   ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            'Etapa ${_step + 1} de ${_titles.length}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          if (_errorMessage != null)
-                            _errorBanner(_errorMessage!),
-                          _stepContent(context),
-                        ],
-                      ),
-                    ),
+                  _section(
+                    title: 'Modalidade',
+                    icon: Icons.sports_football_outlined,
+                    child: _modalityStep(context),
+                  ),
+                  _section(
+                    title: 'Categoria',
+                    icon: Icons.groups_outlined,
+                    child: _categoryStep(context),
+                  ),
+                  _section(
+                    title: 'Temporada',
+                    icon: Icons.date_range,
+                    child: _seasonStep(context),
+                  ),
+                  _section(
+                    title: 'Conferências',
+                    icon: Icons.account_tree_outlined,
+                    child: _conferencesStep(context),
+                  ),
+                  _section(
+                    title: 'Agrupamento',
+                    icon: Icons.hub_outlined,
+                    child: _structureStep(context),
+                  ),
+                  const SizedBox(height: 8),
+                  KicksterButton(
+                    label: _created == null ? 'Criar campeonato' : 'Concluir',
+                    icon: _created == null ? Icons.check : Icons.check_circle_outline,
+                    loading: _submitting,
+                    onPressed: _submitting ? null : _submit,
                   ),
                 ],
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: AppLayout.form(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _submitting ? null : _handleBack,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
-                      minimumSize: const Size(120, 56),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(16)),
-                      ),
-                    ),
-                    icon: Icon(_step == 0 ? Icons.close : Icons.arrow_back),
-                    label: Text(_step == 0 ? 'Cancelar' : 'Voltar'),
-                  ),
-                  FilledButton.icon(
-                    onPressed: _submitting ? null : _next,
-                    icon: _submitting
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.arrow_forward),
-                    label: Text(_draftLabel),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -537,22 +471,27 @@ class _CompetitionCreateScreenState
     );
   }
 
-  /// Tocar em uma etapa do indicador: avança apenas sequencialmente (com
-  /// validação da etapa atual) e volta livremente (#323).
-  void _handleStepTap(int index) {
-    if (index == _step) return;
-    // Avanço apenas sequencial (com validação); voltar é livre.
-    if (index > _step) {
-      if (index > _step + 1) return;
-      if (!_validateStep()) return;
-    }
-    // Da Temporada (3) para as sessões de estrutura, o rascunho é criado antes
-    // — senão os campos/botões "Adicionar" da estrutura ficam desabilitados.
-    if (_step == 3 && _created == null) {
-      _createDraft(targetStep: index);
-      return;
-    }
-    setState(() => _step = index);
+  /// Seção empilhada: título (titleMedium) + card (#455).
+  Widget _section({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KicksterSectionTitle(title: title, icon: icon),
+        const SizedBox(height: 12),
+        Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: child,
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
   }
 
   Widget _groupLabel(String text) {
@@ -583,24 +522,7 @@ class _CompetitionCreateScreenState
     );
   }
 
-  Widget _stepContent(BuildContext context) {
-    switch (_step) {
-      case 0:
-        return _identityStep(context);
-      case 1:
-        return _modalityStep(context);
-      case 2:
-        return _categoryStep(context);
-      case 3:
-        return _seasonStep(context);
-      case 4:
-        return _conferencesStep(context);
-      default:
-        return _structureStep(context);
-    }
-  }
-
-  // Sessão 1 — Campeonato: organização, nome e descrição.
+  // Seção 1 — Campeonato: organização, nome e descrição.
   Widget _identityStep(BuildContext context) {
     final organizations = ref.watch(organizationsProvider);
     return Column(
@@ -721,7 +643,7 @@ class _CompetitionCreateScreenState
     );
   }
 
-  // Sessão 2 — Modalidade: cards 2x2.
+  // Seção 2 — Modalidade: cards 2x2.
   Widget _modalityStep(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -784,7 +706,7 @@ class _CompetitionCreateScreenState
         Gender.mixed => Icons.transgender,
       };
 
-  // Sessão 3 — Categoria: gênero (cards) + faixa etária (chips).
+  // Seção 3 — Categoria: gênero (cards) + faixa etária (chips).
   Widget _categoryStep(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -850,7 +772,7 @@ class _CompetitionCreateScreenState
     );
   }
 
-  // Sessão 4 — Temporada: datas opcionais + resumo das escolhas.
+  // Seção 4 — Temporada: datas opcionais + resumo das escolhas.
   Widget _seasonStep(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -917,14 +839,14 @@ class _CompetitionCreateScreenState
         ),
         const SizedBox(height: 16),
         _hint(
-          'Ao continuar, o campeonato é criado como rascunho e você poderá '
-          'configurar conferências, divisões ou grupos nas próximas etapas.',
+          'Ao criar, o campeonato é salvo como rascunho e você poderá '
+          'configurar conferências, divisões ou grupos abaixo.',
         ),
       ],
     );
   }
 
-  // Sessão 5 — Conferências (#304): criar/listar, com declínio.
+  // Seção 5 — Conferências (#304): criar/listar, com declínio.
   Widget _conferencesStep(BuildContext context) {
     final conferences = _created == null
         ? const AsyncValue<List<Conference>>.data([])
@@ -933,6 +855,13 @@ class _CompetitionCreateScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_created == null) ...[
+          _hint(
+            'Crie o campeonato acima para habilitar a configuração '
+            'da estrutura.',
+          ),
+          const SizedBox(height: 12),
+        ],
         _groupLabel('Conferências'),
         const SizedBox(height: 4),
         _hint(
@@ -1022,7 +951,7 @@ class _CompetitionCreateScreenState
     );
   }
 
-  // Sessão 6 — Agrupamento (#304/#338): Divisões OU Grupos, com declínio.
+  // Seção 6 — Agrupamento (#304/#338): Divisões OU Grupos, com declínio.
   Widget _structureStep(BuildContext context) {
     final divisions = _created == null
         ? const AsyncValue<List<Division>>.data([])
@@ -1036,6 +965,13 @@ class _CompetitionCreateScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_created == null) ...[
+          _hint(
+            'Crie o campeonato acima para habilitar a configuração '
+            'da estrutura.',
+          ),
+          const SizedBox(height: 12),
+        ],
         _groupLabel('Como os clubes serão agrupados?'),
         const SizedBox(height: 4),
         _hint('Divisões e Grupos têm o mesmo funcionamento — muda apenas o nome.'),

@@ -8,9 +8,10 @@ import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
 import '../widgets/app_screen.dart';
 
-/// Detalhe de um campeonato em sessões espelhando o wizard (#306),
-/// com navegação por cards no topo (#316): tocar em uma sessão troca o
-/// bloco exibido — a tela mostra APENAS o conteúdo da sessão ativa (#326).
+/// Detalhe de um campeonato em página única (#455): todas as seções
+/// (campeonato, modalidade, categoria, temporada, conferências, agrupamento,
+/// clubes) empilhadas com títulos de seção — o scroll é do body, sem barras
+/// internas.
 class CompetitionDetailScreen extends ConsumerStatefulWidget {
   const CompetitionDetailScreen({
     super.key,
@@ -28,30 +29,6 @@ class CompetitionDetailScreen extends ConsumerStatefulWidget {
 
 class _CompetitionDetailScreenState
     extends ConsumerState<CompetitionDetailScreen> {
-  static const _sessions = [
-    'Campeonato',
-    'Modalidade',
-    'Categoria',
-    'Temporada',
-    'Conferências',
-    'Agrupamento',
-    'Clubes',
-  ];
-
-  /// Ícones das sessões (issue #326), paralelos a [_sessions].
-  static const _sessionIcons = <IconData>[
-    Icons.emoji_events_outlined,
-    Icons.sports_football_outlined,
-    Icons.groups_outlined,
-    Icons.date_range,
-    Icons.account_tree_outlined,
-    Icons.hub_outlined,
-    Icons.groups,
-  ];
-
-  /// Índice da sessão ativa — único bloco exibido no corpo da tela (#326).
-  int _activeSession = 0;
-
   @override
   Widget build(BuildContext context) {
     final compFuture = widget.competition != null
@@ -60,40 +37,23 @@ class _CompetitionDetailScreenState
 
     return AppScreen(
       title: widget.competition?.name ?? 'Campeonato',
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: AppLayout.form(
-              child: AppStepIndicator(
-                titles: _sessions,
-                icons: _sessionIcons,
-                currentStep: _activeSession,
-                showDoneState: false,
-                onStepTap: (index) => setState(() => _activeSession = index),
+      body: compFuture == null
+          ? _buildDetail(context, widget.competition!)
+          : compFuture.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando campeonato...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar o campeonato',
+                onRetry: () => ref.invalidate(
+                  competitionProvider(widget.competitionId!),
+                ),
               ),
+              data: (comp) => _buildDetail(context, comp),
             ),
-          ),
-          Expanded(
-            child: compFuture == null
-                ? _buildDetail(context, widget.competition!)
-                : compFuture.when(
-                    loading: () =>
-                        const AppLoading(message: 'Carregando campeonato...'),
-                    error: (error, stackTrace) => AppErrorState(
-                      message: 'Não foi possível carregar o campeonato',
-                      onRetry: () => ref.invalidate(
-                        competitionProvider(widget.competitionId!),
-                      ),
-                    ),
-                    data: (comp) => _buildDetail(context, comp),
-                  ),
-          ),
-        ],
-      ),
     );
   }
 
+  /// Página única: seções empilhadas, scroll do body (#455).
   Widget _buildDetail(BuildContext context, Competition comp) {
     // Issue #261: edição exige ser criador do campeonato ou ADMIN.
     final canEdit = canEditCompetition(
@@ -105,30 +65,69 @@ class _CompetitionDetailScreenState
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: AppLayout.detail(
-        child: switch (_activeSession) {
-          0 => _campeonatoCard(context, comp, canEdit, isDraft),
-          1 =>
-            comp.modality == null
-                ? const SizedBox.shrink()
-                : _modalidadeCard(comp),
-          2 =>
-            (comp.gender == null && comp.ageGroup == null)
-                ? const SizedBox.shrink()
-                : _categoriaCard(comp),
-          3 =>
-            (comp.startDate == null && comp.endDate == null)
-                ? const SizedBox.shrink()
-                : _temporadaCard(comp),
-          4 => _conferencesCard(comp),
-          5 => _estruturaCard(context, comp, canEdit, isDraft),
-          _ => _clubsCard(context, comp, canEdit, isDraft),
-        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _section(
+              title: 'Campeonato',
+              icon: Icons.emoji_events_outlined,
+              child: _campeonatoCard(context, comp, canEdit, isDraft),
+            ),
+            _section(
+              title: 'Modalidade',
+              icon: Icons.sports_football_outlined,
+              child: _modalidadeCard(comp),
+            ),
+            _section(
+              title: 'Categoria',
+              icon: Icons.groups_outlined,
+              child: _categoriaCard(comp),
+            ),
+            _section(
+              title: 'Temporada',
+              icon: Icons.date_range,
+              child: _temporadaCard(comp),
+            ),
+            _section(
+              title: 'Conferências',
+              icon: Icons.account_tree_outlined,
+              child: _conferencesCard(comp),
+            ),
+            _section(
+              title: 'Agrupamento',
+              icon: Icons.hub_outlined,
+              child: _estruturaCard(context, comp, canEdit, isDraft),
+            ),
+            _section(
+              title: 'Clubes',
+              icon: Icons.groups,
+              child: _clubsCard(context, comp, canEdit, isDraft),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// Sessão 1 — Campeonato (#306): identidade + ações por status,
-  /// espelhando a primeira sessão do wizard de cadastro.
+  /// Título de seção (titleMedium) + card, separados por espaçamento padrão.
+  Widget _section({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KicksterSectionTitle(title: title, icon: icon),
+        const SizedBox(height: 12),
+        child,
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  /// Seção 1 — Campeonato (#306): identidade + ações por status,
+  /// espelhando a primeira seção do formulário de cadastro.
   Widget _campeonatoCard(
     BuildContext context,
     Competition comp,
@@ -226,7 +225,7 @@ class _CompetitionDetailScreenState
                   color: AppColors.textSecondary,
                 ),
               ),
-            // Descrição pertence à sessão Campeonato (wizard).
+            // Descrição pertence à seção Campeonato (formulário).
             if (comp.description != null && comp.description!.isNotEmpty) ...[
               const SizedBox(height: 16),
               AppInfoRow(label: 'Descrição', value: comp.description!),
@@ -237,7 +236,7 @@ class _CompetitionDetailScreenState
     );
   }
 
-  /// Sessão 2 — Modalidade (#306).
+  /// Seção 2 — Modalidade (#306).
   Widget _modalidadeCard(Competition comp) {
     return AppInfoCard(
       children: [
@@ -249,7 +248,7 @@ class _CompetitionDetailScreenState
     );
   }
 
-  /// Sessão 3 — Categoria (#306): gênero + faixa etária.
+  /// Seção 3 — Categoria (#306): gênero + faixa etária.
   Widget _categoriaCard(Competition comp) {
     return AppInfoCard(
       children: [
@@ -259,7 +258,7 @@ class _CompetitionDetailScreenState
     );
   }
 
-  /// Sessão 4 — Temporada (#306).
+  /// Seção 4 — Temporada (#306).
   Widget _temporadaCard(Competition comp) {
     return AppInfoCard(
       children: [
@@ -273,9 +272,8 @@ class _CompetitionDetailScreenState
     );
   }
 
-  /// Sessão 6 — Agrupamento (#306/#349): reflete apenas o que foi cadastrado
+  /// Seção 6 — Agrupamento (#306/#349): reflete apenas o que foi cadastrado
   /// (divisões/grupos), sem a linha "Modelo" nem botões de ação.
-  /// Oculto quando o campeonato não tem divisões.
   Widget _estruturaCard(
     BuildContext context,
     Competition comp,
@@ -303,10 +301,18 @@ class _CompetitionDetailScreenState
           ),
         ],
       ),
-      data: (items) => items.isEmpty
-          ? const SizedBox.shrink()
-          : AppInfoCard(
-              children: [
+      data: (items) => AppInfoCard(
+        children: items.isEmpty
+            ? const [
+                Text(
+                  'Nenhuma divisão ou grupo adicionado.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ]
+            : [
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -324,11 +330,11 @@ class _CompetitionDetailScreenState
                   ],
                 ),
               ],
-            ),
+      ),
     );
   }
 
-  /// Sessão 7 — Clubes (#377): lista simples dos clubes (organizações)
+  /// Seção 7 — Clubes (#377): lista simples dos clubes (organizações)
   /// associados ao campeonato + botão para a tela de associação.
   Widget _clubsCard(
     BuildContext context,
@@ -439,8 +445,7 @@ class _CompetitionDetailScreenState
     );
   }
 
-  /// Sessão Conferências (#323/#345): lista as conferências do campeonato.
-  /// Oculto quando não há conferências (#345).
+  /// Seção Conferências (#323/#345): lista as conferências do campeonato.
   Widget _conferencesCard(Competition comp) {
     final conferences = ref.watch(conferencesProvider(comp.id));
     return conferences.when(
@@ -460,17 +465,25 @@ class _CompetitionDetailScreenState
           ),
         ],
       ),
-      data: (items) => items.isEmpty
-          ? const SizedBox.shrink()
-          : AppInfoCard(
-              children: [
+      data: (items) => AppInfoCard(
+        children: items.isEmpty
+            ? const [
+                Text(
+                  'Nenhuma conferência adicionada.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ]
+            : [
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [for (final c in items) _conferenceChip(c.name)],
                 ),
               ],
-            ),
+      ),
     );
   }
 
