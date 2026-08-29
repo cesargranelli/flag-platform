@@ -169,60 +169,19 @@ class TeamsScreen extends ConsumerWidget {
     );
   }
 
+  /// Card de time no padrão Kickster (core #439): ícone de grupo, nome e
+  /// subtítulo com esporte + contagem de atletas.
   Widget _teamCard(BuildContext context, Team team) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.go('/teams/${team.id}', extra: team),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    team.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      team.sportName ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${team.athleteCount ?? 0} atletas',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    final subtitle = [
+      if (team.sportName?.isNotEmpty ?? false) team.sportName!,
+      '${team.athleteCount ?? 0} atletas',
+    ].join(' · ');
+
+    return KicksterCard(
+      icon: Icons.groups_outlined,
+      title: team.name,
+      subtitle: subtitle,
+      onTap: () => context.go('/teams/${team.id}', extra: team),
     );
   }
 }

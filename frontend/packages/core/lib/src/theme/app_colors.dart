@@ -21,6 +21,9 @@ class AppColors {
   static const Color disabled = Color(0xFF9CA4AB);
   static const Color grayFill = Color(0xFFECF1F6);
 
+  /// Line — contorno de bordas claras do kit (cards, divisores).
+  static const Color line = Color(0xFFE3E7EC);
+
   // Auxiliares do UI Kit Kickster.
   /// Texto secundário/rodapé — rgba(0,0,0,.6).
   static const Color textMuted = Color(0x99000000);
