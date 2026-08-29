@@ -328,6 +328,10 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
   }
 
   Widget _chip(String text, Color color) {
+    // Amarelo `warning` (#FACC15) é claro demais para texto na própria cor
+    // sobre o fundo @12%: usa texto escuro (issue #431 — contraste).
+    final textColor =
+        color == AppColors.warning ? AppColors.textPrimary : color;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -336,7 +340,7 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 13, color: color),
+        style: TextStyle(fontSize: 13, color: textColor),
       ),
     );
   }

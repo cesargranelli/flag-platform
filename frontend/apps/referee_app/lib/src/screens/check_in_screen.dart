@@ -239,9 +239,12 @@ class _CheckInRoster extends ConsumerWidget {
       children: [
         IconButton(
           tooltip: 'Numeração da partida',
+          // Amarelo `warning` (#FACC15) não tem contraste sobre fundo claro:
+          // o estado override fica no ícone preenchido vs. contorno (issue
+          // #431), com cor escura legível.
           icon: Icon(
             hasOverride ? Icons.tag : Icons.tag_outlined,
-            color: hasOverride ? AppColors.warning : null,
+            color: hasOverride ? AppColors.textPrimary : null,
           ),
           onPressed: () => _editMatchNumber(context, ref, checkIn),
         ),

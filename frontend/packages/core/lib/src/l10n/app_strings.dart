@@ -25,6 +25,13 @@ abstract final class AppStrings {
   // Home / navegação
   static const appBarTitle = 'Admin Web';
   static const welcome = 'Bem-vindo';
+  static const hello = 'Olá';
+  static const quickActions = 'Ações rápidas';
+  static const modules = 'Módulos';
+  static const newCompetition = 'Novo campeonato';
+  static const newGame = 'Novo jogo';
+  static const importAthletes = 'Importar atletas';
+  static const newOrganization = 'Nova organização';
   static const logout = 'Sair';
   static const homeHint = 'Selecione uma opção para gerenciar os cadastros.';
   static const organizations = 'Organizações';
