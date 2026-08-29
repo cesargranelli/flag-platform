@@ -26,6 +26,8 @@ class VenueDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: venue?.name ?? 'Campo',
+      backTarget: '/venues',
+      backLabel: 'Campos',
       body: venueFuture == null
           ? _buildDetail(context, ref, venue!)
           : venueFuture.when(

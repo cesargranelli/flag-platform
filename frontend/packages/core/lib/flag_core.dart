@@ -5,6 +5,7 @@ export 'src/theme/app_text_styles.dart';
 export 'src/theme/app_theme.dart';
 export 'src/l10n/app_strings.dart';
 export 'src/utils/document_utils.dart';
+export 'src/widgets/app_back_link.dart';
 export 'src/widgets/app_loading.dart';
 export 'src/widgets/app_calendar.dart';
 export 'src/widgets/app_empty_state.dart';

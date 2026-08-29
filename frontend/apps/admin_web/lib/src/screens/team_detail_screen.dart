@@ -22,6 +22,8 @@ class TeamDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: team?.name ?? 'Time',
+      backTarget: '/teams',
+      backLabel: 'Times',
       body: teamFuture == null
           ? _buildDetail(context, ref, team!)
           : teamFuture.when(

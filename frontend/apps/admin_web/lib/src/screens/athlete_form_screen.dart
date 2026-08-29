@@ -179,6 +179,10 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
   Widget build(BuildContext context) {
     return AppScreen(
       title: _isEditing ? 'Editar atleta' : 'Novo atleta',
+      backTarget: _isEditing
+          ? '/athletes/${widget.athleteId ?? widget.athlete?.id}'
+          : '/athletes',
+      backLabel: _isEditing ? 'Detalhe' : 'Atletas',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(
