@@ -1,49 +1,38 @@
 import 'package:flag_core/flag_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Item da trilha de navegação do [AppScreen] (issue #455).
-///
-/// Cada item representa um nível da hierarquia; o nível atual (a tela em
-/// exibição) não entra na lista — o [AppScreen] usa o próprio
-/// [AppScreen.title] como último nível da trilha. Itens com [route] são
-/// clicáveis (cor `primary`, hover/foco) e navegam para a listagem do módulo;
-/// itens sem [route] são exibidos como texto `textSecondary`.
+import '../providers/providers.dart';
+
+/// Item da trilha de navegação do [AppScreen].
 class BreadcrumbItem {
   const BreadcrumbItem(this.label, {this.route});
 
   final String label;
 
-  /// Rota da listagem do módulo (ex.: `/organizations`). Quando nula, o item
-  /// vira texto estático (nível intermediário da hierarquia).
+  /// Rota da listagem do módulo. Quando nula, o item é texto estático.
   final String? route;
 }
 
-/// Scaffold padrão das telas autenticadas do Admin Web (issue #457).
+/// Scaffold padrão das telas autenticadas do Admin Web.
 ///
-/// Padrão **shadcn sidebar-01**:
-///
-/// - **Sticky Header** (48px): breadcrumb (desktop: trilha `Módulo › Nome`,
-///   mobile: back button `← Módulo`).
-/// - **Page Body** (scrollável, padding 24px): conteúdo gerenciado pela tela.
-///
-/// O título, ações e conteúdo ficam sob responsabilidade de cada tela.
-/// O [AppScreen] apenas fornece o container com breadcrumb sticky + padding.
+/// - **Header pessoal**: avatar + nome + greeting + bell icon (sticky)
+/// - **Breadcrumb** (quando houver): abaixo do header pessoal
+/// - **Page Body** (scrollável, padding 24px): conteúdo da tela
 class AppScreen extends StatelessWidget {
   const AppScreen({
     super.key,
     required this.title,
     required this.body,
     this.breadcrumb,
+    this.showUserHeader = true,
   });
 
   final String title;
-
-  /// Conteúdo principal da página.
   final Widget body;
-
-  /// Trilha de navegação exibida no sticky header (issue #455).
   final List<BreadcrumbItem>? breadcrumb;
+  final bool showUserHeader;
 
   @override
   Widget build(BuildContext context) {
@@ -53,9 +42,12 @@ class AppScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Sticky header: breadcrumb only.
-        _StickyHeader(crumbs: crumbs, isWide: isWide),
-        // Page body: scrollável com padding 24px.
+        // Header pessoal (sticky)
+        if (showUserHeader) const _UserHeader(),
+        // Breadcrumb (se houver)
+        if (crumbs.isNotEmpty)
+          _BreadcrumbBar(crumbs: crumbs, isWide: isWide),
+        // Page body
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
@@ -68,24 +60,25 @@ class AppScreen extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Sticky Header
+// User Header
 // ---------------------------------------------------------------------------
 
-/// Header sticky (48px) com breadcrumb.
-///
-/// - Desktop (>=960px): breadcrumb trail (`Módulo › Nome`) à esquerda.
-/// - Mobile (<960px): back button (`← Módulo`) à esquerda.
-class _StickyHeader extends StatelessWidget {
-  const _StickyHeader({required this.crumbs, required this.isWide});
-
-  final List<BreadcrumbItem> crumbs;
-  final bool isWide;
+/// Header pessoal com avatar, nome, greeting e bell icon.
+/// Avatar clicável abre menu "Sair" para baixo.
+class _UserHeader extends ConsumerWidget {
+  const _UserHeader();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authControllerProvider).state.user;
+    final name = (user?.name ?? '').trim();
+    final email = (user?.email ?? '').trim();
+    final displayName = name.isNotEmpty ? name : email;
+    final greeting = name.isNotEmpty ? 'Olá, bem-vindo!' : 'Bem-vindo!';
+    final initials = _initials(name);
+
     return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(
@@ -94,17 +87,228 @@ class _StickyHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          if (crumbs.isNotEmpty)
-            Expanded(
-              child: isWide
-                  ? _BreadcrumbTrail(crumbs: crumbs)
-                  : _BackCrumb(
-                      label: crumbs.first.label,
-                      route: crumbs.first.route,
+          // Avatar + nome (clicável → menu sair)
+          PopupMenuButton<String>(
+            offset: const Offset(0, 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppColors.line),
+            ),
+            elevation: 4,
+            onSelected: (value) {
+              if (value == 'logout') {
+                _confirmLogout(context, ref);
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'user',
+                enabled: false,
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 14,
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                      child: initials.isNotEmpty
+                          ? Text(
+                              initials,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.person_outline,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
                     ),
-            )
-          else
-            const Spacer(),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            displayName,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          if (email.isNotEmpty)
+                            Text(
+                              email,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout_outlined, size: 18, color: AppColors.danger),
+                    SizedBox(width: 8),
+                    Text('Sair', style: TextStyle(color: AppColors.danger)),
+                  ],
+                ),
+              ),
+            ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                  child: initials.isNotEmpty
+                      ? Text(
+                          initials,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.person_outline,
+                          size: 20,
+                          color: AppColors.primary,
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      greeting,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(),
+
+          // Bell icon
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Sem notificações novas')),
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.notifications_outlined,
+                    size: 22,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: AppColors.danger,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+    final logout = await showKicksterConfirm(
+      context: context,
+      title: 'Sair',
+      content: 'Deseja realmente encerrar a sessão?',
+      confirmLabel: 'Sair',
+    );
+    if (logout == true) {
+      ref.read(authControllerProvider.notifier).logout();
+    }
+  }
+
+  String _initials(String name) {
+    final parts = name
+        .split(RegExp(r'[\s-]+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return '';
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Breadcrumb Bar
+// ---------------------------------------------------------------------------
+
+/// Barra de breadcrumb abaixo do header pessoal.
+class _BreadcrumbBar extends StatelessWidget {
+  const _BreadcrumbBar({required this.crumbs, required this.isWide});
+
+  final List<BreadcrumbItem> crumbs;
+  final bool isWide;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          bottom: BorderSide(color: AppColors.line, width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          isWide
+              ? _BreadcrumbTrail(crumbs: crumbs)
+              : _BackCrumb(
+                  label: crumbs.first.label,
+                  route: crumbs.first.route,
+                ),
         ],
       ),
     );
@@ -115,7 +319,7 @@ class _StickyHeader extends StatelessWidget {
 // Breadcrumb components
 // ---------------------------------------------------------------------------
 
-/// Trilha de breadcrumb responsiva (issue #455): `Módulo › Nome` em desktop.
+/// Trilha de breadcrumb: `Módulo › Nome` em desktop.
 class _BreadcrumbTrail extends StatelessWidget {
   const _BreadcrumbTrail({required this.crumbs});
 
@@ -153,8 +357,7 @@ void _goToListing(BuildContext context, String? route) {
   context.go(target);
 }
 
-/// Link de nível do breadcrumb: texto 14px w500, cor `primary` quando
-/// clicável (hover/foco com underline), `textSecondary` quando estático.
+/// Link de nível do breadcrumb.
 class _CrumbLink extends StatefulWidget {
   const _CrumbLink({required this.label, this.route});
 
@@ -204,7 +407,7 @@ class _CrumbLinkState extends State<_CrumbLink> {
   }
 }
 
-/// Back button do breadcrumb em viewports < 960px: `← Módulo` (issue #455).
+/// Back button do breadcrumb em viewports < 960px.
 class _BackCrumb extends StatelessWidget {
   const _BackCrumb({required this.label, this.route});
 
@@ -247,7 +450,7 @@ class _BackCrumb extends StatelessWidget {
   }
 }
 
-/// Estilo dos níveis do breadcrumb: 14px w500 (padrão do kit).
+/// Estilo dos níveis do breadcrumb.
 TextStyle _crumbTextStyle({required bool clickable}) {
   return TextStyle(
     fontSize: 14,

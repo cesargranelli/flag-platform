@@ -6,11 +6,11 @@ import 'package:go_router/go_router.dart';
 import '../providers/providers.dart';
 import '../widgets/app_screen.dart';
 
-/// Tela inicial do Admin Web — estrutura visual Kickster (Figma 34417:1519).
+/// Tela inicial do Admin Web — estrutura visual Kickster.
 ///
 /// Layout:
-/// 1. **Header pessoal**: avatar 40px + nome w600 + greeting w400 + bell icon
-/// 2. **Seção "Módulos"**: título 16px w600 + grid de KicksterCards
+/// - Header pessoal (via AppScreen): avatar + nome + greeting + bell
+/// - Seção "Módulos": título 16px w600 + grid de KicksterCards
 class AdminHomeScreen extends ConsumerWidget {
   const AdminHomeScreen({super.key});
 
@@ -18,8 +18,6 @@ class AdminHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider).state;
     final isAdmin = authState.user?.role == 'ADMIN';
-    final name = (authState.user?.name ?? '').trim();
-    final email = (authState.user?.email ?? '').trim();
 
     final modules = <_Module>[
       _Module(
@@ -42,22 +40,12 @@ class AdminHomeScreen extends ConsumerWidget {
         _Module(Icons.admin_panel_settings, AppStrings.users, '/users'),
     ];
 
-    final initials = _initials(name);
-
     return AppScreen(
       title: 'Início',
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── 1. Header pessoal (Kickster: profile image + name + greeting + bell)
-          _HomeHeader(
-            name: name,
-            email: email,
-            initials: initials,
-          ),
-          const SizedBox(height: 24),
-
-          // ── 2. Seção "Módulos" (Kickster: section title + content)
+          // Seção "Módulos"
           _SectionHeader(title: 'Módulos'),
           const SizedBox(height: 12),
           LayoutBuilder(
@@ -80,135 +68,6 @@ class AdminHomeScreen extends ConsumerWidget {
                 ],
               );
             },
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _initials(String name) {
-    final parts = name
-        .split(RegExp(r'[\s-]+'))
-        .where((p) => p.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return '';
-    if (parts.length == 1) return parts[0][0].toUpperCase();
-    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-  }
-}
-
-// ── Header pessoal ──────────────────────────────────────────────────────────
-
-/// Header da home seguindo o padrão Kickster (Figma 34417:1519):
-/// Avatar 40px + Column[nome w600, greeting w400] + Spacer + bell icon.
-class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({
-    required this.name,
-    required this.email,
-    required this.initials,
-  });
-
-  final String name;
-  final String email;
-  final String initials;
-
-  @override
-  Widget build(BuildContext context) {
-    final displayName = name.isNotEmpty ? name : email;
-    final greeting = name.isNotEmpty ? 'Olá, bem-vindo!' : 'Bem-vindo!';
-
-    return Row(
-      children: [
-        // Avatar (Kickster: Profile Image 40x40)
-        CircleAvatar(
-          radius: 20,
-          backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-          child: initials.isNotEmpty
-              ? Text(
-                  initials,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                  ),
-                )
-              : const Icon(
-                  Icons.person_outline,
-                  size: 20,
-                  color: AppColors.primary,
-                ),
-        ),
-        const SizedBox(width: 12),
-
-        // Nome + Greeting
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                displayName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                greeting,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Notificações (Kickster: bell 24x24 + red dot + settings)
-        _NotificationButton(),
-      ],
-    );
-  }
-}
-
-/// Botão de notificação (Kickster: bell icon com dot vermelho).
-class _NotificationButton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 40,
-      height: 40,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          IconButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Sem notificações novas')),
-              );
-            },
-            icon: const Icon(
-              Icons.notifications_outlined,
-              size: 22,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          // Red dot (Kickster: Ellipse 6x6 fill=#e53935)
-          Positioned(
-            top: 8,
-            right: 8,
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: AppColors.danger,
-                shape: BoxShape.circle,
-              ),
-            ),
           ),
         ],
       ),
