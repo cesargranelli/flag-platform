@@ -137,12 +137,9 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
                         icon: Icons.business,
                       );
                     }
-                    return DropdownButtonFormField<String>(
-                      initialValue: _organizationId,
-                      decoration: const InputDecoration(
-                        labelText: 'Organização',
-                        border: OutlineInputBorder(),
-                      ),
+                    return KicksterDropdown<String>(
+                      label: 'Organização',
+                      value: _organizationId,
                       items: orgs
                           .map((o) => DropdownMenuItem(
                                 value: o.id,

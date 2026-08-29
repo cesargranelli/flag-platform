@@ -61,13 +61,10 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
               AppLayout.form(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: DropdownButtonFormField<String>(
+                  child: KicksterDropdown<String>(
                     key: ValueKey('comp-$effectiveComp'),
-                    initialValue: effectiveComp,
-                    decoration: const InputDecoration(
-                      labelText: 'Campeonato',
-                      border: OutlineInputBorder(),
-                    ),
+                    label: 'Campeonato',
+                    value: effectiveComp,
                     items: compItems
                         .map(
                           (c) => DropdownMenuItem(

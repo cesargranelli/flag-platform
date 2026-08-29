@@ -663,14 +663,11 @@ class _CompetitionEditScreenState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         organizations.when(
-          loading: () => DropdownButtonFormField<String>(
+          loading: () => KicksterDropdown<String>(
+            label: 'Organização',
+            hint: 'Carregando organizações…',
             items: const <DropdownMenuItem<String>>[],
             onChanged: null,
-            decoration: const InputDecoration(
-              labelText: 'Organização',
-              hintText: 'Carregando organizações…',
-              border: OutlineInputBorder(),
-            ),
           ),
           error: (e, s) => Container(
             width: double.infinity,
@@ -730,15 +727,12 @@ class _CompetitionEditScreenState
                 ),
               );
             }
-            return DropdownButtonFormField<String>(
+            return KicksterDropdown<String>(
               key: ValueKey('edit-${_organizationId.text}'),
-              initialValue: _organizationId.text.isEmpty
+              label: 'Organização',
+              value: _organizationId.text.isEmpty
                   ? null
                   : _organizationId.text,
-              decoration: const InputDecoration(
-                labelText: 'Organização',
-                border: OutlineInputBorder(),
-              ),
               items: orgs
                   .map(
                     (o) => DropdownMenuItem(
@@ -1182,13 +1176,10 @@ class _CompetitionEditScreenState
           )
         else ...[
           if (conferenceItems.isNotEmpty) ...[
-            DropdownButtonFormField<String>(
+            KicksterDropdown<String>(
               key: ValueKey('division-conf-${_conferenceId ?? ''}'),
-              initialValue: _conferenceId ?? '',
-              decoration: const InputDecoration(
-                labelText: 'Conferência',
-                border: OutlineInputBorder(),
-              ),
+              label: 'Conferência',
+              value: _conferenceId ?? '',
               items: [
                 const DropdownMenuItem(
                   value: '',

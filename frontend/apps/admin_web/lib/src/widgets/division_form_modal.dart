@@ -184,12 +184,9 @@ class _DivisionFormModalState extends ConsumerState<DivisionFormModal> {
                       ),
                     );
                   }
-                  return DropdownButtonFormField<String>(
-                    initialValue: currentId ?? _kNoConference,
-                    decoration: const InputDecoration(
-                      labelText: 'Conferência',
-                      border: OutlineInputBorder(),
-                    ),
+                  return KicksterDropdown<String>(
+                    label: 'Conferência',
+                    value: currentId ?? _kNoConference,
                     items: items,
                     onChanged: (value) =>
                         setState(() => _conferenceId = value),

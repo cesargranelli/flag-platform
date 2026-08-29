@@ -150,12 +150,9 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                 (rounds?.when(
                       loading: () => const LinearProgressIndicator(),
                       error: (e, s) => const Text('Erro ao carregar rodadas'),
-                      data: (items) => DropdownButtonFormField<String>(
-                        initialValue: _roundId,
-                        decoration: const InputDecoration(
-                          labelText: 'Rodada',
-                          border: OutlineInputBorder(),
-                        ),
+                      data: (items) => KicksterDropdown<String>(
+                        label: 'Rodada',
+                        value: _roundId,
                         items: items
                             .map(
                               (r) => DropdownMenuItem(
@@ -175,12 +172,9 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                 (teams?.when(
                       loading: () => const LinearProgressIndicator(),
                       error: (e, s) => const Text('Erro ao carregar times'),
-                      data: (items) => DropdownButtonFormField<String>(
-                        initialValue: _homeTeamId,
-                        decoration: const InputDecoration(
-                          labelText: 'Time da casa',
-                          border: OutlineInputBorder(),
-                        ),
+                      data: (items) => KicksterDropdown<String>(
+                        label: 'Time da casa',
+                        value: _homeTeamId,
                         items: items
                             .map(
                               (t) => DropdownMenuItem(
@@ -201,12 +195,9 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                 (teams?.when(
                       loading: () => const LinearProgressIndicator(),
                       error: (e, s) => const Text('Erro ao carregar times'),
-                      data: (items) => DropdownButtonFormField<String>(
-                        initialValue: _awayTeamId,
-                        decoration: const InputDecoration(
-                          labelText: 'Time visitante',
-                          border: OutlineInputBorder(),
-                        ),
+                      data: (items) => KicksterDropdown<String>(
+                        label: 'Time visitante',
+                        value: _awayTeamId,
                         items: items
                             .map(
                               (t) => DropdownMenuItem(
@@ -233,12 +224,9 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                 venues.when(
                   loading: () => const LinearProgressIndicator(),
                   error: (e, s) => const Text('Erro ao carregar campos'),
-                  data: (items) => DropdownButtonFormField<String?>(
-                    initialValue: _venueId,
-                    decoration: const InputDecoration(
-                      labelText: 'Campo (opcional)',
-                      border: OutlineInputBorder(),
-                    ),
+                  data: (items) => KicksterDropdown<String?>(
+                    label: 'Campo (opcional)',
+                    value: _venueId,
                     items: [
                       const DropdownMenuItem<String?>(
                         value: null,

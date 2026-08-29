@@ -166,12 +166,9 @@ class _GroupingsBody extends ConsumerWidget {
               alignment: Alignment.centerLeft,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 360),
-                child: DropdownButtonFormField<String>(
-                  initialValue: competition.id,
-                  decoration: const InputDecoration(
-                    labelText: 'Campeonato',
-                    border: OutlineInputBorder(),
-                  ),
+                child: KicksterDropdown<String>(
+                  label: 'Campeonato',
+                  value: competition.id,
                   items: competitions
                       .map(
                         (c) => DropdownMenuItem(

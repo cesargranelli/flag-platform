@@ -610,14 +610,11 @@ class _CompetitionCreateScreenState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         organizations.when(
-          loading: () => DropdownButtonFormField<String>(
+          loading: () => KicksterDropdown<String>(
+            label: 'Organização',
+            hint: 'Carregando organizações…',
             items: const <DropdownMenuItem<String>>[],
             onChanged: null,
-            decoration: const InputDecoration(
-              labelText: 'Organização',
-              hintText: 'Carregando organizações…',
-              border: OutlineInputBorder(),
-            ),
           ),
           error: (e, s) => Container(
             width: double.infinity,
@@ -678,16 +675,13 @@ class _CompetitionCreateScreenState
                 ),
               );
             }
-            return DropdownButtonFormField<String>(
+            return KicksterDropdown<String>(
               key: ValueKey('create-${_organizationId.text}'),
-              initialValue: _organizationId.text.isEmpty
+              label:
+                  'Organização${orgs.length == 1 ? ' (pré-selecionada)' : ''}',
+              value: _organizationId.text.isEmpty
                   ? null
                   : _organizationId.text,
-              decoration: InputDecoration(
-                labelText:
-                    'Organização${orgs.length == 1 ? ' (pré-selecionada)' : ''}',
-                border: const OutlineInputBorder(),
-              ),
               items: orgs
                   .map(
                     (o) => DropdownMenuItem(
@@ -1099,13 +1093,10 @@ class _CompetitionCreateScreenState
           )
         else ...[
           if (conferenceItems.isNotEmpty) ...[
-            DropdownButtonFormField<String>(
+            KicksterDropdown<String>(
               key: ValueKey('division-conf-${_conferenceId ?? ''}'),
-              initialValue: _conferenceId ?? '',
-              decoration: const InputDecoration(
-                labelText: 'Conferência',
-                border: OutlineInputBorder(),
-              ),
+              label: 'Conferência',
+              value: _conferenceId ?? '',
               items: [
                 const DropdownMenuItem(
                   value: '',

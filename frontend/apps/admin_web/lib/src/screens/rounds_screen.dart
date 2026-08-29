@@ -74,13 +74,10 @@ class RoundsScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      DropdownButtonFormField<String>(
+                      KicksterDropdown<String>(
                         key: ValueKey('comp-$effectiveComp'),
-                        initialValue: effectiveComp,
-                        decoration: const InputDecoration(
-                          labelText: 'Campeonato',
-                          border: OutlineInputBorder(),
-                        ),
+                        label: 'Campeonato',
+                        value: effectiveComp,
                         items: compItems
                             .map(
                               (c) => DropdownMenuItem(

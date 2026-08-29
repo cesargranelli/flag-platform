@@ -84,13 +84,10 @@ class GamesScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      DropdownButtonFormField<String>(
+                      KicksterDropdown<String>(
                         key: ValueKey('comp-$effectiveComp'),
-                        initialValue: effectiveComp,
-                        decoration: const InputDecoration(
-                          labelText: 'Campeonato',
-                          border: OutlineInputBorder(),
-                        ),
+                        label: 'Campeonato',
+                        value: effectiveComp,
                         items: compItems
                             .map(
                               (c) => DropdownMenuItem(
@@ -103,8 +100,9 @@ class GamesScreen extends ConsumerWidget {
                             )
                             .toList(),
                         onChanged: (value) {
-                          ref.read(selectedCompetitionProvider.notifier).state =
-                              value;
+                          ref
+                              .read(selectedCompetitionProvider.notifier)
+                              .state = value;
                           ref.read(selectedRoundProvider.notifier).state = null;
                         },
                       ),
@@ -123,34 +121,31 @@ class GamesScreen extends ConsumerWidget {
                                     ),
                                   ),
                                   data: (roundItems) =>
-                                      DropdownButtonFormField<String>(
-                                        key: ValueKey('round-$effectiveComp'),
-                                        initialValue:
-                                            selectedRound ??
-                                            roundItems.first.id,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Rodada',
-                                          border: OutlineInputBorder(),
-                                        ),
-                                        items: roundItems
-                                            .map(
-                                              (r) => DropdownMenuItem(
-                                                value: r.id,
-                                                child: Text(
-                                                  'Rodada ${r.number} - ${r.name}',
+                                        KicksterDropdown<String>(
+                                          key: ValueKey('round-$effectiveComp'),
+                                          label: 'Rodada',
+                                          value:
+                                              selectedRound ??
+                                              roundItems.first.id,
+                                          items: roundItems
+                                              .map(
+                                                (r) => DropdownMenuItem(
+                                                  value: r.id,
+                                                  child: Text(
+                                                    'Rodada ${r.number} - ${r.name}',
+                                                  ),
                                                 ),
-                                              ),
-                                            )
-                                            .toList(),
-                                        onChanged: (value) =>
-                                            ref
-                                                    .read(
-                                                      selectedRoundProvider
-                                                          .notifier,
-                                                    )
-                                                    .state =
-                                                value,
-                                      ),
+                                              )
+                                              .toList(),
+                                          onChanged: (value) =>
+                                              ref
+                                                      .read(
+                                                        selectedRoundProvider
+                                                            .notifier,
+                                                      )
+                                                      .state =
+                                                  value,
+                                        ),
                                 )
                           : const LinearProgressIndicator(),
                       if (!canEdit)
