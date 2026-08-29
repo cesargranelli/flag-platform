@@ -92,13 +92,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
           const SizedBox(height: 24),
-          TextFormField(
+          KicksterInput(
+            label: AppStrings.loginEmail,
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: AppStrings.loginEmail,
-              prefixIcon: Icon(Icons.mail_outline),
-            ),
+            prefixIcon: Icons.mail_outline,
+            autofillHints: const [AutofillHints.email],
+            textInputAction: TextInputAction.done,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return AppStrings.loginRequiredEmail;
@@ -108,6 +108,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               }
               return null;
             },
+            onFieldSubmitted: (_) => _submit(),
           ),
           if (_errorMessage != null) ...[
             const SizedBox(height: 12),
@@ -119,15 +120,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             ),
           ],
           const SizedBox(height: 24),
-          FilledButton(
+          KicksterButton(
+            label: 'Enviar link de redefinição',
             onPressed: _submitting ? null : _submit,
-            child: _submitting
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Enviar link de redefinição'),
+            loading: _submitting,
           ),
         ],
       ),
@@ -158,9 +154,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
         const SizedBox(height: 24),
-        OutlinedButton(
+        KicksterButton(
+          label: 'Voltar ao login',
+          variant: KicksterButtonVariant.outline,
           onPressed: () => context.go('/login'),
-          child: const Text('Voltar ao login'),
         ),
       ],
     );

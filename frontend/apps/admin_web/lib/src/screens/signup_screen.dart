@@ -113,9 +113,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
               ),
               const SizedBox(height: 24),
-              FilledButton(
+              KicksterButton(
+                label: 'Voltar ao login',
                 onPressed: () => context.go('/login'),
-                child: const Text('Voltar ao login'),
               ),
             ],
           ),
@@ -169,13 +169,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
               ),
               const SizedBox(height: 32),
-              TextFormField(
+              KicksterInput(
+                label: AppStrings.loginEmail,
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: AppStrings.loginEmail,
-                  prefixIcon: Icon(Icons.mail_outline),
-                ),
+                prefixIcon: Icons.mail_outline,
+                autofillHints: const [AutofillHints.username, AutofillHints.email],
+                textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return AppStrings.loginRequiredEmail;
@@ -187,41 +187,42 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              KicksterInput(
+                label: AppStrings.loginPassword,
                 controller: _passwordController,
                 obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: AppStrings.loginPassword,
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    tooltip: _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
-                    icon: Icon(_obscurePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                  ),
+                prefixIcon: Icons.lock_outline,
+                suffixIcon: IconButton(
+                  tooltip:
+                      _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
+                  icon: Icon(_obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
+                autofillHints: const [AutofillHints.newPassword],
+                textInputAction: TextInputAction.next,
                 validator: (value) => (value == null || value.length < 6)
                     ? 'Mínimo de 6 caracteres'
                     : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              KicksterInput(
+                label: 'Confirmar senha',
                 controller: _confirmController,
                 obscureText: _obscureConfirm,
-                decoration: InputDecoration(
-                  labelText: 'Confirmar senha',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    tooltip: _obscureConfirm ? 'Mostrar senha' : 'Ocultar senha',
-                    icon: Icon(_obscureConfirm
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined),
-                    onPressed: () =>
-                        setState(() => _obscureConfirm = !_obscureConfirm),
-                  ),
+                prefixIcon: Icons.lock_outline,
+                suffixIcon: IconButton(
+                  tooltip: _obscureConfirm ? 'Mostrar senha' : 'Ocultar senha',
+                  icon: Icon(_obscureConfirm
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined),
+                  onPressed: () =>
+                      setState(() => _obscureConfirm = !_obscureConfirm),
                 ),
+                autofillHints: const [AutofillHints.newPassword],
+                textInputAction: TextInputAction.done,
                 validator: (value) => (value != _passwordController.text)
                     ? 'As senhas não coincidem'
                     : null,
@@ -237,15 +238,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 ),
               ],
               const SizedBox(height: 24),
-              FilledButton(
+              KicksterButton(
+                label: 'Criar conta',
                 onPressed: _submitting ? null : _submit,
-                child: _submitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Criar conta'),
+                loading: _submitting,
               ),
               const SizedBox(height: 24),
               Wrap(
