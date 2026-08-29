@@ -142,7 +142,9 @@ class _KicksterDropdownState<T> extends FormFieldState<T> {
             label,
             style: AppTextStyles.paragraph.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppColors.grayLabel,
+              // Contraste do rótulo: `textSecondary` (#66707A) sobre o
+              // fundo claro mantém 4.6:1 (AA) — `grayLabel` ficava em 3.9:1.
+              color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 6),
@@ -212,21 +214,27 @@ class _KicksterDropdownState<T> extends FormFieldState<T> {
     );
   }
 
-  /// Valor exibido no campo fechado: texto da opção selecionada (ou o
-  /// [hint]) em 12px `#9CA4AB` — no kit o valor aparece em cinza.
+  /// Valor exibido no campo fechado: texto da opção selecionada em 14px w500
+  /// `textPrimary` (contraste ≥4.5:1 — o antigo 12px `#9CA4AB` ficava em
+  /// 2.4:1) ou o [hint] em `textSecondary` (4.6:1) quando nada está
+  /// selecionado.
   Widget _buildValue() {
-    final text = _selectedEntry?.labelText ?? _widget.hint;
+    final selected = _selectedEntry;
+    final text = selected?.labelText ?? _widget.hint;
     if (text == null) return const SizedBox.shrink();
+    final style = selected != null
+        ? const TextStyle(
+            fontSize: 14,
+            height: 20 / 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
+          )
+        : AppTextStyles.fieldLabel.copyWith(color: AppColors.textSecondary);
     return Text(
       text,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
-        fontSize: 12,
-        height: 20 / 12,
-        fontWeight: FontWeight.w400,
-        color: AppColors.disabled,
-      ),
+      style: style,
     );
   }
 
