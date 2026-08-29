@@ -185,22 +185,13 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
 
   Future<void> _handleBack() async {
     if (_hasChanges && !_submitting && !_saved) {
-      final discard = await showDialog<bool>(
+      final discard = await showKicksterConfirm(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Descartar alterações?'),
-          content: const Text('As alterações não salvas serão perdidas.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Continuar editando'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Descartar'),
-            ),
-          ],
-        ),
+        title: 'Descartar alterações?',
+        content: 'As alterações não salvas serão perdidas.',
+        confirmLabel: 'Descartar',
+        cancelLabel: 'Continuar editando',
+        danger: true,
       );
       if (discard != true) return;
       _saved = true;
@@ -393,14 +384,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _documentField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'CNPJ (opcional)',
       controller: _document,
       keyboardType: TextInputType.number,
-      decoration: const InputDecoration(
-        labelText: 'CNPJ (opcional)',
-        hintText: '00.000.000/0000-00',
-        border: OutlineInputBorder(),
-      ),
+      hintText: '00.000.000/0000-00',
       onChanged: (value) {
         final masked = DocumentUtils.maskCnpj(value);
         if (masked != value) {
@@ -418,14 +406,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _presidentCpfField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'CPF do presidente',
       controller: _presidentCpf,
       keyboardType: TextInputType.number,
-      decoration: const InputDecoration(
-        labelText: 'CPF do presidente',
-        hintText: '000.000.000-00',
-        border: OutlineInputBorder(),
-      ),
+      hintText: '000.000.000-00',
       onChanged: (value) {
         final masked = DocumentUtils.maskCpf(value);
         if (masked != value) {
@@ -443,13 +428,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _emailField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'E-mail (opcional)',
       controller: _email,
       keyboardType: TextInputType.emailAddress,
-      decoration: const InputDecoration(
-        labelText: 'E-mail (opcional)',
-        hintText: 'contato@exemplo.com',
-      ),
+      hintText: 'contato@exemplo.com',
       validator: (v) {
         if (v == null || v.trim().isEmpty) return null;
         return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim())
@@ -460,13 +443,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _phoneField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'Telefone (opcional)',
       controller: _phone,
       keyboardType: TextInputType.phone,
-      decoration: const InputDecoration(
-        labelText: 'Telefone (opcional)',
-        hintText: '(11) 99999-9999',
-      ),
+      hintText: '(11) 99999-9999',
       onChanged: (value) {
         final masked = _maskPhone(value);
         if (masked != value) {
@@ -487,13 +468,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _websiteField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'Site (opcional)',
       controller: _website,
       keyboardType: TextInputType.url,
-      decoration: const InputDecoration(
-        labelText: 'Site (opcional)',
-        hintText: 'https://exemplo.com.br',
-      ),
+      hintText: 'https://exemplo.com.br',
       validator: (v) {
         if (v == null || v.trim().isEmpty) return null;
         final t = v.trim();
@@ -509,12 +488,10 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _instagramField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'Instagram (opcional)',
       controller: _instagram,
-      decoration: const InputDecoration(
-        labelText: 'Instagram (opcional)',
-        hintText: '@meuclube',
-      ),
+      hintText: '@meuclube',
       validator: (v) {
         if (v == null || v.trim().isEmpty) return null;
         final t = v.trim().replaceFirst('@', '');
@@ -559,13 +536,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _logoField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'URL do logo (opcional)',
       controller: _logoUrl,
       keyboardType: TextInputType.url,
-      decoration: const InputDecoration(
-        labelText: 'URL do logo (opcional)',
-        hintText: 'https://exemplo.com/logo.png',
-      ),
+      hintText: 'https://exemplo.com/logo.png',
       validator: (v) {
         if (v == null || v.trim().isEmpty) return null;
         final uri = Uri.tryParse(v.trim());
@@ -580,7 +555,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
 
   Widget _colorField(String label, TextEditingController controller) {
     return Expanded(
-      child: TextFormField(
+      child: KicksterInput(
+        label: label,
         controller: controller,
         inputFormatters: [
           FilteringTextInputFormatter.allow(RegExp(r'[#0-9a-fA-F]')),
@@ -601,20 +577,17 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
               ? null
               : 'Use #RRGGBB';
         },
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: '#FD6B22',
-          prefixIcon: IconButton(
-            tooltip: 'Escolher cor',
-            onPressed: () => _openColorPicker(controller),
-            icon: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: _parseHex(controller.text) ?? AppColors.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.black26),
-              ),
+        hintText: '#FD6B22',
+        prefix: IconButton(
+          tooltip: 'Escolher cor',
+          onPressed: () => _openColorPicker(controller),
+          icon: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: _parseHex(controller.text) ?? AppColors.primary,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.black26),
             ),
           ),
         ),
@@ -749,13 +722,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     String? Function(String?)? validator,
     TextInputType? keyboardType,
   }) {
-    return TextFormField(
+    return KicksterInput(
+      label: label,
       controller: controller,
       keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-      ),
+      hintText: hint,
       validator: validator,
     );
   }

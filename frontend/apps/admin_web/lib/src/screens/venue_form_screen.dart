@@ -151,32 +151,25 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Nome',
                   controller: _name,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome',
-                    border: OutlineInputBorder(),
-                  ),
                   validator: (value) =>
-                      (value == null || value.trim().isEmpty) ? 'Informe o nome' : null,
+                      (value == null || value.trim().isEmpty)
+                          ? 'Informe o nome'
+                          : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Endereço',
                   controller: _address,
-                  decoration: const InputDecoration(
-                    labelText: 'Endereço',
-                    border: OutlineInputBorder(),
-                  ),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'URL do mapa',
                   controller: _mapsUrl,
                   keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    labelText: 'URL do mapa',
-                    helperText: 'Ex.: https://maps.app.goo.gl/...',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: 'Ex.: https://maps.app.goo.gl/...',
                   validator: _validateMapsUrl,
                 ),
                 if (_errorMessage != null) ...[
@@ -187,15 +180,11 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
                   ),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
+                KicksterButton(
+                  label: 'Salvar',
+                  icon: Icons.check,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _save,
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Salvar'),
                 ),
               ],
             ),

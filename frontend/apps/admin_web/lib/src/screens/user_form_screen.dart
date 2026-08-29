@@ -99,35 +99,27 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextFormField(
+                KicksterInput(
+                  label: 'Nome',
                   controller: _name,
                   maxLength: 100,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Informe o nome'
-                      : null,
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty)
+                          ? 'Informe o nome'
+                          : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'E-mail',
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'E-mail',
-                    border: OutlineInputBorder(),
-                  ),
                   validator: _validateEmail,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Senha',
                   controller: _password,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Senha',
-                    border: OutlineInputBorder(),
-                  ),
                   validator: (value) => (value == null || value.length < 6)
                       ? 'Mínimo de 6 caracteres'
                       : null,
@@ -153,15 +145,11 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                   ),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
+                KicksterButton(
+                  label: 'Salvar',
+                  icon: Icons.check,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _save,
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Salvar'),
                 ),
               ],
             ),

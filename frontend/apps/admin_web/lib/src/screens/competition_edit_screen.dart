@@ -250,25 +250,12 @@ class _CompetitionEditScreenState
   /// Publica o campeonato (DRAFT → PUBLISHED), ação irreversível com
   /// confirmação. Após publicar, retorna ao detalhe (edição fica travada).
   Future<void> _publish() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showKicksterConfirm(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Publicar campeonato'),
-        content: const Text(
-          'Após publicar, o campeonato não poderá mais ser editado.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Publicar'),
-          ),
-        ],
-      ),
+      title: 'Publicar campeonato',
+      content: 'Após publicar, o campeonato não poderá mais ser editado.',
+      confirmLabel: 'Publicar',
+      danger: true,
     );
     if (confirmed != true || !mounted) return;
 
@@ -316,23 +303,12 @@ class _CompetitionEditScreenState
   /// Sair da rota com proteção de descarte (M3).
   Future<void> _handleBack() async {
     if (_hasChanges && !_submitting && !_saved) {
-      final discard = await showDialog<bool>(
+      final discard = await showKicksterConfirm(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Descartar alterações?'),
-          content: const Text('As alterações não salvas serão perdidas.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Descartar'),
-            ),
-          ],
-        ),
+        title: 'Descartar alterações?',
+        content: 'As alterações não salvas serão perdidas.',
+        confirmLabel: 'Descartar',
+        danger: true,
       );
       if (discard != true) return;
       if (!mounted) return;
@@ -680,23 +656,17 @@ class _CompetitionEditScreenState
           },
         ),
         const SizedBox(height: 12),
-        TextFormField(
+        KicksterInput(
+          label: 'Nome',
           controller: _name,
-          decoration: const InputDecoration(
-            labelText: 'Nome',
-            border: OutlineInputBorder(),
-          ),
           validator: (value) => (value == null || value.trim().isEmpty)
               ? 'Informe o nome'
               : null,
         ),
         const SizedBox(height: 12),
-        TextFormField(
+        KicksterInput(
+          label: 'Descrição',
           controller: _description,
-          decoration: const InputDecoration(
-            labelText: 'Descrição',
-            border: OutlineInputBorder(),
-          ),
           maxLines: 3,
         ),
       ],
@@ -824,28 +794,22 @@ class _CompetitionEditScreenState
         Row(
           children: [
             Expanded(
-              child: TextFormField(
+              child: KicksterInput(
+                label: 'Início (opcional)',
                 controller: _startDate,
                 readOnly: true,
                 onTap: () => _pickDate(_startDate),
-                decoration: const InputDecoration(
-                  labelText: 'Início (opcional)',
-                  suffixIcon: Icon(Icons.calendar_today),
-                  border: OutlineInputBorder(),
-                ),
+                suffixIcon: const Icon(Icons.calendar_today),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: TextFormField(
+              child: KicksterInput(
+                label: 'Fim (opcional)',
                 controller: _endDate,
                 readOnly: true,
                 onTap: () => _pickDate(_endDate, minDate: _parsedStartDate),
-                decoration: const InputDecoration(
-                  labelText: 'Fim (opcional)',
-                  suffixIcon: Icon(Icons.calendar_today),
-                  border: OutlineInputBorder(),
-                ),
+                suffixIcon: const Icon(Icons.calendar_today),
                 validator: (value) {
                   final start = _parsedStartDate;
                   final end = value == null || value.isEmpty
@@ -979,13 +943,10 @@ class _CompetitionEditScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: TextField(
+                child: KicksterInput(
+                  label: 'Nome da conferência',
                   controller: _conferenceName,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome da conferência',
-                    border: OutlineInputBorder(),
-                  ),
-                  onSubmitted: (_) => _addConference(),
+                  onFieldSubmitted: (_) => _addConference(),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1124,13 +1085,10 @@ class _CompetitionEditScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: TextField(
+                child: KicksterInput(
+                  label: 'Nome ($_groupingChoice)',
                   controller: _divisionName,
-                  decoration: InputDecoration(
-                    labelText: 'Nome ($_groupingChoice)',
-                    border: const OutlineInputBorder(),
-                  ),
-                  onSubmitted: (_) => _addDivision(),
+                  onFieldSubmitted: (_) => _addDivision(),
                 ),
               ),
               const SizedBox(width: 12),

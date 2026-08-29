@@ -161,26 +161,21 @@ class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
                       : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Nome',
                   controller: _name,
                   maxLength: 100,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Informe o nome'
-                      : null,
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty)
+                          ? 'Informe o nome'
+                          : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Sigla',
                   controller: _shortName,
                   maxLength: 10,
-                  decoration: const InputDecoration(
-                    labelText: 'Sigla',
-                    helperText: 'Ex.: FLA',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: 'Ex.: FLA',
                 ),
                 const SizedBox(height: 12),
                 KicksterDropdown<DocumentType>(
@@ -194,16 +189,13 @@ class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
                   onChanged: (value) => setState(() => _documentType = value),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'CNPJ do time ou CPF do representante',
                   controller: _document,
                   keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'CNPJ do time ou CPF do representante',
-                    hintText: _documentType == DocumentType.cpf
-                        ? '000.000.000-00'
-                        : '00.000.000/0000-00',
-                    border: const OutlineInputBorder(),
-                  ),
+                  hintText: _documentType == DocumentType.cpf
+                      ? '000.000.000-00'
+                      : '00.000.000/0000-00',
                   onChanged: (value) {
                     final masked = _documentType == DocumentType.cpf
                         ? DocumentUtils.maskCpf(value)
@@ -229,14 +221,11 @@ class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'URL do logo',
                   controller: _logoUrl,
                   keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    labelText: 'URL do logo',
-                    helperText: 'Ex.: https://...',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: 'Ex.: https://...',
                   validator: _validateLogoUrl,
                 ),
                 if (_errorMessage != null) ...[
@@ -250,15 +239,11 @@ class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
                   ),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
+                KicksterButton(
+                  label: 'Salvar',
+                  icon: Icons.check,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _save,
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Salvar'),
                 ),
               ],
             ),
