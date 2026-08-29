@@ -42,7 +42,6 @@ import '../screens/roster_import_screen.dart';
 import '../screens/signup_screen.dart';
 import '../screens/user_form_screen.dart';
 import '../screens/users_screen.dart';
-import '../screens/visual_test_screen.dart';
 import '../widgets/admin_shell.dart';
 
 /// Rotas do Admin Web com proteção de autenticação.
@@ -542,16 +541,6 @@ class AppRouter {
                       builder: (context, state) => const UserFormScreen(),
                     ),
                   ],
-                ),
-              ],
-            ),
-            // Branch Teste visual (somente ADMIN).
-            StatefulShellBranch(
-              routes: [
-                GoRoute(
-                  path: '/visual-test',
-                  name: 'visualTest',
-                  builder: (context, state) => const VisualTestScreen(),
                 ),
               ],
             ),
