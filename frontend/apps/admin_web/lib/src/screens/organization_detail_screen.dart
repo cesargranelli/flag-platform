@@ -33,20 +33,42 @@ class OrganizationDetailScreen extends ConsumerWidget {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
       ],
-      body: orgFuture == null
-          ? _buildDetail(context, org!)
-          : orgFuture.when(
-              loading: () => const AppLoading(
-                message: 'Carregando organização...',
-              ),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar a organização',
-                onRetry: () => ref.invalidate(
-                  organizationProvider(organizationId!),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  org?.tradeName ?? 'Organização',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
-              data: (org) => _buildDetail(context, org),
-            ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          orgFuture == null
+              ? _buildDetail(context, org!)
+              : orgFuture.when(
+                  loading: () => const AppLoading(
+                    message: 'Carregando organização...',
+                  ),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar a organização',
+                    onRetry: () => ref.invalidate(
+                      organizationProvider(organizationId!),
+                    ),
+                  ),
+                  data: (org) => _buildDetail(context, org),
+                ),
+        ],
+      ),
     );
   }
 

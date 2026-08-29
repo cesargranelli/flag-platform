@@ -28,16 +28,40 @@ class AthleteDetailScreen extends ConsumerWidget {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
       ],
-      body: athleteFuture == null
-          ? _buildDetail(context, athlete!)
-          : athleteFuture.when(
-              loading: () => const AppLoading(message: 'Carregando atleta...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar o atleta',
-                onRetry: () => ref.invalidate(athleteProvider(athleteId!)),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  athlete?.name ?? 'Atleta',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ),
-              data: (athlete) => _buildDetail(context, athlete),
-            ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          athleteFuture == null
+              ? _buildDetail(context, athlete!)
+              : athleteFuture.when(
+                  loading: () =>
+                      const AppLoading(message: 'Carregando atleta...'),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar o atleta',
+                    onRetry: () =>
+                        ref.invalidate(athleteProvider(athleteId!)),
+                  ),
+                  data: (athlete) => _buildDetail(context, athlete),
+                ),
+        ],
+      ),
     );
   }
 

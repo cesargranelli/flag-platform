@@ -41,121 +41,146 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
 
     return AppScreen(
       title: 'Campeonatos',
-      actions: [
-        KicksterButton(
-          label: 'Novo',
-          icon: Icons.add,
-          onPressed: () => context.go('/competitions/new'),
-        ),
-      ],
-      body: competitions.when(
-        loading: () => const AppLoading(message: 'Carregando campeonatos...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os campeonatos',
-          onRetry: () => showDisabled
-              ? ref.invalidate(competitionsAdminProvider(true))
-              : ref.invalidate(competitionsProvider),
-        ),
-        data: (items) {
-          if (items.isEmpty) {
-            return KicksterEmptyState(
-              icon: Icons.emoji_events_outlined,
-              message: 'Nenhum campeonato cadastrado',
-              description: 'Crie o primeiro campeonato para começar a usar.',
-              action: KicksterButton(
-                label: 'Criar campeonato',
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Campeonatos',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              KicksterButton(
+                label: 'Novo',
                 icon: Icons.add,
                 onPressed: () => context.go('/competitions/new'),
               ),
-            );
-          }
-          final query = _query.trim().toLowerCase();
-          final filtered = query.isEmpty
-              ? items
-              : items
-                  .where((c) => c.name.toLowerCase().contains(query))
-                  .toList(growable: false);
-
-          return AppLayout.content(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Row(
-                    children: [
-                      if (query.isNotEmpty)
-                        Text(
-                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        )
-                      else
-                        Text(
-                          '${items.length} campeonatos',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      const Spacer(),
-                      if (isAdmin)
-                        Tooltip(
-                          message: 'Exibir campeonatos desativados',
-                          child: IconButton(
-                            isSelected: _showDisabled,
-                            selectedIcon: const Icon(Icons.visibility),
-                            icon: const Icon(Icons.visibility_off_outlined),
-                            tooltip: 'Desativados',
-                            onPressed: () =>
-                                setState(() => _showDisabled = !_showDisabled),
-                          ),
-                        ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 280,
-                        child: KicksterSearchField(
-                          controller: _searchController,
-                          onChanged: (value) =>
-                              setState(() => _query = value),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: filtered.isEmpty
-                      ? const AppEmptyState(
-                          message: 'Nenhum campeonato encontrado',
-                          icon: Icons.search_off,
-                        )
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                            return GridView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: filtered.length,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: columns,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                mainAxisExtent: 96,
-                              ),
-                              itemBuilder: (context, index) {
-                                final competition = filtered[index];
-                                return _competitionCard(
-                                    context, competition);
-                              },
-                            );
-                          },
-                        ),
-                ),
-              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          competitions.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando campeonatos...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os campeonatos',
+              onRetry: () => showDisabled
+                  ? ref.invalidate(competitionsAdminProvider(true))
+                  : ref.invalidate(competitionsProvider),
             ),
-          );
-        },
+            data: (items) {
+              if (items.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.emoji_events_outlined,
+                  message: 'Nenhum campeonato cadastrado',
+                  description:
+                      'Crie o primeiro campeonato para começar a usar.',
+                  action: KicksterButton(
+                    label: 'Criar campeonato',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/competitions/new'),
+                  ),
+                );
+              }
+              final query = _query.trim().toLowerCase();
+              final filtered = query.isEmpty
+                  ? items
+                  : items
+                      .where((c) => c.name.toLowerCase().contains(query))
+                      .toList(growable: false);
+
+              return Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+                    child: Row(
+                      children: [
+                        if (query.isNotEmpty)
+                          Text(
+                            '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          )
+                        else
+                          Text(
+                            '${items.length} campeonatos',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        const Spacer(),
+                        if (isAdmin)
+                          Tooltip(
+                            message: 'Exibir campeonatos desativados',
+                            child: IconButton(
+                              isSelected: _showDisabled,
+                              selectedIcon: const Icon(Icons.visibility),
+                              icon: const Icon(
+                                  Icons.visibility_off_outlined),
+                              tooltip: 'Desativados',
+                              onPressed: () => setState(
+                                  () => _showDisabled = !_showDisabled),
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 280,
+                          child: KicksterSearchField(
+                            controller: _searchController,
+                            onChanged: (value) =>
+                                setState(() => _query = value),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (filtered.isEmpty)
+                    const AppEmptyState(
+                      message: 'Nenhum campeonato encontrado',
+                      icon: Icons.search_off,
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns =
+                            constraints.maxWidth >= 600 ? 2 : 1;
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics:
+                              const NeverScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filtered.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: columns,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            mainAxisExtent: 96,
+                          ),
+                          itemBuilder: (context, index) {
+                            final competition = filtered[index];
+                            return _competitionCard(
+                                context, competition);
+                          },
+                        );
+                      },
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }

@@ -50,59 +50,83 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
 
     return AppScreen(
       title: 'Elencos',
-      body: competitions.when(
-        loading: () => const AppLoading(message: 'Carregando campeonatos...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os campeonatos',
-          onRetry: () => ref.invalidate(competitionsProvider),
-        ),
-        data: (_) {
-          if (compItems.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum campeonato cadastrado',
-              icon: Icons.emoji_events_outlined,
-            );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          const Row(
             children: [
-              AppLayout.form(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: KicksterDropdown<String>(
-                    key: ValueKey('comp-$effectiveComp'),
-                    label: 'Campeonato',
-                    value: effectiveComp,
-                    items: compItems
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c.id,
-                            child: appDropdownItem(
-                              Icons.emoji_events_outlined,
-                              c.name,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      ref.read(selectedCompetitionProvider.notifier).state =
-                          value;
-                      ref.read(selectedTeamProvider.notifier).state = null;
-                    },
+              Expanded(
+                child: Text(
+                  'Elencos',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
-              Expanded(
-                child: effectiveComp != null
-                    ? _clubList(context, effectiveComp)
-                    : const AppEmptyState(
-                        message: 'Selecione um campeonato',
-                        icon: Icons.emoji_events_outlined,
-                      ),
-              ),
             ],
-          );
-        },
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: competitions.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando campeonatos...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar os campeonatos',
+                onRetry: () => ref.invalidate(competitionsProvider),
+              ),
+              data: (_) {
+                if (compItems.isEmpty) {
+                  return const AppEmptyState(
+                    message: 'Nenhum campeonato cadastrado',
+                    icon: Icons.emoji_events_outlined,
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppLayout.form(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: KicksterDropdown<String>(
+                          key: ValueKey('comp-$effectiveComp'),
+                          label: 'Campeonato',
+                          value: effectiveComp,
+                          items: compItems
+                              .map(
+                                (c) => DropdownMenuItem(
+                                  value: c.id,
+                                  child: appDropdownItem(
+                                    Icons.emoji_events_outlined,
+                                    c.name,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            ref.read(selectedCompetitionProvider.notifier).state =
+                                value;
+                            ref.read(selectedTeamProvider.notifier).state = null;
+                          },
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: effectiveComp != null
+                          ? _clubList(context, effectiveComp)
+                          : const AppEmptyState(
+                              message: 'Selecione um campeonato',
+                              icon: Icons.emoji_events_outlined,
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

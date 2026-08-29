@@ -131,20 +131,43 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.teams, route: '/teams'),
       ],
-      actions: [
-        if (teamId != null)
-          IconButton(
-            tooltip: 'Importar CSV',
-            icon: const Icon(Icons.upload_file),
-            onPressed: () => context.push('/rosters/import', extra: teamId),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              if (teamId != null)
+                IconButton(
+                  tooltip: 'Importar CSV',
+                  icon: const Icon(Icons.upload_file),
+                  onPressed: () =>
+                      context.push('/rosters/import', extra: teamId),
+                ),
+            ],
           ),
-      ],
-      body: teamId == null
-          ? const AppEmptyState(
-              message: 'Time não identificado',
-              icon: Icons.groups_outlined,
-            )
-          : _buildRoster(context, teamId),
+          const SizedBox(height: 16),
+          // Conteúdo
+          Expanded(
+            child: teamId == null
+                ? const AppEmptyState(
+                    message: 'Time não identificado',
+                    icon: Icons.groups_outlined,
+                  )
+                : _buildRoster(context, teamId),
+          ),
+        ],
+      ),
     );
   }
 

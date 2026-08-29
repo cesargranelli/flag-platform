@@ -31,108 +31,130 @@ class _AthletesScreenState extends ConsumerState<AthletesScreen> {
 
     return AppScreen(
       title: 'Atletas',
-      actions: [
-        KicksterButton(
-          label: 'Importar',
-          icon: Icons.upload_file,
-          variant: KicksterButtonVariant.outline,
-          onPressed: () => context.push('/athletes/import'),
-        ),
-        KicksterButton(
-          label: 'Novo',
-          icon: Icons.add,
-          onPressed: () => context.go('/athletes/new'),
-        ),
-      ],
-      body: athletes.when(
-        loading: () => const AppLoading(message: 'Carregando atletas...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os atletas',
-          onRetry: () => ref.invalidate(athletesProvider),
-        ),
-        data: (items) {
-          if (items.isEmpty) {
-            return KicksterEmptyState(
-              icon: Icons.person_outline,
-              message: 'Nenhum atleta cadastrado',
-              description: 'Crie o primeiro atleta para começar a usar.',
-              action: KicksterButton(
-                label: 'Criar atleta',
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Atletas',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              KicksterButton(
+                label: 'Importar',
+                icon: Icons.upload_file,
+                variant: KicksterButtonVariant.outline,
+                onPressed: () => context.push('/athletes/import'),
+              ),
+              const SizedBox(width: 8),
+              KicksterButton(
+                label: 'Novo',
                 icon: Icons.add,
                 onPressed: () => context.go('/athletes/new'),
               ),
-            );
-          }
-          final query = _query.trim().toLowerCase();
-          final filtered = query.isEmpty
-              ? items
-              : items
-                  .where((a) => a.name.toLowerCase().contains(query))
-                  .toList(growable: false);
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          athletes.when(
+            loading: () => const AppLoading(message: 'Carregando atletas...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os atletas',
+              onRetry: () => ref.invalidate(athletesProvider),
+            ),
+            data: (items) {
+              if (items.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.person_outline,
+                  message: 'Nenhum atleta cadastrado',
+                  description: 'Crie o primeiro atleta para começar a usar.',
+                  action: KicksterButton(
+                    label: 'Criar atleta',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/athletes/new'),
+                  ),
+                );
+              }
+              final query = _query.trim().toLowerCase();
+              final filtered = query.isEmpty
+                  ? items
+                  : items
+                      .where((a) => a.name.toLowerCase().contains(query))
+                      .toList(growable: false);
 
-          return Column(
-            children: [
-              Row(
+              return Column(
                 children: [
-                  if (query.isNotEmpty)
-                    Text(
-                      '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
+                  Row(
+                    children: [
+                      if (query.isNotEmpty)
+                        Text(
+                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      else
+                        Text(
+                          '${items.length} ${items.length == 1 ? 'atleta' : 'atletas'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      const Spacer(),
+                      SizedBox(
+                        width: 280,
+                        child: KicksterSearchField(
+                          controller: _searchController,
+                          onChanged: (value) =>
+                              setState(() => _query = value),
+                        ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (filtered.isEmpty)
+                    const AppEmptyState(
+                      message: 'Nenhum atleta encontrado',
+                      icon: Icons.search_off,
                     )
                   else
-                    Text(
-                      '${items.length} ${items.length == 1 ? 'atleta' : 'atletas'}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  const Spacer(),
-                  SizedBox(
-                    width: 280,
-                    child: KicksterSearchField(
-                      controller: _searchController,
-                      onChanged: (value) =>
-                          setState(() => _query = value),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (filtered.isEmpty)
-                const AppEmptyState(
-                  message: 'Nenhum atleta encontrado',
-                  icon: Icons.search_off,
-                )
-              else
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                    return GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
-                      itemCount: filtered.length,
-                      gridDelegate:
-                          SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        mainAxisExtent: 96,
-                      ),
-                      itemBuilder: (context, index) {
-                        final athlete = filtered[index];
-                        return _athleteCard(context, athlete);
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns =
+                            constraints.maxWidth >= 600 ? 2 : 1;
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filtered.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: columns,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            mainAxisExtent: 96,
+                          ),
+                          itemBuilder: (context, index) {
+                            final athlete = filtered[index];
+                            return _athleteCard(context, athlete);
+                          },
+                        );
                       },
-                    );
-                  },
-                ),
-            ],
-          );
-        },
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }

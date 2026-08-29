@@ -400,77 +400,98 @@ class _CompetitionEditScreenState
         breadcrumb: const [
           BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
         ],
-        body: AppLayout.form(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Faixa de estado do status (issue #287): chip + Publicar.
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.grayFill.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.grayFill),
-                    ),
-                    child: Row(
-                      children: [
-                        _statusChip(_status),
-                        const Spacer(),
-                        KicksterButton(
-                          label: 'Publicar',
-                          icon: Icons.publish_outlined,
-                          variant: KicksterButtonVariant.outline,
-                          onPressed: _submitting ? null : _publish,
-                        ),
-                      ],
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Título + actions
+            const Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Editar campeonato',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  if (_errorMessage != null) _errorBanner(_errorMessage!),
-                  _section(
-                    title: 'Campeonato',
-                    icon: Icons.emoji_events_outlined,
-                    child: _identityStep(context),
-                  ),
-                  _section(
-                    title: 'Modalidade',
-                    icon: Icons.sports_football_outlined,
-                    child: _modalityStep(context),
-                  ),
-                  _section(
-                    title: 'Categoria',
-                    icon: Icons.groups_outlined,
-                    child: _categoryStep(context),
-                  ),
-                  _section(
-                    title: 'Temporada',
-                    icon: Icons.date_range,
-                    child: _seasonStep(context),
-                  ),
-                  _section(
-                    title: 'Conferências',
-                    icon: Icons.account_tree_outlined,
-                    child: _conferencesStep(context),
-                  ),
-                  _section(
-                    title: 'Agrupamento',
-                    icon: Icons.hub_outlined,
-                    child: _structureStep(context),
-                  ),
-                  const SizedBox(height: 8),
-                  KicksterButton(
-                    label: 'Salvar',
-                    icon: Icons.check,
-                    loading: _submitting,
-                    onPressed: _submitting ? null : _save,
-                  ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            AppLayout.form(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Faixa de estado do status (issue #287): chip + Publicar.
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.grayFill.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.grayFill),
+                      ),
+                      child: Row(
+                        children: [
+                          _statusChip(_status),
+                          const Spacer(),
+                          KicksterButton(
+                            label: 'Publicar',
+                            icon: Icons.publish_outlined,
+                            variant: KicksterButtonVariant.outline,
+                            onPressed: _submitting ? null : _publish,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    if (_errorMessage != null) _errorBanner(_errorMessage!),
+                    _section(
+                      title: 'Campeonato',
+                      icon: Icons.emoji_events_outlined,
+                      child: _identityStep(context),
+                    ),
+                    _section(
+                      title: 'Modalidade',
+                      icon: Icons.sports_football_outlined,
+                      child: _modalityStep(context),
+                    ),
+                    _section(
+                      title: 'Categoria',
+                      icon: Icons.groups_outlined,
+                      child: _categoryStep(context),
+                    ),
+                    _section(
+                      title: 'Temporada',
+                      icon: Icons.date_range,
+                      child: _seasonStep(context),
+                    ),
+                    _section(
+                      title: 'Conferências',
+                      icon: Icons.account_tree_outlined,
+                      child: _conferencesStep(context),
+                    ),
+                    _section(
+                      title: 'Agrupamento',
+                      icon: Icons.hub_outlined,
+                      child: _structureStep(context),
+                    ),
+                    const SizedBox(height: 8),
+                    KicksterButton(
+                      label: 'Salvar',
+                      icon: Icons.check,
+                      loading: _submitting,
+                      onPressed: _submitting ? null : _save,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
+      ),
     );
   }
 

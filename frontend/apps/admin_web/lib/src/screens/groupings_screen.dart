@@ -33,31 +33,58 @@ class GroupingsScreen extends ConsumerWidget {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
       ],
-      body: competitions.when(
-        loading: () => const AppLoading(message: 'Carregando campeonatos...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os campeonatos',
-          onRetry: () => ref.invalidate(competitionsProvider),
-        ),
-        data: (compItems) {
-          if (compItems.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum campeonato cadastrado. '
-                  'Crie um campeonato para organizar conferências e divisões.',
-              icon: Icons.emoji_events_outlined,
-            );
-          }
-          // O id selecionado pode estar obsoleto (ex.: campeonato removido
-          // em outra sessão); nesse caso cai para o primeiro disponível.
-          var selected = compItems.first;
-          for (final c in compItems) {
-            if (c.id == selectedCompetitionId) {
-              selected = c;
-              break;
-            }
-          }
-          return _GroupingsBody(competitions: compItems, competition: selected);
-        },
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          const Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Conferências e divisões',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: competitions.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando campeonatos...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar os campeonatos',
+                onRetry: () => ref.invalidate(competitionsProvider),
+              ),
+              data: (compItems) {
+                if (compItems.isEmpty) {
+                  return const AppEmptyState(
+                    message: 'Nenhum campeonato cadastrado. '
+                        'Crie um campeonato para organizar conferências e divisões.',
+                    icon: Icons.emoji_events_outlined,
+                  );
+                }
+                // O id selecionado pode estar obsoleto (ex.: campeonato removido
+                // em outra sessão); nesse caso cai para o primeiro disponível.
+                var selected = compItems.first;
+                for (final c in compItems) {
+                  if (c.id == selectedCompetitionId) {
+                    selected = c;
+                    break;
+                  }
+                }
+                return _GroupingsBody(
+                  competitions: compItems,
+                  competition: selected,
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

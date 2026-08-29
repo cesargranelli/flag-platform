@@ -182,7 +182,26 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
       ],
-      body: AppLayout.form(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _isEditing ? 'Editar atleta' : 'Novo atleta',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -259,6 +278,8 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
             ),
           ),
         ),
+      ],
+      ),
     );
   }
 }

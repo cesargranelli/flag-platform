@@ -21,38 +21,28 @@ class BreadcrumbItem {
 
 /// Scaffold padrão das telas autenticadas do Admin Web (issue #457).
 ///
-/// Segue o padrão **shadcn sidebar-01**:
+/// Padrão **shadcn sidebar-01**:
 ///
 /// - **Sticky Header** (48px): breadcrumb (desktop: trilha `Módulo › Nome`,
-///   mobile: back button `← Módulo`) + actions à direita.
-/// - **Page Body** (scrollável, padding 24px): título (20px w700) + ações +
-///   conteúdo.
+///   mobile: back button `← Módulo`).
+/// - **Page Body** (scrollável, padding 24px): conteúdo gerenciado pela tela.
 ///
-/// O título é renderizado no body, não no header. O breadcrumb fica no
-/// header sticky que gruda no topo ao scrollar.
+/// O título, ações e conteúdo ficam sob responsabilidade de cada tela.
+/// O [AppScreen] apenas fornece o container com breadcrumb sticky + padding.
 class AppScreen extends StatelessWidget {
   const AppScreen({
     super.key,
     required this.title,
     required this.body,
-    this.actions,
     this.breadcrumb,
   });
 
   final String title;
 
-  /// Ações da tela alinhadas à direita do título no body (ex.: "Novo").
-  final List<Widget>? actions;
-
   /// Conteúdo principal da página.
   final Widget body;
 
   /// Trilha de navegação exibida no sticky header (issue #455).
-  ///
-/// Em viewports `>=960px` vira a trilha `Módulo › Nome` — o primeiro nível
-  /// (clicável, hover/foco) navega para a listagem do módulo e o título da
-  /// tela fecha a trilha como nível atual. Abaixo de 960px vira o back button
-  /// `← Módulo`, que também retorna à listagem.
   final List<BreadcrumbItem>? breadcrumb;
 
   @override
@@ -63,21 +53,13 @@ class AppScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Sticky header: breadcrumb + actions.
-        _StickyHeader(
-          crumbs: crumbs,
-          isWide: isWide,
-          actions: actions,
-        ),
+        // Sticky header: breadcrumb only.
+        _StickyHeader(crumbs: crumbs, isWide: isWide),
         // Page body: scrollável com padding 24px.
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: _PageBody(
-              title: title,
-              actions: actions,
-              child: body,
-            ),
+            child: body,
           ),
         ),
       ],
@@ -89,26 +71,18 @@ class AppScreen extends StatelessWidget {
 // Sticky Header
 // ---------------------------------------------------------------------------
 
-/// Header sticky (48px) com breadcrumb e actions.
+/// Header sticky (48px) com breadcrumb.
 ///
 /// - Desktop (>=960px): breadcrumb trail (`Módulo › Nome`) à esquerda.
 /// - Mobile (<960px): back button (`← Módulo`) à esquerda.
-/// - Actions à direita (se houver).
 class _StickyHeader extends StatelessWidget {
-  const _StickyHeader({
-    required this.crumbs,
-    required this.isWide,
-    this.actions,
-  });
+  const _StickyHeader({required this.crumbs, required this.isWide});
 
   final List<BreadcrumbItem> crumbs;
   final bool isWide;
-  final List<Widget>? actions;
 
   @override
   Widget build(BuildContext context) {
-    final hasActions = actions != null && actions!.isNotEmpty;
-
     return Container(
       height: 48,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -120,7 +94,6 @@ class _StickyHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Breadcrumb: trilha completa (desktop) ou back button (mobile).
           if (crumbs.isNotEmpty)
             Expanded(
               child: isWide
@@ -132,8 +105,6 @@ class _StickyHeader extends StatelessWidget {
             )
           else
             const Spacer(),
-          // Actions à direita (se houver).
-          if (hasActions) ...actions!,
         ],
       ),
     );
@@ -141,68 +112,10 @@ class _StickyHeader extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Page Body
-// ---------------------------------------------------------------------------
-
-/// Corpo da página com título (20px w700) + actions + conteúdo.
-///
-/// O título aparece na primeira linha com `Semantics(header: true)`. As actions
-/// ficam à direita com `Spacer`. Gap título↔body: 8px.
-class _PageBody extends StatelessWidget {
-  const _PageBody({
-    required this.title,
-    this.actions,
-    required this.child,
-  });
-
-  final String title;
-  final List<Widget>? actions;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasActions = actions != null && actions!.isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Título + actions.
-        Row(
-          children: [
-            Expanded(
-              child: Semantics(
-                header: true,
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-            if (hasActions) ...actions!,
-          ],
-        ),
-        const SizedBox(height: 8),
-        // Conteúdo.
-        child,
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Breadcrumb components (inalterados)
+// Breadcrumb components
 // ---------------------------------------------------------------------------
 
 /// Trilha de breadcrumb responsiva (issue #455): `Módulo › Nome` em desktop.
-///
-/// Os itens da lista são os níveis acima; o título da página (já exibido no
-/// [_PageBody]) é implícito como nível final da trilha.
 class _BreadcrumbTrail extends StatelessWidget {
   const _BreadcrumbTrail({required this.crumbs});
 
@@ -234,10 +147,6 @@ class _BreadcrumbTrail extends StatelessWidget {
 }
 
 /// Navega para a listagem do módulo (breadcrumb/back).
-///
-/// Usa `context.go` — o breadcrumb é a trilha explícita da hierarquia e
-/// deve pousar sempre na listagem, independente de onde o usuário veio
-/// (o browser back continua preservado pela navegação `push` das listagens).
 void _goToListing(BuildContext context, String? route) {
   final target = route;
   if (target == null) return;
@@ -309,9 +218,7 @@ class _BackCrumb extends StatelessWidget {
       child: Tooltip(
         message: 'Voltar para $label',
         child: InkWell(
-          onTap: route == null
-              ? null
-              : () => _goToListing(context, route),
+          onTap: route == null ? null : () => _goToListing(context, route),
           hoverColor: Colors.transparent,
           focusColor: Colors.transparent,
           borderRadius: BorderRadius.circular(8),

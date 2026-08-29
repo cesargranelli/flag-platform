@@ -44,143 +44,170 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
 
     return AppScreen(
       title: 'Organizações',
-      actions: [
-        KicksterButton(
-          label: 'Novo',
-          icon: Icons.add,
-          onPressed: () => context.go('/organizations/new'),
-        ),
-      ],
-      body: organizations.when(
-        loading: () => const AppLoading(message: 'Carregando organizações...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar as organizações',
-          onRetry: () => showDisabled
-              ? ref.invalidate(organizationsAdminProvider(true))
-              : ref.invalidate(organizationsProvider),
-        ),
-        data: (items) {
-          if (items.isEmpty) {
-            return KicksterEmptyState(
-              icon: Icons.business,
-              message: 'Nenhuma organização cadastrada',
-              description: 'Crie a primeira organização para começar a usar.',
-              action: KicksterButton(
-                label: 'Criar organização',
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Organizações',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              KicksterButton(
+                label: 'Novo',
                 icon: Icons.add,
                 onPressed: () => context.go('/organizations/new'),
               ),
-            );
-          }
-          final query = _query.trim().toLowerCase();
-          final filtered = items
-              .where((o) {
-                if (_typeFilter != null && o.organizationType != _typeFilter) {
-                  return false;
-                }
-                if (query.isEmpty) return true;
-                return o.tradeName.toLowerCase().contains(query) ||
-                    o.legalName.toLowerCase().contains(query);
-              })
-              .toList(growable: false);
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          organizations.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando organizações...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar as organizações',
+              onRetry: () => showDisabled
+                  ? ref.invalidate(organizationsAdminProvider(true))
+                  : ref.invalidate(organizationsProvider),
+            ),
+            data: (items) {
+              if (items.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.business,
+                  message: 'Nenhuma organização cadastrada',
+                  description:
+                      'Crie a primeira organização para começar a usar.',
+                  action: KicksterButton(
+                    label: 'Criar organização',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/organizations/new'),
+                  ),
+                );
+              }
+              final query = _query.trim().toLowerCase();
+              final filtered = items
+                  .where((o) {
+                    if (_typeFilter != null &&
+                        o.organizationType != _typeFilter) {
+                      return false;
+                    }
+                    if (query.isEmpty) return true;
+                    return o.tradeName.toLowerCase().contains(query) ||
+                        o.legalName.toLowerCase().contains(query);
+                  })
+                  .toList(growable: false);
 
-          return Column(
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
+              return Column(
                 children: [
-                  if (query.isNotEmpty)
-                    Text(
-                      '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (query.isNotEmpty)
+                        Text(
+                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      else
+                        Text(
+                          '${filtered.length} de ${items.length}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      if (isAdmin)
+                        Tooltip(
+                          message: 'Exibir organizações desativadas',
+                          child: IconButton(
+                            isSelected: _showDisabled,
+                            selectedIcon: const Icon(Icons.visibility),
+                            icon:
+                                const Icon(Icons.visibility_off_outlined),
+                            tooltip: 'Desativadas',
+                            onPressed: () => setState(
+                                () => _showDisabled = !_showDisabled),
+                          ),
+                        ),
+                      SizedBox(
+                        width: 260,
+                        child: KicksterDropdown<OrganizationType?>(
+                          label: 'Filtrar por tipo',
+                          value: _typeFilter,
+                          values: [null, ...OrganizationType.values],
+                          labels: [
+                            'Todas as organizações',
+                            ...OrganizationType.values
+                                .map((t) => t.label),
+                          ],
+                          icons: [
+                            null,
+                            ...OrganizationType.values
+                                .map(organizationTypeIcon),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _typeFilter = value),
+                        ),
                       ),
+                      SizedBox(
+                        width: 220,
+                        child: KicksterSearchField(
+                          controller: _searchController,
+                          onChanged: (value) =>
+                              setState(() => _query = value),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (filtered.isEmpty)
+                    const AppEmptyState(
+                      message: 'Nenhuma organização encontrada',
+                      icon: Icons.search_off,
                     )
                   else
-                    Text(
-                      '${filtered.length} de ${items.length}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  if (isAdmin)
-                    Tooltip(
-                      message: 'Exibir organizações desativadas',
-                      child: IconButton(
-                        isSelected: _showDisabled,
-                        selectedIcon: const Icon(Icons.visibility),
-                        icon: const Icon(Icons.visibility_off_outlined),
-                        tooltip: 'Desativadas',
-                        onPressed: () => setState(
-                            () => _showDisabled = !_showDisabled),
-                      ),
-                    ),
-                  SizedBox(
-                    width: 260,
-                    child: KicksterDropdown<OrganizationType?>(
-                      label: 'Filtrar por tipo',
-                      value: _typeFilter,
-                      values: [null, ...OrganizationType.values],
-                      labels: [
-                        'Todas as organizações',
-                        ...OrganizationType.values.map((t) => t.label),
-                      ],
-                      icons: [
-                        null,
-                        ...OrganizationType.values
-                            .map(organizationTypeIcon),
-                      ],
-                      onChanged: (value) =>
-                          setState(() => _typeFilter = value),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 220,
-                    child: KicksterSearchField(
-                      controller: _searchController,
-                      onChanged: (value) =>
-                          setState(() => _query = value),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (filtered.isEmpty)
-                const AppEmptyState(
-                  message: 'Nenhuma organização encontrada',
-                  icon: Icons.search_off,
-                )
-              else
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                    return GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
-                      itemCount: filtered.length,
-                      gridDelegate:
-                          SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        mainAxisExtent: 96,
-                      ),
-                      itemBuilder: (context, index) {
-                        final organization = filtered[index];
-                        return _organizationCard(
-                            context, organization);
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns =
+                            constraints.maxWidth >= 600 ? 2 : 1;
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics:
+                              const NeverScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filtered.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: columns,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            mainAxisExtent: 96,
+                          ),
+                          itemBuilder: (context, index) {
+                            final organization = filtered[index];
+                            return _organizationCard(
+                                context, organization);
+                          },
+                        );
                       },
-                    );
-                  },
-                ),
-            ],
-          );
-        },
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }

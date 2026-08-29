@@ -28,16 +28,39 @@ class GameDetailScreen extends ConsumerWidget {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.games, route: '/games'),
       ],
-      body: gameFuture == null
-          ? _buildDetail(context, ref, game!)
-          : gameFuture.when(
-              loading: () => const AppLoading(message: 'Carregando jogo...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar o jogo',
-                onRetry: () => ref.invalidate(gameProvider(gameId!)),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  game?.homeTeamName ?? 'Jogo',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ),
-              data: (game) => _buildDetail(context, ref, game),
-            ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          gameFuture == null
+              ? _buildDetail(context, ref, game!)
+              : gameFuture.when(
+                  loading: () =>
+                      const AppLoading(message: 'Carregando jogo...'),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar o jogo',
+                    onRetry: () => ref.invalidate(gameProvider(gameId!)),
+                  ),
+                  data: (game) => _buildDetail(context, ref, game),
+                ),
+        ],
+      ),
     );
   }
 

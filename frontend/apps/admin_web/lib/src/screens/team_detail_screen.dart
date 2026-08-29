@@ -25,16 +25,39 @@ class TeamDetailScreen extends ConsumerWidget {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.teams, route: '/teams'),
       ],
-      body: teamFuture == null
-          ? _buildDetail(context, ref, team!)
-          : teamFuture.when(
-              loading: () => const AppLoading(message: 'Carregando time...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar o time',
-                onRetry: () => ref.invalidate(teamProvider(teamId!)),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  team?.name ?? 'Time',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ),
-              data: (team) => _buildDetail(context, ref, team),
-            ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          teamFuture == null
+              ? _buildDetail(context, ref, team!)
+              : teamFuture.when(
+                  loading: () =>
+                      const AppLoading(message: 'Carregando time...'),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar o time',
+                    onRetry: () => ref.invalidate(teamProvider(teamId!)),
+                  ),
+                  data: (team) => _buildDetail(context, ref, team),
+                ),
+        ],
+      ),
     );
   }
 

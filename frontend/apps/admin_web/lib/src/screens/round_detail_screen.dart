@@ -25,16 +25,39 @@ class RoundDetailScreen extends ConsumerWidget {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
       ],
-      body: roundFuture == null
-          ? _buildDetail(context, ref, round!)
-          : roundFuture.when(
-              loading: () => const AppLoading(message: 'Carregando rodada...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar a rodada',
-                onRetry: () => ref.invalidate(roundProvider(roundId!)),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  round?.name ?? 'Rodada',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ),
-              data: (round) => _buildDetail(context, ref, round),
-            ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          roundFuture == null
+              ? _buildDetail(context, ref, round!)
+              : roundFuture.when(
+                  loading: () =>
+                      const AppLoading(message: 'Carregando rodada...'),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar a rodada',
+                    onRetry: () => ref.invalidate(roundProvider(roundId!)),
+                  ),
+                  data: (round) => _buildDetail(context, ref, round),
+                ),
+        ],
+      ),
     );
   }
 

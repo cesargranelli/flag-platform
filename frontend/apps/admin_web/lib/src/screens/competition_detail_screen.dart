@@ -40,19 +40,41 @@ class _CompetitionDetailScreenState
       breadcrumb: const [
         BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
       ],
-      body: compFuture == null
-          ? _buildDetail(context, widget.competition!)
-          : compFuture.when(
-              loading: () =>
-                  const AppLoading(message: 'Carregando campeonato...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar o campeonato',
-                onRetry: () => ref.invalidate(
-                  competitionProvider(widget.competitionId!),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.competition?.name ?? 'Campeonato',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
-              data: (comp) => _buildDetail(context, comp),
-            ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          compFuture == null
+              ? _buildDetail(context, widget.competition!)
+              : compFuture.when(
+                  loading: () =>
+                      const AppLoading(message: 'Carregando campeonato...'),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar o campeonato',
+                    onRetry: () => ref.invalidate(
+                      competitionProvider(widget.competitionId!),
+                    ),
+                  ),
+                  data: (comp) => _buildDetail(context, comp),
+                ),
+        ],
+      ),
     );
   }
 

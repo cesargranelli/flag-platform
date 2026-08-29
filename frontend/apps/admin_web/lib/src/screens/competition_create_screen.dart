@@ -384,55 +384,80 @@ class _CompetitionCreateScreenState
         breadcrumb: const [
           BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
         ],
-        body: AppLayout.form(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_errorMessage != null) _errorBanner(_errorMessage!),
-                  _section(
-                    title: 'Campeonato',
-                    icon: Icons.emoji_events_outlined,
-                    child: _identityStep(context),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Título + actions
+            const Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Novo campeonato',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                  _section(
-                    title: 'Modalidade',
-                    icon: Icons.sports_football_outlined,
-                    child: _modalityStep(context),
-                  ),
-                  _section(
-                    title: 'Categoria',
-                    icon: Icons.groups_outlined,
-                    child: _categoryStep(context),
-                  ),
-                  _section(
-                    title: 'Temporada',
-                    icon: Icons.date_range,
-                    child: _seasonStep(context),
-                  ),
-                  _section(
-                    title: 'Conferências',
-                    icon: Icons.account_tree_outlined,
-                    child: _conferencesStep(context),
-                  ),
-                  _section(
-                    title: 'Agrupamento',
-                    icon: Icons.hub_outlined,
-                    child: _structureStep(context),
-                  ),
-                  const SizedBox(height: 8),
-                  KicksterButton(
-                    label: _created == null ? 'Criar campeonato' : 'Concluir',
-                    icon: _created == null ? Icons.check : Icons.check_circle_outline,
-                    loading: _submitting,
-                    onPressed: _submitting ? null : _submit,
-                  ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            AppLayout.form(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_errorMessage != null) _errorBanner(_errorMessage!),
+                    _section(
+                      title: 'Campeonato',
+                      icon: Icons.emoji_events_outlined,
+                      child: _identityStep(context),
+                    ),
+                    _section(
+                      title: 'Modalidade',
+                      icon: Icons.sports_football_outlined,
+                      child: _modalityStep(context),
+                    ),
+                    _section(
+                      title: 'Categoria',
+                      icon: Icons.groups_outlined,
+                      child: _categoryStep(context),
+                    ),
+                    _section(
+                      title: 'Temporada',
+                      icon: Icons.date_range,
+                      child: _seasonStep(context),
+                    ),
+                    _section(
+                      title: 'Conferências',
+                      icon: Icons.account_tree_outlined,
+                      child: _conferencesStep(context),
+                    ),
+                    _section(
+                      title: 'Agrupamento',
+                      icon: Icons.hub_outlined,
+                      child: _structureStep(context),
+                    ),
+                    const SizedBox(height: 8),
+                    KicksterButton(
+                      label: _created == null
+                          ? 'Criar campeonato'
+                          : 'Concluir',
+                      icon: _created == null
+                          ? Icons.check
+                          : Icons.check_circle_outline,
+                      loading: _submitting,
+                      onPressed: _submitting ? null : _submit,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
+      ),
     );
   }
 

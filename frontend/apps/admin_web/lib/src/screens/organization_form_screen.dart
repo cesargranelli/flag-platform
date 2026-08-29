@@ -211,27 +211,47 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         breadcrumb: const [
           BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
         ],
-        body: AppLayout.form(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Título + actions
+            Row(
               children: [
-                if (_errorMessage != null) _errorBanner(_errorMessage!),
-                _section('Dados básicos', Icons.business_outlined, [
-                  _field('Nome fantasia', _tradeName,
-                      hint: 'Informe o nome fantasia',
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Informe o nome fantasia'
-                          : null),
-                  const SizedBox(height: 12),
-                  _field('Razão social', _legalName,
-                      hint: 'Informe a razão social',
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Informe a razão social'
-                          : null),
-                  const SizedBox(height: 12),
-                  _field('Sigla (opcional)', _abbreviation),
+                const Expanded(
+                  child: Text(
+                    'Nova organização',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Formulário
+            AppLayout.form(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_errorMessage != null) _errorBanner(_errorMessage!),
+                    _section('Dados básicos', Icons.business_outlined, [
+                      _field('Nome fantasia', _tradeName,
+                          hint: 'Informe o nome fantasia',
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Informe o nome fantasia'
+                              : null),
+                      const SizedBox(height: 12),
+                      _field('Razão social', _legalName,
+                          hint: 'Informe a razão social',
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Informe a razão social'
+                              : null),
+                      const SizedBox(height: 12),
+                      _field('Sigla (opcional)', _abbreviation),
                   const SizedBox(height: 12),
                   _typeDropdown(),
                   const SizedBox(height: 12),
@@ -299,6 +319,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
             ),
           ),
         ),
+      ],
+      ),
       ),
     );
   }
@@ -312,7 +334,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.danger),
       ),
-      child: Row(
+        child: Row(
         children: [
           const Icon(Icons.error_outline, color: AppColors.danger),
           const SizedBox(width: 8),

@@ -29,16 +29,39 @@ class VenueDetailScreen extends ConsumerWidget {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.venues, route: '/venues'),
       ],
-      body: venueFuture == null
-          ? _buildDetail(context, ref, venue!)
-          : venueFuture.when(
-              loading: () => const AppLoading(message: 'Carregando campo...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar o campo',
-                onRetry: () => ref.invalidate(venueProvider(venueId!)),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  venue?.name ?? 'Campo',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ),
-              data: (venue) => _buildDetail(context, ref, venue),
-            ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          venueFuture == null
+              ? _buildDetail(context, ref, venue!)
+              : venueFuture.when(
+                  loading: () =>
+                      const AppLoading(message: 'Carregando campo...'),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar o campo',
+                    onRetry: () => ref.invalidate(venueProvider(venueId!)),
+                  ),
+                  data: (venue) => _buildDetail(context, ref, venue),
+                ),
+        ],
+      ),
     );
   }
 

@@ -119,7 +119,26 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
       breadcrumb: const [
         BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
       ],
-      body: AppLayout.form(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _isEditing ? 'Editar rodada' : 'Nova rodada',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -199,6 +218,8 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
             ),
           ),
         ),
+      ],
+      ),
     );
   }
 }

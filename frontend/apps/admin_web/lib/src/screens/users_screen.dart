@@ -31,106 +31,130 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
 
     return AppScreen(
       title: 'Usuários',
-      actions: [
-        KicksterButton(
-          label: 'Novo',
-          icon: Icons.add,
-          onPressed: () => context.go('/users/new'),
-        ),
-      ],
-      body: users.when(
-        loading: () => const AppLoading(message: 'Carregando usuários...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os usuários',
-          onRetry: () => ref.invalidate(usersProvider),
-        ),
-        data: (items) {
-          if (items.isEmpty) {
-            return KicksterEmptyState(
-              icon: Icons.people_outline,
-              message: 'Nenhum usuário cadastrado',
-              description: 'Crie o primeiro usuário para começar a usar.',
-              action: KicksterButton(
-                label: 'Criar usuário',
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Título + actions
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Usuários',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              KicksterButton(
+                label: 'Novo',
                 icon: Icons.add,
                 onPressed: () => context.go('/users/new'),
               ),
-            );
-          }
-          final query = _query.trim().toLowerCase();
-          final filtered = query.isEmpty
-              ? items
-              : items
-                  .where(
-                    (u) =>
-                        u.name.toLowerCase().contains(query) ||
-                        u.email.toLowerCase().contains(query),
-                  )
-                  .toList(growable: false);
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          users.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando usuários...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os usuários',
+              onRetry: () => ref.invalidate(usersProvider),
+            ),
+            data: (items) {
+              if (items.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.people_outline,
+                  message: 'Nenhum usuário cadastrado',
+                  description:
+                      'Crie o primeiro usuário para começar a usar.',
+                  action: KicksterButton(
+                    label: 'Criar usuário',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/users/new'),
+                  ),
+                );
+              }
+              final query = _query.trim().toLowerCase();
+              final filtered = query.isEmpty
+                  ? items
+                  : items
+                      .where(
+                        (u) =>
+                            u.name.toLowerCase().contains(query) ||
+                            u.email.toLowerCase().contains(query),
+                      )
+                      .toList(growable: false);
 
-          return Column(
-            children: [
-              Row(
+              return Column(
                 children: [
-                  if (query.isNotEmpty)
-                    Text(
-                      '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
+                  Row(
+                    children: [
+                      if (query.isNotEmpty)
+                        Text(
+                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        )
+                      else
+                        Text(
+                          '${items.length} ${items.length == 1 ? 'usuário' : 'usuários'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      const Spacer(),
+                      SizedBox(
+                        width: 280,
+                        child: KicksterSearchField(
+                          controller: _searchController,
+                          onChanged: (value) =>
+                              setState(() => _query = value),
+                        ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (filtered.isEmpty)
+                    const AppEmptyState(
+                      message: 'Nenhum usuário encontrado',
+                      icon: Icons.search_off,
                     )
                   else
-                    Text(
-                      '${items.length} ${items.length == 1 ? 'usuário' : 'usuários'}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  const Spacer(),
-                  SizedBox(
-                    width: 280,
-                    child: KicksterSearchField(
-                      controller: _searchController,
-                      onChanged: (value) =>
-                          setState(() => _query = value),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (filtered.isEmpty)
-                const AppEmptyState(
-                  message: 'Nenhum usuário encontrado',
-                  icon: Icons.search_off,
-                )
-              else
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                    return GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
-                      itemCount: filtered.length,
-                      gridDelegate:
-                          SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        mainAxisExtent: 96,
-                      ),
-                      itemBuilder: (context, index) {
-                        final user = filtered[index];
-                        return _userCard(context, user);
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns =
+                            constraints.maxWidth >= 600 ? 2 : 1;
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics:
+                              const NeverScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filtered.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: columns,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            mainAxisExtent: 96,
+                          ),
+                          itemBuilder: (context, index) {
+                            final user = filtered[index];
+                            return _userCard(context, user);
+                          },
+                        );
                       },
-                    );
-                  },
-                ),
-            ],
-          );
-        },
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
