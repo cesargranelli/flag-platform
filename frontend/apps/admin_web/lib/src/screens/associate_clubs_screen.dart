@@ -183,6 +183,8 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
 
     return AppScreen(
       title: 'Associar clubes',
+      backTarget: '/teams',
+      backLabel: 'Times',
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
