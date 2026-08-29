@@ -44,6 +44,7 @@ class RoundsScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Rodadas',
+      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         if (effectiveComp != null && canManage)
           FilledButton.icon(

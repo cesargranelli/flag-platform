@@ -2,6 +2,14 @@ import 'package:flag_core/flag_core.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// Variação tipográfica do H1 das telas ([AppScreen.titleVariant]).
+///
+/// `headline` = `headlineMedium` (40/48) — padrão das telas de detalhe, onde
+/// o título carrega o nome da entidade; `titleLg` = `title.lg` (24/32) —
+/// usado nas listagens de gestão (issue #449), onde um H1 gigante disputa
+/// atenção com os cards.
+enum AppScreenTitleVariant { headline, titleLg }
+
 /// Scaffold padrão das telas autenticadas do Admin Web.
 ///
 /// Com o shell global ([AdminShell]) assumindo o header (marca e chip de
@@ -25,9 +33,14 @@ class AppScreen extends StatelessWidget {
     this.backTarget,
     this.backLabel,
     this.onBack,
+    this.titleVariant = AppScreenTitleVariant.headline,
   });
 
   final String title;
+
+  /// Variação tipográfica do H1 (issue #449): listagens usam `titleLg` para
+  /// reduzir a escala (24/32); detalhes mantêm o `headline` (40/48).
+  final AppScreenTitleVariant titleVariant;
 
   /// Ações da tela alinhadas à direita do título (ex.: "Novo").
   final List<Widget>? actions;
@@ -84,6 +97,11 @@ class AppScreen extends StatelessWidget {
   }
 
   Widget _titleRow(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final baseStyle = switch (titleVariant) {
+      AppScreenTitleVariant.headline => textTheme.headlineMedium,
+      AppScreenTitleVariant.titleLg => textTheme.titleLarge,
+    };
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -94,10 +112,7 @@ class AppScreen extends StatelessWidget {
               title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineMedium
-                  ?.copyWith(fontWeight: FontWeight.w700),
+              style: baseStyle?.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
         ),

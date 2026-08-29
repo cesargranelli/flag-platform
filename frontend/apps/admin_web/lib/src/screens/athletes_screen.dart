@@ -17,6 +17,7 @@ class AthletesScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Atletas',
+      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         IconButton(
           tooltip: 'Importar CSV',

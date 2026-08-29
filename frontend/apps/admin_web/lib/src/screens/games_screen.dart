@@ -40,6 +40,7 @@ class GamesScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Jogos',
+      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         if (selectedRound != null && canEdit)
           IconButton(

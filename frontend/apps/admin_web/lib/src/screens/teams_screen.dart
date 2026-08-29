@@ -45,6 +45,7 @@ class TeamsScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Times',
+      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         if (effectiveComp != null && canEdit)
           FilledButton.icon(
