@@ -57,7 +57,9 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _adding.add(athlete.id));
     try {
-      await ref.read(rosterApiProvider).add(
+      await ref
+          .read(rosterApiProvider)
+          .add(
             teamId: teamId,
             athleteId: athlete.id,
             nickname: details.nickname,
@@ -96,10 +98,9 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _removing.add(entry.athleteId));
     try {
-      await ref.read(rosterApiProvider).remove(
-            teamId: teamId,
-            athleteId: entry.athleteId,
-          );
+      await ref
+          .read(rosterApiProvider)
+          .remove(teamId: teamId, athleteId: entry.athleteId);
       ref.invalidate(rosterProvider(teamId));
       messenger.showSnackBar(
         SnackBar(content: Text('${entry.athleteName} removido do elenco.')),
@@ -121,8 +122,8 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     final teamFuture = widget.team != null
         ? null
         : teamId != null
-            ? ref.watch(teamProvider(teamId))
-            : null;
+        ? ref.watch(teamProvider(teamId))
+        : null;
     final teamName = widget.team?.name ?? teamFuture?.valueOrNull?.name;
     final title = teamName ?? 'Elenco';
 
@@ -153,14 +154,12 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
           ),
           const SizedBox(height: 16),
           // Conteúdo
-          Expanded(
-            child: teamId == null
-                ? const AppEmptyState(
-                    message: 'Time não identificado',
-                    icon: Icons.groups_outlined,
-                  )
-                : _buildRoster(context, teamId),
-          ),
+          teamId == null
+              ? const AppEmptyState(
+                  message: 'Time não identificado',
+                  icon: Icons.groups_outlined,
+                )
+              : _buildRoster(context, teamId),
         ],
       ),
     );
@@ -193,9 +192,11 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
 
     final normalizedQuery = _query.trim().toLowerCase();
     final filtered = athletes
-        .where((a) =>
-            normalizedQuery.isEmpty ||
-            a.name.toLowerCase().contains(normalizedQuery))
+        .where(
+          (a) =>
+              normalizedQuery.isEmpty ||
+              a.name.toLowerCase().contains(normalizedQuery),
+        )
         .toList();
 
     return Column(
@@ -226,13 +227,11 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
             ),
           ),
         ),
-        Expanded(
-          child: _buildList(
-            athletes: athletes,
-            filtered: filtered,
-            inRosterIds: inRosterIds,
-            entryByAthleteId: entryByAthleteId,
-          ),
+        _buildList(
+          athletes: athletes,
+          filtered: filtered,
+          inRosterIds: inRosterIds,
+          entryByAthleteId: entryByAthleteId,
         ),
       ],
     );
@@ -274,23 +273,23 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
               ),
             ),
           ),
-        Expanded(
-          child: AppLayout.content(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: filtered.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final athlete = filtered[index];
-                final inRoster = inRosterIds.contains(athlete.id);
-                return _athleteCard(
-                  context,
-                  athlete,
-                  inRoster: inRoster,
-                  entry: inRoster ? entryByAthleteId[athlete.id] : null,
-                );
-              },
-            ),
+        AppLayout.content(
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            itemCount: filtered.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final athlete = filtered[index];
+              final inRoster = inRosterIds.contains(athlete.id);
+              return _athleteCard(
+                context,
+                athlete,
+                inRoster: inRoster,
+                entry: inRoster ? entryByAthleteId[athlete.id] : null,
+              );
+            },
           ),
         ),
       ],
@@ -315,7 +314,8 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     final position = athlete.positionsLabel;
     final subtitle = [
       if (displayNumber != null) '#$displayNumber',
-      if (displayNickname != null && displayNickname.isNotEmpty) displayNickname,
+      if (displayNickname != null && displayNickname.isNotEmpty)
+        displayNickname,
       if (position.isNotEmpty) position,
     ].join(' · ');
     final adding = _adding.contains(athlete.id);
@@ -376,7 +376,9 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
                   IconButton(
                     tooltip: 'Remover atleta',
                     icon: const Icon(Icons.person_remove_outlined),
-                    onPressed: entry == null ? null : () => _removeAthlete(entry),
+                    onPressed: entry == null
+                        ? null
+                        : () => _removeAthlete(entry),
                   ),
                 ],
               )
@@ -393,7 +395,8 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
 
   Widget _athleteAvatar(Athlete athlete, {required double size}) {
     final photo = athlete.photoUrl;
-    final validPhoto = photo != null &&
+    final validPhoto =
+        photo != null &&
         photo.isNotEmpty &&
         (Uri.tryParse(photo)?.hasScheme ?? false);
     return Container(
@@ -543,10 +546,7 @@ class _RosterDetailsDialogState extends State<_RosterDetailsDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: const Text('Confirmar'),
-        ),
+        FilledButton(onPressed: _submit, child: const Text('Confirmar')),
       ],
     );
   }

@@ -240,86 +240,79 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
         BreadcrumbItem(AppStrings.games, route: '/games'),
         BreadcrumbItem('Importar'),
       ],
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: AppLayout.form(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (result == null) ...[
+      body: AppLayout.form(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (result == null) ...[
+              Text(
+                'Importe vários jogos para a rodada a partir de um arquivo CSV/TXT.',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _showTemplate,
+                icon: const Icon(Icons.download_outlined),
+                label: const Text('Ver modelo CSV'),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: _pickFile,
+                icon: const Icon(Icons.upload_file),
+                label: const Text('Selecionar arquivo'),
+              ),
+              const SizedBox(height: 16),
+              if (rows != null) ...[
                 Text(
-                  'Importe vários jogos para a rodada a partir de um arquivo CSV/TXT.',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
+                  '${rows.length} ${rows.length == 1 ? 'jogo' : 'jogos'} lidos.',
+                  style: const TextStyle(fontSize: 13),
                 ),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: _showTemplate,
-                  icon: const Icon(Icons.download_outlined),
-                  label: const Text('Ver modelo CSV'),
-                ),
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: _pickFile,
-                  icon: const Icon(Icons.upload_file),
-                  label: const Text('Selecionar arquivo'),
-                ),
-                const SizedBox(height: 16),
-                if (rows != null) ...[
-                  Text(
-                    '${rows.length} ${rows.length == 1 ? 'jogo' : 'jogos'} lidos.',
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  const SizedBox(height: 8),
-                  for (final row in rows.take(15))
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        '${row.home} x ${row.away}'
-                        '${row.venue.isNotEmpty ? ' · ${row.venue}' : ''}'
-                        ' · ${row.date} ${row.time}',
-                        style: const TextStyle(fontSize: 13),
-                      ),
+                const SizedBox(height: 8),
+                for (final row in rows.take(15))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '${row.home} x ${row.away}'
+                      '${row.venue.isNotEmpty ? ' · ${row.venue}' : ''}'
+                      ' · ${row.date} ${row.time}',
+                      style: const TextStyle(fontSize: 13),
                     ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: _importing ? null : _import,
-                    child: _importing
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Importar'),
                   ),
-                ],
-              ] else ...[
-                _resultSummary(result),
                 const SizedBox(height: 16),
-                _resultTable(result),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () => context.go('/games'),
-                  icon: const Icon(Icons.check),
-                  label: const Text('Concluir'),
+                FilledButton(
+                  onPressed: _importing ? null : _import,
+                  child: _importing
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Importar'),
                 ),
               ],
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: AppColors.danger),
-                ),
-              ],
+            ] else ...[
+              _resultSummary(result),
+              const SizedBox(height: 16),
+              _resultTable(result),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () => context.go('/games'),
+                icon: const Icon(Icons.check),
+                label: const Text('Concluir'),
+              ),
             ],
-          ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: AppColors.danger),
+              ),
+            ],
+          ],
         ),
-      ),
-      ],
       ),
     );
   }
@@ -338,8 +331,9 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
   Widget _chip(String text, Color color) {
     // Amarelo `warning` (#FACC15) é claro demais para texto na própria cor
     // sobre o fundo @12%: usa texto escuro (issue #431 — contraste).
-    final textColor =
-        color == AppColors.warning ? AppColors.textPrimary : color;
+    final textColor = color == AppColors.warning
+        ? AppColors.textPrimary
+        : color;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(

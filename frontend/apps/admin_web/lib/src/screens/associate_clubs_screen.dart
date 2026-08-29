@@ -65,10 +65,7 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
       // time é derivado do clube no backend, sem cadastro de time completo.
       await ref
           .read(teamApiProvider)
-          .associateClub(
-            competitionId: competitionId,
-            organizationId: club.id,
-          );
+          .associateClub(competitionId: competitionId, organizationId: club.id);
       ref.invalidate(teamsProvider(competitionId));
       messenger.showSnackBar(
         SnackBar(content: Text('${club.tradeName} associado ao campeonato.')),
@@ -134,10 +131,12 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
       final club = orgsById[orgId];
       if (club == null) continue;
       try {
-        await ref.read(teamApiProvider).associateClub(
-          competitionId: competitionId,
-          organizationId: club.id,
-        );
+        await ref
+            .read(teamApiProvider)
+            .associateClub(
+              competitionId: competitionId,
+              organizationId: club.id,
+            );
         success++;
       } catch (_) {
         failure++;
@@ -157,9 +156,7 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
       if (success > 0) '$success associado(s)',
       if (failure > 0) '$failure falha(s)',
     ].join('; ');
-    messenger.showSnackBar(
-      SnackBar(content: Text('$summary.')),
-    );
+    messenger.showSnackBar(SnackBar(content: Text('$summary.')));
   }
 
   /// Tipos de organização que podem ser associados como clube (#357):
@@ -191,70 +188,68 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: competitions.when(
-              loading: () =>
-                  const AppLoading(message: 'Carregando campeonatos...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar os campeonatos',
-                onRetry: () => ref.invalidate(competitionsProvider),
-              ),
-              data: (compItems) {
-                final effectiveComp =
-                    widget.lockedCompetitionId ??
-                    selectedCompetition ??
-                    (compItems.isNotEmpty ? compItems.first.id : null);
-
-                if (effectiveComp == null) {
-                  return const AppEmptyState(
-                    message: 'Nenhum campeonato cadastrado',
-                    icon: Icons.emoji_events_outlined,
-                  );
-                }
-
-                // Issue #357: largura padrão dos formulários (600px), como nas
-                // telas de cadastro de organizações/campeonatos.
-                return AppLayout.form(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            labelText: 'Buscar clube',
-                            hintText: 'Busque pelo nome fantasia',
-                            prefixIcon: const Icon(Icons.search),
-                            suffixIcon: _query.isEmpty
-                                ? null
-                                : IconButton(
-                                    icon: const Icon(Icons.clear),
-                                    tooltip: 'Limpar busca',
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      setState(() {
-                                        _query = '';
-                                        _selectedOrgIds.clear();
-                                      });
-                                    },
-                                  ),
-                            border: const OutlineInputBorder(),
-                          ),
-                          onChanged: (value) => setState(() {
-                            _query = value;
-                            // A seleção pode conter clubes que saíram do filtro;
-                            // limpa para evitar seleções "fantasma".
-                            _selectedOrgIds.clear();
-                          }),
-                        ),
-                      ),
-                      Expanded(child: _buildClubList(effectiveComp)),
-                    ],
-                  ),
-                );
-              },
+          competitions.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando campeonatos...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os campeonatos',
+              onRetry: () => ref.invalidate(competitionsProvider),
             ),
+            data: (compItems) {
+              final effectiveComp =
+                  widget.lockedCompetitionId ??
+                  selectedCompetition ??
+                  (compItems.isNotEmpty ? compItems.first.id : null);
+
+              if (effectiveComp == null) {
+                return const AppEmptyState(
+                  message: 'Nenhum campeonato cadastrado',
+                  icon: Icons.emoji_events_outlined,
+                );
+              }
+
+              // Issue #357: largura padrão dos formulários (600px), como nas
+              // telas de cadastro de organizações/campeonatos.
+              return AppLayout.form(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          labelText: 'Buscar clube',
+                          hintText: 'Busque pelo nome fantasia',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _query.isEmpty
+                              ? null
+                              : IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  tooltip: 'Limpar busca',
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _query = '';
+                                      _selectedOrgIds.clear();
+                                    });
+                                  },
+                                ),
+                          border: const OutlineInputBorder(),
+                        ),
+                        onChanged: (value) => setState(() {
+                          _query = value;
+                          // A seleção pode conter clubes que saíram do filtro;
+                          // limpa para evitar seleções "fantasma".
+                          _selectedOrgIds.clear();
+                        }),
+                      ),
+                    ),
+                    _buildClubList(effectiveComp),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -311,19 +306,19 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
             return Column(
               children: [
                 if (hasSelectable) _selectionBar(competitionId, orgsById),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final club = filtered[index];
-                      return _clubCard(
-                        club,
-                        competitionId,
-                        orgIdToTeam: orgIdToTeam,
-                      );
-                    },
-                  ),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final club = filtered[index];
+                    return _clubCard(
+                      club,
+                      competitionId,
+                      orgIdToTeam: orgIdToTeam,
+                    );
+                  },
                 ),
               ],
             );
@@ -484,7 +479,9 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
       );
     }
     return FilledButton(
-      onPressed: _submittingBatch ? null : () => _associate(club, competitionId),
+      onPressed: _submittingBatch
+          ? null
+          : () => _associate(club, competitionId),
       child: const Text('Associar'),
     );
   }

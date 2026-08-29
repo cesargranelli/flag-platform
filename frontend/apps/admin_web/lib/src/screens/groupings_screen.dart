@@ -1,4 +1,4 @@
-﻿import 'package:flag_core/flag_core.dart';
+import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,37 +38,36 @@ class GroupingsScreen extends ConsumerWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: competitions.when(
-              loading: () =>
-                  const AppLoading(message: 'Carregando campeonatos...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar os campeonatos',
-                onRetry: () => ref.invalidate(competitionsProvider),
-              ),
-              data: (compItems) {
-                if (compItems.isEmpty) {
-                  return const AppEmptyState(
-                    message: 'Nenhum campeonato cadastrado. '
-                        'Crie um campeonato para organizar conferências e divisões.',
-                    icon: Icons.emoji_events_outlined,
-                  );
-                }
-                // O id selecionado pode estar obsoleto (ex.: campeonato removido
-                // em outra sessão); nesse caso cai para o primeiro disponível.
-                var selected = compItems.first;
-                for (final c in compItems) {
-                  if (c.id == selectedCompetitionId) {
-                    selected = c;
-                    break;
-                  }
-                }
-                return _GroupingsBody(
-                  competitions: compItems,
-                  competition: selected,
-                );
-              },
+          competitions.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando campeonatos...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os campeonatos',
+              onRetry: () => ref.invalidate(competitionsProvider),
             ),
+            data: (compItems) {
+              if (compItems.isEmpty) {
+                return const AppEmptyState(
+                  message:
+                      'Nenhum campeonato cadastrado. '
+                      'Crie um campeonato para organizar conferências e divisões.',
+                  icon: Icons.emoji_events_outlined,
+                );
+              }
+              // O id selecionado pode estar obsoleto (ex.: campeonato removido
+              // em outra sessão); nesse caso cai para o primeiro disponível.
+              var selected = compItems.first;
+              for (final c in compItems) {
+                if (c.id == selectedCompetitionId) {
+                  selected = c;
+                  break;
+                }
+              }
+              return _GroupingsBody(
+                competitions: compItems,
+                competition: selected,
+              );
+            },
           ),
         ],
       ),
@@ -107,17 +106,19 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
     // criador do campeonato ou ADMIN (o backend já bloqueia as escritas).
     // Issue #305: e apenas com o campeonato em DRAFT — publicado/encerrado
     // tem a estrutura travada (somente leitura).
-    final canEdit = canEditCompetition(
+    final canEdit =
+        canEditCompetition(
           ref.watch(authControllerProvider).state.user,
           competition,
         ) &&
         competition.status == CompetitionStatus.draft;
-    final lockedByStatus =
-        competition.status != CompetitionStatus.draft;
+    final lockedByStatus = competition.status != CompetitionStatus.draft;
     final query = _query.trim().toLowerCase();
 
     return AppLayout.content(
       child: ListView(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
           Row(
@@ -188,10 +189,12 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
     if (query.isEmpty) return 0;
     final confItems = conferences.valueOrNull ?? const <Conference>[];
     final divItems = divisions.valueOrNull ?? const <Division>[];
-    final confCount =
-        confItems.where((c) => c.name.toLowerCase().contains(query)).length;
-    final divCount =
-        divItems.where((d) => d.name.toLowerCase().contains(query)).length;
+    final confCount = confItems
+        .where((c) => c.name.toLowerCase().contains(query))
+        .length;
+    final divCount = divItems
+        .where((d) => d.name.toLowerCase().contains(query))
+        .length;
     return confCount + divCount;
   }
 
@@ -237,8 +240,8 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
                       Text(
                         _countersLabel(conferences, divisions),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -318,15 +321,14 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
               const AppLoading(message: 'Carregando conferências...'),
           error: (error, stackTrace) => AppErrorState(
             message: 'Não foi possível carregar as conferências',
-            onRetry: () =>
-                ref.invalidate(conferencesProvider(competition.id)),
+            onRetry: () => ref.invalidate(conferencesProvider(competition.id)),
           ),
           data: (confItems) {
             final filteredConf = query.isEmpty
                 ? confItems
                 : confItems
-                    .where((c) => c.name.toLowerCase().contains(query))
-                    .toList(growable: false);
+                      .where((c) => c.name.toLowerCase().contains(query))
+                      .toList(growable: false);
             if (filteredConf.isEmpty && query.isNotEmpty) {
               return const AppEmptyState(
                 message: 'Nenhuma conferência encontrada',
@@ -335,7 +337,8 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
             }
             if (filteredConf.isEmpty) {
               return const AppEmptyState(
-                message: 'Nenhuma conferência criada. '
+                message:
+                    'Nenhuma conferência criada. '
                     'Crie a primeira para organizar seu campeonato.',
                 icon: Icons.account_tree_outlined,
               );
@@ -350,7 +353,8 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
                     divisions: divItems
                         .where((d) => d.conferenceId == conf.id)
                         .where(
-                          (d) => query.isEmpty ||
+                          (d) =>
+                              query.isEmpty ||
                               d.name.toLowerCase().contains(query),
                         )
                         .toList(),
@@ -418,8 +422,7 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
                     .where((d) => d.conferenceId == null)
                     .where(
                       (d) =>
-                          query.isEmpty ||
-                          d.name.toLowerCase().contains(query),
+                          query.isEmpty || d.name.toLowerCase().contains(query),
                     )
                     .toList();
                 if (standalone.isEmpty) {
@@ -430,7 +433,8 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
                     );
                   }
                   return const AppEmptyState(
-                    message: 'Nenhuma divisão sem conferência. '
+                    message:
+                        'Nenhuma divisão sem conferência. '
                         'Use "Adicionar divisão" para criar uma.',
                     icon: Icons.subdirectory_arrow_right,
                   );
@@ -670,9 +674,9 @@ class _ConferenceCardState extends State<_ConferenceCard> {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
       ),
     );
   }

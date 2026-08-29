@@ -22,8 +22,7 @@ class RosterImportScreen extends ConsumerStatefulWidget {
   final String? teamId;
 
   @override
-  ConsumerState<RosterImportScreen> createState() =>
-      _RosterImportScreenState();
+  ConsumerState<RosterImportScreen> createState() => _RosterImportScreenState();
 }
 
 class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
@@ -85,8 +84,9 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
         return;
       }
       if (names.length > _maxLines) {
-        setState(() =>
-            _errorMessage = 'Máximo de $_maxLines linhas por arquivo.');
+        setState(
+          () => _errorMessage = 'Máximo de $_maxLines linhas por arquivo.',
+        );
         return;
       }
       setState(() => _atletaNames = names);
@@ -219,72 +219,74 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
         BreadcrumbItem(AppStrings.rosters, route: '/rosters'),
         BreadcrumbItem('Importar'),
       ],
-      body: Expanded(
-        child: AppLayout.form(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (result == null) ...[
+      body: AppLayout.form(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (result == null) ...[
+              Text(
+                'Importe vários atletas para o elenco do time a partir de um arquivo CSV/TXT.',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _showTemplate,
+                icon: const Icon(Icons.download_outlined),
+                label: const Text('Ver modelo CSV'),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: _pickFile,
+                icon: const Icon(Icons.upload_file),
+                label: const Text('Selecionar arquivo'),
+              ),
+              const SizedBox(height: 16),
+              if (names != null && resolved != null) ...[
                 Text(
-                  'Importe vários atletas para o elenco do time a partir de um arquivo CSV/TXT.',
-                  style: const TextStyle(
-                      fontSize: 14, color: AppColors.textSecondary),
+                  '${names.length} ${names.length == 1 ? 'atleta' : 'atletas'} lidos.',
+                  style: const TextStyle(fontSize: 13),
                 ),
+                const SizedBox(height: 8),
+                _preview(resolved, names),
                 const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: _showTemplate,
-                  icon: const Icon(Icons.download_outlined),
-                  label: const Text('Ver modelo CSV'),
-                ),
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: _pickFile,
-                  icon: const Icon(Icons.upload_file),
-                  label: const Text('Selecionar arquivo'),
-                ),
-                const SizedBox(height: 16),
-                if (names != null && resolved != null) ...[
-                  Text(
-                    '${names.length} ${names.length == 1 ? 'atleta' : 'atletas'} lidos.',
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  const SizedBox(height: 8),
-                  _preview(resolved, names),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed:
-                        (resolved.values.isEmpty || _importing) ? null : _import,
-                    child: _importing
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(
-                            'Importar ${resolved.values.length} '
-                            '${resolved.values.length == 1 ? 'atleta' : 'atletas'}'),
-                  ),
-                ],
-              ] else ...[
-                _resultSummary(result),
-                const SizedBox(height: 16),
-                _resultTable(result),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () => context.go('/rosters'),
-                  icon: const Icon(Icons.check),
-                  label: const Text('Concluir'),
+                FilledButton(
+                  onPressed: (resolved.values.isEmpty || _importing)
+                      ? null
+                      : _import,
+                  child: _importing
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          'Importar ${resolved.values.length} '
+                          '${resolved.values.length == 1 ? 'atleta' : 'atletas'}',
+                        ),
                 ),
               ],
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: AppColors.danger),
-                ),
-              ],
+            ] else ...[
+              _resultSummary(result),
+              const SizedBox(height: 16),
+              _resultTable(result),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () => context.go('/rosters'),
+                icon: const Icon(Icons.check),
+                label: const Text('Concluir'),
+              ),
             ],
-          ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: AppColors.danger),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -301,12 +303,17 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
           runSpacing: 8,
           children: [
             _chip('${valid.length} resolvidos', AppColors.success),
-            _chip('${blocked.length} ambíguos/não encontrados', AppColors.warning),
+            _chip(
+              '${blocked.length} ambíguos/não encontrados',
+              AppColors.warning,
+            ),
           ],
         ),
         const SizedBox(height: 8),
-        const Text('Pré-visualização',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text(
+          'Pré-visualização',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 4),
         for (final name in names.take(15))
           Padding(
@@ -336,18 +343,16 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
   Widget _chip(String text, Color color) {
     // Amarelo `warning` (#FACC15) é claro demais para texto na própria cor
     // sobre o fundo @12%: usa texto escuro (issue #431 — contraste).
-    final textColor =
-        color == AppColors.warning ? AppColors.textPrimary : color;
+    final textColor = color == AppColors.warning
+        ? AppColors.textPrimary
+        : color;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Text(
-        text,
-        style: TextStyle(fontSize: 13, color: textColor),
-      ),
+      child: Text(text, style: TextStyle(fontSize: 13, color: textColor)),
     );
   }
 
@@ -355,8 +360,10 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Resultado por linha',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text(
+          'Resultado por linha',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 8),
         for (final line in result.lines)
           Padding(
@@ -372,9 +379,9 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
   }
 
   String _statusLabel(String status) => switch (status) {
-        'IMPORTED' => 'Importado',
-        'SKIPPED' => 'Ignorado',
-        'INVALID' => 'Inválido',
-        _ => status,
-      };
+    'IMPORTED' => 'Importado',
+    'SKIPPED' => 'Ignorado',
+    'INVALID' => 'Inválido',
+    _ => status,
+  };
 }

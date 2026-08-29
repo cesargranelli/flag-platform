@@ -38,25 +38,24 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: pending.when(
-              loading: () =>
-                  const AppLoading(message: 'Carregando pendências...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar as pendências',
-                onRetry: () => ref.invalidate(pendingUsersProvider),
-              ),
-              data: (items) {
-                if (items.isEmpty) {
-                  return const AppEmptyState(
-                    message: 'Nenhuma conta aguardando aprovação',
-                    icon: Icons.verified_outlined,
-                  );
-                }
-                final query = _query.trim().toLowerCase();
-                final filtered = query.isEmpty
-                    ? items
-                    : items
+          pending.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando pendências...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar as pendências',
+              onRetry: () => ref.invalidate(pendingUsersProvider),
+            ),
+            data: (items) {
+              if (items.isEmpty) {
+                return const AppEmptyState(
+                  message: 'Nenhuma conta aguardando aprovação',
+                  icon: Icons.verified_outlined,
+                );
+              }
+              final query = _query.trim().toLowerCase();
+              final filtered = query.isEmpty
+                  ? items
+                  : items
                         .where(
                           (u) =>
                               u.name.toLowerCase().contains(query) ||
@@ -64,71 +63,69 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                         )
                         .toList(growable: false);
 
-                return Column(
-                  children: [
-                    Row(
-                      children: [
-                        if (query.isNotEmpty)
-                          Text(
-                            '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          )
-                        else
-                          Text(
-                            '${items.length} '
-                            '${items.length == 1 ? 'conta' : 'contas'} pendentes',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      if (query.isNotEmpty)
+                        Text(
+                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
                           ),
-                        const Spacer(),
-                        SizedBox(
-                          width: 280,
-                          child: KicksterSearchField(
-                            controller: _searchController,
-                            onChanged: (value) =>
-                                setState(() => _query = value),
+                        )
+                      else
+                        Text(
+                          '${items.length} '
+                          '${items.length == 1 ? 'conta' : 'contas'} pendentes',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    if (filtered.isEmpty)
-                      const AppEmptyState(
-                        message: 'Nenhuma conta encontrada',
-                        icon: Icons.search_off,
-                      )
-                    else
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                          return GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(16),
-                            itemCount: filtered.length,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: columns,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              mainAxisExtent: 200,
-                            ),
-                            itemBuilder: (context, index) {
-                              final user = filtered[index];
-                              return _approvalCard(context, ref, user);
-                            },
-                          );
-                        },
+                      const Spacer(),
+                      SizedBox(
+                        width: 280,
+                        child: KicksterSearchField(
+                          controller: _searchController,
+                          onChanged: (value) => setState(() => _query = value),
+                        ),
                       ),
-                  ],
-                );
-              },
-            ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (filtered.isEmpty)
+                    const AppEmptyState(
+                      message: 'Nenhuma conta encontrada',
+                      icon: Icons.search_off,
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns = constraints.maxWidth >= 600 ? 2 : 1;
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filtered.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columns,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                mainAxisExtent: 200,
+                              ),
+                          itemBuilder: (context, index) {
+                            final user = filtered[index];
+                            return _approvalCard(context, ref, user);
+                          },
+                        );
+                      },
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -154,8 +151,10 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                     color: AppColors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.person_outline,
-                      color: AppColors.primary),
+                  child: const Icon(
+                    Icons.person_outline,
+                    color: AppColors.primary,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -168,14 +167,18 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       Text(
                         user.email,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            fontSize: 13, color: AppColors.textSecondary),
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -186,7 +189,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
             Text(
               '${roleLabel.isNotEmpty ? '$roleLabel · ' : ''}Solicitado em $dateText',
               style: const TextStyle(
-                  fontSize: 12, color: AppColors.textSecondary),
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
             ),
             const Spacer(),
             Row(
@@ -280,11 +285,11 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
 }
 
 String _roleLabel(String role) => switch (role) {
-      'ADMIN' => 'Administrador',
-      'MESA' => 'Mesa',
-      'ORGANIZER' => 'Organizador',
-      _ => role,
-    };
+  'ADMIN' => 'Administrador',
+  'MESA' => 'Mesa',
+  'ORGANIZER' => 'Organizador',
+  _ => role,
+};
 
 String _formatDateTime(DateTime? value) {
   if (value == null) return 'agora';
