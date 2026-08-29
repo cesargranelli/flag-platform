@@ -110,15 +110,12 @@ class VenueDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard(
-              'Informações',
-              [
-                if (orgName.isNotEmpty) _row('Organização', orgName),
-                _row('Endereço', venue.address?.isNotEmpty == true ? venue.address! : '—'),
-                if (venue.mapsUrl != null && venue.mapsUrl!.isNotEmpty)
-                  _row('URL do mapa', venue.mapsUrl!),
-              ],
-            ),
+            _infoCard([
+              if (orgName.isNotEmpty) _row('Organização', orgName),
+              _row('Endereço', venue.address?.isNotEmpty == true ? venue.address! : '—'),
+              if (venue.mapsUrl != null && venue.mapsUrl!.isNotEmpty)
+                _row('URL do mapa', venue.mapsUrl!),
+            ]),
             if (venue.mapsUrl != null && venue.mapsUrl!.isNotEmpty) ...[
               const SizedBox(height: 12),
               OutlinedButton.icon(
@@ -158,20 +155,13 @@ class VenueDetailScreen extends ConsumerWidget {
     }
   }
 
-  Widget _infoCard(String title, List<Widget> rows) {
+  Widget _infoCard(List<Widget> rows) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...rows,
-          ],
+          children: rows,
         ),
       ),
     );

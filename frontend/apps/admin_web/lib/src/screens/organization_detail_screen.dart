@@ -115,11 +115,6 @@ class _OrganizationDetailScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Identificação',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 12),
             Row(
               children: [
                 Container(
@@ -180,7 +175,6 @@ class _OrganizationDetailScreenState
   /// Sessão 2 — Presidente (#323).
   Widget _presidenteCard(Organization org) {
     return AppInfoCard(
-      title: 'Presidente',
       children: [
         if (org.presidentName != null && org.presidentName!.isNotEmpty)
           AppInfoRow(label: 'Nome', value: org.presidentName!),
@@ -193,7 +187,6 @@ class _OrganizationDetailScreenState
   /// Sessão 3 — Contato (#323).
   Widget _contatoCard(Organization org) {
     return AppInfoCard(
-      title: 'Contato',
       children: [
         if (org.email != null && org.email!.isNotEmpty)
           AppInfoRow(label: 'E-mail', value: org.email!),
@@ -210,7 +203,6 @@ class _OrganizationDetailScreenState
   /// Sessão 4 — Localização (#323): movida de Identificação.
   Widget _localizacaoCard(Organization org) {
     return AppInfoCard(
-      title: 'Localização',
       children: [
         AppInfoRow(label: 'País', value: org.country),
         if (org.state != null && org.state!.isNotEmpty)
@@ -224,7 +216,6 @@ class _OrganizationDetailScreenState
   /// Sessão 5 — Identidade (#323): renomeado de 'Visual'.
   Widget _identidadeCard(Organization org) {
     return AppInfoCard(
-      title: 'Identidade',
       children: [
         if (org.locale.isNotEmpty) AppInfoRow(label: 'Locale', value: org.locale),
         if (org.primaryColor != null && org.primaryColor!.isNotEmpty)

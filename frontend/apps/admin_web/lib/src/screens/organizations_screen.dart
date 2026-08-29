@@ -94,27 +94,17 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                       const SizedBox(width: 8),
                       SizedBox(
                         width: 260,
-                        child: DropdownButtonFormField<OrganizationType?>(
-                          initialValue: _typeFilter,
-                          isDense: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Filtrar por tipo',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: [
-                            const DropdownMenuItem<OrganizationType?>(
-                              value: null,
-                              child: Text('Todas as organizações'),
-                            ),
-                            ...OrganizationType.values.map(
-                              (t) => DropdownMenuItem<OrganizationType?>(
-                                value: t,
-                                child: appDropdownItem(
-                                  organizationTypeIcon(t),
-                                  t.label,
-                                ),
-                              ),
-                            ),
+                        child: KicksterDropdown<OrganizationType?>(
+                          label: 'Filtrar por tipo',
+                          value: _typeFilter,
+                          values: [null, ...OrganizationType.values],
+                          labels: [
+                            'Todas as organizações',
+                            ...OrganizationType.values.map((t) => t.label),
+                          ],
+                          icons: [
+                            null,
+                            ...OrganizationType.values.map(organizationTypeIcon),
                           ],
                           onChanged: (value) =>
                               setState(() => _typeFilter = value),

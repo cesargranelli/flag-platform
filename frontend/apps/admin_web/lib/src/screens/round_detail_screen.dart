@@ -149,15 +149,12 @@ class RoundDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard(
-              'Informações',
-              [
-                _row('Número', '${round.number}'),
-                _row('Nome', round.name),
-                _row('Tipo', round.type.label),
-                _row('Campeonato', competitionName),
-              ],
-            ),
+            _infoCard([
+              _row('Número', '${round.number}'),
+              _row('Nome', round.name),
+              _row('Tipo', round.type.label),
+              _row('Campeonato', competitionName),
+            ]),
             const SizedBox(height: 16),
             Text(
               'Criado em ${_formatDate(round.createdAt)}'
@@ -171,20 +168,13 @@ class RoundDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _infoCard(String title, List<Widget> rows) {
+  Widget _infoCard(List<Widget> rows) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...rows,
-          ],
+          children: rows,
         ),
       ),
     );
