@@ -236,9 +236,6 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       },
       child: AppScreen(
         title: 'Nova organização',
-        backTarget: '/organizations',
-        backLabel: 'Organizações',
-        onBack: _handleBack,
         body: _buildWizard(context),
       ),
     );

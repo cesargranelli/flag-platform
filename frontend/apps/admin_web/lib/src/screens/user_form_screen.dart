@@ -91,8 +91,6 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
   Widget build(BuildContext context) {
     return AppScreen(
       title: 'Novo usuário',
-      backTarget: '/users',
-      backLabel: 'Usuários',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

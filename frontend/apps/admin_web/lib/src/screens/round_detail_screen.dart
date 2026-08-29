@@ -22,8 +22,6 @@ class RoundDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: round?.name ?? 'Rodada',
-      backTarget: '/rounds',
-      backLabel: 'Rodadas',
       body: roundFuture == null
           ? _buildDetail(context, ref, round!)
           : roundFuture.when(

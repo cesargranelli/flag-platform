@@ -235,8 +235,6 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
 
     return AppScreen(
       title: 'Importar jogos',
-      backTarget: '/games',
-      backLabel: 'Jogos',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

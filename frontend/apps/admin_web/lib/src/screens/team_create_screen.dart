@@ -109,8 +109,6 @@ class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
 
     return AppScreen(
       title: 'Novo time',
-      backTarget: '/teams',
-      backLabel: 'Times',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(
