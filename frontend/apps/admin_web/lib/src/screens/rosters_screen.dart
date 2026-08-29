@@ -239,7 +239,7 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
                     crossAxisCount: columns,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
-                    mainAxisExtent: 96,
+                    mainAxisExtent: 112,
                   ),
                   itemBuilder: (context, index) {
                     final org = filtered[index];
@@ -322,15 +322,10 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       )
-                    : FilledButton(
-                        style: FilledButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          minimumSize: const Size(0, 36),
-                          textStyle: const TextStyle(fontSize: 12),
-                        ),
+                    : KicksterButton(
+                        label: 'Associar',
+                        variant: KicksterButtonVariant.outline,
                         onPressed: () => _associate(org, competitionId),
-                        child: const Text('Associar à temporada'),
                       ),
               ],
             ],

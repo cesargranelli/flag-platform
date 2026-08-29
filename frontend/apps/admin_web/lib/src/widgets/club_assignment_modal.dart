@@ -203,9 +203,10 @@ class _ClubAssignmentModalState extends ConsumerState<ClubAssignmentModal> {
         ),
       ),
       actions: [
-        TextButton(
+        KicksterButton(
+          label: 'Fechar',
+          variant: KicksterButtonVariant.text,
           onPressed: () => Navigator.pop(context),
-          child: const Text('Fechar'),
         ),
       ],
     );

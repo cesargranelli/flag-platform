@@ -110,9 +110,10 @@ class AppRouter {
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
               ),
               const SizedBox(height: 24),
-              OutlinedButton(
+              KicksterButton(
+                label: 'Voltar ao início',
+                variant: KicksterButtonVariant.outline,
                 onPressed: () => context.go('/'),
-                child: const Text('Voltar ao início'),
               ),
             ],
           ),

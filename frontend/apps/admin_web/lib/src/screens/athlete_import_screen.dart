@@ -45,9 +45,10 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
           'Colunas: nome (obrigatório), apelido, posicao, numero, foto.',
         ),
         actions: [
-          TextButton(
+          KicksterButton(
+            label: 'Fechar',
+            variant: KicksterButtonVariant.text,
             onPressed: () => Navigator.pop(context),
-            child: const Text('Fechar'),
           ),
         ],
       ),
@@ -240,16 +241,17 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              OutlinedButton.icon(
+              KicksterButton(
+                label: 'Ver modelo CSV',
                 onPressed: _downloadTemplate,
-                icon: const Icon(Icons.download_outlined),
-                label: const Text('Ver modelo CSV'),
+                variant: KicksterButtonVariant.outline,
+                icon: Icons.download_outlined,
               ),
               const SizedBox(height: 12),
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Selecionar arquivo',
                 onPressed: _pickFile,
-                icon: const Icon(Icons.upload_file),
-                label: const Text('Selecionar arquivo'),
+                icon: Icons.upload_file,
               ),
               const SizedBox(height: 16),
               if (_parsed != null) ...[
@@ -261,9 +263,9 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
                 if (_validating)
                   const Center(child: CircularProgressIndicator())
                 else if (validation == null)
-                  FilledButton(
+                  KicksterButton(
+                    label: 'Validar e pré-visualizar',
                     onPressed: _validate,
-                    child: const Text('Validar e pré-visualizar'),
                   ),
               ],
               if (validation != null) ...[
@@ -272,20 +274,14 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
                 const SizedBox(height: 16),
                 _validationTable(validation),
                 const SizedBox(height: 16),
-                FilledButton(
+                KicksterButton(
+                  label:
+                      'Importar ${validation.valid} '
+                      '${validation.valid == 1 ? 'atleta' : 'atletas'}',
                   onPressed: validation.valid == 0
                       ? null
                       : (_importing ? null : _import),
-                  child: _importing
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          'Importar ${validation.valid} '
-                          '${validation.valid == 1 ? 'atleta' : 'atletas'}',
-                        ),
+                  loading: _importing,
                 ),
               ],
             ] else ...[
@@ -293,10 +289,10 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
               const SizedBox(height: 16),
               _resultTable(result),
               const SizedBox(height: 24),
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Concluir',
                 onPressed: () => context.go('/athletes'),
-                icon: const Icon(Icons.check),
-                label: const Text('Concluir'),
+                icon: Icons.check,
               ),
             ],
             if (_errorMessage != null) ...[

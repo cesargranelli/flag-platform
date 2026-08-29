@@ -96,17 +96,6 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        TextButton(
-          onPressed: () {},
-          child: const Text(
-            'Ver todos',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppColors.primary,
-            ),
-          ),
-        ),
       ],
     );
   }

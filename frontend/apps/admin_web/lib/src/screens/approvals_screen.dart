@@ -197,18 +197,21 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
+                  // TODO(#457): variante danger/semantic no KicksterButton
+                  // quando o core evoluir.
+                  child: FilledButton.icon(
                     onPressed: () => _reject(context, ref, user),
                     icon: const Icon(Icons.close),
                     label: const Text('Rejeitar'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.danger,
-                      side: const BorderSide(color: AppColors.danger),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.danger,
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
+                  // TODO(#457): variante danger/semantic no KicksterButton
+                  // quando o core evoluir.
                   child: FilledButton.icon(
                     onPressed: () => _approve(context, ref, user),
                     icon: const Icon(Icons.check),

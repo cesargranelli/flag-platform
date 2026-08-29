@@ -351,17 +351,12 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
                 ),
               ),
             ),
-            FilledButton(
+            KicksterButton(
+              label: 'Associar selecionados ($count)',
               onPressed: count == 0 || _submittingBatch
                   ? null
                   : () => _associateSelected(competitionId, orgsById),
-              child: _submittingBatch
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text('Associar selecionados ($count)'),
+              loading: _submittingBatch,
             ),
           ],
         ),
@@ -478,11 +473,11 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
         ],
       );
     }
-    return FilledButton(
+    return KicksterButton(
+      label: 'Associar',
       onPressed: _submittingBatch
           ? null
           : () => _associate(club, competitionId),
-      child: const Text('Associar'),
     );
   }
 

@@ -943,16 +943,17 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        KicksterButton(
+          label: 'Cancelar',
+          variant: KicksterButtonVariant.text,
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
         ),
-        FilledButton(
+        KicksterButton(
+          label: 'Aplicar',
           onPressed: () {
             final hex = _hex.text.trim();
             Navigator.pop(context, '#${hex.toUpperCase()}');
           },
-          child: const Text('Aplicar'),
         ),
       ],
     );

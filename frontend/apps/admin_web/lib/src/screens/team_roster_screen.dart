@@ -383,9 +383,10 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
                 ],
               )
             else
-              FilledButton.tonal(
+              KicksterButton(
+                label: 'Incluir',
+                variant: KicksterButtonVariant.outline,
                 onPressed: () => _addAthlete(athlete),
-                child: const Text('Incluir'),
               ),
           ],
         ),

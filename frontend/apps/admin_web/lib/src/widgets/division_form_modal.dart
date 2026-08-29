@@ -208,20 +208,16 @@ class _DivisionFormModalState extends ConsumerState<DivisionFormModal> {
         ),
       ),
       actions: [
-        TextButton(
+        KicksterButton(
+          label: 'Cancelar',
+          variant: KicksterButtonVariant.text,
           onPressed: _submitting ? null : () => Navigator.pop(context),
-          child: const Text('Cancelar'),
         ),
-        FilledButton.icon(
+        KicksterButton(
+          label: 'Salvar',
           onPressed: _submitting ? null : _save,
-          icon: _submitting
-              ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.check),
-          label: const Text('Salvar'),
+          icon: Icons.check,
+          loading: _submitting,
         ),
       ],
     );

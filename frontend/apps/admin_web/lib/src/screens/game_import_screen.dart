@@ -59,9 +59,10 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
           'campo (opcional), data (dd/mm/aaaa), hora (hh:mm).',
         ),
         actions: [
-          TextButton(
+          KicksterButton(
+            label: 'Fechar',
+            variant: KicksterButtonVariant.text,
             onPressed: () => Navigator.pop(context),
-            child: const Text('Fechar'),
           ),
         ],
       ),
@@ -253,16 +254,17 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              OutlinedButton.icon(
+              KicksterButton(
+                label: 'Ver modelo CSV',
                 onPressed: _showTemplate,
-                icon: const Icon(Icons.download_outlined),
-                label: const Text('Ver modelo CSV'),
+                variant: KicksterButtonVariant.outline,
+                icon: Icons.download_outlined,
               ),
               const SizedBox(height: 12),
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Selecionar arquivo',
                 onPressed: _pickFile,
-                icon: const Icon(Icons.upload_file),
-                label: const Text('Selecionar arquivo'),
+                icon: Icons.upload_file,
               ),
               const SizedBox(height: 16),
               if (rows != null) ...[
@@ -282,15 +284,10 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
                     ),
                   ),
                 const SizedBox(height: 16),
-                FilledButton(
+                KicksterButton(
+                  label: 'Importar',
                   onPressed: _importing ? null : _import,
-                  child: _importing
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Importar'),
+                  loading: _importing,
                 ),
               ],
             ] else ...[
@@ -298,10 +295,10 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
               const SizedBox(height: 16),
               _resultTable(result),
               const SizedBox(height: 24),
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Concluir',
                 onPressed: () => context.go('/games'),
-                icon: const Icon(Icons.check),
-                label: const Text('Concluir'),
+                icon: Icons.check,
               ),
             ],
             if (_errorMessage != null) ...[

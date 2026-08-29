@@ -48,9 +48,10 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
           'Coluna "status" (opcional) é ativo ou inativo.',
         ),
         actions: [
-          TextButton(
+          KicksterButton(
+            label: 'Fechar',
+            variant: KicksterButtonVariant.text,
             onPressed: () => Navigator.pop(context),
-            child: const Text('Fechar'),
           ),
         ],
       ),
@@ -232,16 +233,17 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              OutlinedButton.icon(
+              KicksterButton(
+                label: 'Ver modelo CSV',
                 onPressed: _showTemplate,
-                icon: const Icon(Icons.download_outlined),
-                label: const Text('Ver modelo CSV'),
+                variant: KicksterButtonVariant.outline,
+                icon: Icons.download_outlined,
               ),
               const SizedBox(height: 12),
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Selecionar arquivo',
                 onPressed: _pickFile,
-                icon: const Icon(Icons.upload_file),
-                label: const Text('Selecionar arquivo'),
+                icon: Icons.upload_file,
               ),
               const SizedBox(height: 16),
               if (names != null && resolved != null) ...[
@@ -252,20 +254,14 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
                 const SizedBox(height: 8),
                 _preview(resolved, names),
                 const SizedBox(height: 16),
-                FilledButton(
+                KicksterButton(
+                  label:
+                      'Importar ${resolved.values.length} '
+                      '${resolved.values.length == 1 ? 'atleta' : 'atletas'}',
                   onPressed: (resolved.values.isEmpty || _importing)
                       ? null
                       : _import,
-                  child: _importing
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          'Importar ${resolved.values.length} '
-                          '${resolved.values.length == 1 ? 'atleta' : 'atletas'}',
-                        ),
+                  loading: _importing,
                 ),
               ],
             ] else ...[
@@ -273,10 +269,10 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
               const SizedBox(height: 16),
               _resultTable(result),
               const SizedBox(height: 24),
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Concluir',
                 onPressed: () => context.go('/rosters'),
-                icon: const Icon(Icons.check),
-                label: const Text('Concluir'),
+                icon: Icons.check,
               ),
             ],
             if (_errorMessage != null) ...[

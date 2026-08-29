@@ -134,15 +134,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             ),
           ],
           const SizedBox(height: 24),
-          FilledButton(
+          KicksterButton(
+            label: 'Redefinir senha',
             onPressed: _submitting ? null : _submit,
-            child: _submitting
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Redefinir senha'),
+            loading: _submitting,
           ),
         ],
       ),
@@ -166,9 +161,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           ),
         ),
         const SizedBox(height: 24),
-        FilledButton(
+        KicksterButton(
+          label: 'Ir para o login',
           onPressed: () => context.go('/login'),
-          child: const Text('Ir para o login'),
         ),
       ],
     );
