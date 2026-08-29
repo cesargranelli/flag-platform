@@ -307,7 +307,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
                                                       context,
                                                       game,
                                                       onTap: () =>
-                                                          context.go(
+                                                          context.push(
                                                         '/games/${game.id}',
                                                         extra: (
                                                           competitionId:

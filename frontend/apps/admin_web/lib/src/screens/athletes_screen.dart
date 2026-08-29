@@ -153,7 +153,7 @@ class _AthletesScreenState extends ConsumerState<AthletesScreen> {
       icon: Icons.person_outline,
       title: athlete.name,
       subtitle: subtitle.isEmpty ? null : subtitle,
-      onTap: () => context.go('/athletes/${athlete.id}', extra: athlete),
+      onTap: () => context.push('/athletes/${athlete.id}', extra: athlete),
     );
   }
 }

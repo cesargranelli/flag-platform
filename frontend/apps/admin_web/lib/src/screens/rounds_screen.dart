@@ -264,7 +264,7 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.go('/rounds/${round.id}', extra: round),
+        onTap: () => context.push('/rounds/${round.id}', extra: round),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

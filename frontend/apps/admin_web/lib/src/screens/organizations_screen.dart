@@ -198,7 +198,7 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
       icon: organizationTypeIcon(organization.organizationType),
       title: organization.tradeName,
       subtitle: organization.legalName,
-      onTap: () => context.go(
+      onTap: () => context.push(
         '/organizations/${organization.id}',
         extra: organization,
       ),

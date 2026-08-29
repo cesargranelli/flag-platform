@@ -275,7 +275,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
       icon: Icons.groups_outlined,
       title: team.name,
       subtitle: subtitle,
-      onTap: () => context.go('/teams/${team.id}', extra: team),
+      onTap: () => context.push('/teams/${team.id}', extra: team),
     );
   }
 }
