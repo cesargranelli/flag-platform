@@ -51,11 +51,14 @@ class AppScreen extends StatelessWidget {
         if (crumbs.isNotEmpty)
           KicksterBreadcrumb(
             items: [
-              for (final c in crumbs)
+              for (var i = 0; i < crumbs.length; i++)
                 KicksterBreadcrumbItem(
-                  label: c.label,
-                  route: c.route,
-                  icon: c.icon,
+                  label: crumbs[i].label,
+                  route: crumbs[i].route,
+                  icon: crumbs[i].icon ??
+                      (i == 0 && crumbs[i].route == '/'
+                          ? Icons.home_outlined
+                          : null),
                 ),
             ],
           ),

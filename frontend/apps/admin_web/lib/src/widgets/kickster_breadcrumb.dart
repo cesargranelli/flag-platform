@@ -42,7 +42,7 @@ class KicksterBreadcrumb extends StatelessWidget {
       height: isWide ? 40 : 48,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: const BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surfaceMuted,
         border: Border(
           bottom: BorderSide(color: AppColors.line, width: 1),
         ),
