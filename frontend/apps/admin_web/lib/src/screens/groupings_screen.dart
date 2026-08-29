@@ -30,7 +30,6 @@ class GroupingsScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Conferências e divisões',
-      titleVariant: AppScreenTitleVariant.titleLg,
       breadcrumb: const [
         BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
       ],

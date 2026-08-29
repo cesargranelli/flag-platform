@@ -46,7 +46,6 @@ class AdminHomeScreen extends ConsumerWidget {
 
     return AppScreen(
       title: 'Início',
-      titleVariant: AppScreenTitleVariant.titleLg,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

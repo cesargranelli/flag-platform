@@ -41,7 +41,6 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
 
     return AppScreen(
       title: 'Campeonatos',
-      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         KicksterButton(
           label: 'Novo',

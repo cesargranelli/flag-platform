@@ -35,7 +35,6 @@ class _VenuesScreenState extends ConsumerState<VenuesScreen> {
 
     return AppScreen(
       title: 'Campos',
-      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         KicksterButton(
           label: 'Novo',

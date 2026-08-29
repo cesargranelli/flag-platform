@@ -60,7 +60,6 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
 
     return AppScreen(
       title: 'Times',
-      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         if (effectiveComp != null && canEdit)
           KicksterButton(

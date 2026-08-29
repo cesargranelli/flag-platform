@@ -31,7 +31,6 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
 
     return AppScreen(
       title: 'Usuários',
-      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         KicksterButton(
           label: 'Novo',

@@ -50,7 +50,6 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
 
     return AppScreen(
       title: 'Elencos',
-      titleVariant: AppScreenTitleVariant.titleLg,
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(

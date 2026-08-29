@@ -31,7 +31,6 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
 
     return AppScreen(
       title: 'Aprovações',
-      titleVariant: AppScreenTitleVariant.titleLg,
       body: pending.when(
         loading: () => const AppLoading(message: 'Carregando pendências...'),
         error: (error, stackTrace) => AppErrorState(

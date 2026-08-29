@@ -58,7 +58,6 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
 
     return AppScreen(
       title: 'Rodadas',
-      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         if (effectiveComp != null && canManage)
           KicksterButton(

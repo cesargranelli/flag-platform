@@ -31,7 +31,6 @@ class _AthletesScreenState extends ConsumerState<AthletesScreen> {
 
     return AppScreen(
       title: 'Atletas',
-      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         IconButton(
           tooltip: 'Importar CSV',

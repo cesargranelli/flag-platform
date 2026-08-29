@@ -44,7 +44,6 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
 
     return AppScreen(
       title: 'Organizações',
-      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         KicksterButton(
           label: 'Novo',

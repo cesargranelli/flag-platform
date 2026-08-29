@@ -54,7 +54,6 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
 
     return AppScreen(
       title: 'Jogos',
-      titleVariant: AppScreenTitleVariant.titleLg,
       actions: [
         if (selectedRound != null && canEdit)
           IconButton(
