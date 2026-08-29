@@ -41,7 +41,8 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
         (compItems.isNotEmpty ? compItems.first.id : null);
 
     return AppScreen(
-      title: 'Elenco',
+      title: 'Elencos',
+      titleVariant: AppScreenTitleVariant.titleLg,
       body: competitions.when(
         loading: () => const AppLoading(message: 'Carregando campeonatos...'),
         error: (error, stackTrace) => AppErrorState(
