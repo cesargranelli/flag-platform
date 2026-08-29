@@ -121,7 +121,7 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
     return AppScreen(
       title: 'Editar time',
       backTarget: '/teams/${widget.teamId ?? widget.team?.id}',
-      backLabel: 'Detalhe',
+      backLabel: widget.team?.name ?? 'Times',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

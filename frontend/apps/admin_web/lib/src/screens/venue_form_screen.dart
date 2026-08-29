@@ -115,7 +115,7 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
       backTarget: _isEditing
           ? '/venues/${widget.venueId ?? widget.venue?.id}'
           : '/venues',
-      backLabel: _isEditing ? 'Detalhe' : 'Campos',
+      backLabel: _isEditing ? (widget.venue?.name ?? 'Campos') : 'Campos',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

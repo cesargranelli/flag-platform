@@ -119,7 +119,7 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
       backTarget: _isEditing
           ? '/rounds/${widget.roundId ?? widget.round?.id}'
           : '/rounds',
-      backLabel: _isEditing ? 'Detalhe' : 'Rodadas',
+      backLabel: _isEditing ? (widget.round?.name ?? 'Rodadas') : 'Rodadas',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

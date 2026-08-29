@@ -182,7 +182,7 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
       backTarget: _isEditing
           ? '/athletes/${widget.athleteId ?? widget.athlete?.id}'
           : '/athletes',
-      backLabel: _isEditing ? 'Detalhe' : 'Atletas',
+      backLabel: _isEditing ? (widget.athlete?.name ?? 'Atletas') : 'Atletas',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(
