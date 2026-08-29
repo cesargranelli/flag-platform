@@ -31,6 +31,7 @@ class _AthletesScreenState extends ConsumerState<AthletesScreen> {
 
     return AppScreen(
       title: 'Atletas',
+      breadcrumb: const [BreadcrumbItem('Início', route: '/')],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

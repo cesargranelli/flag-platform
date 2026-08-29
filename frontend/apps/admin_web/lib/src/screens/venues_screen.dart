@@ -35,6 +35,7 @@ class _VenuesScreenState extends ConsumerState<VenuesScreen> {
 
     return AppScreen(
       title: 'Campos',
+      breadcrumb: const [BreadcrumbItem('Início', route: '/')],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

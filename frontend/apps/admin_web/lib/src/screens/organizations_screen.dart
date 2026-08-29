@@ -44,6 +44,7 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
 
     return AppScreen(
       title: 'Organizações',
+      breadcrumb: const [BreadcrumbItem('Início', route: '/')],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

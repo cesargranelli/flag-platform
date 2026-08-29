@@ -41,6 +41,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
 
     return AppScreen(
       title: 'Campeonatos',
+      breadcrumb: const [BreadcrumbItem('Início', route: '/')],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
