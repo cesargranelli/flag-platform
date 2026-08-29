@@ -7,10 +7,10 @@ import '../providers/providers.dart';
 
 /// Shell do Admin Web (issue #427), com sidebar esquerda no desktop (issue #457).
 ///
-/// **Desktop (>=1200px):** `Row > [Sidebar(256px), Expanded(navigationShell)]`.
+/// **Desktop (>=960px):** `Row > [Sidebar(256px), Expanded(navigationShell)]`.
 /// A sidebar contém a marca, itens de navegação e chip de usuário no rodapé.
 ///
-/// **Mobile/Tablet (<1200px):** `Column > [Header, Expanded(navigationShell)]`.
+/// **Mobile (<960px):** `Column > [Header, Expanded(navigationShell)]`.
 /// Mantém o header horizontal atual com marca + menu + chip de usuário.
 class AdminShell extends ConsumerWidget {
   const AdminShell({
@@ -24,7 +24,7 @@ class AdminShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isAdmin =
         ref.watch(authControllerProvider).state.user?.role == 'ADMIN';
-    final isDesktop = MediaQuery.sizeOf(context).width >= 1200;
+    final isDesktop = MediaQuery.sizeOf(context).width >= 960;
 
     if (isDesktop) {
       return Scaffold(
@@ -73,7 +73,7 @@ class AdminShell extends ConsumerWidget {
 // Sidebar (desktop >= 1200px)
 // ---------------------------------------------------------------------------
 
-/// Sidebar esquerda fixa (256px) exibida em viewports >= 1200px.
+/// Sidebar esquerda fixa (256px) exibida em viewports >= 960px.
 ///
 /// Fundo `surface` (branco), borda direita 1px `line`. Contém:
 /// - Topo: marca (escudo + "Flag Platform"), clicável → home.
@@ -136,7 +136,7 @@ class _Sidebar extends StatelessWidget {
                     active: active,
                     onTap: () => navigationShell.goBranch(
                       item.index,
-                      initialLocation: navigationShell.currentIndex == item.index,
+                      initialLocation: true,
                     ),
                   );
                 },
@@ -368,62 +368,65 @@ class _SidebarUserChip extends ConsumerWidget {
               ),
             ),
           ],
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.08),
-                child: hasName
-                    ? Text(
-                        _initials(name),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
+          child: SizedBox(
+            width: double.infinity,
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                  child: hasName
+                      ? Text(
+                          _initials(name),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.person_outline,
+                          size: 18,
                           color: AppColors.primary,
                         ),
-                      )
-                    : const Icon(
-                        Icons.person_outline,
-                        size: 18,
-                        color: AppColors.primary,
-                      ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    if (email.isNotEmpty)
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        email,
+                        displayName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                  ],
+                      if (email.isNotEmpty)
+                        Text(
+                          email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.keyboard_arrow_down,
-                size: 18,
-                color: AppColors.textSecondary,
-              ),
-            ],
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -435,7 +438,7 @@ class _SidebarUserChip extends ConsumerWidget {
 // Header (mobile/tablet < 1200px)
 // ---------------------------------------------------------------------------
 
-/// Header global para mobile/tablet (< 1200px): menu de módulos (>=960px) +
+/// Header global para mobile/tablet (< 960px): menu de módulos (>=960px) +
 /// chip de usuário.
 ///
 /// A marca `_BrandMark` fica visível (necessária sem sidebar). Abaixo de 960px
