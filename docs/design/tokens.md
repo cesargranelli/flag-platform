@@ -102,6 +102,23 @@ Escala: `4, 8, 12, 16, 24, 32`. Uso típico: padding de tela `16`, espaçamento 
 - **Estados**: `AppLoading` (carregando), `AppEmptyState` (vazio com ícone), `AppErrorState` (erro com "Tentar novamente")
 - **Alvos de toque**: mín. 48px (ícones acionáveis); botões 56px
 
+## Componentes Kickster (`flag_core` — issue #436)
+
+Biblioteca de widgets no `frontend/packages/core/lib/src/widgets/` (prefixo `Kickster*`, exportados no barrel `flag_core.dart`). Todos usam apenas tokens (`AppColors.*`/`AppTheme`) — sem hex hardcoded.
+
+| Widget | Arquivo | Uso |
+|---|---|---|
+| `KicksterCard` | `kickster_card.dart` | Card de módulo (home): raio **12**, fundo `surface`, elevação 1, `InkWell` padrão; ícone 28px `primary` em círculo 56px `primary`@10% + título (FittedBox) |
+| `KicksterScoreCard` | `kickster_score_card.dart` | Card de jogo com placar (Live Match): confronto Time A × Time B, placar central em `headlineSmall`, badge de status (`GameStatus.label`) |
+| `KicksterBadge` | `kickster_badge.dart` | Badge de status: fundo `color`@12%, texto/ícone na cor do badge, raio 10, `Semantics`; **`warning` → conteúdo escuro `textPrimary` (#294)** |
+| `KicksterChip` | `kickster_chip.dart` | Chip selecionável (raio 10, ~34px compacto): não selecionado `grayFill`/`textPrimary`; selecionado `primary`/**branco**; `InkWell` padrão (#300) |
+| `KicksterButton` | `kickster_button.dart` | Wrapper tipado dos botões do tema (variantes `primary`/`outline`/`text` — `FilledButton`/`OutlinedButton`/`TextButton`), com `icon?` e `loading?` |
+| `KicksterInput` | `kickster_input.dart` | Wrapper de `TextFormField` sobre o `InputDecorationTheme` (raio 16, rótulo visível) — não sobrescreve bordas |
+| `KicksterSectionTitle` | `kickster_section_title.dart` | Título de seção ("Ao vivo"/"Próximos"): `titleMedium` `textPrimary`, ícone `primary` opcional, `action?` à direita |
+| `KicksterNavBar` | `kickster_nav_bar.dart` | Barra de navegação inferior mobile: `NavigationBar` com fundo `surface` e indicador `primary`@12% |
+
+- **Mapeamento de status do `KicksterScoreCard`**: `inProgress` → `success` · `finished` → `danger` · `scheduled` → `textSecondary` · `cancelled` → `disabled`
+
 ## Layout responsivo
 
 | Breakpoint | Comportamento |
