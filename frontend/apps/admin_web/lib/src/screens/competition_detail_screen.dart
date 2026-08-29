@@ -194,24 +194,25 @@ class _CompetitionDetailScreenState
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  FilledButton.icon(
+                  KicksterButton(
+                    label: 'Editar campeonato',
+                    icon: Icons.edit_outlined,
                     onPressed: () => context.go(
                       '/competitions/${comp.id}/edit',
                       extra: comp,
                     ),
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Editar campeonato'),
                   ),
                   // Issue #381: novo ponto de entrada para rodadas/confrontos,
                   // ao lado de "Editar campeonato" (recupera o acesso a /rounds).
-                  OutlinedButton.icon(
+                  KicksterButton(
+                    label: 'Rodadas',
+                    icon: Icons.format_list_numbered,
+                    variant: KicksterButtonVariant.outline,
                     onPressed: () {
                       ref.read(selectedCompetitionProvider.notifier).state =
                           comp.id;
                       context.go('/rounds');
                     },
-                    icon: const Icon(Icons.format_list_numbered),
-                    label: const Text('Rodadas'),
                   ),
                 ],
               )
@@ -391,14 +392,14 @@ class _CompetitionDetailScreenState
               ),
             const SizedBox(height: 12),
             if (canEdit && isDraft)
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Associar clubes',
+                icon: Icons.groups,
                 onPressed: () {
                   ref.read(selectedCompetitionProvider.notifier).state =
                       comp.id;
                   context.go('/teams/associate', extra: comp.id);
                 },
-                icon: const Icon(Icons.groups),
-                label: const Text('Associar clubes'),
               )
             else
               const Text(

@@ -80,13 +80,13 @@ class AthleteDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    FilledButton.icon(
+                    KicksterButton(
+                      label: 'Editar dados',
+                      icon: Icons.edit_outlined,
                       onPressed: () => context.go(
                         '/athletes/${athlete.id}/edit',
                         extra: athlete,
                       ),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Editar dados'),
                     ),
                   ],
                 ),

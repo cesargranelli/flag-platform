@@ -87,13 +87,13 @@ class GameDetailScreen extends ConsumerWidget {
                         ),
                     const SizedBox(height: 16),
                     if (canEdit)
-                      FilledButton.icon(
+                      KicksterButton(
+                        label: 'Editar dados',
+                        icon: Icons.edit_outlined,
                         onPressed: () => context.go(
                           '/games/${game.id}/edit',
                           extra: (roundId: game.roundId, game: game),
                         ),
-                        icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Editar dados'),
                       )
                     else
                       const EditRestrictionNote(

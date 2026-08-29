@@ -95,13 +95,13 @@ class VenueDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    FilledButton.icon(
+                    KicksterButton(
+                      label: 'Editar dados',
+                      icon: Icons.edit_outlined,
                       onPressed: () => context.go(
                         '/venues/${venue.id}/edit',
                         extra: venue,
                       ),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Editar dados'),
                     ),
                   ],
                 ),
@@ -116,10 +116,11 @@ class VenueDetailScreen extends ConsumerWidget {
             ]),
             if (venue.mapsUrl != null && venue.mapsUrl!.isNotEmpty) ...[
               const SizedBox(height: 12),
-              OutlinedButton.icon(
+              KicksterButton(
+                label: 'Abrir no mapa',
+                icon: Icons.map_outlined,
+                variant: KicksterButtonVariant.outline,
                 onPressed: () => _openMap(context, venue.mapsUrl!),
-                icon: const Icon(Icons.map_outlined),
-                label: const Text('Abrir no mapa'),
               ),
             ],
             const SizedBox(height: 16),

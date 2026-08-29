@@ -39,22 +39,11 @@ class AdminShell extends ConsumerWidget {
   }
 
   Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
-    final logout = await showDialog<bool>(
+    final logout = await showKicksterConfirm(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Sair'),
-        content: const Text('Deseja realmente encerrar a sessão?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Sair'),
-          ),
-        ],
-      ),
+      title: 'Sair',
+      content: 'Deseja realmente encerrar a sessão?',
+      confirmLabel: 'Sair',
     );
     if (logout == true) {
       // O GoRouter observa o AuthController e redireciona para /login.

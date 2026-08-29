@@ -405,14 +405,11 @@ class _CompetitionEditScreenState
                       children: [
                         _statusChip(_status),
                         const Spacer(),
-                        OutlinedButton.icon(
+                        KicksterButton(
+                          label: 'Publicar',
+                          icon: Icons.publish_outlined,
+                          variant: KicksterButtonVariant.outline,
                           onPressed: _submitting ? null : _publish,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: const BorderSide(color: AppColors.primary),
-                          ),
-                          icon: const Icon(Icons.publish_outlined, size: 18),
-                          label: const Text('Publicar'),
                         ),
                       ],
                     ),
