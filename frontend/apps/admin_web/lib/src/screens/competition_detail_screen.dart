@@ -144,8 +144,6 @@ class _CompetitionDetailScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Campeonato', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 12),
             Row(
               children: [
                 Container(
@@ -244,7 +242,6 @@ class _CompetitionDetailScreenState
   /// Sessão 2 — Modalidade (#306).
   Widget _modalidadeCard(Competition comp) {
     return AppInfoCard(
-      title: 'Modalidade',
       children: [
         AppInfoRow(
           label: 'Modalidade',
@@ -257,7 +254,6 @@ class _CompetitionDetailScreenState
   /// Sessão 3 — Categoria (#306): gênero + faixa etária.
   Widget _categoriaCard(Competition comp) {
     return AppInfoCard(
-      title: 'Categoria',
       children: [
         AppInfoRow(label: 'Gênero', value: _genderLabel(comp.gender)),
         AppInfoRow(label: 'Faixa etária', value: _ageGroupLabel(comp.ageGroup)),
@@ -268,7 +264,6 @@ class _CompetitionDetailScreenState
   /// Sessão 4 — Temporada (#306).
   Widget _temporadaCard(Competition comp) {
     return AppInfoCard(
-      title: 'Temporada',
       children: [
         if (comp.startDate != null)
           AppInfoRow(label: 'Início', value: _formatDate(comp.startDate!)),
@@ -295,7 +290,6 @@ class _CompetitionDetailScreenState
         const <Conference>[];
     return divisions.when(
       loading: () => AppInfoCard(
-        title: 'Agrupamento',
         children: const [
           Text(
             'Carregando agrupamento...',
@@ -304,7 +298,6 @@ class _CompetitionDetailScreenState
         ],
       ),
       error: (e, s) => AppInfoCard(
-        title: 'Agrupamento',
         children: const [
           Text(
             'Não foi possível carregar as divisões.',
@@ -315,7 +308,6 @@ class _CompetitionDetailScreenState
       data: (items) => items.isEmpty
           ? const SizedBox.shrink()
           : AppInfoCard(
-              title: 'Agrupamento',
               children: [
                 Wrap(
                   spacing: 8,
@@ -351,7 +343,6 @@ class _CompetitionDetailScreenState
 
     return teams.when(
       loading: () => AppInfoCard(
-        title: 'Clubes',
         children: const [
           Text(
             'Carregando clubes...',
@@ -360,7 +351,6 @@ class _CompetitionDetailScreenState
         ],
       ),
       error: (e, s) => AppInfoCard(
-        title: 'Clubes',
         children: const [
           Text(
             'Não foi possível carregar os clubes.',
@@ -377,7 +367,6 @@ class _CompetitionDetailScreenState
             .toList();
 
         return AppInfoCard(
-          title: 'Clubes',
           children: [
             if (clubs.isEmpty)
               const Text(
@@ -458,7 +447,6 @@ class _CompetitionDetailScreenState
     final conferences = ref.watch(conferencesProvider(comp.id));
     return conferences.when(
       loading: () => AppInfoCard(
-        title: 'Conferências',
         children: const [
           Text(
             'Carregando conferências...',
@@ -467,7 +455,6 @@ class _CompetitionDetailScreenState
         ],
       ),
       error: (e, s) => AppInfoCard(
-        title: 'Conferências',
         children: const [
           Text(
             'Não foi possível carregar as conferências.',
@@ -478,7 +465,6 @@ class _CompetitionDetailScreenState
       data: (items) => items.isEmpty
           ? const SizedBox.shrink()
           : AppInfoCard(
-              title: 'Conferências',
               children: [
                 Wrap(
                   spacing: 8,

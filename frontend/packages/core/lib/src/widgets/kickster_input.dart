@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// Campo de formulário no estilo do kit Kickster (issue #436).
+import 'kickster_field.dart';
+
+/// Campo de formulário no estilo do kit Kickster (issue #436/#445).
 ///
-/// Wrapper de `TextFormField` sobre o `InputDecorationTheme` do tema (raio
-/// 16, preenchido `surface`, rótulo sempre visível) — **não sobrescreve
-/// bordas nem estilos**. Aceita validação, teclado tipado, autofill, ação de
-/// submissão e ícones de prefixo/sufixo (ex.: olho de visibilidade de senha).
+/// Wrapper de `TextFormField` com `decoration` próprio do kit — raio 24
+/// (pill), altura ~52px, fundo `surface`, borda `#DADADA` em repouso, rótulo
+/// 14px SemiBold `grayLabel` quando não focado e ícones 18px `disabled` —
+/// sem sobrescrever o `InputDecorationTheme` global. Aceita validação,
+/// teclado tipado, autofill, ação de submissão e ícones de prefixo/sufixo
+/// (ex.: olho de visibilidade de senha).
 class KicksterInput extends StatelessWidget {
   const KicksterInput({
     super.key,
@@ -45,9 +49,9 @@ class KicksterInput extends StatelessWidget {
       autofillHints: autofillHints,
       textInputAction: textInputAction,
       onFieldSubmitted: onFieldSubmitted,
-      decoration: InputDecoration(
+      decoration: kicksterFieldDecoration(
         labelText: label,
-        prefixIcon: prefixIcon == null ? null : Icon(prefixIcon),
+        prefixIcon: prefixIcon,
         suffixIcon: suffixIcon,
       ),
     );

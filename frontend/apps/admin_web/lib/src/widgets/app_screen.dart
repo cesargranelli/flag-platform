@@ -49,53 +49,63 @@ class AppScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showBack = backTarget != null;
     return Scaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (backTarget != null)
+            if (showBack)
               Padding(
+                // Issue #445: o voltar acompanha o grid da tela de detalhe
+                // (`AppLayout.detail`, 720px) para não destoar do conteúdo.
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: AppBackLink(
-                    label: backLabel,
-                    onPressed:
-                        onBack ?? () => context.go(backTarget!),
+                child: AppLayout.detail(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: AppBackLink(
+                      label: backLabel,
+                      onPressed: onBack ?? () => context.go(backTarget!),
+                    ),
                   ),
                 ),
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: Semantics(
-                      header: true,
-                      child: Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ),
-                  if (actions != null && actions!.isNotEmpty) ...[
-                    const SizedBox(width: 12),
-                    ...actions!,
-                  ],
-                ],
-              ),
+              child: showBack
+                  ? AppLayout.detail(child: _titleRow(context))
+                  : _titleRow(context),
             ),
             Expanded(child: body),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _titleRow(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Flexible(
+          child: Semantics(
+            header: true,
+            child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+        if (actions != null && actions!.isNotEmpty) ...[
+          const SizedBox(width: 12),
+          ...actions!,
+        ],
+      ],
     );
   }
 }

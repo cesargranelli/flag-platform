@@ -95,17 +95,14 @@ class AthleteDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard(
-              'Informações',
-              [
-                _row('Nome', athlete.name),
-                _row('Apelido', athlete.nickname?.isNotEmpty == true ? athlete.nickname! : '—'),
-                _row('Posição', athlete.positionsLabel.isNotEmpty ? athlete.positionsLabel : 'Sem posição'),
-                _row('Número da camisa', athlete.number?.toString() ?? '—'),
-                if (athlete.photoUrl != null && athlete.photoUrl!.isNotEmpty)
-                  _row('URL da foto', athlete.photoUrl!),
-              ],
-            ),
+            _infoCard([
+              _row('Nome', athlete.name),
+              _row('Apelido', athlete.nickname?.isNotEmpty == true ? athlete.nickname! : '—'),
+              _row('Posição', athlete.positionsLabel.isNotEmpty ? athlete.positionsLabel : 'Sem posição'),
+              _row('Número da camisa', athlete.number?.toString() ?? '—'),
+              if (athlete.photoUrl != null && athlete.photoUrl!.isNotEmpty)
+                _row('URL da foto', athlete.photoUrl!),
+            ]),
             const SizedBox(height: 16),
             Text(
               'Criado em ${_formatDate(athlete.createdAt)}'
@@ -166,20 +163,13 @@ class AthleteDetailScreen extends ConsumerWidget {
         .toUpperCase();
   }
 
-  Widget _infoCard(String title, List<Widget> rows) {
+  Widget _infoCard(List<Widget> rows) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...rows,
-          ],
+          children: rows,
         ),
       ),
     );

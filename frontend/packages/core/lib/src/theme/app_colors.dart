@@ -31,6 +31,9 @@ class AppColors {
   /// Gray/G70 — labels curtas em caixa alta (divisor "OU").
   static const Color grayLabel = Color(0xFF78828A);
 
+  /// Borda de repouso dos campos do kit (issue #445) — #DADADA.
+  static const Color fieldBorder = Color(0xFFDADADA);
+
   /// BG Secundário — fundo azulado de cards/áreas.
   static const Color surfaceMuted = Color(0xFFF6F8FE);
 

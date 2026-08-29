@@ -108,18 +108,15 @@ class GameDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard(
-              'Informações',
-              [
-                _row('Rodada', game.roundNumber?.toString() ?? '—'),
-                if (competitionName.isNotEmpty) _row('Campeonato', competitionName),
-                _row('Horário', _formatDateTime(game.scheduledAt)),
-                if (game.venueName != null && game.venueName!.isNotEmpty)
-                  _row('Campo', game.venueName!),
-                if (game.venueAddress != null && game.venueAddress!.isNotEmpty)
-                  _row('Endereço', game.venueAddress!),
-              ],
-            ),
+            _infoCard([
+              _row('Rodada', game.roundNumber?.toString() ?? '—'),
+              if (competitionName.isNotEmpty) _row('Campeonato', competitionName),
+              _row('Horário', _formatDateTime(game.scheduledAt)),
+              if (game.venueName != null && game.venueName!.isNotEmpty)
+                _row('Campo', game.venueName!),
+              if (game.venueAddress != null && game.venueAddress!.isNotEmpty)
+                _row('Endereço', game.venueAddress!),
+            ]),
             const SizedBox(height: 16),
             Text(
               'Criado em ${_formatDate(game.scheduledAt)}',
@@ -132,20 +129,13 @@ class GameDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _infoCard(String title, List<Widget> rows) {
+  Widget _infoCard(List<Widget> rows) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...rows,
-          ],
+          children: rows,
         ),
       ),
     );
