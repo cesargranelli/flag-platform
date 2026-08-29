@@ -436,20 +436,10 @@ class _InRosterBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.check_circle, color: AppColors.success, size: 20),
-        const SizedBox(width: 6),
-        Text(
-          'No elenco',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.success,
-          ),
-        ),
-      ],
+    return const KicksterBadge(
+      label: 'No elenco',
+      color: AppColors.success,
+      icon: Icons.check_circle,
     );
   }
 }

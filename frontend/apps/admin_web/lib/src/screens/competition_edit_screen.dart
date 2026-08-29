@@ -492,21 +492,9 @@ class _CompetitionEditScreenState
   }
 
   Widget _statusChip(CompetitionStatus status) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.grayFill,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        _statusLabel(status),
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
-        ),
-      ),
-    );
+    // Status neutro no form de edição (era grayFill/textPrimary bold):
+    // token neutro mais próximo do design system (regra da Família 3).
+    return KicksterBadge(label: _statusLabel(status), color: AppColors.textSecondary);
   }
 
   Widget _errorBanner(String message) {

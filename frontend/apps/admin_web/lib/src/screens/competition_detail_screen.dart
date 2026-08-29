@@ -562,17 +562,7 @@ class _CompetitionDetailScreenState
       CompetitionStatus.finished => AppColors.danger,
       CompetitionStatus.disabled => AppColors.textSecondary,
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        _statusLabel(status),
-        style: TextStyle(fontSize: 13, color: color),
-      ),
-    );
+    return KicksterBadge(label: _statusLabel(status), color: color);
   }
 
   String _statusLabel(CompetitionStatus status) => switch (status) {

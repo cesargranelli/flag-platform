@@ -209,17 +209,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       'MESA' => AppColors.success,
       _ => AppColors.primary,
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 13, color: color),
-      ),
-    );
+    return KicksterBadge(label: label, color: color);
   }
 
   IconData _roleIcon(String role) => switch (role) {

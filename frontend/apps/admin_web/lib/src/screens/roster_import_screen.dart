@@ -298,10 +298,13 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            _chip('${valid.length} resolvidos', AppColors.success),
-            _chip(
-              '${blocked.length} ambíguos/não encontrados',
-              AppColors.warning,
+            KicksterBadge(
+              label: '${valid.length} resolvidos',
+              color: AppColors.success,
+            ),
+            KicksterBadge(
+              label: '${blocked.length} ambíguos/não encontrados',
+              color: AppColors.warning,
             ),
           ],
         ),
@@ -330,25 +333,15 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        _chip('${result.imported} importados', AppColors.success),
-        _chip('${result.skipped} ignorados', AppColors.warning),
+        KicksterBadge(
+          label: '${result.imported} importados',
+          color: AppColors.success,
+        ),
+        KicksterBadge(
+          label: '${result.skipped} ignorados',
+          color: AppColors.warning,
+        ),
       ],
-    );
-  }
-
-  Widget _chip(String text, Color color) {
-    // Amarelo `warning` (#FACC15) é claro demais para texto na própria cor
-    // sobre o fundo @12%: usa texto escuro (issue #431 — contraste).
-    final textColor = color == AppColors.warning
-        ? AppColors.textPrimary
-        : color;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(text, style: TextStyle(fontSize: 13, color: textColor)),
     );
   }
 

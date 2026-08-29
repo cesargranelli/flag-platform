@@ -259,17 +259,9 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   }
 
   Widget _disabledBadge() {
-    return Container(
-      margin: const EdgeInsets.only(right: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.danger.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: const Text(
-        'Desativada',
-        style: TextStyle(fontSize: 12, color: AppColors.danger),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: KicksterBadge(label: 'Desativada', color: AppColors.danger),
     );
   }
 
