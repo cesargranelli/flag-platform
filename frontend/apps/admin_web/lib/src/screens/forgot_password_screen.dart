@@ -84,12 +84,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Seta voltar (kit: Arrow Back no topo, alinhado à esquerda).
-          Align(
-            alignment: Alignment.centerLeft,
-            child: AppBackLink(onPressed: () => context.go('/login')),
-          ),
-          const SizedBox(height: 24),
           const Text(
             'Esqueci a senha',
             textAlign: TextAlign.center,

@@ -1,6 +1,5 @@
 import 'package:flag_core/flag_core.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 /// Variação tipográfica do H1 das telas ([AppScreen.titleVariant]).
 ///
@@ -12,27 +11,22 @@ enum AppScreenTitleVariant { headline, titleLg }
 
 /// Scaffold padrão das telas autenticadas do Admin Web.
 ///
-/// Com o shell global ([AdminShell]) assumindo o header (marca e chip de
-/// usuário), o [AppScreen] ficou enxuto (issue #427): renderiza o título da
-/// página como H1 (semântica `header`) + ações da tela (ex.: botão "Novo") e
-/// o corpo. A navegação de voltar fica a cargo do navegador/brand do shell
-/// (volta à home) — sem `leading`, sem AppBar duplicada e sem FAB (padrão
-/// mobile substituído por botões web no cabeçalho).
+/// Com o shell global ([AdminShell]) assumindo o header (chip de usuário), o
+/// [AppScreen] ficou enxuto (issue #427): renderiza o título da página como
+/// H1 (semântica `header`) + ações da tela (ex.: botão "Novo") e o corpo. A
+/// navegação de voltar fica a cargo do navegador — sem `leading`, sem AppBar
+/// duplicada, sem links de voltar hierárquicos (issue #451) e sem FAB
+/// (padrão mobile substituído por botões web no cabeçalho).
 ///
-/// Telas de detalhe/edição/criação podem informar [backTarget] (+ [backLabel])
-/// para exibir um link de voltar hierárquico ([AppBackLink], issue #435)
-/// acima do título: o destino é derivado da rota e aplicado via
-/// `context.go` (o admin_web usa URL substituída, sem pilha). [onBack]
-/// customizado tem prioridade sobre o `context.go` padrão.
+/// O título das telas de detalhe/edição/criação (variante `headline`) segue o
+/// grid de leitura ([AppLayout.detail], 720px), como quando havia o link de
+/// voltar; as listagens (variante `titleLg`) usam a largura total.
 class AppScreen extends StatelessWidget {
   const AppScreen({
     super.key,
     required this.title,
     required this.body,
     this.actions,
-    this.backTarget,
-    this.backLabel,
-    this.onBack,
     this.titleVariant = AppScreenTitleVariant.headline,
   });
 
@@ -47,45 +41,20 @@ class AppScreen extends StatelessWidget {
 
   final Widget body;
 
-  /// Rota de destino do link de voltar hierárquico (issue #435).
-  ///
-  /// Quando não nulo, renderiza um [AppBackLink] acima do título (H1),
-  /// alinhado à esquerda. Listas não informam — a marca do shell volta à home.
-  final String? backTarget;
-
-  /// Rótulo contextual do link de voltar (ex.: "Organizações"). Quando nulo,
-  /// o [AppBackLink] usa `AppStrings.back` ('Voltar').
-  final String? backLabel;
-
-  /// Callback custom de voltar — tem prioridade sobre `context.go(backTarget)`.
-  final VoidCallback? onBack;
-
   @override
   Widget build(BuildContext context) {
-    final showBack = backTarget != null;
+    // Telas de detalhe/edição/criação (`headline`) alinham o título ao grid
+    // de leitura (720px); listagens (`titleLg`) usam a largura total.
+    final alignToDetailGrid =
+        titleVariant == AppScreenTitleVariant.headline;
     return Scaffold(
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (showBack)
-              Padding(
-                // Issue #445: o voltar acompanha o grid da tela de detalhe
-                // (`AppLayout.detail`, 720px) para não destoar do conteúdo.
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: AppLayout.detail(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: AppBackLink(
-                      label: backLabel,
-                      onPressed: onBack ?? () => context.go(backTarget!),
-                    ),
-                  ),
-                ),
-              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: showBack
+              child: alignToDetailGrid
                   ? AppLayout.detail(child: _titleRow(context))
                   : _titleRow(context),
             ),

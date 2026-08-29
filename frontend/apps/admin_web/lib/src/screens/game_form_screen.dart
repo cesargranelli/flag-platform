@@ -135,24 +135,8 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
         : ref.watch(teamsProvider(competitionId));
     final venues = ref.watch(venuesProvider);
 
-    // Rótulo do voltar na edição: "Casa × Visitante" quando o jogo vem do
-    // detalhe (com nomes); fallback para o nome do módulo (issue #449).
-    final game = widget.args?.game;
-    final String backLabel;
-    if (!_isEditing) {
-      backLabel = 'Jogos';
-    } else {
-      final home = game?.homeTeamName;
-      final away = game?.awayTeamName;
-      backLabel = (home != null && away != null)
-          ? '$home × $away'
-          : home ?? 'Jogos';
-    }
-
     return AppScreen(
       title: _isEditing ? 'Editar jogo' : 'Novo jogo',
-      backTarget: _isEditing ? '/games/${widget.args?.game?.id}' : '/games',
-      backLabel: backLabel,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

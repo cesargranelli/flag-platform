@@ -423,9 +423,6 @@ class _CompetitionCreateScreenState
       },
       child: AppScreen(
         title: 'Novo campeonato',
-        backTarget: '/competitions',
-        backLabel: 'Campeonatos',
-        onBack: _handleBack,
         body: _buildWizard(context),
       ),
     );

@@ -184,8 +184,6 @@ class _RosterImportScreenState extends ConsumerState<RosterImportScreen> {
 
     return AppScreen(
       title: 'Importar elenco',
-      backTarget: '/rosters',
-      backLabel: 'Elencos',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(

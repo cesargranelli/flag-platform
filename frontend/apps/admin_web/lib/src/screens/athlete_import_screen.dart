@@ -219,8 +219,6 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
 
     return AppScreen(
       title: 'Importar atletas',
-      backTarget: '/athletes',
-      backLabel: 'Atletas',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: AppLayout.form(
