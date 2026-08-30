@@ -13,9 +13,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^2.5.1
   go_router: ^14.2.0
-  flag_core: ^0.1.0
-  flag_api: ^0.1.0
-  flag_domain: ^0.1.0
+  flag_core: ^0.2.0
+  flag_api: ^0.2.0
+  flag_domain: ^0.2.0
 
 dev_dependencies:
   flutter_test:
