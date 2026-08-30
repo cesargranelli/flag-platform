@@ -124,7 +124,7 @@ public class GameController {
 
     @Operation(
             summary = "Atualizar status do jogo",
-            description = "Atualiza o status de um jogo conforme as transições válidas (SCHEDULED->IN_PROGRESS, IN_PROGRESS->FINISHED, SCHEDULED->CANCELLED). Requer autenticação."
+            description = "Atualiza o status de um jogo conforme as transições válidas (SCHEDULED->OPEN, OPEN->IN_PROGRESS, IN_PROGRESS->CONFERENCE, CONFERENCE->FINISHED, SCHEDULED/OPEN->CANCELLED). Requer autenticação."
     )
     @PatchMapping("/api/v1/games/{id}/status")
     @PreAuthorize(SecurityExpressions.ADMIN_OR_MESA)
@@ -136,7 +136,7 @@ public class GameController {
 
     @Operation(
             summary = "Registrar resultado de partida",
-            description = "Registra o placar final de um jogo em andamento, finaliza o jogo (FINISHED) e recalcula a classificacao da categoria automaticamente. Requer autenticacao."
+            description = "Registra o placar final de um jogo em conferência (CONFERENCE), finaliza o jogo (FINISHED) e recalcula a classificacao da categoria automaticamente. Requer autenticacao."
     )
     @PostMapping("/api/v1/games/{id}/result")
     @ResponseStatus(HttpStatus.OK)

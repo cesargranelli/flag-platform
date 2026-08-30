@@ -9,7 +9,7 @@ import br.com.flagplatform.checkin.dto.response.ValidationResponse;
 import br.com.flagplatform.checkin.entity.CheckInEntity;
 import br.com.flagplatform.checkin.exception.AthleteNotInGameException;
 import br.com.flagplatform.checkin.exception.DuplicateMatchNumberException;
-import br.com.flagplatform.checkin.exception.GameNotInProgressException;
+import br.com.flagplatform.checkin.exception.GameNotOpenException;
 import br.com.flagplatform.checkin.repository.CheckInRepository;
 import br.com.flagplatform.common.enums.CheckInStatus;
 import br.com.flagplatform.common.enums.GameStatus;
@@ -59,6 +59,7 @@ public class CheckInService {
     public CheckInResponse checkin(UUID gameId, UUID athleteId,
                                    CheckInStatusRequest request, String validatedByEmail) {
         GameInfo game = gameLookup.findGameInfoById(gameId);
+        requireOpen(game);
         UUID teamId = resolveTeam(game, athleteId);
         UUID validatedBy = userLookup.findUserIdByEmail(validatedByEmail);
 
@@ -163,9 +164,7 @@ public class CheckInService {
     @Transactional
     public ValidationResponse validate(UUID gameId, UUID athleteId, String validatedByEmail) {
         GameInfo game = gameLookup.findGameInfoById(gameId);
-        if (game.status() != GameStatus.IN_PROGRESS) {
-            throw new GameNotInProgressException(gameId);
-        }
+        requireOpen(game);
 
         AthleteInfo athlete = athleteLookup.findAthleteInfoById(athleteId);
 
@@ -206,6 +205,12 @@ public class CheckInService {
                 saved.getStatus(),
                 saved.getValidatedBy(),
                 saved.getValidatedAt());
+    }
+
+    private void requireOpen(GameInfo game) {
+        if (game.status() != GameStatus.OPEN) {
+            throw new GameNotOpenException(game.id());
+        }
     }
 
     private UUID findTeamOf(GameInfo game, UUID athleteId) {

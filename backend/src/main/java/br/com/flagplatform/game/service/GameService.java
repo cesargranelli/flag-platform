@@ -231,7 +231,7 @@ public class GameService implements GameLookup {
     @Transactional
     public GameResponse registerResult(UUID id, RegisterGameResultRequest request) {
         GameEntity entity = findEntityById(id);
-        if (entity.getStatus() != GameStatus.IN_PROGRESS) {
+        if (entity.getStatus() != GameStatus.CONFERENCE) {
             throw new GameNotInProgressException(entity.getStatus());
         }
 
@@ -377,9 +377,10 @@ public class GameService implements GameLookup {
 
     private boolean isValidTransition(GameStatus current, GameStatus requested) {
         return switch (current) {
-            case SCHEDULED ->
-                    requested == GameStatus.IN_PROGRESS || requested == GameStatus.CANCELLED;
-            case IN_PROGRESS -> requested == GameStatus.FINISHED;
+            case SCHEDULED -> requested == GameStatus.OPEN || requested == GameStatus.CANCELLED;
+            case OPEN -> requested == GameStatus.IN_PROGRESS || requested == GameStatus.CANCELLED;
+            case IN_PROGRESS -> requested == GameStatus.CONFERENCE;
+            case CONFERENCE -> requested == GameStatus.FINISHED;
             case FINISHED, CANCELLED -> false;
         };
     }

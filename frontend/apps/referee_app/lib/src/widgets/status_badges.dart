@@ -2,7 +2,8 @@ import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 
-/// Chip de status de jogo (Agendado / Ao vivo / Encerrado / Cancelado).
+/// Chip de status de jogo (Agendado / Abertura / Ao vivo / Conferência /
+/// Encerrado / Cancelado).
 ///
 /// Usa `GameStatus.label` do domain (pt-BR) e cor semântica por estado
 /// (padrão admin_web `_statusChip`), com `Semantics` de apoio (issue #425#4).
@@ -15,7 +16,9 @@ class GameStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
       GameStatus.scheduled => ('Agendado', AppColors.textSecondary),
+      GameStatus.open => ('Abertura', AppColors.warning),
       GameStatus.inProgress => ('Ao vivo', AppColors.success),
+      GameStatus.conference => ('Conferência', AppColors.warning),
       GameStatus.finished => ('Encerrado', AppColors.danger),
       GameStatus.cancelled => ('Cancelado', AppColors.disabled),
     };
