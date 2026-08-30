@@ -21,11 +21,13 @@ typedef GameImportArgs = ({String roundId, String? competitionId});
 class GameImportScreen extends ConsumerStatefulWidget {
   const GameImportScreen({
     super.key,
-    required this.roundId,
+    this.roundId,
     this.competitionId,
   });
 
-  final String roundId;
+  /// Rodada de contexto; `null` quando a rota é aberta sem extra (deep-link)
+  /// — nesse caso a tela mostra um estado vazio em vez de chamar a API (B5).
+  final String? roundId;
   final String? competitionId;
 
   @override
@@ -169,6 +171,8 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
   }
 
   Future<void> _import() async {
+    final roundId = widget.roundId;
+    if (roundId == null || roundId.isEmpty) return;
     final rows = _rows;
     if (rows == null) return;
 
@@ -215,8 +219,8 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
     try {
       final result = await ref
           .read(gameApiProvider)
-          .createBatch(widget.roundId, items);
-      ref.invalidate(gamesByRoundProvider(widget.roundId));
+          .createBatch(roundId, items);
+      ref.invalidate(gamesByRoundProvider(roundId));
       if (mounted) setState(() => _result = result);
     } on RepositoryException catch (e) {
       if (mounted) setState(() => _errorMessage = e.message);
@@ -233,6 +237,33 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
   Widget build(BuildContext context) {
     final rows = _rows;
     final result = _result;
+    final roundId = widget.roundId;
+
+    // Deep-link direto para /games/import sem rodada: estado vazio em vez de
+    // chamar a API com ID vazio (B5 #457).
+    if (roundId == null || roundId.isEmpty) {
+      return AppScreen(
+        title: 'Importar jogos',
+        breadcrumb: const [
+          BreadcrumbItem('Início', route: '/'),
+          BreadcrumbItem(AppStrings.games, route: '/games'),
+          BreadcrumbItem('Importar'),
+        ],
+        body: AppLayout.form(
+          child: KicksterEmptyState(
+            icon: Icons.sports,
+            message: 'Rodada não identificada',
+            description:
+                'Selecione uma rodada no módulo Jogos para importar partidas.',
+            action: KicksterButton(
+              label: 'Ir para Jogos',
+              icon: Icons.arrow_back,
+              onPressed: () => context.go('/games'),
+            ),
+          ),
+        ),
+      );
+    }
 
     return AppScreen(
       title: 'Importar jogos',

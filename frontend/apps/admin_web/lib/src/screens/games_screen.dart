@@ -42,6 +42,15 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
         selectedCompetition ??
         (compItems.isNotEmpty ? compItems.first.id : null);
 
+    // Rodadas do campeonato efetivo + rodada "efetiva" (B1 #457): quando
+    // nenhuma rodada foi selecionada, usa a primeira — a lista de jogos
+    // aparece sem depender de um clique no dropdown.
+    final roundsAsync = effectiveComp != null
+        ? ref.watch(roundsProvider(effectiveComp))
+        : null;
+    final roundItems = roundsAsync?.valueOrNull ?? const <Round>[];
+    final effectiveRound = selectedRound ?? roundItems.firstOrNull?.id;
+
     // Issue #261: criação/edição de jogos (incluída a importação CSV)
     // exige ser criador do campeonato ou ADMIN.
     final selectedCompetitionObj = compItems
@@ -65,15 +74,20 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
           Row(
             children: [
               const Spacer(),
-              if (selectedRound != null && canEdit)
+              if (effectiveRound != null && canEdit)
                 KicksterButton(
                   label: 'Importar',
                   icon: Icons.upload_file,
                   variant: KicksterButtonVariant.outline,
-                  onPressed: () =>
-                      context.push('/games/import', extra: selectedRound),
+                  onPressed: () => context.push(
+                    '/games/import',
+                    extra: (
+                      roundId: effectiveRound,
+                      competitionId: effectiveComp,
+                    ),
+                  ),
                 ),
-              if (selectedRound != null && canEdit)
+              if (effectiveRound != null && canEdit)
                 const SizedBox(width: 8),
               if (effectiveComp != null && canEdit)
                 KicksterButton(
@@ -83,7 +97,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
                     '/games/new',
                     extra: (
                       competitionId: effectiveComp,
-                      roundId: selectedRound,
+                      roundId: effectiveRound,
                       game: null,
                     ),
                   ),
@@ -143,43 +157,40 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
                       ),
                       const SizedBox(height: 12),
                       (effectiveComp != null)
-                          ? ref
-                                .watch(roundsProvider(effectiveComp))
-                                .when(
-                                  loading: () =>
-                                      const LinearProgressIndicator(),
-                                  error: (e, s) => AppErrorState(
-                                    message:
-                                        'Não foi possível carregar as rodadas',
-                                    onRetry: () => ref.invalidate(
-                                      roundsProvider(effectiveComp),
-                                    ),
+                          ? roundsAsync!.when(
+                              loading: () =>
+                                  const LinearProgressIndicator(),
+                              error: (e, s) => AppErrorState(
+                                message:
+                                    'Não foi possível carregar as rodadas',
+                                onRetry: () => ref.invalidate(
+                                  roundsProvider(effectiveComp),
+                                ),
+                              ),
+                              data: (roundItems) =>
+                                  KicksterDropdown<String>(
+                                    key: ValueKey(
+                                        'round-$effectiveComp'),
+                                    label: 'Rodada',
+                                    value: effectiveRound,
+                                    items: roundItems
+                                        .map(
+                                          (r) => DropdownMenuItem(
+                                            value: r.id,
+                                            child: Text(
+                                              'Rodada ${r.number} - ${r.name}',
+                                            ),
+                                          ),
+                                        )
+                                        .toList(),
+                                    onChanged: (value) => ref
+                                        .read(
+                                          selectedRoundProvider
+                                              .notifier,
+                                        )
+                                        .state = value,
                                   ),
-                                  data: (roundItems) =>
-                                      KicksterDropdown<String>(
-                                        key: ValueKey(
-                                            'round-$effectiveComp'),
-                                        label: 'Rodada',
-                                        value: selectedRound ??
-                                            roundItems.first.id,
-                                        items: roundItems
-                                            .map(
-                                              (r) => DropdownMenuItem(
-                                                value: r.id,
-                                                child: Text(
-                                                  'Rodada ${r.number} - ${r.name}',
-                                                ),
-                                              ),
-                                            )
-                                            .toList(),
-                                        onChanged: (value) => ref
-                                            .read(
-                                              selectedRoundProvider
-                                                  .notifier,
-                                            )
-                                            .state = value,
-                                      ),
-                                )
+                            )
                           : const LinearProgressIndicator(),
                       if (!canEdit)
                         const EditRestrictionNote(
@@ -189,9 +200,9 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
                         ),
                     ],
                   ),
-                  if (selectedRound != null)
+                  if (effectiveRound != null)
                     ref
-                          .watch(gamesByRoundProvider(selectedRound))
+                          .watch(gamesByRoundProvider(effectiveRound))
                           .when(
                             loading: () => const AppLoading(
                               message: 'Carregando jogos...',
@@ -199,7 +210,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
                             error: (error, stackTrace) => AppErrorState(
                               message: 'Não foi possível carregar os jogos',
                               onRetry: () => ref.invalidate(
-                                gamesByRoundProvider(selectedRound),
+                                gamesByRoundProvider(effectiveRound),
                               ),
                             ),
                             data: (items) {
@@ -216,7 +227,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
                                       '/games/new',
                                       extra: (
                                         competitionId: effectiveComp,
-                                        roundId: selectedRound,
+                                        roundId: effectiveRound,
                                         game: null,
                                       ),
                                     ),

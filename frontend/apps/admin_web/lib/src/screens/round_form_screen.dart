@@ -11,10 +11,14 @@ import '../widgets/app_screen.dart';
 
 /// Formulário de criação/edição de rodada.
 class RoundFormScreen extends ConsumerStatefulWidget {
-  const RoundFormScreen({super.key, this.roundId, this.round});
+  const RoundFormScreen({super.key, this.roundId, this.round, this.competitionId});
 
   final String? roundId;
   final Round? round;
+
+  /// Campeonato vindo da listagem (via extra da rota) — evita perder o
+  /// contexto ao abrir "Nova rodada" (B5 #457).
+  final String? competitionId;
 
   @override
   ConsumerState<RoundFormScreen> createState() => _RoundFormScreenState();
@@ -58,6 +62,7 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
     try {
       final api = ref.read(roundApiProvider);
       final competitionId =
+          widget.competitionId ??
           widget.round?.competitionId ??
           ref.read(selectedCompetitionProvider) ??
           '';

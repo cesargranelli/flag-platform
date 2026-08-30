@@ -11,13 +11,10 @@ import '../widgets/edit_restriction_note.dart';
 
 /// Detalhe de um jogo: confronto, placar, status e informações.
 class GameDetailScreen extends ConsumerWidget {
-  const GameDetailScreen({super.key, this.gameId, this.game, this.args});
+  const GameDetailScreen({super.key, this.gameId, this.game});
 
   final String? gameId;
   final Game? game;
-
-  /// Argumentos de navegação para a edição.
-  final ({String? roundId, Game? game})? args;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

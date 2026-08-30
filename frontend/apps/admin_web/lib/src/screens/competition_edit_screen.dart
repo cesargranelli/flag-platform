@@ -90,6 +90,22 @@ class _CompetitionEditScreenState
     ]) {
       controller.addListener(_markDirty);
     }
+
+    // Hidratação do formulário no ciclo do provider (B4 #457): em vez de
+    // mutar controllers dentro do `build` (side-effect que re-hidrataria a
+    // cada refetch), escuta o provider e aplica UMA vez (guard `_appliedRemote`).
+    final competitionId = widget.competitionId;
+    if (competitionId != null) {
+      ref.listen<AsyncValue<Competition>>(
+        competitionProvider(competitionId),
+        (prev, next) {
+          final value = next.valueOrNull;
+          if (value != null && !_appliedRemote) {
+            _applyCompetition(value);
+          }
+        },
+      );
+    }
   }
 
   void _markDirty() {
@@ -328,75 +344,71 @@ class _CompetitionEditScreenState
 
   @override
   Widget build(BuildContext context) {
-    if (!_appliedRemote) {
-      final asyncComp = ref.watch(competitionProvider(widget.competitionId!));
-      return asyncComp.when(
-        loading: () => AppScreen(
-          title: 'Editar campeonato',
-          breadcrumb: [
-            const BreadcrumbItem('Início', route: '/'),
-            const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
-            if (widget.competition?.name != null)
-              BreadcrumbItem(widget.competition!.name),
-          ],
-          body: const AppLoading(message: 'Carregando campeonato...'),
+    final asyncComp = ref.watch(competitionProvider(widget.competitionId!));
+    return asyncComp.when(
+      loading: () => AppScreen(
+        title: 'Editar campeonato',
+        breadcrumb: [
+          const BreadcrumbItem('Início', route: '/'),
+          const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+          if (widget.competition?.name != null)
+            BreadcrumbItem(widget.competition!.name),
+        ],
+        body: const AppLoading(message: 'Carregando campeonato...'),
+      ),
+      error: (error, stackTrace) => AppScreen(
+        title: 'Editar campeonato',
+        breadcrumb: [
+          const BreadcrumbItem('Início', route: '/'),
+          const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+          if (widget.competition?.name != null)
+            BreadcrumbItem(widget.competition!.name),
+        ],
+        body: AppErrorState(
+          message: 'Não foi possível carregar o campeonato',
+          onRetry: () =>
+              ref.invalidate(competitionProvider(widget.competitionId!)),
         ),
-        error: (error, stackTrace) => AppScreen(
-          title: 'Editar campeonato',
-          breadcrumb: [
-            const BreadcrumbItem('Início', route: '/'),
-            const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
-            if (widget.competition?.name != null)
-              BreadcrumbItem(widget.competition!.name),
-          ],
-          body: AppErrorState(
-            message: 'Não foi possível carregar o campeonato',
-            onRetry: () =>
-                ref.invalidate(competitionProvider(widget.competitionId!)),
-          ),
-        ),
-        data: (competition) {
-          // Issue #261: sem permissão (criador/ADMIN), estado informativo.
-          final user = ref.watch(authControllerProvider).state.user;
-          if (!canEditCompetition(user, competition)) {
-            return AppScreen(
-              title: 'Editar campeonato',
-              breadcrumb: [
-                const BreadcrumbItem('Início', route: '/'),
-                const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
-                BreadcrumbItem(competition.name),
-              ],
-              body: const AppEmptyState(
-                message: 'Você não tem permissão para editar este campeonato.',
-                icon: Icons.lock_outline,
-              ),
-            );
-          }
-          // Issue #257 (M4): apenas RASCUNHO é editável.
-          if (competition.status != CompetitionStatus.draft) {
-            return AppScreen(
-              title: 'Editar campeonato',
-              breadcrumb: [
-                const BreadcrumbItem('Início', route: '/'),
-                const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
-                BreadcrumbItem(competition.name),
-              ],
-              body: AppEmptyState(
-                message: competition.status == CompetitionStatus.published
-                    ? 'Campeonato publicado — não é mais editável.'
-                    : 'Campeonato '
-                           '${_statusLabel(competition.status).toLowerCase()} — '
-                           'não é mais editável.',
-                icon: Icons.lock,
-              ),
-            );
-          }
-          _applyCompetition(competition);
-          return _buildEditable(context);
-        },
-      );
-    }
-    return _buildEditable(context);
+      ),
+      data: (competition) {
+        // Issue #261: sem permissão (criador/ADMIN), estado informativo.
+        final user = ref.watch(authControllerProvider).state.user;
+        if (!canEditCompetition(user, competition)) {
+          return AppScreen(
+            title: 'Editar campeonato',
+            breadcrumb: [
+              const BreadcrumbItem('Início', route: '/'),
+              const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+              BreadcrumbItem(competition.name),
+            ],
+            body: const AppEmptyState(
+              message: 'Você não tem permissão para editar este campeonato.',
+              icon: Icons.lock_outline,
+            ),
+          );
+        }
+        // Issue #257 (M4): apenas RASCUNHO é editável.
+        if (competition.status != CompetitionStatus.draft) {
+          return AppScreen(
+            title: 'Editar campeonato',
+            breadcrumb: [
+              const BreadcrumbItem('Início', route: '/'),
+              const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+              BreadcrumbItem(competition.name),
+            ],
+            body: AppEmptyState(
+              message: competition.status == CompetitionStatus.published
+                  ? 'Campeonato publicado — não é mais editável.'
+                  : 'Campeonato '
+                         '${_statusLabel(competition.status).toLowerCase()} — '
+                         'não é mais editável.',
+              icon: Icons.lock,
+            ),
+          );
+        }
+        return _buildEditable(context);
+      },
+    );
   }
 
   Widget _buildEditable(BuildContext context) {

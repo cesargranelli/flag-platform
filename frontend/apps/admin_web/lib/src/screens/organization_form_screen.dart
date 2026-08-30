@@ -194,8 +194,10 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         danger: true,
       );
       if (discard != true) return;
+      if (!mounted) return;
       _saved = true;
     }
+    if (!mounted) return;
     _goBack();
   }
 
