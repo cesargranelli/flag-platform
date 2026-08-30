@@ -21,14 +21,8 @@ class GameOperationScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Operação de jogo'),
-        actions: [
-          // Atalho cruzado para o check-in (issue #425#19).
-          IconButton(
-            tooltip: 'Check-in de atletas',
-            icon: const Icon(Icons.how_to_reg),
-            onPressed: () => context.push('/checkin'),
-          ),
-        ],
+        // A conferência de atletas é acessada pelo painel, somente quando a
+        // partida estiver aberta (OPEN) — issue #490.
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -126,13 +120,8 @@ class _GameOperationPanelState extends ConsumerState<GameOperationPanel> {
                   label: const Text('Abrir partida'),
                   onPressed: () => _confirmOpen(game),
                 ),
-                const SizedBox(height: 8),
-                // Atalho para a conferência dos atletas durante a abertura.
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.how_to_reg),
-                  label: const Text('Conferência de atletas'),
-                  onPressed: () => context.push('/checkin'),
-                ),
+                // A conferência de atletas só é acessível quando a partida
+                // estiver aberta (OPEN) — issue #490.
               ],
             ),
           GameStatus.open => Column(
