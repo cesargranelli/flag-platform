@@ -1,4 +1,5 @@
 import 'package:flag_core/flag_core.dart';
+import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,7 +19,7 @@ class AdminHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isAdmin =
         ref.watch(authControllerProvider.select((a) => a.state.user?.role)) ==
-        'ADMIN';
+        UserRole.admin;
 
     final modules = <_Module>[
       _Module(

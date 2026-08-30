@@ -32,11 +32,8 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
 
-  /// Ids de atletas com inclusão em andamento (desabilita a linha).
-  final Set<String> _adding = {};
-
-  /// Ids de atletas do elenco com remoção em andamento (desabilita a linha).
-  final Set<String> _removing = {};
+  static const _addScope = 'roster-add';
+  static const _removeScope = 'roster-remove';
 
   String? get _teamId => widget.team?.id ?? widget.teamId;
 
@@ -56,6 +53,8 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
 
     await runMutation(
       context,
+      ref: ref,
+      scope: _addScope,
       action: () => ref.read(rosterApiProvider).add(
             teamId: teamId,
             athleteId: athlete.id,
@@ -65,10 +64,6 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
       successMessage: '${athlete.name} adicionado ao elenco.',
       errorMessage: 'Não foi possível adicionar o atleta.',
       progressId: athlete.id,
-      progressIds: _adding,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: () => ref.invalidate(rosterProvider(teamId)),
     );
   }
@@ -90,16 +85,14 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
 
     await runMutation(
       context,
+      ref: ref,
+      scope: _removeScope,
       action: () => ref
           .read(rosterApiProvider)
           .remove(teamId: teamId, athleteId: entry.athleteId),
       successMessage: '${entry.athleteName} removido do elenco.',
       errorMessage: 'Não foi possível remover o atleta.',
       progressId: entry.athleteId,
-      progressIds: _removing,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: () => ref.invalidate(rosterProvider(teamId)),
     );
   }
@@ -124,6 +117,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
 
     return AppScreen(
       title: title,
+      scrollable: false,
       breadcrumb: breadcrumb,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -141,13 +135,15 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Conteúdo
-          teamId == null
-              ? const AppEmptyState(
-                  message: 'Time não identificado',
-                  icon: Icons.groups_outlined,
-                )
-              : _buildRoster(context, teamId),
+          // Conteúdo (Expanded para dar altura finita à lista lazy)
+          Expanded(
+            child: teamId == null
+                ? const AppEmptyState(
+                    message: 'Time não identificado',
+                    icon: Icons.groups_outlined,
+                  )
+                : _buildRoster(context, teamId),
+          ),
         ],
       ),
     );
@@ -200,11 +196,14 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
             ),
           ),
         ),
-        _buildList(
-          athletes: athletes,
-          filtered: filtered,
-          inRosterIds: inRosterIds,
-          entryByAthleteId: entryByAthleteId,
+        // Lista em altura finita (Expanded) → virtualização real.
+        Expanded(
+          child: _buildList(
+            athletes: athletes,
+            filtered: filtered,
+            inRosterIds: inRosterIds,
+            entryByAthleteId: entryByAthleteId,
+          ),
         ),
       ],
     );
@@ -241,34 +240,42 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (showAllInRosterNote)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              'Todos os atletas já estão no elenco',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
+        // Conteúdo em altura finita (Expanded) → lista virtualizada (lazy).
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (showAllInRosterNote)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Text(
+                    'Todos os atletas já estão no elenco',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: AppLayout.content(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final athlete = filtered[index];
+                      final inRoster = inRosterIds.contains(athlete.id);
+                      return _athleteCard(
+                        context,
+                        athlete,
+                        inRoster: inRoster,
+                        entry: inRoster ? entryByAthleteId[athlete.id] : null,
+                      );
+                    },
+                  ),
+                ),
               ),
-            ),
-          ),
-        AppLayout.content(
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            itemCount: filtered.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final athlete = filtered[index];
-              final inRoster = inRosterIds.contains(athlete.id);
-              return _athleteCard(
-                context,
-                athlete,
-                inRoster: inRoster,
-                entry: inRoster ? entryByAthleteId[athlete.id] : null,
-              );
-            },
+            ],
           ),
         ),
       ],
@@ -297,8 +304,10 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
         displayNickname,
       if (position.isNotEmpty) position,
     ].join(' · ');
-    final adding = _adding.contains(athlete.id);
-    final removing = _removing.contains(athlete.id);
+    final adding =
+        ref.watch(mutationProgressProvider(_addScope)).contains(athlete.id);
+    final removing =
+        ref.watch(mutationProgressProvider(_removeScope)).contains(athlete.id);
 
     return Card(
       clipBehavior: Clip.antiAlias,

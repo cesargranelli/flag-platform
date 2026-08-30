@@ -37,11 +37,8 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
   final _searchController = TextEditingController();
   String _query = '';
 
-  /// Clubes com associação em andamento (desabilita o botão durante o POST).
-  final Set<String> _associatingOrgIds = {};
-
-  /// Times com desassociação em andamento (desabilita o botão durante o DELETE).
-  final Set<String> _disassociatingTeamIds = {};
+  static const _associateScope = 'associate-orgs';
+  static const _disassociateScope = 'disassociate-teams';
 
   /// Ids de clubes NÃO associados marcados para associação em lote.
   final Set<String> _selectedOrgIds = {};
@@ -59,16 +56,14 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
   Future<void> _associate(Organization club, String competitionId) async {
     await runMutation(
       context,
+      ref: ref,
+      scope: _associateScope,
       action: () => ref
           .read(teamApiProvider)
           .associateClub(competitionId: competitionId, organizationId: club.id),
       successMessage: '${club.tradeName} associado ao campeonato.',
       errorMessage: 'Não foi possível associar o clube.',
       progressId: club.id,
-      progressIds: _associatingOrgIds,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: () => ref.invalidate(teamsProvider(competitionId)),
     );
   }
@@ -77,14 +72,12 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
   Future<void> _disassociate(Team team, String competitionId) async {
     await runMutation(
       context,
+      ref: ref,
+      scope: _disassociateScope,
       action: () => ref.read(teamApiProvider).delete(team.id),
       successMessage: 'Clube desassociado do campeonato.',
       errorMessage: 'Não foi possível desassociar o clube.',
       progressId: team.id,
-      progressIds: _disassociatingTeamIds,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: () {
         ref.invalidate(teamsProvider(competitionId));
         // O clube deixou de ser selecionável; remove da seleção se constar.
@@ -162,6 +155,7 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
 
     return AppScreen(
       title: 'Associar clubes',
+      scrollable: false,
       breadcrumb: const [
         BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.teams, route: '/teams'),
@@ -170,57 +164,63 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          competitions.when(
-            loading: () =>
-                const AppLoading(message: 'Carregando campeonatos...'),
-            error: (error, stackTrace) => AppErrorState(
-              message: 'Não foi possível carregar os campeonatos',
-              onRetry: () => ref.invalidate(competitionsProvider),
-            ),
-            data: (compItems) {
-              // P4 #461: locked (rota) ?? efetivo (selecionado ?? primeiro).
-              final effectiveComp =
-                  widget.lockedCompetitionId ??
-                  ref.watch(effectiveCompetitionProvider);
+          // Conteúdo (Expanded para dar altura finita à lista lazy)
+          Expanded(
+            child: competitions.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando campeonatos...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar os campeonatos',
+                onRetry: () => ref.invalidate(competitionsProvider),
+              ),
+              data: (compItems) {
+                // P4 #461: locked (rota) ?? efetivo (selecionado ?? primeiro).
+                final effectiveComp =
+                    widget.lockedCompetitionId ??
+                    ref.watch(effectiveCompetitionProvider);
 
-              if (effectiveComp == null) {
-                return KicksterEmptyState(
-                  icon: Icons.emoji_events_outlined,
-                  message: 'Nenhum campeonato cadastrado',
-                  description:
-                      'Crie um campeonato para associar clubes a ele.',
-                  action: KicksterButton(
-                    label: 'Criar campeonato',
-                    icon: Icons.add,
-                    onPressed: () => context.go('/competitions/new'),
+                if (effectiveComp == null) {
+                  return KicksterEmptyState(
+                    icon: Icons.emoji_events_outlined,
+                    message: 'Nenhum campeonato cadastrado',
+                    description:
+                        'Crie um campeonato para associar clubes a ele.',
+                    action: KicksterButton(
+                      label: 'Criar campeonato',
+                      icon: Icons.add,
+                      onPressed: () => context.go('/competitions/new'),
+                    ),
+                  );
+                }
+
+                // Issue #357: largura padrão dos formulários (600px), como nas
+                // telas de cadastro de organizações/campeonatos.
+                return AppLayout.form(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: KicksterSearchField(
+                          controller: _searchController,
+                          onChanged: (value) => setState(() {
+                            _query = value;
+                            // A seleção pode conter clubes que saíram do filtro;
+                            // limpa para evitar seleções "fantasma".
+                            _selectedOrgIds.clear();
+                          }),
+                          hint: 'Buscar clube',
+                        ),
+                      ),
+                      // Lista em altura finita (Expanded) → virtualização real.
+                      Expanded(
+                        child: _buildClubList(effectiveComp),
+                      ),
+                    ],
                   ),
                 );
-              }
-
-              // Issue #357: largura padrão dos formulários (600px), como nas
-              // telas de cadastro de organizações/campeonatos.
-              return AppLayout.form(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: KicksterSearchField(
-                        controller: _searchController,
-                        onChanged: (value) => setState(() {
-                          _query = value;
-                          // A seleção pode conter clubes que saíram do filtro;
-                          // limpa para evitar seleções "fantasma".
-                          _selectedOrgIds.clear();
-                        }),
-                        hint: 'Buscar clube',
-                      ),
-                    ),
-                    _buildClubList(effectiveComp),
-                  ],
-                ),
-              );
-            },
+              },
+            ),
           ),
         ],
       ),
@@ -285,19 +285,20 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
             return Column(
               children: [
                 if (hasSelectable) _selectionBar(competitionId, orgsById),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: EdgeInsets.zero,
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final club = filtered[index];
-                    return _clubCard(
-                      club,
-                      competitionId,
-                      orgIdToTeam: orgIdToTeam,
-                    );
-                  },
+                // Lista em altura finita (Expanded) → virtualização real (lazy).
+                Expanded(
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final club = filtered[index];
+                      return _clubCard(
+                        club,
+                        competitionId,
+                        orgIdToTeam: orgIdToTeam,
+                      );
+                    },
+                  ),
                 ),
               ],
             );
@@ -350,9 +351,12 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
   }) {
     final team = orgIdToTeam[club.id];
     final isAssociated = team != null;
-    final associating = _associatingOrgIds.contains(club.id);
-    final disassociating =
-        team != null && _disassociatingTeamIds.contains(team.id);
+    final associating =
+        ref.watch(mutationProgressProvider(_associateScope)).contains(club.id);
+    final disassociating = team != null &&
+        ref
+            .watch(mutationProgressProvider(_disassociateScope))
+            .contains(team.id);
     final selected = _selectedOrgIds.contains(club.id);
 
     return Card(

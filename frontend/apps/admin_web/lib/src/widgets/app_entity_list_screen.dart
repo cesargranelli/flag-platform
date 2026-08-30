@@ -8,9 +8,10 @@ import 'package:flutter/material.dart';
 ///   [KicksterSearchField] (debounce nativo do campo, não duplicado);
 /// - filtro local por query (trim + lowercase, via [filter]);
 /// - empty de busca ([AppEmptyState] com `Icons.search_off`);
-/// - grid responsivo: [LayoutBuilder] → [GridView.builder] com `shrinkWrap`,
-///   `NeverScrollableScrollPhysics`, 1/2 colunas (>= 600px) e
-///   `mainAxisExtent` configurável.
+/// - grid responsivo: [LayoutBuilder] → [GridView.builder] com `shrinkWrap` **desativado**,
+///   `AlwaysScrollableScrollPhysics` e `cacheExtent` configurado para renderizar apenas
+///   itens visíveis (lazy grid). A altura de cada célula é definida por
+///   [mainAxisExtent].
 ///
 /// O widget retorna um `Column` pensado para ser usado DENTRO do body da
 /// tela — o body continua com seus próprios actions e `provider.when`
@@ -104,6 +105,7 @@ class _AppEntityListScreenState<T> extends State<AppEntityListScreen<T>> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Toolbar (contagem + leading + trailing + busca) fica fixa no topo.
         Row(
           children: [
             _countText(filtered.length, query.isNotEmpty),
@@ -120,33 +122,38 @@ class _AppEntityListScreenState<T> extends State<AppEntityListScreen<T>> {
           ],
         ),
         const SizedBox(height: 16),
-        if (filtered.isEmpty)
-          AppEmptyState(
-            message: widget.emptyMessage,
-            icon: Icons.search_off,
-          )
-        else
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 600
-                  ? widget.maxColumns
-                  : widget.minColumns;
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: widget.gridPadding,
-                itemCount: filtered.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columns,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  mainAxisExtent: widget.mainAxisExtent,
+        // Grid em altura finita (Expanded) → virtualização REAL. O widget é
+        // usado dentro de um body com `scrollable:false` no AppScreen, que
+        // fornece altura finita (Expanded) ao grid.
+        Expanded(
+          child: filtered.isEmpty
+              ? AppEmptyState(
+                  message: widget.emptyMessage,
+                  icon: Icons.search_off,
+                )
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth >= 600
+                        ? widget.maxColumns
+                        : widget.minColumns;
+                    return GridView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      cacheExtent: 100,
+                      padding: widget.gridPadding,
+                      itemCount: filtered.length,
+                      gridDelegate:
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        mainAxisExtent: widget.mainAxisExtent,
+                      ),
+                      itemBuilder: (context, index) =>
+                          widget.cardBuilder(filtered[index]),
+                    );
+                  },
                 ),
-                itemBuilder: (context, index) =>
-                    widget.cardBuilder(filtered[index]),
-              );
-            },
-          ),
+        ),
       ],
     );
   }

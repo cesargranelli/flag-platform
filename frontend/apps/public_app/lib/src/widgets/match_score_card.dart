@@ -515,6 +515,16 @@ class _StatusIcon extends StatelessWidget {
         size: 16,
         color: AppColors.textSecondary,
       ),
+      GameStatus.open => const Icon(
+        Icons.login,
+        size: 16,
+        color: AppColors.textSecondary,
+      ),
+      GameStatus.conference => const Icon(
+        Icons.assignment_turned_in,
+        size: 16,
+        color: AppColors.textSecondary,
+      ),
       GameStatus.finished => const Icon(
         Icons.check_circle,
         size: 16,

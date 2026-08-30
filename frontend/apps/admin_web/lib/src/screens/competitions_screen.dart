@@ -26,8 +26,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
   bool _showDisabled = false;
   final _searchController = TextEditingController();
 
-  /// Ids de campeonatos com desativação/reativação em andamento.
-  final Set<String> _mutating = {};
+  static const _scope = 'competitions';
 
   @override
   void dispose() {
@@ -39,7 +38,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
   Widget build(BuildContext context) {
     final isAdmin =
         ref.watch(authControllerProvider.select((a) => a.state.user?.role)) ==
-        'ADMIN';
+        UserRole.admin;
     final user = ref.watch(authControllerProvider.select((a) => a.state.user));
     final showDisabled = isAdmin && _showDisabled;
     final competitions = showDisabled
@@ -48,6 +47,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
 
     return AppScreen(
       title: 'Campeonatos',
+      scrollable: false,
       breadcrumb: const [
         BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem('Campeonatos'),
@@ -67,62 +67,64 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Conteúdo
-          competitions.when(
-            loading: () =>
-                const AppLoading(message: 'Carregando campeonatos...'),
-            error: (error, stackTrace) => AppErrorState(
-              message: 'Não foi possível carregar os campeonatos',
-              onRetry: () => showDisabled
-                  ? ref.invalidate(competitionsAdminProvider(true))
-                  : ref.invalidate(competitionsProvider),
-            ),
-            data: (items) {
-              if (items.isEmpty) {
-                return KicksterEmptyState(
-                  icon: Icons.emoji_events_outlined,
-                  message: 'Nenhum campeonato cadastrado',
-                  description:
-                      'Crie o primeiro campeonato para começar a usar.',
-                  action: KicksterButton(
-                    label: 'Criar campeonato',
-                    icon: Icons.add,
-                    onPressed: () => context.go('/competitions/new'),
-                  ),
-                );
-              }
-              return AppEntityListScreen<Competition>(
-                items: items,
-                cardBuilder: (competition) =>
-                    _competitionCard(context, competition, user),
-                searchField: _searchController,
-                countLabel: 'campeonatos',
-                emptyMessage: 'Nenhum campeonato encontrado',
-                toolbarTrailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (isAdmin)
-                      Tooltip(
-                        message: 'Exibir campeonatos desativados',
-                        child: IconButton(
-                          isSelected: _showDisabled,
-                          selectedIcon: const Icon(Icons.visibility),
-                          icon: const Icon(Icons.visibility_off_outlined),
-                          tooltip: 'Desativados',
-                          onPressed: () =>
-                              setState(() => _showDisabled = !_showDisabled),
+          // Conteúdo (Expanded para dar altura finita ao grid)
+          Expanded(
+            child: competitions.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando campeonatos...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar os campeonatos',
+                onRetry: () => showDisabled
+                    ? ref.invalidate(competitionsAdminProvider(true))
+                    : ref.invalidate(competitionsProvider),
+              ),
+              data: (items) {
+                if (items.isEmpty) {
+                  return KicksterEmptyState(
+                    icon: Icons.emoji_events_outlined,
+                    message: 'Nenhum campeonato cadastrado',
+                    description:
+                        'Crie o primeiro campeonato para começar a usar.',
+                    action: KicksterButton(
+                      label: 'Criar campeonato',
+                      icon: Icons.add,
+                      onPressed: () => context.go('/competitions/new'),
+                    ),
+                  );
+                }
+                return AppEntityListScreen<Competition>(
+                  items: items,
+                  cardBuilder: (competition) =>
+                      _competitionCard(context, competition, user),
+                  searchField: _searchController,
+                  countLabel: 'campeonatos',
+                  emptyMessage: 'Nenhum campeonato encontrado',
+                  toolbarTrailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isAdmin)
+                        Tooltip(
+                          message: 'Exibir campeonatos desativados',
+                          child: IconButton(
+                            isSelected: _showDisabled,
+                            selectedIcon: const Icon(Icons.visibility),
+                            icon: const Icon(Icons.visibility_off_outlined),
+                            tooltip: 'Desativados',
+                            onPressed: () =>
+                                setState(() => _showDisabled = !_showDisabled),
+                          ),
                         ),
-                      ),
-                    const SizedBox(width: 8),
-                  ],
-                ),
-                filter: (all, query) => query.isEmpty
-                    ? all
-                    : all
-                        .where((c) => c.name.toLowerCase().contains(query))
-                        .toList(growable: false),
-              );
-            },
+                      const SizedBox(width: 8),
+                    ],
+                  ),
+                  filter: (all, query) => query.isEmpty
+                      ? all
+                      : all
+                          .where((c) => c.name.toLowerCase().contains(query))
+                          .toList(growable: false),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -219,16 +221,14 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
   }) async {
     await runMutation(
       context,
+      ref: ref,
+      scope: _scope,
       action: () => activate
           ? ref.read(competitionApiProvider).reactivate(competition.id)
           : ref.read(competitionApiProvider).deactivate(competition.id),
       successMessage: successMessage,
       errorMessage: errorMessage,
       progressId: competition.id,
-      progressIds: _mutating,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: _invalidateLists,
     );
   }

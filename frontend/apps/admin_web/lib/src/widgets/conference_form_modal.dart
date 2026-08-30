@@ -1,10 +1,10 @@
-import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
+import '../utils/mutation.dart';
 
 /// Modal de criação/edição de conferência (issue #258).
 ///
@@ -46,8 +46,8 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _name;
-  bool _submitting = false;
-  String? _errorMessage;
+
+  static const _scope = 'conference-form';
 
   bool get _isEditing => widget.conference != null;
 
@@ -66,47 +66,36 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Capturados antes do await: o contexto do diálogo é desativado no pop.
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-
-    setState(() {
-      _submitting = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final api = ref.read(conferenceApiProvider);
-      if (_isEditing) {
-        await api.update(widget.conference!.id, name: _name.text.trim());
-      } else {
-        await api.create(
-          competitionId: widget.competitionId,
-          name: _name.text.trim(),
-        );
-      }
-      ref.invalidate(conferencesProvider(widget.competitionId));
-      navigator.pop();
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            _isEditing ? 'Conferência atualizada.' : 'Conferência criada.',
-          ),
-        ),
-      );
-    } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } catch (_) {
-      setState(
-        () => _errorMessage = 'Não foi possível salvar a conferência.',
-      );
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
+    await runMutation(
+      context,
+      ref: ref,
+      scope: _scope,
+      action: () async {
+        final api = ref.read(conferenceApiProvider);
+        if (_isEditing) {
+          await api.update(widget.conference!.id, name: _name.text.trim());
+        } else {
+          await api.create(
+            competitionId: widget.competitionId,
+            name: _name.text.trim(),
+          );
+        }
+      },
+      successMessage:
+          _isEditing ? 'Conferência atualizada.' : 'Conferência criada.',
+      errorMessage: 'Não foi possível salvar a conferência.',
+      progressId: 'save',
+      onSuccess: () {
+        ref.invalidate(conferencesProvider(widget.competitionId));
+        if (mounted) Navigator.pop(context);
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final submitting =
+        ref.watch(mutationProgressProvider(_scope)).contains('save');
     return AlertDialog(
       title: Text(_isEditing ? 'Editar conferência' : 'Nova conferência'),
       content: SizedBox(
@@ -127,14 +116,6 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
                     ? 'Informe o nome'
                     : null,
               ),
-              if (_errorMessage != null)
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(
-                    color: AppColors.danger,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
             ],
           ),
         ),
@@ -143,13 +124,13 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
         KicksterButton(
           label: 'Cancelar',
           variant: KicksterButtonVariant.text,
-          onPressed: _submitting ? null : () => Navigator.pop(context),
+          onPressed: submitting ? null : () => Navigator.pop(context),
         ),
         KicksterButton(
           label: 'Salvar',
-          onPressed: _submitting ? null : _save,
+          onPressed: submitting ? null : _save,
           icon: Icons.check,
-          loading: _submitting,
+          loading: submitting,
         ),
       ],
     );

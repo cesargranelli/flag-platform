@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import 'app_dropdown.dart';
+import 'kickster_menu_anchor.dart';
 
 /// Dropdown no estilo do kit Kickster (issues #441/#445/#451).
 ///
@@ -28,7 +29,8 @@ import 'app_dropdown.dart';
 /// Implementado como `FormField` (herda validação, erro e `didChange`):
 /// o rótulo fica acima do pill, o valor exibido usa o texto da opção
 /// selecionada (ou [hint]) em 12px `#9CA4AB`, e o menu abre via
-/// `showGeneralDialog` ancorado abaixo do campo (toque fora fecha).
+/// [KicksterMenuAnchor] (toque fora, Esc e seleção fecham; teclado
+/// ↑/↓/Enter navega os itens).
 class KicksterDropdown<T> extends FormField<T> {
   KicksterDropdown({
     super.key,
@@ -86,8 +88,12 @@ class KicksterDropdown<T> extends FormField<T> {
 /// Estado do [KicksterDropdown] — herda o ciclo de validação do `FormField`
 /// ([FormFieldState.errorText], [FormFieldState.didChange]).
 class _KicksterDropdownState<T> extends FormFieldState<T> {
-  final GlobalKey _pillKey = GlobalKey();
+  /// Altura máxima da lista aberta: 6 itens de 48px + 5 divisores de 1px +
+  /// bordas (limite do overlay antigo, aplicado via
+  /// [KicksterMenuAnchor.maxHeight]).
+  static const double _maxMenuHeight = 6 * 48 + 5 * 1 + 2;
 
+  /// `true` enquanto o menu está aberto (borda `primary` no pill).
   bool _menuOpen = false;
 
   KicksterDropdown<T> get _widget => widget as KicksterDropdown<T>;
@@ -170,29 +176,32 @@ class _KicksterDropdownState<T> extends FormFieldState<T> {
     );
   }
 
-  /// Campo fechado: pill 52px, raio 24, fundo `#F6F8FE`.
+  /// Campo fechado: pill 52px, raio 24, fundo `#F6F8FE`, envolvido no
+  /// [KicksterMenuAnchor] (toque, foco por Tab e menu com ↑/↓/Enter/Esc).
   Widget _buildPill() {
-    return Semantics(
-      button: true,
-      label: _pillSemanticsLabel(),
-      hint: 'Abrir opções',
-      child: Container(
-        key: _pillKey,
-        height: 52,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceMuted,
-          borderRadius: BorderRadius.circular(24),
-          border: _menuOpen
-              ? Border.all(color: AppColors.primary, width: 2)
-              : hasError
-                  ? Border.all(color: AppColors.danger, width: 1)
-                  : null,
-        ),
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: _openMenu,
-            borderRadius: BorderRadius.circular(24),
+    final entries = _entries;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return KicksterMenuAnchor(
+          triggerLabel: _pillSemanticsLabel(),
+          // Largura do menu = largura do campo (o overlay antigo media o
+          // pill via GlobalKey; aqui o pill estica com o `stretch` do pai).
+          width: constraints.maxWidth,
+          maxHeight: _maxMenuHeight,
+          onOpenChanged: (open) {
+            if (mounted) setState(() => _menuOpen = open);
+          },
+          trigger: Container(
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(24),
+              border: _menuOpen
+                  ? Border.all(color: AppColors.primary, width: 2)
+                  : hasError
+                      ? Border.all(color: AppColors.danger, width: 1)
+                      : null,
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -209,8 +218,38 @@ class _KicksterDropdownState<T> extends FormFieldState<T> {
               ),
             ),
           ),
-        ),
-      ),
+          items: [
+            for (var i = 0; i < entries.length; i++)
+              KicksterMenuItem(
+                // O anchor insere o `Divider` entre os itens; aqui fica a
+                // linha de 48px com o conteúdo + checkbox circular à direita.
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: DefaultTextStyle(
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 20 / 12,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.black,
+                        ),
+                        child: entries[i].child,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Semantics(
+                      selected: entries[i].value == value,
+                      child: _KicksterCheckCircle(
+                        checked: entries[i].value == value,
+                      ),
+                    ),
+                  ],
+                ),
+                onTap: () => _selectValue(entries[i].value),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -244,41 +283,9 @@ class _KicksterDropdownState<T> extends FormFieldState<T> {
     return valueText == null ? label : '$label: $valueText';
   }
 
-  /// Abre o menu posicionado logo abaixo do pill ([showGeneralDialog]).
-  Future<void> _openMenu() async {
-    final pillContext = _pillKey.currentContext;
-    if (pillContext == null) return;
-    final renderBox = pillContext.findRenderObject();
-    if (renderBox is! RenderBox || !renderBox.hasSize) return;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-
-    setState(() => _menuOpen = true);
-    await showGeneralDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.transparent,
-      transitionDuration: const Duration(milliseconds: 120),
-      pageBuilder: (dialogContext, animation, secondaryAnimation) {
-        return _KicksterMenuOverlay<T>(
-          anchorOffset: offset,
-          anchorWidth: size.width,
-          anchorBottom: offset.dy + size.height,
-          entries: _entries,
-          selectedValue: value,
-          onSelect: (selected) {
-            Navigator.of(dialogContext).pop();
-            _selectValue(selected);
-          },
-        );
-      },
-    );
-    if (mounted) setState(() => _menuOpen = false);
-  }
-
   /// Seleciona uma opção: atualiza o estado do `FormField` (validação) e
-  /// notifica o chamador ([KicksterDropdown.onChanged]).
+  /// notifica o chamador ([KicksterDropdown.onChanged]). O menu já foi
+  /// fechado pelo [KicksterMenuAnchor] antes do `onTap` do item.
   void _selectValue(T? selected) {
     didChange(selected);
     _widget.onChanged?.call(selected);
@@ -296,129 +303,6 @@ class _KicksterMenuEntry<T> {
   final T? value;
   final Widget child;
   final String? labelText;
-}
-
-/// Overlay do menu aberto: container único segmentado sob o campo (modelo
-/// do kit, node `30020:3316`) — raio 12, fundo `surface`, borda `line` e
-/// itens juntos com divisores internos.
-class _KicksterMenuOverlay<T> extends StatelessWidget {
-  const _KicksterMenuOverlay({
-    required this.anchorOffset,
-    required this.anchorWidth,
-    required this.anchorBottom,
-    required this.entries,
-    required this.selectedValue,
-    required this.onSelect,
-  });
-
-  final Offset anchorOffset;
-  final double anchorWidth;
-  final double anchorBottom;
-  final List<_KicksterMenuEntry<T>> entries;
-  final T? selectedValue;
-  final ValueChanged<T?> onSelect;
-
-  /// Altura máxima da lista: 6 itens de 48px + 5 divisores de 1px + bordas.
-  static const double _maxMenuHeight = 6 * 48 + 5 * 1 + 2;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox.expand(
-      child: Stack(
-        children: [
-          Positioned(
-            left: anchorOffset.dx,
-            top: anchorBottom + 8,
-            width: anchorWidth,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: _maxMenuHeight),
-              child: SingleChildScrollView(
-                // Container único com divisores internos (sem pills/gap).
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.line, width: 1),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var i = 0; i < entries.length; i++) ...[
-                        _KicksterMenuItem<T>(
-                          entry: entries[i],
-                          selected: entries[i].value == selectedValue,
-                          onTap: () => onSelect(entries[i].value),
-                        ),
-                        if (i < entries.length - 1)
-                          const Divider(
-                            height: 1,
-                            thickness: 1,
-                            color: AppColors.line,
-                          ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Item do menu aberto: linha de 48px dentro do container segmentado, com
-/// o checkbox circular à direita como destaque do selecionado (o item em si
-/// não tem borda — os cantos são clippados pelo container pai).
-class _KicksterMenuItem<T> extends StatelessWidget {
-  const _KicksterMenuItem({
-    required this.entry,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final _KicksterMenuEntry<T> entry;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: entry.labelText,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap,
-          child: Ink(
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: DefaultTextStyle(
-                    style: const TextStyle(
-                      fontSize: 12,
-                      height: 20 / 12,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.black,
-                    ),
-                    child: entry.child,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                _KicksterCheckCircle(checked: selected),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 /// Checkbox circular do kit (24px, sem alvo de toque próprio — o item do

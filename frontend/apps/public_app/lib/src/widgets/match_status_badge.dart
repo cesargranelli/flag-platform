@@ -27,6 +27,18 @@ class MatchStatusBadge extends StatelessWidget {
           children: [_LiveDot(), SizedBox(width: 6), Text('AO VIVO')],
         ),
       ),
+      // Abertura e conferência: estágios intermediários não vistos como
+      // "ao vivo" pelo público (issue #488) — pill neutra.
+      GameStatus.open => const _Pill(
+        background: AppColors.grayFill,
+        foreground: AppColors.textPrimary,
+        child: Text('Abertura'),
+      ),
+      GameStatus.conference => const _Pill(
+        background: AppColors.grayFill,
+        foreground: AppColors.textPrimary,
+        child: Text('Conferência'),
+      ),
       GameStatus.finished => const _Pill(
         background: AppColors.grayFill,
         foreground: AppColors.textPrimary,

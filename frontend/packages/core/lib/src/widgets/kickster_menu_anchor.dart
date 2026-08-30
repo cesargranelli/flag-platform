@@ -51,6 +51,8 @@ class KicksterMenuAnchor extends StatefulWidget {
     required this.items,
     this.triggerLabel,
     this.width,
+    this.maxHeight,
+    this.onOpenChanged,
   });
 
   /// Conteúdo visual do botão que abre o menu.
@@ -65,6 +67,16 @@ class KicksterMenuAnchor extends StatefulWidget {
   /// Largura do menu aberto. `null` => `clamp(200, 300)` da largura do
   /// trigger.
   final double? width;
+
+  /// Altura máxima do menu aberto. Quando definido, o conteúdo rola
+  /// internamente ([SingleChildScrollView]) ao exceder. `null` = sem
+  /// limite.
+  final double? maxHeight;
+
+  /// Notifica a abertura/fechamento do menu (`true` ao abrir, `false` ao
+  /// fechar) — útil para o trigger refletir o estado aberto. `null` =
+  /// sem notificação.
+  final ValueChanged<bool>? onOpenChanged;
 
   @override
   State<KicksterMenuAnchor> createState() => _KicksterMenuAnchorState();
@@ -98,6 +110,7 @@ class _KicksterMenuAnchorState extends State<KicksterMenuAnchor> {
         anchorWidth: size.width,
         anchorBottom: offset.dy + size.height,
         width: widget.width,
+        maxHeight: widget.maxHeight,
         items: widget.items,
         onClose: _closeMenu,
         onSelect: (item) {
@@ -108,6 +121,7 @@ class _KicksterMenuAnchorState extends State<KicksterMenuAnchor> {
     );
     Overlay.of(context).insert(_overlayEntry!);
     setState(() => _menuOpen = true);
+    widget.onOpenChanged?.call(true);
   }
 
   void _closeMenu() {
@@ -116,6 +130,7 @@ class _KicksterMenuAnchorState extends State<KicksterMenuAnchor> {
     // Devolve o foco ao trigger (UX de teclado após Esc/seleção).
     _triggerFocusNode.requestFocus();
     if (mounted) setState(() => _menuOpen = false);
+    widget.onOpenChanged?.call(false);
   }
 
   @override
@@ -151,6 +166,7 @@ class _KicksterMenuOverlay extends StatefulWidget {
     required this.anchorWidth,
     required this.anchorBottom,
     required this.width,
+    required this.maxHeight,
     required this.items,
     required this.onClose,
     required this.onSelect,
@@ -160,6 +176,7 @@ class _KicksterMenuOverlay extends StatefulWidget {
   final double anchorWidth;
   final double anchorBottom;
   final double? width;
+  final double? maxHeight;
   final List<KicksterMenuItem> items;
   final VoidCallback onClose;
   final ValueChanged<KicksterMenuItem> onSelect;
@@ -268,27 +285,29 @@ class _KicksterMenuOverlayState extends State<_KicksterMenuOverlay> {
               onKeyEvent: _handleKeyEvent,
               child: Material(
                 color: Colors.transparent,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.line, width: 1),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var i = 0; i < widget.items.length; i++) ...[
-                        if (i > 0)
-                          const Divider(
-                            height: 1,
-                            thickness: 1,
-                            color: AppColors.line,
-                          ),
-                        _buildItem(i, widget.items[i]),
+                child: _withMaxHeight(
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.line, width: 1),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var i = 0; i < widget.items.length; i++) ...[
+                          if (i > 0)
+                            const Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: AppColors.line,
+                            ),
+                          _buildItem(i, widget.items[i]),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -296,6 +315,18 @@ class _KicksterMenuOverlayState extends State<_KicksterMenuOverlay> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Aplica [KicksterMenuAnchor.maxHeight] ao menu: limita a altura e rola
+  /// o conteúdo internamente quando ele excede. Sem `maxHeight` (nulo),
+  /// devolve o child intacto.
+  Widget _withMaxHeight(Widget child) {
+    final maxHeight = widget.maxHeight;
+    if (maxHeight == null) return child;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: SingleChildScrollView(child: child),
     );
   }
 

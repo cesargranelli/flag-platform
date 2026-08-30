@@ -20,9 +20,7 @@ class ApprovalsScreen extends ConsumerStatefulWidget {
 class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
   final _searchController = TextEditingController();
 
-  /// Ids de usuários com aprovação/rejeição em andamento (desabilita os
-  /// botões do card).
-  final Set<String> _mutating = {};
+  static const _scope = 'approvals';
 
   @override
   void dispose() {
@@ -36,6 +34,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
 
     return AppScreen(
       title: 'Aprovações',
+      scrollable: false,
       breadcrumb: const [
         BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem('Aprovações'),
@@ -43,42 +42,45 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          pending.when(
-            loading: () =>
-                const AppLoading(message: 'Carregando pendências...'),
-            error: (error, stackTrace) => AppErrorState(
-              message: 'Não foi possível carregar as pendências',
-              onRetry: () => ref.invalidate(pendingUsersProvider),
-            ),
-            data: (items) {
-              if (items.isEmpty) {
-                return const KicksterEmptyState(
-                  message: 'Nenhuma conta aguardando aprovação',
-                  description:
-                      'Contas criadas por novos usuários aparecem aqui '
-                      'para revisão.',
-                  icon: Icons.verified_outlined,
+          // Conteúdo (Expanded para dar altura finita ao grid)
+          Expanded(
+            child: pending.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando pendências...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar as pendências',
+                onRetry: () => ref.invalidate(pendingUsersProvider),
+              ),
+              data: (items) {
+                if (items.isEmpty) {
+                  return const KicksterEmptyState(
+                    message: 'Nenhuma conta aguardando aprovação',
+                    description:
+                        'Contas criadas por novos usuários aparecem aqui '
+                        'para revisão.',
+                    icon: Icons.verified_outlined,
+                  );
+                }
+                return AppEntityListScreen<User>(
+                  items: items,
+                  cardBuilder: (user) => _approvalCard(context, ref, user),
+                  searchField: _searchController,
+                  countLabel: 'contas pendentes',
+                  countLabelSingular: 'conta pendente',
+                  emptyMessage: 'Nenhuma conta encontrada',
+                  mainAxisExtent: 200,
+                  filter: (all, query) => query.isEmpty
+                      ? all
+                      : all
+                          .where(
+                            (u) =>
+                                u.name.toLowerCase().contains(query) ||
+                                u.email.toLowerCase().contains(query),
+                          )
+                          .toList(growable: false),
                 );
-              }
-              return AppEntityListScreen<User>(
-                items: items,
-                cardBuilder: (user) => _approvalCard(context, ref, user),
-                searchField: _searchController,
-                countLabel: 'contas pendentes',
-                countLabelSingular: 'conta pendente',
-                emptyMessage: 'Nenhuma conta encontrada',
-                mainAxisExtent: 200,
-                filter: (all, query) => query.isEmpty
-                    ? all
-                    : all
-                        .where(
-                          (u) =>
-                              u.name.toLowerCase().contains(query) ||
-                              u.email.toLowerCase().contains(query),
-                        )
-                        .toList(growable: false),
-              );
-            },
+              },
+            ),
           ),
         ],
       ),
@@ -86,7 +88,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
   }
 
   Widget _approvalCard(BuildContext context, WidgetRef ref, User user) {
-    final roleLabel = _roleLabel(user.role);
+    final roleLabel = user.role.label;
     final dateText = formatBrShortDateTime(user.createdAt);
 
     return Card(
@@ -164,7 +166,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                   // quando o core evoluir.
                   child: FilledButton.icon(
                     onPressed:
-                        _mutating.contains(user.id) ? null : () => _reject(context, ref, user),
+                        ref.watch(mutationProgressProvider(_scope)).contains(user.id)
+                            ? null
+                            : () => _reject(context, ref, user),
                     icon: const Icon(Icons.close),
                     label: const Text('Rejeitar'),
                     style: FilledButton.styleFrom(
@@ -178,7 +182,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                   // quando o core evoluir.
                   child: FilledButton.icon(
                     onPressed:
-                        _mutating.contains(user.id) ? null : () => _approve(context, ref, user),
+                        ref.watch(mutationProgressProvider(_scope)).contains(user.id)
+                            ? null
+                            : () => _approve(context, ref, user),
                     icon: const Icon(Icons.check),
                     label: const Text('Aprovar'),
                     style: FilledButton.styleFrom(
@@ -197,14 +203,12 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
   Future<void> _approve(BuildContext context, WidgetRef ref, User user) async {
     await runMutation(
       context,
+      ref: ref,
+      scope: _scope,
       action: () => ref.read(authApiProvider).approveUser(user.id),
       successMessage: '${user.name} aprovado!',
       errorMessage: 'Não foi possível aprovar.',
       progressId: user.id,
-      progressIds: _mutating,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: () {
         ref.invalidate(pendingUsersProvider);
         ref.invalidate(usersProvider);
@@ -224,14 +228,12 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
 
     await runMutation(
       context,
+      ref: ref,
+      scope: _scope,
       action: () => ref.read(authApiProvider).rejectUser(user.id),
       successMessage: '${user.name} rejeitado.',
       errorMessage: 'Não foi possível rejeitar.',
       progressId: user.id,
-      progressIds: _mutating,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: () {
         ref.invalidate(pendingUsersProvider);
         ref.invalidate(usersProvider);
@@ -239,10 +241,3 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
     );
   }
 }
-
-String _roleLabel(String role) => switch (role) {
-  'ADMIN' => 'Administrador',
-  'MESA' => 'Mesa',
-  'ORGANIZER' => 'Organizador',
-  _ => role,
-};
