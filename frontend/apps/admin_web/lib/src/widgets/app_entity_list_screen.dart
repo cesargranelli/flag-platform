@@ -138,7 +138,10 @@ class _AppEntityListScreenState<T> extends State<AppEntityListScreen<T>> {
                         : widget.minColumns;
                     return GridView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      cacheExtent: 100,
+                      // cacheExtent (deprecated no stable atual, mas a API
+                      // nova scrollCacheExtent ainda trava o debug web no
+                      // mouse_tracker — mantemos cacheExtent por segurança).
+                      cacheExtent: 100, // ignore: deprecated_member_use
                       padding: widget.gridPadding,
                       itemCount: filtered.length,
                       gridDelegate:
