@@ -30,11 +30,14 @@ class KicksterScoreCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   /// Cor semântica do status: ao vivo = success; encerrado = danger;
-  /// agendado = textSecondary; cancelado = disabled.
+  /// agendado = textSecondary; cancelado = disabled; abertura/conferência =
+  /// tom neutro (não são "ao vivo").
   Color get _statusColor => switch (status) {
         GameStatus.inProgress => AppColors.success,
         GameStatus.finished => AppColors.danger,
         GameStatus.scheduled => AppColors.textSecondary,
+        GameStatus.open => AppColors.textSecondary,
+        GameStatus.conference => AppColors.textSecondary,
         GameStatus.cancelled => AppColors.disabled,
       };
 
