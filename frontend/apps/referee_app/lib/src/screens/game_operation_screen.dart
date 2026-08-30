@@ -144,8 +144,8 @@ class _GameOperationPanelState extends ConsumerState<GameOperationPanel> {
                   children: [
                     AppInfoRow(
                       label: 'Status',
-                      value: '${game.status.label} — concerne o check-in dos '
-                          'atletas antes de iniciar',
+                      value: '${game.status.label} — a mesa confere o check-in '
+                          'dos atletas antes de iniciar',
                     ),
                   ],
                 ),
