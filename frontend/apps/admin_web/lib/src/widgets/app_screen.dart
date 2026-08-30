@@ -158,10 +158,10 @@ class _UserHeader extends ConsumerWidget {
 // ── User menu (estilo KicksterDropdown) ─────────────────────────────────────
 
 /// Anchor do menu do usuário — avatar + nome + greeting.
-/// Ao clicar, abre um overlay com o estilo do KicksterDropdown:
+/// Abre um [KicksterMenuAnchor] com o estilo do KicksterDropdown:
 /// container único, raio 12, borda `line`, fundo `surface`,
 /// itens de 48px com divisores internos.
-class _UserMenuAnchor extends StatefulWidget {
+class _UserMenuAnchor extends StatelessWidget {
   const _UserMenuAnchor({
     required this.displayName,
     required this.email,
@@ -175,82 +175,22 @@ class _UserMenuAnchor extends StatefulWidget {
   final VoidCallback onLogout;
 
   @override
-  State<_UserMenuAnchor> createState() => _UserMenuAnchorState();
-}
-
-class _UserMenuAnchorState extends State<_UserMenuAnchor> {
-  final GlobalKey _anchorKey = GlobalKey();
-  OverlayEntry? _overlayEntry;
-  bool _menuOpen = false;
-
-  void _toggleMenu() {
-    if (_menuOpen) {
-      _closeMenu();
-    } else {
-      _openMenu();
-    }
-  }
-
-  void _openMenu() {
-    final anchorContext = _anchorKey.currentContext;
-    if (anchorContext == null) return;
-    final renderBox = anchorContext.findRenderObject();
-    if (renderBox is! RenderBox || !renderBox.hasSize) return;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-
-    _overlayEntry = OverlayEntry(
-      builder: (context) => _UserMenuOverlay(
-        anchorOffset: offset,
-        anchorWidth: size.width,
-        anchorBottom: offset.dy + size.height,
-        displayName: widget.displayName,
-        email: widget.email,
-        initials: widget.initials,
-        onSelect: (action) {
-          _closeMenu();
-          if (action == 'logout') {
-            widget.onLogout();
-          }
-        },
-      ),
-    );
-    Overlay.of(context).insert(_overlayEntry!);
-    setState(() => _menuOpen = true);
-  }
-
-  void _closeMenu() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-    if (mounted) setState(() => _menuOpen = false);
-  }
-
-  @override
-  void dispose() {
-    _overlayEntry?.remove();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final greeting = widget.displayName.isNotEmpty
-        ? 'Olá, bem-vindo!'
-        : 'Bem-vindo!';
+    final greeting = displayName.isNotEmpty ? 'Olá, bem-vindo!' : 'Bem-vindo!';
 
-    return GestureDetector(
-      key: _anchorKey,
-      onTap: _toggleMenu,
-      child: Row(
+    return KicksterMenuAnchor(
+      triggerLabel: 'Menu do usuário',
+      trigger: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          KicksterAvatar(name: widget.displayName, size: 40),
+          KicksterAvatar(name: displayName, size: 40),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                widget.displayName,
+                displayName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -272,178 +212,81 @@ class _UserMenuAnchorState extends State<_UserMenuAnchor> {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Overlay do menu do usuário — segue o padrão KicksterDropdown:
-/// container único, raio 12, fundo `surface`, borda `line`,
-/// itens de 48px com divisores internos.
-class _UserMenuOverlay extends StatelessWidget {
-  const _UserMenuOverlay({
-    required this.anchorOffset,
-    required this.anchorWidth,
-    required this.anchorBottom,
-    required this.displayName,
-    required this.email,
-    required this.initials,
-    required this.onSelect,
-  });
-
-  final Offset anchorOffset;
-  final double anchorWidth;
-  final double anchorBottom;
-  final String displayName;
-  final String email;
-  final String initials;
-  final ValueChanged<String> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox.expand(
-      child: Stack(
-        children: [
-          // Tap outside to close
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () => onSelect('dismiss'),
-            ),
-          ),
-          // Menu container
-          Positioned(
-            left: anchorOffset.dx,
-            top: anchorBottom + 8,
-            width: anchorWidth.clamp(200, 300),
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.line, width: 1),
-                ),
-                clipBehavior: Clip.antiAlias,
+      items: [
+        // Cabeçalho do usuário (informativo, sem ação).
+        KicksterMenuItem(
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                child: initials.isNotEmpty
+                    ? Text(
+                        initials,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.person_outline,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // User info row (48px)
-                    _UserMenuItem(
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 14,
-                            backgroundColor:
-                                AppColors.primary.withValues(alpha: 0.12),
-                            child: initials.isNotEmpty
-                                ? Text(
-                                    initials,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.primary,
-                                    ),
-                                  )
-                                : const Icon(
-                                    Icons.person_outline,
-                                    size: 14,
-                                    color: AppColors.primary,
-                                  ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  displayName,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                if (email.isNotEmpty)
-                                  Text(
-                                    email,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
+                    Text(
+                      displayName,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
                     ),
-                    const Divider(height: 1, thickness: 1, color: AppColors.line),
-                    // Logout row (48px)
-                    _UserMenuItem(
-                      onTap: () => onSelect('logout'),
-                      child: const Row(
-                        children: [
-                          Icon(
-                            Icons.logout_outlined,
-                            size: 18,
-                            color: AppColors.danger,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Sair',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              color: AppColors.danger,
-                            ),
-                          ),
-                        ],
+                    if (email.isNotEmpty)
+                      Text(
+                        email,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Item do menu do usuário — 48px, padding horizontal 16px,
-/// segue o padrão KicksterDropdown.
-class _UserMenuItem extends StatelessWidget {
-  const _UserMenuItem({required this.child, this.onTap});
-
-  final Widget child;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onTap,
-        child: Ink(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: DefaultTextStyle(
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: AppColors.black,
-            ),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: child,
-            ),
+            ],
           ),
         ),
-      ),
+        // Sair (48px, ícone logout danger).
+        KicksterMenuItem(
+          onTap: onLogout,
+          child: const Row(
+            children: [
+              Icon(
+                Icons.logout_outlined,
+                size: 18,
+                color: AppColors.danger,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Sair',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.danger,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
