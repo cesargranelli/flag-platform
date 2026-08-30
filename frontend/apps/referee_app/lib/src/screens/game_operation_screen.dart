@@ -106,12 +106,65 @@ class _GameOperationPanelState extends ConsumerState<GameOperationPanel> {
         GameContextCard(game: game),
         const SizedBox(height: 16),
         switch (game.status) {
-          GameStatus.scheduled => FilledButton.icon(
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Iniciar partida'),
-              onPressed: () => _confirmStart(game),
+          GameStatus.scheduled => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppInfoCard(
+                  title: 'Partida agendada',
+                  icon: Icons.event,
+                  children: [
+                    AppInfoRow(label: 'Status', value: game.status.label),
+                    AppInfoRow(
+                      label: 'Data',
+                      value: formatDateTime(game.scheduledAt),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  icon: const Icon(Icons.login),
+                  label: const Text('Abrir partida'),
+                  onPressed: () => _confirmOpen(game),
+                ),
+                const SizedBox(height: 8),
+                // Atalho para a conferência dos atletas durante a abertura.
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.how_to_reg),
+                  label: const Text('Conferência de atletas'),
+                  onPressed: () => context.push('/checkin'),
+                ),
+              ],
+            ),
+          GameStatus.open => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppInfoCard(
+                  title: 'Abertura da partida',
+                  icon: Icons.login,
+                  children: [
+                    AppInfoRow(
+                      label: 'Status',
+                      value: '${game.status.label} — concerne o check-in dos '
+                          'atletas antes de iniciar',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  icon: const Icon(Icons.how_to_reg),
+                  label: const Text('Conferência de atletas'),
+                  onPressed: () => context.push('/checkin'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('Iniciar partida'),
+                  onPressed: () => _confirmStart(game),
+                ),
+              ],
             ),
           GameStatus.inProgress => _liveControls(game),
+          GameStatus.conference => _conferencePanel(game),
           // Jogos encerrados/cancelados deixavam a área em branco (#12).
           GameStatus.finished => _finishedSummary(game),
           GameStatus.cancelled => _cancelledSummary(game),
@@ -186,9 +239,9 @@ class _GameOperationPanelState extends ConsumerState<GameOperationPanel> {
         _ScoreTimelineCard(game: game),
         const SizedBox(height: 16),
         FilledButton.icon(
-          icon: const Icon(Icons.stop),
-          label: const Text('Finalizar partida'),
-          onPressed: () => _confirmFinish(game),
+          icon: const Icon(Icons.assignment_turned_in),
+          label: const Text('Colocar em conferência'),
+          onPressed: () => _confirmConference(game),
         ),
       ],
     );
@@ -316,6 +369,41 @@ class _GameOperationPanelState extends ConsumerState<GameOperationPanel> {
     away.dispose();
   }
 
+  Future<void> _confirmOpen(Game game) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Abrir partida'),
+        content: Text(
+          'Abrir "${game.homeTeamName ?? 'Casa'} x '
+          '${game.awayTeamName ?? 'Fora'}" agora para a conferência dos '
+          'atletas?\n\n${formatDateTime(game.scheduledAt)}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Abrir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref
+          .read(gameApiProvider)
+          .updateStatus(game.id, GameStatus.open);
+      ref.invalidate(gamesByRoundProvider(game.roundId));
+      ref.invalidate(gameScoreEventsProvider(game.id));
+      if (mounted) _showSnack('Partida aberta', isError: false);
+    } catch (_) {
+      if (mounted) _showSnack('Não foi possível abrir a partida');
+    }
+  }
+
   Future<void> _confirmStart(Game game) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -347,6 +435,40 @@ class _GameOperationPanelState extends ConsumerState<GameOperationPanel> {
       ref.invalidate(gameScoreEventsProvider(game.id));
     } catch (_) {
       if (mounted) _showSnack('Não foi possível iniciar a partida');
+    }
+  }
+
+  Future<void> _confirmConference(Game game) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Colocar em conferência'),
+        content: const Text(
+          'Colocar esta partida em conferência para a arbitragem confirmar '
+          'o placar antes de finalizar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Conferir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref
+          .read(gameApiProvider)
+          .updateStatus(game.id, GameStatus.conference);
+      ref.invalidate(gamesByRoundProvider(game.roundId));
+      ref.invalidate(gameScoreEventsProvider(game.id));
+      if (mounted) _showSnack('Partida em conferência', isError: false);
+    } catch (_) {
+      if (mounted) _showSnack('Não foi possível colocar em conferência');
     }
   }
 
@@ -406,6 +528,39 @@ class _GameOperationPanelState extends ConsumerState<GameOperationPanel> {
       icon: Icons.event_busy_outlined,
       children: [
         AppInfoRow(label: 'Status', value: game.status.label),
+      ],
+    );
+  }
+
+  /// Painel de conferência da arbitragem (issue #488): etapa intermediária
+  /// entre IN_PROGRESS e FINISHED para confirmar/corrigir antes de finalizar.
+  /// Sentido único: CONFERENCE só sai para FINISHED.
+  Widget _conferencePanel(Game game) {
+    final homeLabel = game.homeTeamName ?? 'Casa';
+    final awayLabel = game.awayTeamName ?? 'Fora';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppInfoCard(
+          title: 'Conferência da arbitragem',
+          icon: Icons.assignment_turned_in,
+          children: [
+            AppInfoRow(label: 'Status', value: game.status.label),
+            AppInfoRow(
+              label: 'Placar',
+              value: '$homeLabel ${game.homeScore ?? 0} x '
+                  '${game.awayScore ?? 0} $awayLabel',
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _ScoreTimelineCard(game: game),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          icon: const Icon(Icons.stop),
+          label: const Text('Finalizar partida'),
+          onPressed: () => _confirmFinish(game),
+        ),
       ],
     );
   }
