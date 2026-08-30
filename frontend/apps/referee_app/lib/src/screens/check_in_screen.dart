@@ -57,7 +57,8 @@ class _CheckInRoster extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final checkins = ref.watch(checkinProvider(game.id));
-    final inProgress = game.status == GameStatus.inProgress;
+    // Conferência de presença dos atletas permitida somente na abertura (OPEN).
+    final canCheckIn = game.status == GameStatus.open;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -85,9 +86,9 @@ class _CheckInRoster extends ConsumerWidget {
                 _summaryCard(context, items),
                 const SizedBox(height: 8),
                 if (home.isNotEmpty)
-                  _teamSection(context, ref, home, inProgress),
+                  _teamSection(context, ref, home, canCheckIn),
                 if (away.isNotEmpty)
-                  _teamSection(context, ref, away, inProgress),
+                  _teamSection(context, ref, away, canCheckIn),
               ],
             );
           },
@@ -142,7 +143,7 @@ class _CheckInRoster extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<CheckIn> items,
-    bool inProgress,
+    bool canCheckIn,
   ) {
     final theme = Theme.of(context);
     final teamName = items.first.teamName ?? 'Time';
@@ -169,7 +170,7 @@ class _CheckInRoster extends ConsumerWidget {
           ),
         ),
         for (final checkIn in items)
-          _buildAthleteTile(context, ref, checkIn, inProgress),
+          _buildAthleteTile(context, ref, checkIn, canCheckIn),
       ],
     );
   }
@@ -178,7 +179,7 @@ class _CheckInRoster extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     CheckIn checkIn,
-    bool inProgress,
+    bool canCheckIn,
   ) {
     final theme = Theme.of(context);
     final hasOverride = checkIn.matchNumber != null;
@@ -217,69 +218,89 @@ class _CheckInRoster extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 8),
-            _tileActions(context, ref, checkIn, inProgress),
+            _tileActions(context, ref, checkIn, canCheckIn),
           ],
         ),
       ),
     );
   }
 
-  /// Ações do atleta: numeração sempre; "Validar" durante o jogo (trocado por
-  /// "Validado" desabilitado após validar, issue #425#6) ou marcação manual
-  /// Presente/Faltou fora do jogo.
+  /// Ações do atleta: numeração sempre; durante a abertura (OPEN) a mesa
+  /// confere a presença — "Validar" (troca por "Validado" desabilitado após
+  /// validar, issue #425#6) e/ou marcação manual Presente/Presente.
+  /// Fora de OPEN a conferência não é permitida (issue #488).
   Widget _tileActions(
     BuildContext context,
     WidgetRef ref,
     CheckIn checkIn,
-    bool inProgress,
+    bool canCheckIn,
   ) {
     final hasOverride = checkIn.matchNumber != null;
-    return Row(
+    final tagIcon = Icon(
+      hasOverride ? Icons.tag : Icons.tag_outlined,
+      color: hasOverride ? AppColors.textPrimary : null,
+    );
+
+    if (!canCheckIn) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: 'Numeração da partida',
+            icon: tagIcon,
+            onPressed: () => _editMatchNumber(context, ref, checkIn),
+          ),
+        ],
+      );
+    }
+
+    // Durante a abertura: aprovação de presença.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          tooltip: 'Numeração da partida',
-          // Amarelo `warning` (#FACC15) não tem contraste sobre fundo claro:
-          // o estado override fica no ícone preenchido vs. contorno (issue
-          // #431), com cor escura legível.
-          icon: Icon(
-            hasOverride ? Icons.tag : Icons.tag_outlined,
-            color: hasOverride ? AppColors.textPrimary : null,
-          ),
-          onPressed: () => _editMatchNumber(context, ref, checkIn),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'Numeração da partida',
+              icon: tagIcon,
+              onPressed: () => _editMatchNumber(context, ref, checkIn),
+            ),
+            if (checkIn.status == CheckInStatus.validated)
+              FilledButton.tonalIcon(
+                onPressed: null,
+                icon: const Icon(Icons.check),
+                label: const Text('Validado'),
+              )
+            else
+              FilledButton.tonal(
+                onPressed: () => _validate(context, ref, checkIn),
+                child: const Text('Validar'),
+              ),
+          ],
         ),
-        if (checkIn.status == CheckInStatus.validated)
-          FilledButton.tonalIcon(
-            onPressed: null,
-            icon: const Icon(Icons.check),
-            label: const Text('Validado'),
-          )
-        else if (inProgress)
-          FilledButton.tonal(
-            onPressed: () => _validate(context, ref, checkIn),
-            child: const Text('Validar'),
-          )
-        else
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                tooltip: 'Presente',
-                icon: const Icon(
-                  Icons.check_circle,
-                  color: AppColors.success,
-                ),
-                onPressed: () =>
-                    _mark(context, ref, checkIn, CheckInStatus.present),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'Presente',
+              icon: const Icon(
+                Icons.check_circle,
+                color: AppColors.success,
               ),
-              IconButton(
-                tooltip: 'Não compareceu',
-                icon: const Icon(Icons.cancel, color: AppColors.danger),
-                onPressed: () =>
-                    _mark(context, ref, checkIn, CheckInStatus.noShow),
-              ),
-            ],
-          ),
+              onPressed: () =>
+                  _mark(context, ref, checkIn, CheckInStatus.present),
+            ),
+            IconButton(
+              tooltip: 'Não compareceu',
+              icon: const Icon(Icons.cancel, color: AppColors.danger),
+              onPressed: () =>
+                  _mark(context, ref, checkIn, CheckInStatus.noShow),
+            ),
+          ],
+        ),
       ],
     );
   }
