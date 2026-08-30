@@ -58,6 +58,7 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
 
     return AppScreen(
       title: 'Times',
+      scrollable: false,
       breadcrumb: const [
         BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem('Times'),
@@ -79,133 +80,141 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Conteúdo
-          competitions.when(
-            loading: () =>
-                const AppLoading(message: 'Carregando campeonatos...'),
-            error: (error, stackTrace) => AppErrorState(
-              message: 'Não foi possível carregar os campeonatos',
-              onRetry: () => ref.invalidate(competitionsProvider),
-            ),
-            data: (_) {
-              if (compItems.isEmpty) {
-                return KicksterEmptyState(
-                  icon: Icons.emoji_events_outlined,
-                  message: 'Nenhum campeonato cadastrado',
-                  description: 'Crie um campeonato para inscrever times.',
-                  action: KicksterButton(
-                    label: 'Criar campeonato',
-                    icon: Icons.add,
-                    onPressed: () => context.go('/competitions/new'),
-                  ),
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      KicksterDropdown<String>(
-                        label: locked
-                            ? 'Campeonato (travado)'
-                            : 'Campeonato',
-                        value: effectiveComp,
-                        items: compItems
-                            .map(
-                              (c) => DropdownMenuItem(
-                                value: c.id,
-                                child: appDropdownItem(
-                                  Icons.emoji_events_outlined,
-                                  c.name,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: locked
-                            ? null
-                            : (value) {
-                                ref
-                                    .read(selectedCompetitionProvider
-                                        .notifier)
-                                    .state = value;
-                              },
-                      ),
-                      if (!canEdit)
-                        const EditRestrictionNote(
-                          message:
-                              'Apenas o criador do campeonato pode '
-                              'inscrever times.',
-                        ),
-                    ],
-                  ),
-                  if (effectiveComp != null)
-                    ref
-                          .watch(teamsProvider(effectiveComp))
-                          .when(
-                            loading: () => const AppLoading(
-                              message: 'Carregando times...',
-                            ),
-                            error: (error, stackTrace) => AppErrorState(
-                              message:
-                                  'Não foi possível carregar os times',
-                              onRetry: () => ref.invalidate(
-                                  teamsProvider(effectiveComp)),
-                            ),
-                            data: (items) {
-                              if (items.isEmpty) {
-                                return KicksterEmptyState(
-                                  icon: Icons.groups_outlined,
-                                  message: 'Nenhum time cadastrado',
-                                  description:
-                                      'Inscreva o primeiro time no campeonato.',
-                                  action: KicksterButton(
-                                    label: 'Criar time',
-                                    icon: Icons.add,
-                                    onPressed: () => context.go(
-                                      '/teams/new',
-                                      extra: effectiveComp,
-                                    ),
-                                  ),
-                                );
-                              }
-                              return AppEntityListScreen<Team>(
-                                items: items,
-                                  cardBuilder: (team) =>
-                                      _teamCard(context, team),
-                                  searchField: _searchController,
-                                  countLabel: 'times',
-                                  countLabelSingular: 'time',
-                                  emptyMessage: 'Nenhum time encontrado',
-                                  gridPadding:
-                                      const EdgeInsets.all(16),
-                                  filter: (all, query) => query.isEmpty
-                                      ? all
-                                      : all
-                                          .where(
-                                            (t) => t.name
-                                                .toLowerCase()
-                                                .contains(query),
-                                          )
-                                          .toList(growable: false),
-                                );
-                            },
-                          )
-                  else
-                    KicksterEmptyState(
-                      icon: Icons.groups_outlined,
-                      message: 'Nenhum time cadastrado',
-                      description:
-                          'Crie um campeonato para inscrever times.',
-                      action: KicksterButton(
-                        label: 'Criar campeonato',
-                        icon: Icons.add,
-                        onPressed: () => context.go('/competitions/new'),
-                      ),
+          // Conteúdo (Expanded para dar altura finita ao grid)
+          Expanded(
+            child: competitions.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando campeonatos...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar os campeonatos',
+                onRetry: () => ref.invalidate(competitionsProvider),
+              ),
+              data: (_) {
+                if (compItems.isEmpty) {
+                  return KicksterEmptyState(
+                    icon: Icons.emoji_events_outlined,
+                    message: 'Nenhum campeonato cadastrado',
+                    description: 'Crie um campeonato para inscrever times.',
+                    action: KicksterButton(
+                      label: 'Criar campeonato',
+                      icon: Icons.add,
+                      onPressed: () => context.go('/competitions/new'),
                     ),
-                ],
-              );
-            },
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        KicksterDropdown<String>(
+                          label: locked
+                              ? 'Campeonato (travado)'
+                              : 'Campeonato',
+                          value: effectiveComp,
+                          items: compItems
+                              .map(
+                                (c) => DropdownMenuItem(
+                                  value: c.id,
+                                  child: appDropdownItem(
+                                    Icons.emoji_events_outlined,
+                                    c.name,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: locked
+                              ? null
+                              : (value) {
+                                  ref
+                                      .read(selectedCompetitionProvider
+                                          .notifier)
+                                      .state = value;
+                                },
+                        ),
+                        if (!canEdit)
+                          const EditRestrictionNote(
+                            message:
+                                'Apenas o criador do campeonato pode '
+                                'inscrever times.',
+                          ),
+                      ],
+                    ),
+                    // Grid em altura finita (Expanded) → virtualização real.
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: effectiveComp != null
+                          ? ref
+                                .watch(teamsProvider(effectiveComp))
+                                .when(
+                                  loading: () => const AppLoading(
+                                    message: 'Carregando times...',
+                                  ),
+                                  error: (error, stackTrace) =>
+                                      AppErrorState(
+                                    message:
+                                        'Não foi possível carregar os times',
+                                    onRetry: () => ref.invalidate(
+                                        teamsProvider(effectiveComp)),
+                                  ),
+                                  data: (items) {
+                                    if (items.isEmpty) {
+                                      return KicksterEmptyState(
+                                        icon: Icons.groups_outlined,
+                                        message: 'Nenhum time cadastrado',
+                                        description:
+                                            'Inscreva o primeiro time no campeonato.',
+                                        action: KicksterButton(
+                                          label: 'Criar time',
+                                          icon: Icons.add,
+                                          onPressed: () => context.go(
+                                            '/teams/new',
+                                            extra: effectiveComp,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    return AppEntityListScreen<Team>(
+                                      items: items,
+                                      cardBuilder: (team) =>
+                                          _teamCard(context, team),
+                                      searchField: _searchController,
+                                      countLabel: 'times',
+                                      countLabelSingular: 'time',
+                                      emptyMessage:
+                                          'Nenhum time encontrado',
+                                      gridPadding:
+                                          const EdgeInsets.all(16),
+                                      filter: (all, query) => query.isEmpty
+                                          ? all
+                                          : all
+                                              .where(
+                                                (t) => t.name
+                                                    .toLowerCase()
+                                                    .contains(query),
+                                              )
+                                              .toList(growable: false),
+                                    );
+                                  },
+                                )
+                          : KicksterEmptyState(
+                              icon: Icons.groups_outlined,
+                              message: 'Nenhum time cadastrado',
+                              description:
+                                  'Crie um campeonato para inscrever times.',
+                              action: KicksterButton(
+                                label: 'Criar campeonato',
+                                icon: Icons.add,
+                                onPressed: () =>
+                                    context.go('/competitions/new'),
+                              ),
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),

@@ -35,6 +35,7 @@ class _VenuesScreenState extends ConsumerState<VenuesScreen> {
 
     return AppScreen(
       title: 'Campos',
+      scrollable: false,
       breadcrumb: const [
         BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem('Campos'),
@@ -54,46 +55,53 @@ class _VenuesScreenState extends ConsumerState<VenuesScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Conteúdo
-          venues.when(
-            loading: () =>
-                const AppLoading(message: 'Carregando campos...'),
-            error: (error, stackTrace) => AppErrorState(
-              message: 'Não foi possível carregar os campos',
-              onRetry: () => ref.invalidate(venuesProvider),
-            ),
-            data: (items) {
-              if (items.isEmpty) {
-                return KicksterEmptyState(
-                  icon: Icons.sports_soccer,
-                  message: 'Nenhum campo cadastrado',
-                  description:
-                      'Crie o primeiro campo para começar a usar.',
-                  action: KicksterButton(
-                    label: 'Criar campo',
-                    icon: Icons.add,
-                    onPressed: () => context.go('/venues/new'),
-                  ),
+          // Conteúdo (Expanded para dar altura finita ao grid)
+          Expanded(
+            child: venues.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando campos...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar os campos',
+                onRetry: () => ref.invalidate(venuesProvider),
+              ),
+              data: (items) {
+                if (items.isEmpty) {
+                  return KicksterEmptyState(
+                    icon: Icons.sports_soccer,
+                    message: 'Nenhum campo cadastrado',
+                    description:
+                        'Crie o primeiro campo para começar a usar.',
+                    action: KicksterButton(
+                      label: 'Criar campo',
+                      icon: Icons.add,
+                      onPressed: () => context.go('/venues/new'),
+                    ),
+                  );
+                }
+                final orgNames = organizations.valueOrNull ??
+                    const <Organization>[];
+                // Pré-computa o mapa orgId → nome UMA vez (lookup O(1) no card)
+                // em vez de percorrer a lista de organizações por card (O(n²)).
+                final orgNameById = <String, String>{
+                  for (final o in orgNames) o.id: o.tradeName,
+                };
+                return AppEntityListScreen<Venue>(
+                  items: items,
+                  cardBuilder: (venue) =>
+                      _venueCard(context, venue, orgNameById),
+                  searchField: _searchController,
+                  countLabel: 'campos',
+                  countLabelSingular: 'campo',
+                  emptyMessage: 'Nenhum campo encontrado',
+                  filter: (all, query) => query.isEmpty
+                      ? all
+                      : all
+                          .where(
+                              (v) => v.name.toLowerCase().contains(query))
+                          .toList(growable: false),
                 );
-              }
-              final orgNames =
-                  organizations.valueOrNull ?? const <Organization>[];
-              return AppEntityListScreen<Venue>(
-                items: items,
-                cardBuilder: (venue) =>
-                    _venueCard(context, venue, orgNames),
-                searchField: _searchController,
-                countLabel: 'campos',
-                countLabelSingular: 'campo',
-                emptyMessage: 'Nenhum campo encontrado',
-                filter: (all, query) => query.isEmpty
-                    ? all
-                    : all
-                        .where(
-                            (v) => v.name.toLowerCase().contains(query))
-                        .toList(growable: false),
-              );
-            },
+              },
+            ),
           ),
         ],
       ),
@@ -105,9 +113,9 @@ class _VenuesScreenState extends ConsumerState<VenuesScreen> {
   Widget _venueCard(
     BuildContext context,
     Venue venue,
-    List<Organization> organizations,
+    Map<String, String> orgNameById,
   ) {
-    final orgName = _organizationName(venue.organizationId, organizations);
+    final orgName = orgNameById[venue.organizationId] ?? '';
     final subtitle = [
       if (orgName.isNotEmpty) orgName,
       if (venue.address != null && venue.address!.isNotEmpty) venue.address!,
@@ -119,10 +127,5 @@ class _VenuesScreenState extends ConsumerState<VenuesScreen> {
       subtitle: subtitle.isEmpty ? null : subtitle,
       onTap: () => context.push('/venues/${venue.id}', extra: venue),
     );
-  }
-
-  String _organizationName(String id, List<Organization> organizations) {
-    final match = organizations.where((o) => o.id == id).toList();
-    return match.isEmpty ? '' : match.first.tradeName;
   }
 }

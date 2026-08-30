@@ -56,6 +56,7 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
 
     return AppScreen(
       title: 'Rodadas',
+      scrollable: false,
       breadcrumb: const [
         BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
@@ -77,130 +78,139 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Conteúdo
-          competitions.when(
-            loading: () =>
-                const AppLoading(message: 'Carregando campeonatos...'),
-            error: (error, stackTrace) => AppErrorState(
-              message: 'Não foi possível carregar os campeonatos',
-              onRetry: () => ref.invalidate(competitionsProvider),
-            ),
-            data: (_) {
-              if (compItems.isEmpty) {
-                return KicksterEmptyState(
-                  icon: Icons.emoji_events_outlined,
-                  message: 'Nenhum campeonato cadastrado',
-                  description: 'Crie um campeonato para adicionar rodadas.',
-                  action: KicksterButton(
-                    label: 'Criar campeonato',
-                    icon: Icons.add,
-                    onPressed: () => context.go('/competitions/new'),
-                  ),
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      KicksterDropdown<String>(
-                        key: ValueKey('comp-$effectiveComp'),
-                        label: 'Campeonato',
-                        value: effectiveComp,
-                        items: compItems
-                            .map(
-                              (c) => DropdownMenuItem(
-                                value: c.id,
-                                child: Text(c.name),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          ref
-                              .read(selectedCompetitionProvider.notifier)
-                              .state = value;
-                          ref.read(selectedRoundProvider.notifier).state =
-                              null;
-                        },
-                      ),
-                      if (!canManage)
-                        EditRestrictionNote(
-                          message: !isDraft
-                              ? 'Campeonato publicado — as rodadas estão '
-                                  'travadas.'
-                              : 'Apenas o criador do campeonato pode '
-                                  'gerenciar rodadas.',
-                        ),
-                    ],
-                  ),
-                  if (effectiveComp != null)
-                    ref
-                          .watch(roundsProvider(effectiveComp))
-                          .when(
-                            loading: () => const AppLoading(
-                              message: 'Carregando rodadas...',
-                            ),
-                            error: (error, stackTrace) => AppErrorState(
-                              message:
-                                  'Não foi possível carregar as rodadas',
-                              onRetry: () => ref.invalidate(
-                                  roundsProvider(effectiveComp)),
-                            ),
-                            data: (items) {
-                              if (items.isEmpty) {
-                                return KicksterEmptyState(
-                                  icon: Icons.format_list_numbered,
-                                  message: 'Nenhuma rodada cadastrada',
-                                  description:
-                                      'Crie a primeira rodada do campeonato.',
-                                  action: KicksterButton(
-                                    label: 'Criar rodada',
-                                    icon: Icons.add,
-                                    onPressed: () => context.go(
-                                      '/rounds/new',
-                                      extra: effectiveComp,
-                                    ),
-                                  ),
-                                );
-                              }
-                              return AppEntityListScreen<Round>(
-                                items: items,
-                                  cardBuilder: (round) =>
-                                      _roundCard(context, round),
-                                  searchField: _searchController,
-                                  countLabel: 'rodadas',
-                                  countLabelSingular: 'rodada',
-                                  emptyMessage: 'Nenhuma rodada encontrada',
-                                  gridPadding:
-                                      const EdgeInsets.all(16),
-                                  filter: (all, query) => query.isEmpty
-                                      ? all
-                                      : all
-                                          .where(
-                                            (r) => r.name
-                                                .toLowerCase()
-                                                .contains(query),
-                                          )
-                                          .toList(growable: false),
-                                );
-                            },
-                          )
-                  else
-                    KicksterEmptyState(
-                      icon: Icons.format_list_numbered,
-                      message: 'Nenhuma rodada cadastrada',
-                      description:
-                          'Crie um campeonato para adicionar rodadas.',
-                      action: KicksterButton(
-                        label: 'Criar campeonato',
-                        icon: Icons.add,
-                        onPressed: () => context.go('/competitions/new'),
-                      ),
+          // Conteúdo (Expanded para dar altura finita ao grid)
+          Expanded(
+            child: competitions.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando campeonatos...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar os campeonatos',
+                onRetry: () => ref.invalidate(competitionsProvider),
+              ),
+              data: (_) {
+                if (compItems.isEmpty) {
+                  return KicksterEmptyState(
+                    icon: Icons.emoji_events_outlined,
+                    message: 'Nenhum campeonato cadastrado',
+                    description: 'Crie um campeonato para adicionar rodadas.',
+                    action: KicksterButton(
+                      label: 'Criar campeonato',
+                      icon: Icons.add,
+                      onPressed: () => context.go('/competitions/new'),
                     ),
-                ],
-              );
-            },
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        KicksterDropdown<String>(
+                          key: ValueKey('comp-$effectiveComp'),
+                          label: 'Campeonato',
+                          value: effectiveComp,
+                          items: compItems
+                              .map(
+                                (c) => DropdownMenuItem(
+                                  value: c.id,
+                                  child: Text(c.name),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            ref
+                                .read(selectedCompetitionProvider.notifier)
+                                .state = value;
+                            ref.read(selectedRoundProvider.notifier).state =
+                                null;
+                          },
+                        ),
+                        if (!canManage)
+                          EditRestrictionNote(
+                            message: !isDraft
+                                ? 'Campeonato publicado — as rodadas estão '
+                                    'travadas.'
+                                : 'Apenas o criador do campeonato pode '
+                                    'gerenciar rodadas.',
+                          ),
+                      ],
+                    ),
+                    // Grid em altura finita (Expanded) → virtualização real.
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: effectiveComp != null
+                          ? ref
+                                .watch(roundsProvider(effectiveComp))
+                                .when(
+                                  loading: () => const AppLoading(
+                                    message: 'Carregando rodadas...',
+                                  ),
+                                  error: (error, stackTrace) =>
+                                      AppErrorState(
+                                    message:
+                                        'Não foi possível carregar as rodadas',
+                                    onRetry: () => ref.invalidate(
+                                        roundsProvider(effectiveComp)),
+                                  ),
+                                  data: (items) {
+                                    if (items.isEmpty) {
+                                      return KicksterEmptyState(
+                                        icon: Icons.format_list_numbered,
+                                        message:
+                                            'Nenhuma rodada cadastrada',
+                                        description:
+                                            'Crie a primeira rodada do campeonato.',
+                                        action: KicksterButton(
+                                          label: 'Criar rodada',
+                                          icon: Icons.add,
+                                          onPressed: () => context.go(
+                                            '/rounds/new',
+                                            extra: effectiveComp,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    return AppEntityListScreen<Round>(
+                                      items: items,
+                                      cardBuilder: (round) =>
+                                          _roundCard(context, round),
+                                      searchField: _searchController,
+                                      countLabel: 'rodadas',
+                                      countLabelSingular: 'rodada',
+                                      emptyMessage:
+                                          'Nenhuma rodada encontrada',
+                                      gridPadding:
+                                          const EdgeInsets.all(16),
+                                      filter: (all, query) => query.isEmpty
+                                          ? all
+                                          : all
+                                              .where(
+                                                (r) => r.name
+                                                    .toLowerCase()
+                                                    .contains(query),
+                                              )
+                                              .toList(growable: false),
+                                    );
+                                  },
+                                )
+                          : KicksterEmptyState(
+                              icon: Icons.format_list_numbered,
+                              message: 'Nenhuma rodada cadastrada',
+                              description:
+                                  'Crie um campeonato para adicionar rodadas.',
+                              action: KicksterButton(
+                                label: 'Criar campeonato',
+                                icon: Icons.add,
+                                onPressed: () =>
+                                    context.go('/competitions/new'),
+                              ),
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),

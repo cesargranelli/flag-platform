@@ -31,6 +31,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
 
     return AppScreen(
       title: 'Usuários',
+      scrollable: false,
       breadcrumb: const [
         BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem('Usuários'),
@@ -50,46 +51,48 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Conteúdo
-          users.when(
-            loading: () =>
-                const AppLoading(message: 'Carregando usuários...'),
-            error: (error, stackTrace) => AppErrorState(
-              message: 'Não foi possível carregar os usuários',
-              onRetry: () => ref.invalidate(usersProvider),
-            ),
-            data: (items) {
-              if (items.isEmpty) {
-                return KicksterEmptyState(
-                  icon: Icons.people_outline,
-                  message: 'Nenhum usuário cadastrado',
-                  description:
-                      'Crie o primeiro usuário para começar a usar.',
-                  action: KicksterButton(
-                    label: 'Criar usuário',
-                    icon: Icons.add,
-                    onPressed: () => context.go('/users/new'),
-                  ),
+          // Conteúdo (Expanded para dar altura finita ao grid)
+          Expanded(
+            child: users.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando usuários...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar os usuários',
+                onRetry: () => ref.invalidate(usersProvider),
+              ),
+              data: (items) {
+                if (items.isEmpty) {
+                  return KicksterEmptyState(
+                    icon: Icons.people_outline,
+                    message: 'Nenhum usuário cadastrado',
+                    description:
+                        'Crie o primeiro usuário para começar a usar.',
+                    action: KicksterButton(
+                      label: 'Criar usuário',
+                      icon: Icons.add,
+                      onPressed: () => context.go('/users/new'),
+                    ),
+                  );
+                }
+                return AppEntityListScreen<User>(
+                  items: items,
+                  cardBuilder: (user) => _userCard(context, user),
+                  searchField: _searchController,
+                  countLabel: 'usuários',
+                  countLabelSingular: 'usuário',
+                  emptyMessage: 'Nenhum usuário encontrado',
+                  filter: (all, query) => query.isEmpty
+                      ? all
+                      : all
+                          .where(
+                            (u) =>
+                                u.name.toLowerCase().contains(query) ||
+                                u.email.toLowerCase().contains(query),
+                          )
+                          .toList(growable: false),
                 );
-              }
-              return AppEntityListScreen<User>(
-                items: items,
-                cardBuilder: (user) => _userCard(context, user),
-                searchField: _searchController,
-                countLabel: 'usuários',
-                countLabelSingular: 'usuário',
-                emptyMessage: 'Nenhum usuário encontrado',
-                filter: (all, query) => query.isEmpty
-                    ? all
-                    : all
-                        .where(
-                          (u) =>
-                              u.name.toLowerCase().contains(query) ||
-                              u.email.toLowerCase().contains(query),
-                        )
-                        .toList(growable: false),
-              );
-            },
+              },
+            ),
           ),
         ],
       ),

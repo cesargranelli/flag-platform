@@ -60,6 +60,36 @@ class KicksterAvatar extends StatelessWidget {
         width: size,
         height: size,
         fit: BoxFit.cover,
+        // Decodifica a imagem apenas na resolução necessária para o avatar
+        // (evita travar listagens grandes no CanvasKit com fotos em tamanho
+        // original) e usa cacheWidth/cacheHeight em pixels lógicos * DPR.
+        cacheWidth: (size * MediaQuery.devicePixelRatioOf(context)).round(),
+        cacheHeight: (size * MediaQuery.devicePixelRatioOf(context)).round(),
+        gaplessPlayback: true,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.line),
+            ),
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: size * 0.5,
+              height: size * 0.5,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            ),
+          );
+        },
         errorBuilder: (_, _, _) => fallback,
       ),
     );
