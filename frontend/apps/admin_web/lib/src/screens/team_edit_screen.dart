@@ -113,10 +113,9 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
     final competitions = ref.watch(competitionsProvider);
     final organizations = ref.watch(organizationsProvider);
     final compItems = competitions.valueOrNull ?? const [];
+    // P4 #461: _competitionId (contexto) ?? efetivo (selecionado ?? primeiro).
     final effectiveComp =
-        _competitionId ??
-        ref.watch(selectedCompetitionProvider) ??
-        (compItems.isNotEmpty ? compItems.first.id : null);
+        _competitionId ?? ref.watch(effectiveCompetitionProvider);
 
     return AppScreen(
       title: 'Editar time',

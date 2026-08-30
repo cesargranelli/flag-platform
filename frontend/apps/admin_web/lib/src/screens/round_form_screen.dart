@@ -115,9 +115,8 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
   Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
     final compItems = competitions.valueOrNull ?? const [];
-    final effectiveComp =
-        ref.watch(selectedCompetitionProvider) ??
-        (compItems.isNotEmpty ? compItems.first.id : null);
+    // P4 #461: campeonato efetivo = selecionado ?? primeiro da lista.
+    final effectiveComp = ref.watch(effectiveCompetitionProvider);
 
     return AppScreen(
       title: _isEditing ? 'Editar rodada' : 'Nova rodada',

@@ -177,7 +177,6 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
   @override
   Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
-    final selectedCompetition = ref.watch(selectedCompetitionProvider);
 
     return AppScreen(
       title: 'Associar clubes',
@@ -197,10 +196,10 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
               onRetry: () => ref.invalidate(competitionsProvider),
             ),
             data: (compItems) {
+              // P4 #461: locked (rota) ?? efetivo (selecionado ?? primeiro).
               final effectiveComp =
                   widget.lockedCompetitionId ??
-                  selectedCompetition ??
-                  (compItems.isNotEmpty ? compItems.first.id : null);
+                  ref.watch(effectiveCompetitionProvider);
 
               if (effectiveComp == null) {
                 return KicksterEmptyState(
