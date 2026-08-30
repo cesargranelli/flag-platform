@@ -1,10 +1,10 @@
-import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
+import '../utils/mutation.dart';
 
 /// Valor-sentinela da opção "— sem conferência —" do dropdown.
 const String _kNoConference = '';
@@ -56,7 +56,9 @@ class _DivisionFormModalState extends ConsumerState<DivisionFormModal> {
   late final TextEditingController _name;
   late String? _conferenceId;
   bool _submitting = false;
-  String? _errorMessage;
+
+  /// Ids de mutações em andamento (sincroniza o spinner do botão Salvar).
+  final Set<String> _mutatingIds = {};
 
   bool get _isEditing => widget.division != null;
 
@@ -81,49 +83,42 @@ class _DivisionFormModalState extends ConsumerState<DivisionFormModal> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-    final conferenceId = (_conferenceId == _kNoConference || _conferenceId == null)
-        ? null
-        : _conferenceId;
+    final conferenceId =
+        (_conferenceId == _kNoConference || _conferenceId == null)
+            ? null
+            : _conferenceId;
 
-    setState(() {
-      _submitting = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final api = ref.read(divisionApiProvider);
-      if (_isEditing) {
-        await api.update(
-          widget.division!.id,
-          competitionId: widget.competitionId,
-          conferenceId: conferenceId,
-          name: _name.text.trim(),
-        );
-      } else {
-        await api.create(
-          competitionId: widget.competitionId,
-          conferenceId: conferenceId,
-          name: _name.text.trim(),
-        );
-      }
-      ref.invalidate(divisionsProvider(widget.competitionId));
-      navigator.pop();
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            _isEditing ? 'Divisão atualizada.' : 'Divisão criada.',
-          ),
-        ),
-      );
-    } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } catch (_) {
-      setState(() => _errorMessage = 'Não foi possível salvar a divisão.');
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
+    await runMutation(
+      context,
+      action: () async {
+        final api = ref.read(divisionApiProvider);
+        if (_isEditing) {
+          await api.update(
+            widget.division!.id,
+            competitionId: widget.competitionId,
+            conferenceId: conferenceId,
+            name: _name.text.trim(),
+          );
+        } else {
+          await api.create(
+            competitionId: widget.competitionId,
+            conferenceId: conferenceId,
+            name: _name.text.trim(),
+          );
+        }
+      },
+      successMessage: _isEditing ? 'Divisão atualizada.' : 'Divisão criada.',
+      errorMessage: 'Não foi possível salvar a divisão.',
+      progressId: 'save',
+      progressIds: _mutatingIds,
+      notify: () {
+        if (mounted) setState(() => _submitting = _mutatingIds.isNotEmpty);
+      },
+      onSuccess: () {
+        ref.invalidate(divisionsProvider(widget.competitionId));
+        if (mounted) Navigator.pop(context);
+      },
+    );
   }
 
   @override
@@ -189,16 +184,6 @@ class _DivisionFormModalState extends ConsumerState<DivisionFormModal> {
                   );
                 },
               ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(
-                    color: AppColors.danger,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
             ],
           ),
         ),

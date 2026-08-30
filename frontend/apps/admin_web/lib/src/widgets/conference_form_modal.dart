@@ -1,10 +1,10 @@
-import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
+import '../utils/mutation.dart';
 
 /// Modal de criação/edição de conferência (issue #258).
 ///
@@ -47,7 +47,9 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
 
   late final TextEditingController _name;
   bool _submitting = false;
-  String? _errorMessage;
+
+  /// Ids de mutações em andamento (sincroniza o spinner do botão Salvar).
+  final Set<String> _mutatingIds = {};
 
   bool get _isEditing => widget.conference != null;
 
@@ -66,43 +68,32 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Capturados antes do await: o contexto do diálogo é desativado no pop.
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-
-    setState(() {
-      _submitting = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final api = ref.read(conferenceApiProvider);
-      if (_isEditing) {
-        await api.update(widget.conference!.id, name: _name.text.trim());
-      } else {
-        await api.create(
-          competitionId: widget.competitionId,
-          name: _name.text.trim(),
-        );
-      }
-      ref.invalidate(conferencesProvider(widget.competitionId));
-      navigator.pop();
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            _isEditing ? 'Conferência atualizada.' : 'Conferência criada.',
-          ),
-        ),
-      );
-    } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } catch (_) {
-      setState(
-        () => _errorMessage = 'Não foi possível salvar a conferência.',
-      );
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
+    await runMutation(
+      context,
+      action: () async {
+        final api = ref.read(conferenceApiProvider);
+        if (_isEditing) {
+          await api.update(widget.conference!.id, name: _name.text.trim());
+        } else {
+          await api.create(
+            competitionId: widget.competitionId,
+            name: _name.text.trim(),
+          );
+        }
+      },
+      successMessage:
+          _isEditing ? 'Conferência atualizada.' : 'Conferência criada.',
+      errorMessage: 'Não foi possível salvar a conferência.',
+      progressId: 'save',
+      progressIds: _mutatingIds,
+      notify: () {
+        if (mounted) setState(() => _submitting = _mutatingIds.isNotEmpty);
+      },
+      onSuccess: () {
+        ref.invalidate(conferencesProvider(widget.competitionId));
+        if (mounted) Navigator.pop(context);
+      },
+    );
   }
 
   @override
@@ -127,14 +118,6 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
                     ? 'Informe o nome'
                     : null,
               ),
-              if (_errorMessage != null)
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(
-                    color: AppColors.danger,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
             ],
           ),
         ),

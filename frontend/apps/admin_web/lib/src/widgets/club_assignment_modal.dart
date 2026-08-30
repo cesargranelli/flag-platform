@@ -1,10 +1,10 @@
-import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
+import '../utils/mutation.dart';
 
 /// Modal de associação de clubes a uma divisão (issue #258).
 ///
@@ -45,7 +45,8 @@ class _ClubAssignmentModalState extends ConsumerState<ClubAssignmentModal> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
 
-  /// Times com salvamento em andamento (desabilita a linha durante o PUT).
+  /// Times com salvamento em andamento (desabilita a linha durante o PUT);
+  /// também é o `progressIds` do [runMutation].
   final Set<String> _savingTeamIds = {};
 
   @override
@@ -68,12 +69,9 @@ class _ClubAssignmentModalState extends ConsumerState<ClubAssignmentModal> {
       return;
     }
 
-    // Capturados antes do await: o diálogo pode fechar/mudar de contexto.
-    final messenger = ScaffoldMessenger.of(context);
-
-    setState(() => _savingTeamIds.add(team.id));
-    try {
-      await ref.read(teamApiProvider).update(
+    await runMutation(
+      context,
+      action: () => ref.read(teamApiProvider).update(
             team.id,
             organizationId: organizationId,
             competitionId: team.competitionId,
@@ -83,28 +81,18 @@ class _ClubAssignmentModalState extends ConsumerState<ClubAssignmentModal> {
             document: team.document,
             documentType: team.documentType,
             logoUrl: team.logoUrl,
-          );
-      ref.invalidate(teamsProvider(widget.competitionId));
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            removing
-                ? '${team.name} removido da divisão ${widget.division.name}.'
-                : '${team.name} adicionado à divisão ${widget.division.name}.',
           ),
-        ),
-      );
-    } on RepositoryException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Não foi possível atualizar o clube.'),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _savingTeamIds.remove(team.id));
-    }
+      successMessage: removing
+          ? '${team.name} removido da divisão ${widget.division.name}.'
+          : '${team.name} adicionado à divisão ${widget.division.name}.',
+      errorMessage: 'Não foi possível atualizar o clube.',
+      progressId: team.id,
+      progressIds: _savingTeamIds,
+      notify: () {
+        if (mounted) setState(() {});
+      },
+      onSuccess: () => ref.invalidate(teamsProvider(widget.competitionId)),
+    );
   }
 
   @override
