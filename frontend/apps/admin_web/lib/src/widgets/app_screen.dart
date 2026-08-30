@@ -38,6 +38,7 @@ class AppScreen extends StatelessWidget {
   final Widget body;
   final List<BreadcrumbItem>? breadcrumb;
   final bool showUserHeader;
+  final bool scrollable;
 
   @override
   Widget build(BuildContext context) {
