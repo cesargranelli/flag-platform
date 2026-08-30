@@ -29,3 +29,4 @@ export 'src/enums/gender.dart';
 export 'src/enums/age_group.dart';
 export 'src/enums/grouping_type.dart';
 export 'src/enums/document_type.dart';
+export 'src/enums/user_role.dart';

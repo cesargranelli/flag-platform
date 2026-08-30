@@ -8,7 +8,7 @@ import 'package:flag_domain/flag_domain.dart';
 /// backend como fonte da verdade.
 
 /// true quando [user] tem papel ADMIN da plataforma.
-bool isAdminUser(User? user) => user?.role == 'ADMIN';
+bool isAdminUser(User? user) => user?.role == UserRole.admin;
 
 /// Usuário logado pode gerenciar [competition]?
 ///

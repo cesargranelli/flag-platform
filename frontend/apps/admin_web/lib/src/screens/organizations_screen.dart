@@ -39,7 +39,7 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   Widget build(BuildContext context) {
     final isAdmin =
         ref.watch(authControllerProvider.select((a) => a.state.user?.role)) ==
-        'ADMIN';
+        UserRole.admin;
     final showDisabled = isAdmin && _showDisabled;
     final organizations = showDisabled
         ? ref.watch(organizationsAdminProvider(true))

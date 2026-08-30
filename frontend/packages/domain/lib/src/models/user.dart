@@ -1,3 +1,5 @@
+import '../enums/user_role.dart';
+
 /// Usuário autenticado do Flag Platform.
 ///
 /// Shape de `GET /api/v1/auth/me` e do usuário dentro de
@@ -10,8 +12,8 @@ class User {
 
   final String email;
 
-  /// Role do usuário (ex: ORGANIZER, MESA, ADMIN).
-  final String role;
+  /// Papel do usuário na plataforma.
+  final UserRole role;
 
   /// Status da conta (ex: PENDING, ACTIVE, REJECTED).
   final String? status;
@@ -31,7 +33,7 @@ class User {
         id: json['id'] as String,
         name: json['name'] as String,
         email: json['email'] as String,
-        role: json['role'] as String,
+        role: UserRole.fromJson(json['role'] as String),
         status: json['status'] as String?,
         createdAt: json['createdAt'] is String
             ? DateTime.tryParse(json['createdAt'] as String)
@@ -42,7 +44,7 @@ class User {
         'id': id,
         'name': name,
         'email': email,
-        'role': role,
+        'role': role.toJson(),
         if (status != null) 'status': status,
         if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       };
