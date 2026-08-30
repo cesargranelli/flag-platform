@@ -26,8 +26,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
   bool _showDisabled = false;
   final _searchController = TextEditingController();
 
-  /// Ids de campeonatos com desativação/reativação em andamento.
-  final Set<String> _mutating = {};
+  static const _scope = 'competitions';
 
   @override
   void dispose() {
@@ -219,16 +218,14 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
   }) async {
     await runMutation(
       context,
+      ref: ref,
+      scope: _scope,
       action: () => activate
           ? ref.read(competitionApiProvider).reactivate(competition.id)
           : ref.read(competitionApiProvider).deactivate(competition.id),
       successMessage: successMessage,
       errorMessage: errorMessage,
       progressId: competition.id,
-      progressIds: _mutating,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: _invalidateLists,
     );
   }

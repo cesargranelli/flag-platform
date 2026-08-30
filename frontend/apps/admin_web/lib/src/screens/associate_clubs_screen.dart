@@ -37,11 +37,8 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
   final _searchController = TextEditingController();
   String _query = '';
 
-  /// Clubes com associação em andamento (desabilita o botão durante o POST).
-  final Set<String> _associatingOrgIds = {};
-
-  /// Times com desassociação em andamento (desabilita o botão durante o DELETE).
-  final Set<String> _disassociatingTeamIds = {};
+  static const _associateScope = 'associate-orgs';
+  static const _disassociateScope = 'disassociate-teams';
 
   /// Ids de clubes NÃO associados marcados para associação em lote.
   final Set<String> _selectedOrgIds = {};
@@ -59,16 +56,14 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
   Future<void> _associate(Organization club, String competitionId) async {
     await runMutation(
       context,
+      ref: ref,
+      scope: _associateScope,
       action: () => ref
           .read(teamApiProvider)
           .associateClub(competitionId: competitionId, organizationId: club.id),
       successMessage: '${club.tradeName} associado ao campeonato.',
       errorMessage: 'Não foi possível associar o clube.',
       progressId: club.id,
-      progressIds: _associatingOrgIds,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: () => ref.invalidate(teamsProvider(competitionId)),
     );
   }
@@ -77,14 +72,12 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
   Future<void> _disassociate(Team team, String competitionId) async {
     await runMutation(
       context,
+      ref: ref,
+      scope: _disassociateScope,
       action: () => ref.read(teamApiProvider).delete(team.id),
       successMessage: 'Clube desassociado do campeonato.',
       errorMessage: 'Não foi possível desassociar o clube.',
       progressId: team.id,
-      progressIds: _disassociatingTeamIds,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: () {
         ref.invalidate(teamsProvider(competitionId));
         // O clube deixou de ser selecionável; remove da seleção se constar.
@@ -350,9 +343,12 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
   }) {
     final team = orgIdToTeam[club.id];
     final isAssociated = team != null;
-    final associating = _associatingOrgIds.contains(club.id);
-    final disassociating =
-        team != null && _disassociatingTeamIds.contains(team.id);
+    final associating =
+        ref.watch(mutationProgressProvider(_associateScope)).contains(club.id);
+    final disassociating = team != null &&
+        ref
+            .watch(mutationProgressProvider(_disassociateScope))
+            .contains(team.id);
     final selected = _selectedOrgIds.contains(club.id);
 
     return Card(

@@ -32,11 +32,8 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
 
-  /// Ids de atletas com inclusão em andamento (desabilita a linha).
-  final Set<String> _adding = {};
-
-  /// Ids de atletas do elenco com remoção em andamento (desabilita a linha).
-  final Set<String> _removing = {};
+  static const _addScope = 'roster-add';
+  static const _removeScope = 'roster-remove';
 
   String? get _teamId => widget.team?.id ?? widget.teamId;
 
@@ -56,6 +53,8 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
 
     await runMutation(
       context,
+      ref: ref,
+      scope: _addScope,
       action: () => ref.read(rosterApiProvider).add(
             teamId: teamId,
             athleteId: athlete.id,
@@ -65,10 +64,6 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
       successMessage: '${athlete.name} adicionado ao elenco.',
       errorMessage: 'Não foi possível adicionar o atleta.',
       progressId: athlete.id,
-      progressIds: _adding,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: () => ref.invalidate(rosterProvider(teamId)),
     );
   }
@@ -90,16 +85,14 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
 
     await runMutation(
       context,
+      ref: ref,
+      scope: _removeScope,
       action: () => ref
           .read(rosterApiProvider)
           .remove(teamId: teamId, athleteId: entry.athleteId),
       successMessage: '${entry.athleteName} removido do elenco.',
       errorMessage: 'Não foi possível remover o atleta.',
       progressId: entry.athleteId,
-      progressIds: _removing,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: () => ref.invalidate(rosterProvider(teamId)),
     );
   }
@@ -297,8 +290,10 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
         displayNickname,
       if (position.isNotEmpty) position,
     ].join(' · ');
-    final adding = _adding.contains(athlete.id);
-    final removing = _removing.contains(athlete.id);
+    final adding =
+        ref.watch(mutationProgressProvider(_addScope)).contains(athlete.id);
+    final removing =
+        ref.watch(mutationProgressProvider(_removeScope)).contains(athlete.id);
 
     return Card(
       clipBehavior: Clip.antiAlias,

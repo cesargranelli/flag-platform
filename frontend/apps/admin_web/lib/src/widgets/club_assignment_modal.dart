@@ -45,9 +45,7 @@ class _ClubAssignmentModalState extends ConsumerState<ClubAssignmentModal> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
 
-  /// Times com salvamento em andamento (desabilita a linha durante o PUT);
-  /// também é o `progressIds` do [runMutation].
-  final Set<String> _savingTeamIds = {};
+  static const _scope = 'club-assignment';
 
   @override
   void dispose() {
@@ -71,6 +69,8 @@ class _ClubAssignmentModalState extends ConsumerState<ClubAssignmentModal> {
 
     await runMutation(
       context,
+      ref: ref,
+      scope: _scope,
       action: () => ref.read(teamApiProvider).update(
             team.id,
             organizationId: organizationId,
@@ -87,10 +87,6 @@ class _ClubAssignmentModalState extends ConsumerState<ClubAssignmentModal> {
           : '${team.name} adicionado à divisão ${widget.division.name}.',
       errorMessage: 'Não foi possível atualizar o clube.',
       progressId: team.id,
-      progressIds: _savingTeamIds,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: () => ref.invalidate(teamsProvider(widget.competitionId)),
     );
   }
@@ -189,7 +185,8 @@ class _ClubAssignmentModalState extends ConsumerState<ClubAssignmentModal> {
   /// Linha de um clube: nome + divisão atual; tocar alterna a associação.
   Widget _teamTile(Team team, Map<String, String> divisionsById) {
     final inTargetDivision = team.divisionId == widget.division.id;
-    final saving = _savingTeamIds.contains(team.id);
+    final saving =
+        ref.watch(mutationProgressProvider(_scope)).contains(team.id);
     final currentDivision =
         team.divisionId == null ? null : divisionsById[team.divisionId];
 
