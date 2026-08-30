@@ -92,7 +92,14 @@ class AppScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
         ],
-        body,
+        // Quando scrollable=false, o body precisa receber altura finita via
+        // Expanded para que telas com Expanded interno (grids/lists) não
+        // recebam constraints ilimitadas (fix "RenderFlex children have
+        // non-zero flex but incoming height constraints are unbounded").
+        if (scrollable)
+          body
+        else
+          Expanded(child: body),
       ],
     );
   }
