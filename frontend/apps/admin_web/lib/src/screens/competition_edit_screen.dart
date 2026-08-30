@@ -7,9 +7,9 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
-import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
-import '../widgets/selectable_card.dart';
+import '../widgets/competition_form_controller.dart';
+import '../widgets/competition_form_sections.dart';
 
 /// Edição de campeonato (issue #287) — classe separada da criação.
 ///
@@ -21,6 +21,10 @@ import '../widgets/selectable_card.dart';
 /// Editável apenas em RASCUNHO. O status não é campo de formulário:
 /// fica em uma faixa de estado no topo com a ação "Publicar"
 /// (único caminho de publicação, com confirmação).
+///
+/// O estado e as regras compartilhados com a criação ficam no
+/// [CompetitionFormController] (#460); as seções são os widgets de
+/// `competition_form_sections.dart`.
 class CompetitionEditScreen extends ConsumerStatefulWidget {
   const CompetitionEditScreen({
     super.key,
@@ -40,57 +44,39 @@ class _CompetitionEditScreenState
     extends ConsumerState<CompetitionEditScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  late final TextEditingController _name;
-  late final TextEditingController _description;
-  late final TextEditingController _organizationId;
-  late final TextEditingController _startDate;
-  late final TextEditingController _endDate;
-  final _conferenceName = TextEditingController();
-  final _divisionName = TextEditingController();
-
-  Modality? _modality;
-  Gender? _gender;
-  AgeGroup? _ageGroup;
-
   CompetitionStatus _status = CompetitionStatus.draft;
-  bool _submitting = false;
-  bool _saved = false;
-  bool _hasChanges = false;
-  String? _errorMessage;
-
-  /// Suprime dirty durante hidratação programática.
-  bool _populating = false;
 
   /// Modo edição busca SEMPRE a competição completa por id: o objeto vindo
   /// da listagem (extra) é shape de resumo e não tem organizationId/datas.
   bool _appliedRemote = false;
 
-  String? _modalityError;
-  String? _categoryError;
-
-  bool _declinedConferences = false;
-  bool _declinedStructure = false;
-  GroupingType? _groupingChoice;
-  String? _conferenceId;
+  late final CompetitionFormController _controller;
 
   @override
   void initState() {
     super.initState();
-    _name = TextEditingController();
-    _description = TextEditingController();
-    _organizationId = TextEditingController();
-    _startDate = TextEditingController();
-    _endDate = TextEditingController();
-
-    for (final controller in [
-      _name,
-      _description,
-      _organizationId,
-      _startDate,
-      _endDate,
-    ]) {
-      controller.addListener(_markDirty);
-    }
+    _controller = CompetitionFormController(
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+      competitionId: () => widget.competitionId,
+      createConference: (competitionId, name) => ref
+          .read(conferenceApiProvider)
+          .create(competitionId: competitionId, name: name),
+      deleteConference: (id) => ref.read(conferenceApiProvider).delete(id),
+      createDivision: (competitionId, name, conferenceId) => ref
+          .read(divisionApiProvider)
+          .create(
+            competitionId: competitionId,
+            name: name,
+            conferenceId: conferenceId,
+          ),
+      deleteDivision: (id) => ref.read(divisionApiProvider).delete(id),
+      invalidateConferences: (competitionId) =>
+          ref.invalidate(conferencesProvider(competitionId)),
+      invalidateDivisions: (competitionId) =>
+          ref.invalidate(divisionsProvider(competitionId)),
+    );
 
     // Hidratação do formulário no ciclo do provider (B4 #457): em vez de
     // mutar controllers dentro do `build` (side-effect que re-hidrataria a
@@ -109,117 +95,34 @@ class _CompetitionEditScreenState
     }
   }
 
-  void _markDirty() {
-    if (_populating || _saved || _hasChanges) return;
-    setState(() => _hasChanges = true);
-  }
-
+  /// Hidrata o formulário a partir da competição carregada (uma única vez).
   void _applyCompetition(Competition competition) {
-    _populating = true;
-    _name.text = competition.name;
-    _description.text = competition.description ?? '';
-    _organizationId.text = competition.organizationId ?? '';
-    _startDate.text = formatIsoDate(competition.startDate);
-    _endDate.text = formatIsoDate(competition.endDate);
-    _modality = competition.modality;
-    _gender = competition.gender == null
-        ? null
-        : Gender.fromJson(competition.gender!);
-    _ageGroup = competition.ageGroup == null
-        ? null
-        : AgeGroup.fromJson(competition.ageGroup!);
+    _controller.resetFor(competition);
     _status = competition.status;
-    _groupingChoice = competition.groupingType;
-    _populating = false;
     _appliedRemote = true;
   }
 
   @override
   void dispose() {
-    for (final controller in [
-      _name,
-      _description,
-      _organizationId,
-      _startDate,
-      _endDate,
-      _conferenceName,
-      _divisionName,
-    ]) {
-      controller.dispose();
-    }
+    _controller.dispose();
     super.dispose();
   }
-
-  void _selectModality(Modality value) {
-    setState(() {
-      _modality = value;
-      _modalityError = null;
-    });
-    _markDirty();
-  }
-
-  void _selectGender(Gender value) {
-    setState(() {
-      _gender = value;
-      _categoryError = null;
-    });
-    _markDirty();
-  }
-
-  void _selectAgeGroup(AgeGroup value) {
-    setState(() {
-      _ageGroup = value;
-      _categoryError = null;
-    });
-    _markDirty();
-  }
-
-  Future<void> _pickDate(
-    TextEditingController controller, {
-    DateTime? minDate,
-  }) async {
-    final now = DateTime.now();
-    final firstDate = minDate ?? DateTime(2000);
-    final parsed = DateTime.tryParse(controller.text);
-    var initialDate = parsed ?? now;
-    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
-    if (initialDate.isAfter(DateTime(2100))) initialDate = DateTime(2100);
-    final picked = await showAppCalendarDialog(
-      context,
-      initialDate: initialDate,
-      firstDate: firstDate,
-      lastDate: DateTime(2100),
-    );
-    if (picked != null && mounted) {
-      controller.text = formatIsoDate(picked);
-    }
-  }
-
-  DateTime? get _parsedStartDate => DateTime.tryParse(_startDate.text.trim());
 
   /// Valida TODAS as seções no submit (#455): form (identidade + datas),
   /// modalidade e categoria — como o wizard exigia antes de salvar.
   bool _validateAll() {
     if (!_formKey.currentState!.validate()) return false;
-    if (_modality == null) {
-      setState(() => _modalityError = 'Selecione a modalidade');
-      return false;
-    }
-    if (_gender == null || _ageGroup == null) {
-      setState(() => _categoryError =
-          _gender == null ? 'Selecione o gênero' : 'Selecione a faixa etária');
-      return false;
-    }
+    if (!_controller.validateSelections()) return false;
     return true;
   }
 
   Future<void> _save() async {
     if (!_validateAll()) return;
 
-    setState(() {
-      _submitting = true;
-      _errorMessage = null;
-    });
+    final c = _controller;
+    c.submitting = true;
+    c.errorMessage = null;
+    c.onChanged();
 
     try {
       final api = ref.read(competitionApiProvider);
@@ -228,23 +131,23 @@ class _CompetitionEditScreenState
       // dedicada (_publish), não um campo do formulário.
       await api.update(
         id,
-        organizationId: _organizationId.text.trim(),
-        name: _name.text.trim(),
-        description: _description.text.trim().isEmpty
+        organizationId: c.organizationId.text.trim(),
+        name: c.name.text.trim(),
+        description: c.description.text.trim().isEmpty
             ? null
-            : _description.text.trim(),
-        startDate: _startDate.text.isEmpty ? null : _startDate.text,
-        endDate: _endDate.text.isEmpty ? null : _endDate.text,
+            : c.description.text.trim(),
+        startDate: c.startDate.text.isEmpty ? null : c.startDate.text,
+        endDate: c.endDate.text.isEmpty ? null : c.endDate.text,
         status: _status,
-        modality: _modality,
-        gender: _gender?.toJson(),
-        ageGroup: _ageGroup?.toJson(),
-        groupingType: _groupingChoice,
+        modality: c.modality,
+        gender: c.gender?.toJson(),
+        ageGroup: c.ageGroup?.toJson(),
+        groupingType: c.groupingChoice,
       );
       ref.invalidate(competitionsProvider);
       ref.invalidate(competitionProvider(id));
 
-      _saved = true;
+      c.saved = true;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Campeonato salvo com sucesso')),
@@ -252,11 +155,14 @@ class _CompetitionEditScreenState
         context.go('/competitions/$id');
       }
     } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
+      c.errorMessage = e.message;
+      c.onChanged();
     } catch (_) {
-      setState(() => _errorMessage = 'Não foi possível salvar o campeonato.');
+      c.errorMessage = 'Não foi possível salvar o campeonato.';
+      c.onChanged();
     } finally {
-      if (mounted) setState(() => _submitting = false);
+      c.submitting = false;
+      if (mounted) c.onChanged();
     }
   }
 
@@ -272,32 +178,32 @@ class _CompetitionEditScreenState
     );
     if (confirmed != true || !mounted) return;
 
-    setState(() {
-      _submitting = true;
-      _errorMessage = null;
-    });
+    final c = _controller;
+    c.submitting = true;
+    c.errorMessage = null;
+    c.onChanged();
 
     try {
       final api = ref.read(competitionApiProvider);
       final id = widget.competitionId!;
       await api.update(
         id,
-        organizationId: _organizationId.text.trim(),
-        name: _name.text.trim(),
-        description: _description.text.trim().isEmpty
+        organizationId: c.organizationId.text.trim(),
+        name: c.name.text.trim(),
+        description: c.description.text.trim().isEmpty
             ? null
-            : _description.text.trim(),
-        startDate: _startDate.text.isEmpty ? null : _startDate.text,
-        endDate: _endDate.text.isEmpty ? null : _endDate.text,
+            : c.description.text.trim(),
+        startDate: c.startDate.text.isEmpty ? null : c.startDate.text,
+        endDate: c.endDate.text.isEmpty ? null : c.endDate.text,
         status: CompetitionStatus.published,
-        modality: _modality,
-        gender: _gender?.toJson(),
-        ageGroup: _ageGroup?.toJson(),
-        groupingType: _groupingChoice,
+        modality: c.modality,
+        gender: c.gender?.toJson(),
+        ageGroup: c.ageGroup?.toJson(),
+        groupingType: c.groupingChoice,
       );
       ref.invalidate(competitionsProvider);
       ref.invalidate(competitionProvider(id));
-      _saved = true;
+      c.saved = true;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Campeonato publicado')),
@@ -305,37 +211,14 @@ class _CompetitionEditScreenState
         context.go('/competitions/$id');
       }
     } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
+      c.errorMessage = e.message;
+      c.onChanged();
     } catch (_) {
-      setState(() => _errorMessage = 'Não foi possível publicar o campeonato.');
+      c.errorMessage = 'Não foi possível publicar o campeonato.';
+      c.onChanged();
     } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
-  }
-
-  /// Sair da rota com proteção de descarte (M3).
-  Future<void> _handleBack() async {
-    if (_hasChanges && !_submitting && !_saved) {
-      final discard = await showKicksterConfirm(
-        context: context,
-        title: 'Descartar alterações?',
-        content: 'As alterações não salvas serão perdidas.',
-        confirmLabel: 'Descartar',
-        danger: true,
-      );
-      if (discard != true) return;
-      if (!mounted) return;
-      setState(() => _saved = true);
-    }
-    if (!mounted) return;
-    _goBack();
-  }
-
-  void _goBack() {
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go('/competitions');
+      c.submitting = false;
+      if (mounted) c.onChanged();
     }
   }
 
@@ -409,17 +292,18 @@ class _CompetitionEditScreenState
   }
 
   Widget _buildEditable(BuildContext context) {
+    final c = _controller;
     return PopScope(
-      canPop: !_hasChanges || _submitting || _saved,
+      canPop: !c.hasChanges || c.submitting || c.saved,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _handleBack();
+        if (!didPop) c.handleBack(context, isMounted: () => mounted);
       },
       child: AppScreen(
         title: 'Editar campeonato',
         breadcrumb: [
           const BreadcrumbItem('Início', route: '/'),
           const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
-          if (_name.text.isNotEmpty) BreadcrumbItem(_name.text),
+          if (c.name.text.isNotEmpty) BreadcrumbItem(c.name.text),
         ],
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -446,49 +330,66 @@ class _CompetitionEditScreenState
                             label: 'Publicar',
                             icon: Icons.publish_outlined,
                             variant: KicksterButtonVariant.outline,
-                            onPressed: _submitting ? null : _publish,
+                            onPressed: c.submitting ? null : _publish,
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 20),
-                    if (_errorMessage != null) _errorBanner(_errorMessage!),
-                    _section(
+                    if (c.errorMessage != null)
+                      competitionErrorBanner(c.errorMessage!),
+                    competitionSection(
                       title: 'Campeonato',
                       icon: Icons.emoji_events_outlined,
-                      child: _identityStep(context),
+                      child: CompetitionIdentitySection(
+                        controller: c,
+                        dropdownKeyPrefix: 'edit',
+                        onOrganizationChanged: () => setState(() {}),
+                      ),
                     ),
-                    _section(
+                    competitionSection(
                       title: 'Modalidade',
                       icon: Icons.sports_football_outlined,
-                      child: _modalityStep(context),
+                      child: CompetitionModalitySection(
+                        controller: c,
+                        title: 'Modalidade',
+                      ),
                     ),
-                    _section(
+                    competitionSection(
                       title: 'Categoria',
                       icon: Icons.groups_outlined,
-                      child: _categoryStep(context),
+                      child: CompetitionCategorySection(controller: c),
                     ),
-                    _section(
+                    competitionSection(
                       title: 'Temporada',
                       icon: Icons.date_range,
-                      child: _seasonStep(context),
+                      child: CompetitionSeasonSection(
+                        controller: c,
+                        isMounted: () => mounted,
+                      ),
                     ),
-                    _section(
+                    competitionSection(
                       title: 'Conferências',
                       icon: Icons.account_tree_outlined,
-                      child: _conferencesStep(context),
+                      child: CompetitionConferencesSection(
+                        controller: c,
+                        competitionId: widget.competitionId,
+                      ),
                     ),
-                    _section(
+                    competitionSection(
                       title: 'Agrupamento',
                       icon: Icons.hub_outlined,
-                      child: _structureStep(context),
+                      child: CompetitionStructureSection(
+                        controller: c,
+                        competitionId: widget.competitionId,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     KicksterButton(
                       label: 'Salvar',
                       icon: Icons.check,
-                      loading: _submitting,
-                      onPressed: _submitting ? null : _save,
+                      loading: c.submitting,
+                      onPressed: c.submitting ? null : _save,
                     ),
                   ],
                 ),
@@ -503,714 +404,9 @@ class _CompetitionEditScreenState
   Widget _statusChip(CompetitionStatus status) {
     // Status neutro no form de edição (era grayFill/textPrimary bold):
     // token neutro mais próximo do design system (regra da Família 3).
-    return KicksterBadge(label: _statusLabel(status), color: AppColors.textSecondary);
-  }
-
-  Widget _errorBanner(String message) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.danger.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.danger),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, color: AppColors.danger),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(color: AppColors.danger),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Seção empilhada: título (titleMedium) + card (#455).
-  Widget _section({
-    required String title,
-    required IconData icon,
-    required Widget child,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        KicksterSectionTitle(title: title, icon: icon),
-        const SizedBox(height: 12),
-        Card(
-          margin: EdgeInsets.zero,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: child,
-          ),
-        ),
-        const SizedBox(height: 20),
-      ],
-    );
-  }
-
-  Widget _groupLabel(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
-      ),
-    );
-  }
-
-  Widget _groupError(String message) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Text(
-        message,
-        style: const TextStyle(fontSize: 12, color: AppColors.danger),
-      ),
-    );
-  }
-
-  Widget _hint(String text) {
-    return Text(
-      text,
-      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-    );
-  }
-
-  Widget _identityStep(BuildContext context) {
-    final organizations = ref.watch(organizationsProvider);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        organizations.when(
-          loading: () => KicksterDropdown<String>(
-            label: 'Organização',
-            hint: 'Carregando organizações…',
-            items: const <DropdownMenuItem<String>>[],
-            onChanged: null,
-          ),
-          error: (e, s) => Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.danger.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: AppColors.danger),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 20,
-                  color: AppColors.danger,
-                ),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Erro ao carregar organizações',
-                    style: TextStyle(color: AppColors.danger),
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () => ref.invalidate(organizationsProvider),
-                  icon: const Icon(Icons.refresh, size: 18),
-                  label: const Text('Tentar novamente'),
-                ),
-              ],
-            ),
-          ),
-          data: (orgs) {
-            if (orgs.isEmpty) {
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(
-                    color: AppColors.textSecondary.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.business_outlined,
-                      color: AppColors.textSecondary,
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Nenhuma organização disponível',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-            return KicksterDropdown<String>(
-              key: ValueKey('edit-${_organizationId.text}'),
-              label: 'Organização',
-              value: _organizationId.text.isEmpty
-                  ? null
-                  : _organizationId.text,
-              items: orgs
-                  .map(
-                    (o) => DropdownMenuItem(
-                      value: o.id,
-                      child: appDropdownItem(
-                        organizationTypeIcon(o.organizationType),
-                        o.tradeName,
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                _organizationId.text = value ?? '';
-                setState(() {});
-              },
-              validator: (value) => (value == null || value.isEmpty)
-                  ? 'Selecione a organização'
-                  : null,
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        KicksterInput(
-          label: 'Nome',
-          controller: _name,
-          validator: (value) => (value == null || value.trim().isEmpty)
-              ? 'Informe o nome'
-              : null,
-        ),
-        const SizedBox(height: 12),
-        KicksterInput(
-          label: 'Descrição',
-          controller: _description,
-          maxLines: 3,
-        ),
-      ],
-    );
-  }
-
-  Widget _modalityStep(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _groupLabel('Modalidade'),
-        const SizedBox(height: 4),
-        const Text(
-          'Formato de jogo do campeonato',
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 480;
-            return Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                for (final modality in Modality.values)
-                  SizedBox(
-                    width: isWide
-                        ? (constraints.maxWidth - 12) / 2
-                        : constraints.maxWidth,
-                    child: SelectableCard(
-                      label: modality.label,
-                      description: _modalityDescription(modality),
-                      icon: _modalityIcon(modality),
-                      selected: _modality == modality,
-                      onTap: () => _selectModality(modality),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-        if (_modalityError != null) _groupError(_modalityError!),
-      ],
-    );
-  }
-
-  String _modalityDescription(Modality modality) => switch (modality) {
-        Modality.flag5x5 => 'Flag sem contato · 5 jogadores',
-        Modality.flag8x8 => 'Flag sem contato · 8 jogadores',
-        Modality.flag9x9 => 'Flag sem contato · 9 jogadores',
-        Modality.fullPads11x11 => 'Tackle com proteção · 11 jogadores',
-      };
-
-  IconData _modalityIcon(Modality modality) =>
-      modality == Modality.fullPads11x11
-          ? Icons.shield_outlined
-          : Icons.sports_football_outlined;
-
-  /// Ícone representativo por gênero — mantém a simetria dos cards (#328).
-  IconData _genderIcon(Gender gender) => switch (gender) {
-        Gender.male => Icons.male,
-        Gender.female => Icons.female,
-        Gender.mixed => Icons.transgender,
-      };
-
-  Widget _categoryStep(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _groupLabel('Gênero'),
-        const SizedBox(height: 8),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 480;
-            final cardWidth = isWide
-                ? (constraints.maxWidth - 24) / 3
-                : constraints.maxWidth;
-            return Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                for (final gender in Gender.values)
-                  SizedBox(
-                    width: cardWidth,
-                    child: SelectableCard(
-                      label: gender.label,
-                      icon: _genderIcon(gender),
-                      selected: _gender == gender,
-                      onTap: () => _selectGender(gender),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-        if (_categoryError != null && _gender == null)
-          _groupError('Selecione o gênero'),
-        const SizedBox(height: 20),
-        _groupLabel('Faixa etária'),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final ageGroup in AgeGroup.values)
-              SelectableChip(
-                label: ageGroup.label,
-                selected: _ageGroup == ageGroup,
-                onTap: () => _selectAgeGroup(ageGroup),
-              ),
-          ],
-        ),
-        if (_categoryError != null && _gender != null && _ageGroup == null)
-          _groupError(_categoryError!),
-      ],
-    );
-  }
-
-  Widget _seasonStep(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _groupLabel('Período da temporada (opcional)'),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: KicksterInput(
-                label: 'Início (opcional)',
-                controller: _startDate,
-                readOnly: true,
-                onTap: () => _pickDate(_startDate),
-                suffixIcon: const Icon(Icons.calendar_today),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: KicksterInput(
-                label: 'Fim (opcional)',
-                controller: _endDate,
-                readOnly: true,
-                onTap: () => _pickDate(_endDate, minDate: _parsedStartDate),
-                suffixIcon: const Icon(Icons.calendar_today),
-                validator: (value) {
-                  final start = _parsedStartDate;
-                  final end = value == null || value.isEmpty
-                      ? null
-                      : DateTime.tryParse(value);
-                  if (start != null && end != null && end.isBefore(start)) {
-                    return 'Data final deve ser maior ou igual à data inicial';
-                  }
-                  return null;
-                },
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Future<void> _addConference() async {
-    final name = _conferenceName.text.trim();
-    if (name.isEmpty) return;
-    setState(() => _submitting = true);
-    try {
-      await ref.read(conferenceApiProvider).create(
-            competitionId: widget.competitionId!,
-            name: name,
-          );
-      _conferenceName.clear();
-      ref.invalidate(conferencesProvider(widget.competitionId!));
-      _markDirty();
-    } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } catch (_) {
-      setState(() => _errorMessage = 'Não foi possível adicionar.');
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
-  }
-
-  Future<void> _addDivision() async {
-    final name = _divisionName.text.trim();
-    if (name.isEmpty || _groupingChoice == null) return;
-    setState(() => _submitting = true);
-    try {
-      await ref.read(divisionApiProvider).create(
-            competitionId: widget.competitionId!,
-            name: name,
-            conferenceId: _conferenceId,
-          );
-      _divisionName.clear();
-      ref.invalidate(divisionsProvider(widget.competitionId!));
-      _markDirty();
-    } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } catch (_) {
-      setState(() => _errorMessage = 'Não foi possível adicionar.');
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
-  }
-
-  Future<void> _removeConference(Conference conference) async {
-    setState(() => _submitting = true);
-    try {
-      await ref.read(conferenceApiProvider).delete(conference.id);
-      // Se a conferência removida era a selecionada no Agrupamento, zera a seleção.
-      if (_conferenceId == conference.id) _conferenceId = null;
-      ref.invalidate(conferencesProvider(widget.competitionId!));
-      ref.invalidate(divisionsProvider(widget.competitionId!)); // conferência pode ter divisões (cascade)
-      _markDirty();
-    } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } catch (_) {
-      setState(() => _errorMessage = 'Não foi possível remover.');
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
-  }
-
-  Future<void> _removeDivision(Division division) async {
-    setState(() => _submitting = true);
-    try {
-      await ref.read(divisionApiProvider).delete(division.id);
-      ref.invalidate(divisionsProvider(widget.competitionId!));
-      _markDirty();
-    } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
-    } catch (_) {
-      setState(() => _errorMessage = 'Não foi possível remover.');
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
-  }
-
-  // Seção 5 — Conferências (#345): replicar o fluxo do cadastro em edição.
-  Widget _conferencesStep(BuildContext context) {
-    final conferences = ref.watch(conferencesProvider(widget.competitionId!));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _groupLabel('Conferências'),
-        const SizedBox(height: 4),
-        _hint(
-          'Opcional. Use conferências para separar grandes blocos do '
-          'campeonato (ex.: Conferência Norte/Sul).',
-        ),
-        const SizedBox(height: 12),
-        if (_declinedConferences) ...[
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.grayFill),
-              color: AppColors.grayFill.withValues(alpha: 0.5),
-            ),
-            child: const Text(
-              'Este campeonato não usará conferências.',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          const SizedBox(height: 8),
-          KicksterButton(
-            label: 'Usar conferências',
-            icon: Icons.undo,
-            variant: KicksterButtonVariant.text,
-            onPressed: () => setState(() => _declinedConferences = false),
-          ),
-        ] else ...[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: KicksterInput(
-                  label: 'Nome da conferência',
-                  controller: _conferenceName,
-                  onFieldSubmitted: (_) => _addConference(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              KicksterButton(
-                label: 'Adicionar',
-                icon: Icons.add,
-                onPressed: _submitting ? null : _addConference,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          conferences.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.all(8),
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            error: (e, s) => const Text(
-              'Não foi possível carregar as conferências.',
-              style: TextStyle(color: AppColors.danger),
-            ),
-            data: (items) => items.isEmpty
-                ? _hint('Nenhuma conferência adicionada ainda.')
-                : Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final c in items)
-                        _removableChip(
-                          label: c.name,
-                          icon: Icons.account_tree_outlined,
-                          onDelete: () => _removeConference(c),
-                        ),
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 12),
-          KicksterButton(
-            label: 'Este campeonato não usa conferências',
-            variant: KicksterButtonVariant.outline,
-            onPressed: () => setState(() {
-              _declinedConferences = true;
-              _markDirty();
-            }),
-          ),
-        ],
-      ],
-    );
-  }
-
-  // Seção 6 — Agrupamento (#345/#338): Divisões OU Grupos, com declínio.
-  Widget _structureStep(BuildContext context) {
-    final divisions = ref.watch(divisionsProvider(widget.competitionId!));
-    final conferences = ref.watch(conferencesProvider(widget.competitionId!));
-    final conferenceItems = conferences.valueOrNull ?? const <Conference>[];
-    final hasAddedItems =
-        (divisions.valueOrNull ?? const <Division>[]).isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _groupLabel('Como os clubes serão agrupados?'),
-        const SizedBox(height: 4),
-        _hint(
-          'Divisões e Grupos têm o mesmo funcionamento — muda apenas o nome.',
-        ),
-        const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final cardWidth = (constraints.maxWidth - 12) / 2;
-            return Row(
-              children: [
-                for (final type in GroupingType.values) ...[
-                  if (type != GroupingType.values.first)
-                    const SizedBox(width: 12),
-                  SizedBox(
-                    width: cardWidth,
-                    child: SelectableCard(
-                      label: type.label,
-                      description: 'Agrupamento por ${type.label.toLowerCase()}',
-                      icon: Icons.account_tree_outlined,
-                      selected: _groupingChoice == type,
-                      enabled: !hasAddedItems,
-                      onTap: () => setState(() {
-                        _groupingChoice = type;
-                        _declinedStructure = false;
-                        _markDirty();
-                      }),
-                    ),
-                  ),
-                ],
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        if (_declinedStructure)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.grayFill),
-              color: AppColors.grayFill.withValues(alpha: 0.5),
-            ),
-            child: const Text(
-              'Este campeonato não usará divisões nem grupos.',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          )
-        else if (_groupingChoice == null)
-          _hint(
-            'Selecione Divisões ou Grupos acima, ou declare que este '
-            'campeonato não usará agrupamentos.',
-          )
-        else ...[
-          if (conferenceItems.isNotEmpty) ...[
-            KicksterDropdown<String>(
-              key: ValueKey('division-conf-${_conferenceId ?? ''}'),
-              label: 'Conferência',
-              value: _conferenceId ?? '',
-              items: [
-                const DropdownMenuItem(
-                  value: '',
-                  child: Text('Sem conferência'),
-                ),
-                for (final c in conferenceItems)
-                  DropdownMenuItem(value: c.id, child: Text(c.name)),
-              ],
-              onChanged: (value) => setState(
-                () => _conferenceId =
-                    (value == null || value.isEmpty) ? null : value,
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: KicksterInput(
-                  label: 'Nome ($_groupingChoice)',
-                  controller: _divisionName,
-                  onFieldSubmitted: (_) => _addDivision(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              KicksterButton(
-                label: 'Adicionar',
-                icon: Icons.add,
-                onPressed: _submitting ? null : _addDivision,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          divisions.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.all(8),
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            error: (e, s) => Text(
-              'Não foi possível carregar as $_itemLabelLower.',
-              style: const TextStyle(color: AppColors.danger),
-            ),
-            data: (items) => items.isEmpty
-                ? _hint('Nenhum item adicionado ainda.')
-                : Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final d in items)
-                        _removableChip(
-                          label: d.name,
-                          icon: Icons.folder_outlined,
-                          onDelete: () => _removeDivision(d),
-                        ),
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 12),
-          KicksterButton(
-            label: 'Não usar divisões nem grupos',
-            variant: KicksterButtonVariant.outline,
-            onPressed: () => setState(() {
-              _declinedStructure = true;
-              _groupingChoice = null;
-              _markDirty();
-            }),
-          ),
-        ],
-      ],
-    );
-  }
-
-  String get _itemLabelLower =>
-      _groupingChoice == GroupingType.groups ? 'grupos' : 'divisões';
-
-  /// Chip removível (X), usado nas listas de conferências e divisões (#341).
-  Widget _removableChip({
-    required String label,
-    required IconData icon,
-    required VoidCallback onDelete,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.grayFill,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: AppColors.textSecondary),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Semantics(
-            label: 'Remover $label',
-            button: true,
-            child: IconButton(
-              onPressed: onDelete,
-              tooltip: 'Remover',
-              icon: const Icon(Icons.close, size: 16),
-              visualDensity: VisualDensity.compact,
-              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-              color: AppColors.textSecondary,
-              padding: EdgeInsets.zero,
-            ),
-          ),
-        ],
-      ),
+    return KicksterBadge(
+      label: _statusLabel(status),
+      color: AppColors.textSecondary,
     );
   }
 
