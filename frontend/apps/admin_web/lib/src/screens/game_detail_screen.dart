@@ -139,7 +139,9 @@ class GameDetailScreen extends ConsumerWidget {
   Widget _statusChip(GameStatus status) {
     final (label, color) = switch (status) {
       GameStatus.scheduled => ('Agendado', AppColors.primary),
+      GameStatus.open => ('Abertura', AppColors.textSecondary),
       GameStatus.inProgress => ('Ao vivo', AppColors.success),
+      GameStatus.conference => ('Conferência', AppColors.textSecondary),
       GameStatus.finished => ('Encerrado', AppColors.textSecondary),
       GameStatus.cancelled => ('Cancelado', AppColors.danger),
     };
