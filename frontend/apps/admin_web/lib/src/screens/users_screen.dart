@@ -31,50 +31,61 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
 
     return AppScreen(
       title: 'Usuários',
-      titleVariant: AppScreenTitleVariant.titleLg,
-      actions: [
-        KicksterButton(
-          label: 'Novo',
-          icon: Icons.add,
-          onPressed: () => context.go('/users/new'),
-        ),
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem('Usuários'),
       ],
-      body: users.when(
-        loading: () => const AppLoading(message: 'Carregando usuários...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os usuários',
-          onRetry: () => ref.invalidate(usersProvider),
-        ),
-        data: (items) {
-          if (items.isEmpty) {
-            return KicksterEmptyState(
-              icon: Icons.people_outline,
-              message: 'Nenhum usuário cadastrado',
-              description: 'Crie o primeiro usuário para começar a usar.',
-              action: KicksterButton(
-                label: 'Criar usuário',
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Actions
+          Row(
+            children: [
+              const Spacer(),
+              KicksterButton(
+                label: 'Novo',
                 icon: Icons.add,
                 onPressed: () => context.go('/users/new'),
               ),
-            );
-          }
-          final query = _query.trim().toLowerCase();
-          final filtered = query.isEmpty
-              ? items
-              : items
-                  .where(
-                    (u) =>
-                        u.name.toLowerCase().contains(query) ||
-                        u.email.toLowerCase().contains(query),
-                  )
-                  .toList(growable: false);
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          users.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando usuários...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os usuários',
+              onRetry: () => ref.invalidate(usersProvider),
+            ),
+            data: (items) {
+              if (items.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.people_outline,
+                  message: 'Nenhum usuário cadastrado',
+                  description:
+                      'Crie o primeiro usuário para começar a usar.',
+                  action: KicksterButton(
+                    label: 'Criar usuário',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/users/new'),
+                  ),
+                );
+              }
+              final query = _query.trim().toLowerCase();
+              final filtered = query.isEmpty
+                  ? items
+                  : items
+                      .where(
+                        (u) =>
+                            u.name.toLowerCase().contains(query) ||
+                            u.email.toLowerCase().contains(query),
+                      )
+                      .toList(growable: false);
 
-          return AppLayout.content(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Row(
+              return Column(
+                children: [
+                  Row(
                     children: [
                       if (query.isNotEmpty)
                         Text(
@@ -103,38 +114,42 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                       ),
                     ],
                   ),
-                ),
-                Expanded(
-                  child: filtered.isEmpty
-                      ? const AppEmptyState(
-                          message: 'Nenhum usuário encontrado',
-                          icon: Icons.search_off,
-                        )
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                            return GridView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: filtered.length,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: columns,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                mainAxisExtent: 96,
-                              ),
-                              itemBuilder: (context, index) {
-                                final user = filtered[index];
-                                return _userCard(context, user);
-                              },
-                            );
+                  const SizedBox(height: 16),
+                  if (filtered.isEmpty)
+                    const AppEmptyState(
+                      message: 'Nenhum usuário encontrado',
+                      icon: Icons.search_off,
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns =
+                            constraints.maxWidth >= 600 ? 2 : 1;
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics:
+                              const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          itemCount: filtered.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: columns,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            mainAxisExtent: 96,
+                          ),
+                          itemBuilder: (context, index) {
+                            final user = filtered[index];
+                            return _userCard(context, user);
                           },
-                        ),
-                ),
-              ],
-            ),
-          );
-        },
+                        );
+                      },
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -142,6 +157,14 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   Widget _userCard(BuildContext context, User user) {
     final role = _roleLabel(user.role);
     return Card(
+      elevation: 1,
+      shadowColor: AppColors.black.withValues(alpha: 0.08),
+      color: AppColors.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.line, width: 1),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -150,11 +173,11 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.12),
+                color: AppColors.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(_roleIcon(user.role),
-                  color: AppColors.primary, size: 28),
+                  color: AppColors.primary, size: 24),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -167,7 +190,10 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -194,17 +220,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       'MESA' => AppColors.success,
       _ => AppColors.primary,
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 13, color: color),
-      ),
-    );
+    return KicksterBadge(label: label, color: color);
   }
 
   IconData _roleIcon(String role) => switch (role) {

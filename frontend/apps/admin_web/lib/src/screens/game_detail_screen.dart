@@ -6,18 +6,16 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
 /// Detalhe de um jogo: confronto, placar, status e informações.
 class GameDetailScreen extends ConsumerWidget {
-  const GameDetailScreen({super.key, this.gameId, this.game, this.args});
+  const GameDetailScreen({super.key, this.gameId, this.game});
 
   final String? gameId;
   final Game? game;
-
-  /// Argumentos de navegação para a edição.
-  final ({String? roundId, Game? game})? args;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,19 +23,28 @@ class GameDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: game?.homeTeamName ?? 'Jogo',
-      breadcrumb: const [
-        BreadcrumbItem(AppStrings.games, route: '/games'),
+      breadcrumb: [
+        const BreadcrumbItem('Início', route: '/'),
+        const BreadcrumbItem(AppStrings.games, route: '/games'),
+        if (game?.homeTeamName != null) BreadcrumbItem(game!.homeTeamName!),
       ],
-      body: gameFuture == null
-          ? _buildDetail(context, ref, game!)
-          : gameFuture.when(
-              loading: () => const AppLoading(message: 'Carregando jogo...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar o jogo',
-                onRetry: () => ref.invalidate(gameProvider(gameId!)),
-              ),
-              data: (game) => _buildDetail(context, ref, game),
-            ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Conteúdo
+          gameFuture == null
+              ? _buildDetail(context, ref, game!)
+              : gameFuture.when(
+                  loading: () =>
+                      const AppLoading(message: 'Carregando jogo...'),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar o jogo',
+                    onRetry: () => ref.invalidate(gameProvider(gameId!)),
+                  ),
+                  data: (game) => _buildDetail(context, ref, game),
+                ),
+        ],
+      ),
     );
   }
 
@@ -57,9 +64,7 @@ class GameDetailScreen extends ConsumerWidget {
       competition,
     );
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
+    return AppLayout.detail(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -75,7 +80,7 @@ class GameDetailScreen extends ConsumerWidget {
                           child: Text(
                             '${game.homeTeamName ?? 'Casa'} x ${game.awayTeamName ?? 'Fora'}',
                             style: const TextStyle(
-                                fontSize: 22, fontWeight: FontWeight.bold),
+                                fontSize: 20, fontWeight: FontWeight.w700),
                           ),
                         ),
                         _statusChip(game.status),
@@ -109,84 +114,37 @@ class GameDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard([
-              _row('Rodada', game.roundNumber?.toString() ?? '—'),
-              if (competitionName.isNotEmpty) _row('Campeonato', competitionName),
-              _row('Horário', _formatDateTime(game.scheduledAt)),
+            AppInfoCard(children: [
+              AppInfoRow(
+                label: 'Rodada',
+                value: game.roundNumber?.toString() ?? '—',
+              ),
+              if (competitionName.isNotEmpty)
+                AppInfoRow(label: 'Campeonato', value: competitionName),
+              AppInfoRow(label: 'Horário', value: formatBrDateTime(game.scheduledAt)),
               if (game.venueName != null && game.venueName!.isNotEmpty)
-                _row('Campo', game.venueName!),
+                AppInfoRow(label: 'Campo', value: game.venueName!),
               if (game.venueAddress != null && game.venueAddress!.isNotEmpty)
-                _row('Endereço', game.venueAddress!),
+                AppInfoRow(label: 'Endereço', value: game.venueAddress!),
             ]),
             const SizedBox(height: 16),
             Text(
-              'Criado em ${_formatDate(game.scheduledAt)}',
+              'Criado em ${formatBrDate(game.scheduledAt)}',
               style: const TextStyle(
                   fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _infoCard(List<Widget> rows) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: rows,
-        ),
-      ),
-    );
-  }
-
-  Widget _row(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-          ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
-        ],
-      ),
     );
   }
 
   Widget _statusChip(GameStatus status) {
     final (label, color) = switch (status) {
-      GameStatus.scheduled => ('Agendado', AppColors.textSecondary),
+      GameStatus.scheduled => ('Agendado', AppColors.primary),
       GameStatus.inProgress => ('Ao vivo', AppColors.success),
-      GameStatus.finished => ('Encerrado', AppColors.danger),
-      GameStatus.cancelled => ('Cancelado', AppColors.disabled),
+      GameStatus.finished => ('Encerrado', AppColors.textSecondary),
+      GameStatus.cancelled => ('Cancelado', AppColors.danger),
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 13, color: color),
-      ),
-    );
-  }
-
-  String _formatDateTime(DateTime value) =>
-      '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year} '
-      '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
-
-  String _formatDate(DateTime value) {
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
+    return KicksterBadge(label: label, color: color);
   }
 }

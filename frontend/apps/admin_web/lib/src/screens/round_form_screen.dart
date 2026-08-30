@@ -11,10 +11,14 @@ import '../widgets/app_screen.dart';
 
 /// Formulário de criação/edição de rodada.
 class RoundFormScreen extends ConsumerStatefulWidget {
-  const RoundFormScreen({super.key, this.roundId, this.round});
+  const RoundFormScreen({super.key, this.roundId, this.round, this.competitionId});
 
   final String? roundId;
   final Round? round;
+
+  /// Campeonato vindo da listagem (via extra da rota) — evita perder o
+  /// contexto ao abrir "Nova rodada" (B5 #457).
+  final String? competitionId;
 
   @override
   ConsumerState<RoundFormScreen> createState() => _RoundFormScreenState();
@@ -58,6 +62,7 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
     try {
       final api = ref.read(roundApiProvider);
       final competitionId =
+          widget.competitionId ??
           widget.round?.competitionId ??
           ref.read(selectedCompetitionProvider) ??
           '';
@@ -117,11 +122,14 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
     return AppScreen(
       title: _isEditing ? 'Editar rodada' : 'Nova rodada',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
+        BreadcrumbItem('Formulário'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -185,7 +193,7 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                      color: AppColors.danger,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -201,6 +209,7 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
             ),
           ),
         ),
+      ],
       ),
     );
   }

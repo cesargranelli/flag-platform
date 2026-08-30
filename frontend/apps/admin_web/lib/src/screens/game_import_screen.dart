@@ -21,11 +21,13 @@ typedef GameImportArgs = ({String roundId, String? competitionId});
 class GameImportScreen extends ConsumerStatefulWidget {
   const GameImportScreen({
     super.key,
-    required this.roundId,
+    this.roundId,
     this.competitionId,
   });
 
-  final String roundId;
+  /// Rodada de contexto; `null` quando a rota é aberta sem extra (deep-link)
+  /// — nesse caso a tela mostra um estado vazio em vez de chamar a API (B5).
+  final String? roundId;
   final String? competitionId;
 
   @override
@@ -59,9 +61,10 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
           'campo (opcional), data (dd/mm/aaaa), hora (hh:mm).',
         ),
         actions: [
-          TextButton(
+          KicksterButton(
+            label: 'Fechar',
+            variant: KicksterButtonVariant.text,
             onPressed: () => Navigator.pop(context),
-            child: const Text('Fechar'),
           ),
         ],
       ),
@@ -168,6 +171,8 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
   }
 
   Future<void> _import() async {
+    final roundId = widget.roundId;
+    if (roundId == null || roundId.isEmpty) return;
     final rows = _rows;
     if (rows == null) return;
 
@@ -214,8 +219,8 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
     try {
       final result = await ref
           .read(gameApiProvider)
-          .createBatch(widget.roundId, items);
-      ref.invalidate(gamesByRoundProvider(widget.roundId));
+          .createBatch(roundId, items);
+      ref.invalidate(gamesByRoundProvider(roundId));
       if (mounted) setState(() => _result = result);
     } on RepositoryException catch (e) {
       if (mounted) setState(() => _errorMessage = e.message);
@@ -232,87 +237,109 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
   Widget build(BuildContext context) {
     final rows = _rows;
     final result = _result;
+    final roundId = widget.roundId;
+
+    // Deep-link direto para /games/import sem rodada: estado vazio em vez de
+    // chamar a API com ID vazio (B5 #457).
+    if (roundId == null || roundId.isEmpty) {
+      return AppScreen(
+        title: 'Importar jogos',
+        breadcrumb: const [
+          BreadcrumbItem('Início', route: '/'),
+          BreadcrumbItem(AppStrings.games, route: '/games'),
+          BreadcrumbItem('Importar'),
+        ],
+        body: AppLayout.form(
+          child: KicksterEmptyState(
+            icon: Icons.sports,
+            message: 'Rodada não identificada',
+            description:
+                'Selecione uma rodada no módulo Jogos para importar partidas.',
+            action: KicksterButton(
+              label: 'Ir para Jogos',
+              icon: Icons.arrow_back,
+              onPressed: () => context.go('/games'),
+            ),
+          ),
+        ),
+      );
+    }
 
     return AppScreen(
       title: 'Importar jogos',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.games, route: '/games'),
+        BreadcrumbItem('Importar'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (result == null) ...[
+      body: AppLayout.form(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (result == null) ...[
+              Text(
+                'Importe vários jogos para a rodada a partir de um arquivo CSV/TXT.',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              KicksterButton(
+                label: 'Ver modelo CSV',
+                onPressed: _showTemplate,
+                variant: KicksterButtonVariant.outline,
+                icon: Icons.download_outlined,
+              ),
+              const SizedBox(height: 12),
+              KicksterButton(
+                label: 'Selecionar arquivo',
+                onPressed: _pickFile,
+                icon: Icons.upload_file,
+              ),
+              const SizedBox(height: 16),
+              if (rows != null) ...[
                 Text(
-                  'Importe vários jogos para a rodada a partir de um arquivo CSV/TXT.',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
+                  '${rows.length} ${rows.length == 1 ? 'jogo' : 'jogos'} lidos.',
+                  style: const TextStyle(fontSize: 13),
                 ),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: _showTemplate,
-                  icon: const Icon(Icons.download_outlined),
-                  label: const Text('Ver modelo CSV'),
-                ),
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: _pickFile,
-                  icon: const Icon(Icons.upload_file),
-                  label: const Text('Selecionar arquivo'),
-                ),
-                const SizedBox(height: 16),
-                if (rows != null) ...[
-                  Text(
-                    '${rows.length} ${rows.length == 1 ? 'jogo' : 'jogos'} lidos.',
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  const SizedBox(height: 8),
-                  for (final row in rows.take(15))
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        '${row.home} x ${row.away}'
-                        '${row.venue.isNotEmpty ? ' · ${row.venue}' : ''}'
-                        ' · ${row.date} ${row.time}',
-                        style: const TextStyle(fontSize: 13),
-                      ),
+                const SizedBox(height: 8),
+                for (final row in rows.take(15))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '${row.home} x ${row.away}'
+                      '${row.venue.isNotEmpty ? ' · ${row.venue}' : ''}'
+                      ' · ${row.date} ${row.time}',
+                      style: const TextStyle(fontSize: 13),
                     ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: _importing ? null : _import,
-                    child: _importing
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Importar'),
                   ),
-                ],
-              ] else ...[
-                _resultSummary(result),
                 const SizedBox(height: 16),
-                _resultTable(result),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () => context.go('/games'),
-                  icon: const Icon(Icons.check),
-                  label: const Text('Concluir'),
+                KicksterButton(
+                  label: 'Importar',
+                  onPressed: _importing ? null : _import,
+                  loading: _importing,
                 ),
               ],
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: AppColors.danger),
-                ),
-              ],
+            ] else ...[
+              _resultSummary(result),
+              const SizedBox(height: 16),
+              _resultTable(result),
+              const SizedBox(height: 24),
+              KicksterButton(
+                label: 'Concluir',
+                onPressed: () => context.go('/games'),
+                icon: Icons.check,
+              ),
             ],
-          ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: AppColors.danger),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -323,24 +350,15 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        _chip('${result.imported} importados', AppColors.success),
-        _chip('${result.skipped} ignorados', AppColors.warning),
+        KicksterBadge(
+          label: '${result.imported} importados',
+          color: AppColors.success,
+        ),
+        KicksterBadge(
+          label: '${result.skipped} ignorados',
+          color: AppColors.warning,
+        ),
       ],
-    );
-  }
-
-  Widget _chip(String text, Color color) {
-    // Amarelo `warning` (#FACC15) é claro demais para texto na própria cor
-    // sobre o fundo @12%: usa texto escuro (issue #431 — contraste).
-    final textColor =
-        color == AppColors.warning ? AppColors.textPrimary : color;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(text, style: TextStyle(fontSize: 13, color: textColor)),
     );
   }
 
@@ -350,7 +368,7 @@ class _GameImportScreenState extends ConsumerState<GameImportScreen> {
       children: [
         const Text(
           'Resultado por linha',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         for (final line in result.lines)

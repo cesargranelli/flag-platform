@@ -87,12 +87,6 @@ final competitionProvider = FutureProvider.family<Competition, String>(
 /// Campeonato selecionado na tela de competições.
 final selectedCompetitionProvider = StateProvider<String?>((ref) => null);
 
-/// Gênero selecionado no form de campeonato.
-final selectedGenderProvider = StateProvider<String?>((ref) => null);
-
-/// Faixa etária selecionada no form de campeonato.
-final selectedAgeGroupProvider = StateProvider<String?>((ref) => null);
-
 /// Serviço de times.
 final teamApiProvider = Provider<TeamApi>(
   (ref) => TeamApi(ref.watch(apiClientProvider)),

@@ -103,10 +103,9 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
   Widget _positionsField() {
     final maxed = _positions.length >= 3;
     return InputDecorator(
-      decoration: const InputDecoration(
+      decoration: kicksterFieldDecoration(
         labelText: 'Posições',
         helperText: 'Selecione até 3 posições',
-        border: OutlineInputBorder(),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,11 +179,14 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
     return AppScreen(
       title: _isEditing ? 'Editar atleta' : 'Novo atleta',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
+        BreadcrumbItem('Formulário'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -246,7 +248,7 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                        color: AppColors.danger,
                         fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -261,6 +263,7 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
             ),
           ),
         ),
+      ],
       ),
     );
   }

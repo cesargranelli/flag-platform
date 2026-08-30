@@ -35,47 +35,60 @@ class _VenuesScreenState extends ConsumerState<VenuesScreen> {
 
     return AppScreen(
       title: 'Campos',
-      titleVariant: AppScreenTitleVariant.titleLg,
-      actions: [
-        KicksterButton(
-          label: 'Novo',
-          icon: Icons.add,
-          onPressed: () => context.go('/venues/new'),
-        ),
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem('Campos'),
       ],
-      body: venues.when(
-        loading: () => const AppLoading(message: 'Carregando campos...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os campos',
-          onRetry: () => ref.invalidate(venuesProvider),
-        ),
-        data: (items) {
-          if (items.isEmpty) {
-            return KicksterEmptyState(
-              icon: Icons.sports_soccer,
-              message: 'Nenhum campo cadastrado',
-              description: 'Crie o primeiro campo para começar a usar.',
-              action: KicksterButton(
-                label: 'Criar campo',
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Actions
+          Row(
+            children: [
+              const Spacer(),
+              KicksterButton(
+                label: 'Novo',
                 icon: Icons.add,
                 onPressed: () => context.go('/venues/new'),
               ),
-            );
-          }
-          final orgNames = organizations.valueOrNull ?? const <Organization>[];
-          final query = _query.trim().toLowerCase();
-          final filtered = query.isEmpty
-              ? items
-              : items
-                  .where((v) => v.name.toLowerCase().contains(query))
-                  .toList(growable: false);
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          venues.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando campos...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os campos',
+              onRetry: () => ref.invalidate(venuesProvider),
+            ),
+            data: (items) {
+              if (items.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.sports_soccer,
+                  message: 'Nenhum campo cadastrado',
+                  description:
+                      'Crie o primeiro campo para começar a usar.',
+                  action: KicksterButton(
+                    label: 'Criar campo',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/venues/new'),
+                  ),
+                );
+              }
+              final orgNames =
+                  organizations.valueOrNull ?? const <Organization>[];
+              final query = _query.trim().toLowerCase();
+              final filtered = query.isEmpty
+                  ? items
+                  : items
+                      .where(
+                          (v) => v.name.toLowerCase().contains(query))
+                      .toList(growable: false);
 
-          return AppLayout.content(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Row(
+              return Column(
+                children: [
+                  Row(
                     children: [
                       if (query.isNotEmpty)
                         Text(
@@ -104,42 +117,46 @@ class _VenuesScreenState extends ConsumerState<VenuesScreen> {
                       ),
                     ],
                   ),
-                ),
-                Expanded(
-                  child: filtered.isEmpty
-                      ? const AppEmptyState(
-                          message: 'Nenhum campo encontrado',
-                          icon: Icons.search_off,
-                        )
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                            return GridView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: filtered.length,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: columns,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                mainAxisExtent: 96,
-                              ),
-                              itemBuilder: (context, index) {
-                                final venue = filtered[index];
-                                return _venueCard(
-                                  context,
-                                  venue,
-                                  orgNames,
-                                );
-                              },
+                  const SizedBox(height: 16),
+                  if (filtered.isEmpty)
+                    const AppEmptyState(
+                      message: 'Nenhum campo encontrado',
+                      icon: Icons.search_off,
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns =
+                            constraints.maxWidth >= 600 ? 2 : 1;
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics:
+                              const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          itemCount: filtered.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: columns,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            mainAxisExtent: 96,
+                          ),
+                          itemBuilder: (context, index) {
+                            final venue = filtered[index];
+                            return _venueCard(
+                              context,
+                              venue,
+                              orgNames,
                             );
                           },
-                        ),
-                ),
-              ],
-            ),
-          );
-        },
+                        );
+                      },
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }

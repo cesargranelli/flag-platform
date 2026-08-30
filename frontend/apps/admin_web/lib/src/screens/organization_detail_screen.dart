@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 
 /// Detalhe de uma organização em página única (#455): todas as seções
@@ -28,11 +29,17 @@ class OrganizationDetailScreen extends ConsumerWidget {
     final orgFuture =
         org != null ? null : ref.watch(organizationProvider(organizationId!));
 
+    // Breadcrumb dinâmico com nome da organização
+    final orgName = org?.tradeName;
+    final breadcrumb = [
+      const BreadcrumbItem('Início', route: '/'),
+      const BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
+      if (orgName != null) BreadcrumbItem(orgName),
+    ];
+
     return AppScreen(
       title: org?.tradeName ?? 'Organização',
-      breadcrumb: const [
-        BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
-      ],
+      breadcrumb: breadcrumb,
       body: orgFuture == null
           ? _buildDetail(context, org!)
           : orgFuture.when(
@@ -52,39 +59,36 @@ class OrganizationDetailScreen extends ConsumerWidget {
 
   /// Página única: seções empilhadas, scroll do body (#455).
   Widget _buildDetail(BuildContext context, Organization org) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _section(
-              title: 'Identificação',
-              icon: Icons.business_outlined,
-              child: _identificacaoCard(org),
-            ),
-            _section(
-              title: 'Presidente',
-              icon: Icons.person_outline,
-              child: _presidenteCard(org),
-            ),
-            _section(
-              title: 'Contato',
-              icon: Icons.contact_mail_outlined,
-              child: _contatoCard(org),
-            ),
-            _section(
-              title: 'Localização',
-              icon: Icons.location_on_outlined,
-              child: _localizacaoCard(org),
-            ),
-            _section(
-              title: 'Identidade',
-              icon: Icons.palette_outlined,
-              child: _identidadeCard(org),
-            ),
-          ],
-        ),
+    return AppLayout.detail(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _section(
+            title: 'Identificação',
+            icon: Icons.business_outlined,
+            child: _identificacaoCard(org),
+          ),
+          _section(
+            title: 'Presidente',
+            icon: Icons.person_outline,
+            child: _presidenteCard(org),
+          ),
+          _section(
+            title: 'Contato',
+            icon: Icons.contact_mail_outlined,
+            child: _contatoCard(org),
+          ),
+          _section(
+            title: 'Localização',
+            icon: Icons.location_on_outlined,
+            child: _localizacaoCard(org),
+          ),
+          _section(
+            title: 'Identidade',
+            icon: Icons.palette_outlined,
+            child: _identidadeCard(org),
+          ),
+        ],
       ),
     );
   }
@@ -138,7 +142,7 @@ class OrganizationDetailScreen extends ConsumerWidget {
                       Text(
                         org.tradeName,
                         style: const TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.bold),
+                            fontSize: 20, fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -161,7 +165,7 @@ class OrganizationDetailScreen extends ConsumerWidget {
             if (org.createdAt != null) ...[
               const SizedBox(height: 4),
               Text(
-                'Criada em ${_formatDate(org.createdAt!)}',
+                'Criada em ${formatBrDate(org.createdAt!)}',
                 style: const TextStyle(
                     fontSize: 12, color: AppColors.textSecondary),
               ),
@@ -230,10 +234,5 @@ class OrganizationDetailScreen extends ConsumerWidget {
           AppInfoRow(label: 'Logo', value: org.logoUrl!),
       ],
     );
-  }
-
-  String _formatDate(DateTime value) {
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 }

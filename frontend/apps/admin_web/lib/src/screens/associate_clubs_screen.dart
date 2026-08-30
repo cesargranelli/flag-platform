@@ -3,6 +3,7 @@ import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 import '../widgets/app_screen.dart';
@@ -65,10 +66,7 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
       // time é derivado do clube no backend, sem cadastro de time completo.
       await ref
           .read(teamApiProvider)
-          .associateClub(
-            competitionId: competitionId,
-            organizationId: club.id,
-          );
+          .associateClub(competitionId: competitionId, organizationId: club.id);
       ref.invalidate(teamsProvider(competitionId));
       messenger.showSnackBar(
         SnackBar(content: Text('${club.tradeName} associado ao campeonato.')),
@@ -134,10 +132,12 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
       final club = orgsById[orgId];
       if (club == null) continue;
       try {
-        await ref.read(teamApiProvider).associateClub(
-          competitionId: competitionId,
-          organizationId: club.id,
-        );
+        await ref
+            .read(teamApiProvider)
+            .associateClub(
+              competitionId: competitionId,
+              organizationId: club.id,
+            );
         success++;
       } catch (_) {
         failure++;
@@ -157,9 +157,7 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
       if (success > 0) '$success associado(s)',
       if (failure > 0) '$failure falha(s)',
     ].join('; ');
-    messenger.showSnackBar(
-      SnackBar(content: Text('$summary.')),
-    );
+    messenger.showSnackBar(SnackBar(content: Text('$summary.')));
   }
 
   /// Tipos de organização que podem ser associados como clube (#357):
@@ -184,69 +182,66 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
     return AppScreen(
       title: 'Associar clubes',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.teams, route: '/teams'),
+        BreadcrumbItem('Associar clubes'),
       ],
-      body: competitions.when(
-        loading: () => const AppLoading(message: 'Carregando campeonatos...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os campeonatos',
-          onRetry: () => ref.invalidate(competitionsProvider),
-        ),
-        data: (compItems) {
-          final effectiveComp =
-              widget.lockedCompetitionId ??
-              selectedCompetition ??
-              (compItems.isNotEmpty ? compItems.first.id : null);
-
-          if (effectiveComp == null) {
-            return const AppEmptyState(
-              message: 'Nenhum campeonato cadastrado',
-              icon: Icons.emoji_events_outlined,
-            );
-          }
-
-          // Issue #357: largura padrão dos formulários (600px), como nas
-          // telas de cadastro de organizações/campeonatos.
-          return AppLayout.form(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      labelText: 'Buscar clube',
-                      hintText: 'Busque pelo nome fantasia',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _query.isEmpty
-                          ? null
-                          : IconButton(
-                              icon: const Icon(Icons.clear),
-                              tooltip: 'Limpar busca',
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() {
-                                  _query = '';
-                                  _selectedOrgIds.clear();
-                                });
-                              },
-                            ),
-                      border: const OutlineInputBorder(),
-                    ),
-                    onChanged: (value) => setState(() {
-                      _query = value;
-                      // A seleção pode conter clubes que saíram do filtro;
-                      // limpa para evitar seleções "fantasma".
-                      _selectedOrgIds.clear();
-                    }),
-                  ),
-                ),
-                Expanded(child: _buildClubList(effectiveComp)),
-              ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          competitions.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando campeonatos...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os campeonatos',
+              onRetry: () => ref.invalidate(competitionsProvider),
             ),
-          );
-        },
+            data: (compItems) {
+              final effectiveComp =
+                  widget.lockedCompetitionId ??
+                  selectedCompetition ??
+                  (compItems.isNotEmpty ? compItems.first.id : null);
+
+              if (effectiveComp == null) {
+                return KicksterEmptyState(
+                  icon: Icons.emoji_events_outlined,
+                  message: 'Nenhum campeonato cadastrado',
+                  description:
+                      'Crie um campeonato para associar clubes a ele.',
+                  action: KicksterButton(
+                    label: 'Criar campeonato',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/competitions/new'),
+                  ),
+                );
+              }
+
+              // Issue #357: largura padrão dos formulários (600px), como nas
+              // telas de cadastro de organizações/campeonatos.
+              return AppLayout.form(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: KicksterSearchField(
+                        controller: _searchController,
+                        onChanged: (value) => setState(() {
+                          _query = value;
+                          // A seleção pode conter clubes que saíram do filtro;
+                          // limpa para evitar seleções "fantasma".
+                          _selectedOrgIds.clear();
+                        }),
+                        hint: 'Buscar clube',
+                      ),
+                    ),
+                    _buildClubList(effectiveComp),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -280,9 +275,17 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
             // associáveis nesta tela.
             final clubs = orgs.where(_isAssociableType).toList();
             if (clubs.isEmpty) {
-              return const AppEmptyState(
-                message: 'Nenhum clube/universidade disponível',
+              return KicksterEmptyState(
                 icon: Icons.groups_outlined,
+                message: 'Nenhum clube/universidade disponível',
+                description:
+                    'Crie a organização clube/universidade para associá-la '
+                    'ao campeonato.',
+                action: KicksterButton(
+                  label: 'Criar organização',
+                  icon: Icons.add,
+                  onPressed: () => context.go('/organizations/new'),
+                ),
               );
             }
             final filtered = _filter(clubs);
@@ -301,19 +304,19 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
             return Column(
               children: [
                 if (hasSelectable) _selectionBar(competitionId, orgsById),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final club = filtered[index];
-                      return _clubCard(
-                        club,
-                        competitionId,
-                        orgIdToTeam: orgIdToTeam,
-                      );
-                    },
-                  ),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final club = filtered[index];
+                    return _clubCard(
+                      club,
+                      competitionId,
+                      orgIdToTeam: orgIdToTeam,
+                    );
+                  },
                 ),
               ],
             );
@@ -346,17 +349,12 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
                 ),
               ),
             ),
-            FilledButton(
+            KicksterButton(
+              label: 'Associar selecionados ($count)',
               onPressed: count == 0 || _submittingBatch
                   ? null
                   : () => _associateSelected(competitionId, orgsById),
-              child: _submittingBatch
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text('Associar selecionados ($count)'),
+              loading: _submittingBatch,
             ),
           ],
         ),
@@ -378,8 +376,16 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shadowColor: AppColors.black.withValues(alpha: 0.08),
+      color: AppColors.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.line, width: 1),
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             // Apenas clubes não associados são selecionáveis para o lote.
@@ -411,6 +417,7 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   if (club.city != null && club.city!.isNotEmpty) ...[
@@ -473,18 +480,20 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
         ],
       );
     }
-    return FilledButton(
-      onPressed: _submittingBatch ? null : () => _associate(club, competitionId),
-      child: const Text('Associar'),
+    return KicksterButton(
+      label: 'Associar',
+      onPressed: _submittingBatch
+          ? null
+          : () => _associate(club, competitionId),
     );
   }
 
   Widget _clubAvatar(Organization club) {
     return Container(
-      width: 44,
-      height: 44,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.12),
+        color: AppColors.primary.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(

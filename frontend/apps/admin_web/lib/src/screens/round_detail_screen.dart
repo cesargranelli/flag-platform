@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
@@ -22,19 +23,28 @@ class RoundDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: round?.name ?? 'Rodada',
-      breadcrumb: const [
-        BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
+      breadcrumb: [
+        const BreadcrumbItem('Início', route: '/'),
+        const BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
+        if (round?.name != null) BreadcrumbItem(round!.name),
       ],
-      body: roundFuture == null
-          ? _buildDetail(context, ref, round!)
-          : roundFuture.when(
-              loading: () => const AppLoading(message: 'Carregando rodada...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar a rodada',
-                onRetry: () => ref.invalidate(roundProvider(roundId!)),
-              ),
-              data: (round) => _buildDetail(context, ref, round),
-            ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Conteúdo
+          roundFuture == null
+              ? _buildDetail(context, ref, round!)
+              : roundFuture.when(
+                  loading: () =>
+                      const AppLoading(message: 'Carregando rodada...'),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar a rodada',
+                    onRetry: () => ref.invalidate(roundProvider(roundId!)),
+                  ),
+                  data: (round) => _buildDetail(context, ref, round),
+                ),
+        ],
+      ),
     );
   }
 
@@ -58,9 +68,7 @@ class RoundDetailScreen extends ConsumerWidget {
     );
     final canManage = canEdit && isDraft;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
+    return AppLayout.detail(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -84,7 +92,7 @@ class RoundDetailScreen extends ConsumerWidget {
                               '${round.number}',
                               style: const TextStyle(
                                   fontSize: 24,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w700,
                                   color: AppColors.primary),
                             ),
                           ),
@@ -97,7 +105,7 @@ class RoundDetailScreen extends ConsumerWidget {
                               Text(
                                 round.name,
                                 style: const TextStyle(
-                                    fontSize: 22, fontWeight: FontWeight.bold),
+                                    fontSize: 20, fontWeight: FontWeight.w700),
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -151,59 +159,21 @@ class RoundDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard([
-              _row('Número', '${round.number}'),
-              _row('Nome', round.name),
-              _row('Tipo', round.type.label),
-              _row('Campeonato', competitionName),
+            AppInfoCard(children: [
+              AppInfoRow(label: 'Número', value: '${round.number}'),
+              AppInfoRow(label: 'Nome', value: round.name),
+              AppInfoRow(label: 'Tipo', value: round.type.label),
+              AppInfoRow(label: 'Campeonato', value: competitionName),
             ]),
             const SizedBox(height: 16),
             Text(
-              'Criado em ${_formatDate(round.createdAt)}'
-              '${round.updatedAt != null ? ' • Atualizado em ${_formatDate(round.updatedAt)}' : ''}',
+              'Criado em ${formatBrDate(round.createdAt)}'
+              '${round.updatedAt != null ? ' • Atualizado em ${formatBrDate(round.updatedAt)}' : ''}',
               style: const TextStyle(
                   fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
-      ),
     );
-  }
-
-  Widget _infoCard(List<Widget> rows) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: rows,
-        ),
-      ),
-    );
-  }
-
-  Widget _row(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-          ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime? value) {
-    if (value == null) return '—';
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 }

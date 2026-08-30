@@ -44,53 +44,68 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
 
     return AppScreen(
       title: 'Organizações',
-      titleVariant: AppScreenTitleVariant.titleLg,
-      actions: [
-        KicksterButton(
-          label: 'Novo',
-          icon: Icons.add,
-          onPressed: () => context.go('/organizations/new'),
-        ),
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem('Organizações'),
       ],
-      body: organizations.when(
-        loading: () => const AppLoading(message: 'Carregando organizações...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar as organizações',
-          onRetry: () => showDisabled
-              ? ref.invalidate(organizationsAdminProvider(true))
-              : ref.invalidate(organizationsProvider),
-        ),
-        data: (items) {
-          if (items.isEmpty) {
-            return KicksterEmptyState(
-              icon: Icons.business,
-              message: 'Nenhuma organização cadastrada',
-              description: 'Crie a primeira organização para começar a usar.',
-              action: KicksterButton(
-                label: 'Criar organização',
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Actions
+          Row(
+            children: [
+              const Spacer(),
+              KicksterButton(
+                label: 'Novo',
                 icon: Icons.add,
                 onPressed: () => context.go('/organizations/new'),
               ),
-            );
-          }
-          final query = _query.trim().toLowerCase();
-          final filtered = items
-              .where((o) {
-                if (_typeFilter != null && o.organizationType != _typeFilter) {
-                  return false;
-                }
-                if (query.isEmpty) return true;
-                return o.tradeName.toLowerCase().contains(query) ||
-                    o.legalName.toLowerCase().contains(query);
-              })
-              .toList(growable: false);
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          organizations.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando organizações...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar as organizações',
+              onRetry: () => showDisabled
+                  ? ref.invalidate(organizationsAdminProvider(true))
+                  : ref.invalidate(organizationsProvider),
+            ),
+            data: (items) {
+              if (items.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.business,
+                  message: 'Nenhuma organização cadastrada',
+                  description:
+                      'Crie a primeira organização para começar a usar.',
+                  action: KicksterButton(
+                    label: 'Criar organização',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/organizations/new'),
+                  ),
+                );
+              }
+              final query = _query.trim().toLowerCase();
+              final filtered = items
+                  .where((o) {
+                    if (_typeFilter != null &&
+                        o.organizationType != _typeFilter) {
+                      return false;
+                    }
+                    if (query.isEmpty) return true;
+                    return o.tradeName.toLowerCase().contains(query) ||
+                        o.legalName.toLowerCase().contains(query);
+                  })
+                  .toList(growable: false);
 
-          return AppLayout.content(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Row(
+              return Column(
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       if (query.isNotEmpty)
                         Text(
@@ -108,20 +123,19 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                             color: AppColors.textSecondary,
                           ),
                         ),
-                      const Spacer(),
                       if (isAdmin)
                         Tooltip(
                           message: 'Exibir organizações desativadas',
                           child: IconButton(
                             isSelected: _showDisabled,
                             selectedIcon: const Icon(Icons.visibility),
-                            icon: const Icon(Icons.visibility_off_outlined),
+                            icon:
+                                const Icon(Icons.visibility_off_outlined),
                             tooltip: 'Desativadas',
                             onPressed: () => setState(
                                 () => _showDisabled = !_showDisabled),
                           ),
                         ),
-                      const SizedBox(width: 8),
                       SizedBox(
                         width: 260,
                         child: KicksterDropdown<OrganizationType?>(
@@ -130,7 +144,8 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                           values: [null, ...OrganizationType.values],
                           labels: [
                             'Todas as organizações',
-                            ...OrganizationType.values.map((t) => t.label),
+                            ...OrganizationType.values
+                                .map((t) => t.label),
                           ],
                           icons: [
                             null,
@@ -141,7 +156,6 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                               setState(() => _typeFilter = value),
                         ),
                       ),
-                      const SizedBox(width: 8),
                       SizedBox(
                         width: 220,
                         child: KicksterSearchField(
@@ -152,39 +166,43 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                       ),
                     ],
                   ),
-                ),
-                Expanded(
-                  child: filtered.isEmpty
-                      ? const AppEmptyState(
-                          message: 'Nenhuma organização encontrada',
-                          icon: Icons.search_off,
-                        )
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                            return GridView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: filtered.length,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: columns,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                mainAxisExtent: 96,
-                              ),
-                              itemBuilder: (context, index) {
-                                final organization = filtered[index];
-                                return _organizationCard(
-                                    context, organization);
-                              },
-                            );
+                  const SizedBox(height: 16),
+                  if (filtered.isEmpty)
+                    const AppEmptyState(
+                      message: 'Nenhuma organização encontrada',
+                      icon: Icons.search_off,
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns =
+                            constraints.maxWidth >= 600 ? 2 : 1;
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics:
+                              const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          itemCount: filtered.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: columns,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            mainAxisExtent: 96,
+                          ),
+                          itemBuilder: (context, index) {
+                            final organization = filtered[index];
+                            return _organizationCard(
+                                context, organization);
                           },
-                        ),
-                ),
-              ],
-            ),
-          );
-        },
+                        );
+                      },
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -241,17 +259,9 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   }
 
   Widget _disabledBadge() {
-    return Container(
-      margin: const EdgeInsets.only(right: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.danger.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: const Text(
-        'Desativada',
-        style: TextStyle(fontSize: 12, color: AppColors.danger),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: KicksterBadge(label: 'Desativada', color: AppColors.danger),
     );
   }
 

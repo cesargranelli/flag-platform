@@ -10,7 +10,11 @@ import '../widgets/app_screen.dart';
 
 /// Formulário de criação de time (clube inscrito em um campeonato).
 class TeamCreateScreen extends ConsumerStatefulWidget {
-  const TeamCreateScreen({super.key});
+  const TeamCreateScreen({super.key, this.competitionId});
+
+  /// Campeonato vindo da listagem (via extra da rota) — evita perder o
+  /// contexto ao abrir "Novo time" (B5 #457).
+  final String? competitionId;
 
   @override
   ConsumerState<TeamCreateScreen> createState() => _TeamCreateScreenState();
@@ -37,6 +41,7 @@ class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
     _shortName = TextEditingController();
     _document = TextEditingController();
     _logoUrl = TextEditingController();
+    _competitionId = widget.competitionId;
   }
 
   @override
@@ -74,7 +79,7 @@ class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
         documentType: _documentType,
         logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
       );
-      ref.invalidate(teamsProvider);
+      ref.invalidate(teamsProvider(_competitionId ?? ''));
       if (mounted) {
         context.pop();
       }
@@ -110,11 +115,14 @@ class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
     return AppScreen(
       title: 'Novo time',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.teams, route: '/teams'),
+        BreadcrumbItem('Novo'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -236,7 +244,7 @@ class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                      color: AppColors.danger,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -252,6 +260,7 @@ class _TeamCreateScreenState extends ConsumerState<TeamCreateScreen> {
             ),
           ),
         ),
+      ],
       ),
     );
   }

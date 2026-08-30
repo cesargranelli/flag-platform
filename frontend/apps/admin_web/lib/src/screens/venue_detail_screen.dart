@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 
 /// Detalhe de um campo de jogo: apresenta os dados e oferece a edição.
@@ -26,19 +27,28 @@ class VenueDetailScreen extends ConsumerWidget {
 
     return AppScreen(
       title: venue?.name ?? 'Campo',
-      breadcrumb: const [
-        BreadcrumbItem(AppStrings.venues, route: '/venues'),
+      breadcrumb: [
+        const BreadcrumbItem('Início', route: '/'),
+        const BreadcrumbItem(AppStrings.venues, route: '/venues'),
+        if (venue?.name != null) BreadcrumbItem(venue!.name),
       ],
-      body: venueFuture == null
-          ? _buildDetail(context, ref, venue!)
-          : venueFuture.when(
-              loading: () => const AppLoading(message: 'Carregando campo...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar o campo',
-                onRetry: () => ref.invalidate(venueProvider(venueId!)),
-              ),
-              data: (venue) => _buildDetail(context, ref, venue),
-            ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Conteúdo
+          venueFuture == null
+              ? _buildDetail(context, ref, venue!)
+              : venueFuture.when(
+                  loading: () =>
+                      const AppLoading(message: 'Carregando campo...'),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar o campo',
+                    onRetry: () => ref.invalidate(venueProvider(venueId!)),
+                  ),
+                  data: (venue) => _buildDetail(context, ref, venue),
+                ),
+        ],
+      ),
     );
   }
 
@@ -50,9 +60,7 @@ class VenueDetailScreen extends ConsumerWidget {
             .firstOrNull ??
         '';
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
+    return AppLayout.detail(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -82,7 +90,7 @@ class VenueDetailScreen extends ConsumerWidget {
                               Text(
                                 venue.name,
                                 style: const TextStyle(
-                                    fontSize: 22, fontWeight: FontWeight.bold),
+                                    fontSize: 20, fontWeight: FontWeight.w700),
                               ),
                               const SizedBox(height: 4),
                               if (orgName.isNotEmpty)
@@ -111,11 +119,15 @@ class VenueDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard([
-              if (orgName.isNotEmpty) _row('Organização', orgName),
-              _row('Endereço', venue.address?.isNotEmpty == true ? venue.address! : '—'),
+            AppInfoCard(children: [
+              if (orgName.isNotEmpty)
+                AppInfoRow(label: 'Organização', value: orgName),
+              AppInfoRow(
+                label: 'Endereço',
+                value: venue.address?.isNotEmpty == true ? venue.address! : '—',
+              ),
               if (venue.mapsUrl != null && venue.mapsUrl!.isNotEmpty)
-                _row('URL do mapa', venue.mapsUrl!),
+                AppInfoRow(label: 'URL do mapa', value: venue.mapsUrl!),
             ]),
             if (venue.mapsUrl != null && venue.mapsUrl!.isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -128,14 +140,13 @@ class VenueDetailScreen extends ConsumerWidget {
             ],
             const SizedBox(height: 16),
             Text(
-              'Criado em ${_formatDate(venue.createdAt)}'
-              '${venue.updatedAt != null ? ' • Atualizado em ${_formatDate(venue.updatedAt)}' : ''}',
+              'Criado em ${formatBrDate(venue.createdAt)}'
+              '${venue.updatedAt != null ? ' • Atualizado em ${formatBrDate(venue.updatedAt)}' : ''}',
               style: const TextStyle(
                   fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
-      ),
     );
   }
 
@@ -155,42 +166,5 @@ class VenueDetailScreen extends ConsumerWidget {
         const SnackBar(content: Text('Não foi possível abrir o mapa')),
       );
     }
-  }
-
-  Widget _infoCard(List<Widget> rows) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: rows,
-        ),
-      ),
-    );
-  }
-
-  Widget _row(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-          ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime? value) {
-    if (value == null) return '—';
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 }

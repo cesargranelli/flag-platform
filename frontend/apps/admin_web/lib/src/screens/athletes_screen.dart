@@ -31,51 +31,62 @@ class _AthletesScreenState extends ConsumerState<AthletesScreen> {
 
     return AppScreen(
       title: 'Atletas',
-      titleVariant: AppScreenTitleVariant.titleLg,
-      actions: [
-        IconButton(
-          tooltip: 'Importar CSV',
-          icon: const Icon(Icons.upload_file),
-          onPressed: () => context.push('/athletes/import'),
-        ),
-        KicksterButton(
-          label: 'Novo',
-          icon: Icons.add,
-          onPressed: () => context.go('/athletes/new'),
-        ),
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem('Atletas'),
       ],
-      body: athletes.when(
-        loading: () => const AppLoading(message: 'Carregando atletas...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os atletas',
-          onRetry: () => ref.invalidate(athletesProvider),
-        ),
-        data: (items) {
-          if (items.isEmpty) {
-            return KicksterEmptyState(
-              icon: Icons.person_outline,
-              message: 'Nenhum atleta cadastrado',
-              description: 'Crie o primeiro atleta para começar a usar.',
-              action: KicksterButton(
-                label: 'Criar atleta',
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Actions
+          Row(
+            children: [
+              const Spacer(),
+              KicksterButton(
+                label: 'Importar',
+                icon: Icons.upload_file,
+                variant: KicksterButtonVariant.outline,
+                onPressed: () => context.push('/athletes/import'),
+              ),
+              const SizedBox(width: 8),
+              KicksterButton(
+                label: 'Novo',
                 icon: Icons.add,
                 onPressed: () => context.go('/athletes/new'),
               ),
-            );
-          }
-          final query = _query.trim().toLowerCase();
-          final filtered = query.isEmpty
-              ? items
-              : items
-                  .where((a) => a.name.toLowerCase().contains(query))
-                  .toList(growable: false);
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          athletes.when(
+            loading: () => const AppLoading(message: 'Carregando atletas...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os atletas',
+              onRetry: () => ref.invalidate(athletesProvider),
+            ),
+            data: (items) {
+              if (items.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.person_outline,
+                  message: 'Nenhum atleta cadastrado',
+                  description: 'Crie o primeiro atleta para começar a usar.',
+                  action: KicksterButton(
+                    label: 'Criar atleta',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/athletes/new'),
+                  ),
+                );
+              }
+              final query = _query.trim().toLowerCase();
+              final filtered = query.isEmpty
+                  ? items
+                  : items
+                      .where((a) => a.name.toLowerCase().contains(query))
+                      .toList(growable: false);
 
-          return AppLayout.content(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Row(
+              return Column(
+                children: [
+                  Row(
                     children: [
                       if (query.isNotEmpty)
                         Text(
@@ -104,38 +115,41 @@ class _AthletesScreenState extends ConsumerState<AthletesScreen> {
                       ),
                     ],
                   ),
-                ),
-                Expanded(
-                  child: filtered.isEmpty
-                      ? const AppEmptyState(
-                          message: 'Nenhum atleta encontrado',
-                          icon: Icons.search_off,
-                        )
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                            return GridView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: filtered.length,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: columns,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                mainAxisExtent: 96,
-                              ),
-                              itemBuilder: (context, index) {
-                                final athlete = filtered[index];
-                                return _athleteCard(context, athlete);
-                              },
-                            );
+                  const SizedBox(height: 16),
+                  if (filtered.isEmpty)
+                    const AppEmptyState(
+                      message: 'Nenhum atleta encontrado',
+                      icon: Icons.search_off,
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns =
+                            constraints.maxWidth >= 600 ? 2 : 1;
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          itemCount: filtered.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: columns,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            mainAxisExtent: 96,
+                          ),
+                          itemBuilder: (context, index) {
+                            final athlete = filtered[index];
+                            return _athleteCard(context, athlete);
                           },
-                        ),
-                ),
-              ],
-            ),
-          );
-        },
+                        );
+                      },
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }

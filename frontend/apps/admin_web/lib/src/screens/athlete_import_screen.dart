@@ -34,7 +34,8 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
 
   void _downloadTemplate() {
     // Mostra o formato num dialog para o usuário copiar.
-    showDialog(      context: context,
+    showDialog(
+      context: context,
       builder: (context) => AlertDialog(
         title: const Text('Modelo CSV'),
         content: const Text(
@@ -44,9 +45,10 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
           'Colunas: nome (obrigatório), apelido, posicao, numero, foto.',
         ),
         actions: [
-          TextButton(
+          KicksterButton(
+            label: 'Fechar',
+            variant: KicksterButtonVariant.text,
             onPressed: () => Navigator.pop(context),
-            child: const Text('Fechar'),
           ),
         ],
       ),
@@ -80,8 +82,9 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
         return;
       }
       if (parsed.length > _maxLines) {
-        setState(() =>
-            _errorMessage = 'Máximo de $_maxLines linhas por arquivo.');
+        setState(
+          () => _errorMessage = 'Máximo de $_maxLines linhas por arquivo.',
+        );
         return;
       }
       setState(() => _parsed = parsed);
@@ -197,8 +200,9 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
       _errorMessage = null;
     });
     try {
-      final result =
-          await ref.read(athleteApiProvider).createBatch(_toBatchItems(parsed));
+      final result = await ref
+          .read(athleteApiProvider)
+          .createBatch(_toBatchItems(parsed));
       ref.invalidate(athletesProvider);
       if (mounted) setState(() => _result = result);
     } on RepositoryException catch (e) {
@@ -220,88 +224,85 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
     return AppScreen(
       title: 'Importar atletas',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
+        BreadcrumbItem('Importar'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (result == null) ...[
-                Text(
-                  'Importe vários atletas de uma vez a partir de um arquivo CSV/TXT.',
-                  style: const TextStyle(
-                      fontSize: 14, color: AppColors.textSecondary),
+      body: AppLayout.form(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (result == null) ...[
+              Text(
+                'Importe vários atletas de uma vez a partir de um arquivo CSV/TXT.',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
                 ),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: _downloadTemplate,
-                  icon: const Icon(Icons.download_outlined),
-                  label: const Text('Ver modelo CSV'),
+              ),
+              const SizedBox(height: 16),
+              KicksterButton(
+                label: 'Ver modelo CSV',
+                onPressed: _downloadTemplate,
+                variant: KicksterButtonVariant.outline,
+                icon: Icons.download_outlined,
+              ),
+              const SizedBox(height: 12),
+              KicksterButton(
+                label: 'Selecionar arquivo',
+                onPressed: _pickFile,
+                icon: Icons.upload_file,
+              ),
+              const SizedBox(height: 16),
+              if (_parsed != null) ...[
+                Text(
+                  '${_parsed!.length} ${_parsed!.length == 1 ? 'linha' : 'linhas'} lidas. Clique em validar para pré-visualizar.',
+                  style: const TextStyle(fontSize: 13),
                 ),
                 const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: _pickFile,
-                  icon: const Icon(Icons.upload_file),
-                  label: const Text('Selecionar arquivo'),
-                ),
-                const SizedBox(height: 16),
-                if (_parsed != null) ...[
-                  Text(
-                    '${_parsed!.length} ${_parsed!.length == 1 ? 'linha' : 'linhas'} lidas. Clique em validar para pré-visualizar.',
-                    style: const TextStyle(fontSize: 13),
+                if (_validating)
+                  const Center(child: CircularProgressIndicator())
+                else if (validation == null)
+                  KicksterButton(
+                    label: 'Validar e pré-visualizar',
+                    onPressed: _validate,
                   ),
-                  const SizedBox(height: 12),
-                  if (_validating)
-                    const Center(child: CircularProgressIndicator())
-                  else if (validation == null)
-                    FilledButton(
-                      onPressed: _validate,
-                      child: const Text('Validar e pré-visualizar'),
-                    ),
-                ],
-                if (validation != null) ...[
-                  const SizedBox(height: 12),
-                  _validationSummary(validation),
-                  const SizedBox(height: 16),
-                  _validationTable(validation),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: validation.valid == 0
-                        ? null
-                        : (_importing ? null : _import),
-                    child: _importing
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(
-                            'Importar ${validation.valid} '
-                            '${validation.valid == 1 ? 'atleta' : 'atletas'}'),
-                  ),
-                ],
-              ] else ...[
-                _resultSummary(result),
-                const SizedBox(height: 16),
-                _resultTable(result),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () => context.go('/athletes'),
-                  icon: const Icon(Icons.check),
-                  label: const Text('Concluir'),
-                ),
               ],
-              if (_errorMessage != null) ...[
+              if (validation != null) ...[
                 const SizedBox(height: 12),
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: AppColors.danger),
+                _validationSummary(validation),
+                const SizedBox(height: 16),
+                _validationTable(validation),
+                const SizedBox(height: 16),
+                KicksterButton(
+                  label:
+                      'Importar ${validation.valid} '
+                      '${validation.valid == 1 ? 'atleta' : 'atletas'}',
+                  onPressed: validation.valid == 0
+                      ? null
+                      : (_importing ? null : _import),
+                  loading: _importing,
                 ),
               ],
+            ] else ...[
+              _resultSummary(result),
+              const SizedBox(height: 16),
+              _resultTable(result),
+              const SizedBox(height: 24),
+              KicksterButton(
+                label: 'Concluir',
+                onPressed: () => context.go('/athletes'),
+                icon: Icons.check,
+              ),
             ],
-          ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: AppColors.danger),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -312,9 +313,18 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        _chip('${validation.valid} válidos', AppColors.success),
-        _chip('${validation.invalid} inválidos', AppColors.danger),
-        _chip('${validation.duplicates} duplicados', AppColors.warning),
+        KicksterBadge(
+          label: '${validation.valid} válidos',
+          color: AppColors.success,
+        ),
+        KicksterBadge(
+          label: '${validation.invalid} inválidos',
+          color: AppColors.danger,
+        ),
+        KicksterBadge(
+          label: '${validation.duplicates} duplicados',
+          color: AppColors.warning,
+        ),
       ],
     );
   }
@@ -324,42 +334,35 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
       spacing: 8,
       runSpacing: 8,
       children: [
-        _chip('${result.imported} importados', AppColors.success),
-        _chip('${result.skipped} ignorados', AppColors.warning),
+        KicksterBadge(
+          label: '${result.imported} importados',
+          color: AppColors.success,
+        ),
+        KicksterBadge(
+          label: '${result.skipped} ignorados',
+          color: AppColors.warning,
+        ),
       ],
     );
   }
 
-  Widget _chip(String text, Color color) {
-    // Amarelo `warning` (#FACC15) é claro demais para texto na própria cor
-    // sobre o fundo @12%: usa texto escuro (issue #431 — contraste).
-    final textColor =
-        color == AppColors.warning ? AppColors.textPrimary : color;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(fontSize: 13, color: textColor),
-      ),
-    );
-  }
-
   Widget _validationTable(AthleteBatchResult validation) {
-    final validLines =
-        validation.lines.where((l) => l.status == 'VALID').toList();
+    final validLines = validation.lines
+        .where((l) => l.status == 'VALID')
+        .toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Pré-visualização (linhas válidas)',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text(
+          'Pré-visualização (linhas válidas)',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 8),
         if (validLines.isEmpty)
-          const Text('Nenhuma linha válida',
-              style: TextStyle(color: AppColors.textSecondary))
+          const Text(
+            'Nenhuma linha válida',
+            style: TextStyle(color: AppColors.textSecondary),
+          )
         else
           for (final line in validLines.take(15))
             Padding(
@@ -377,8 +380,10 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Resultado por linha',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text(
+          'Resultado por linha',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 8),
         for (final line in result.lines)
           Padding(
@@ -394,10 +399,10 @@ class _AthleteImportScreenState extends ConsumerState<AthleteImportScreen> {
   }
 
   String _statusLabel(String status) => switch (status) {
-        'IMPORTED' => 'Importado',
-        'VALID' => 'Válido',
-        'INVALID' => 'Inválido',
-        'DUPLICATE' => 'Duplicado',
-        _ => status,
-      };
+    'IMPORTED' => 'Importado',
+    'VALID' => 'Válido',
+    'INVALID' => 'Inválido',
+    'DUPLICATE' => 'Duplicado',
+    _ => status,
+  };
 }

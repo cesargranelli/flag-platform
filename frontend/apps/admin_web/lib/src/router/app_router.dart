@@ -110,9 +110,10 @@ class AppRouter {
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
               ),
               const SizedBox(height: 24),
-              OutlinedButton(
+              KicksterButton(
+                label: 'Voltar ao início',
+                variant: KicksterButtonVariant.outline,
                 onPressed: () => context.go('/'),
-                child: const Text('Voltar ao início'),
               ),
             ],
           ),
@@ -256,7 +257,11 @@ class AppRouter {
                     GoRoute(
                       path: 'new',
                       name: 'roundNew',
-                      builder: (context, state) => RoundFormScreen(),
+                      builder: (context, state) => RoundFormScreen(
+                        competitionId: state.extra is String
+                            ? state.extra as String
+                            : null,
+                      ),
                     ),
                     GoRoute(
                       path: ':id',
@@ -305,11 +310,16 @@ class AppRouter {
                     GoRoute(
                       path: 'import',
                       name: 'gameImport',
-                      builder: (context, state) => GameImportScreen(
-                        roundId: state.extra is String
-                            ? state.extra as String
-                            : '',
-                      ),
+                      builder: (context, state) {
+                        final extra = state.extra;
+                        final args = extra is GameImportArgs ? extra : null;
+                        return GameImportScreen(
+                          roundId:
+                              args?.roundId ??
+                              (extra is String ? extra : null),
+                          competitionId: args?.competitionId,
+                        );
+                      },
                     ),
                     GoRoute(
                       path: ':id',
@@ -317,7 +327,6 @@ class AppRouter {
                       builder: (context, state) => GameDetailScreen(
                         gameId: state.pathParameters['id'],
                         game: state.extra is Game ? state.extra as Game : null,
-                        args: null,
                       ),
                       routes: [
                         GoRoute(
@@ -386,20 +395,28 @@ class AppRouter {
                 GoRoute(
                   path: '/teams',
                   name: 'teams',
-                  builder: (context, state) =>
-                      TeamsScreen(lockedCompetitionId: state.extra as String?),
+                  builder: (context, state) => TeamsScreen(
+                      lockedCompetitionId: state.extra is String
+                          ? state.extra as String
+                          : null),
                   routes: [
                     GoRoute(
                       path: 'associate',
                       name: 'teamAssociate',
                       builder: (context, state) => AssociateClubsScreen(
-                        lockedCompetitionId: state.extra as String?,
+                        lockedCompetitionId: state.extra is String
+                            ? state.extra as String
+                            : null,
                       ),
                     ),
                     GoRoute(
                       path: 'new',
                       name: 'teamNew',
-                      builder: (context, state) => const TeamCreateScreen(),
+                      builder: (context, state) => TeamCreateScreen(
+                        competitionId: state.extra is String
+                            ? state.extra as String
+                            : null,
+                      ),
                     ),
                     GoRoute(
                       path: ':id',
@@ -510,7 +527,7 @@ class AppRouter {
                       builder: (context, state) => RosterImportScreen(
                         teamId: state.extra is String
                             ? state.extra as String
-                            : '',
+                            : null,
                       ),
                     ),
                   ],

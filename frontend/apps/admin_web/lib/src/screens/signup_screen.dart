@@ -52,11 +52,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             email: email,
             password: _passwordController.text,
           );
-      setState(() => _created = true);
+      if (mounted) setState(() => _created = true);
     } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
+      if (mounted) setState(() => _errorMessage = e.message);
     } catch (_) {
-      setState(() => _errorMessage = AppStrings.loginConnectionError);
+      if (mounted) setState(() => _errorMessage = AppStrings.loginConnectionError);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -101,7 +101,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 24,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 12),
@@ -136,7 +136,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 'Flag Platform',
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 17,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.3,
                 ),
@@ -220,7 +220,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               _errorMessage!,
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: Theme.of(context).colorScheme.error, fontSize: 14),
+                  color: AppColors.danger, fontSize: 14),
             ),
           ],
           const SizedBox(height: 24),

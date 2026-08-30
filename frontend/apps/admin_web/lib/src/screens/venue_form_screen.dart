@@ -113,14 +113,17 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
     return AppScreen(
       title: _isEditing ? 'Editar campo' : 'Novo campo',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.venues, route: '/venues'),
+        BreadcrumbItem('Formulário'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
-          child: Form(
-            key: _formKey,
-            child: Column(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppLayout.form(
+        child: Form(
+          key: _formKey,
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 organizations.when(
@@ -179,7 +182,7 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
                   const SizedBox(height: 8),
                   Text(
                     _errorMessage!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(color: AppColors.danger),
                   ),
                 ],
                 const SizedBox(height: 24),
@@ -193,6 +196,7 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
             ),
           ),
         ),
+      ],
       ),
     );
   }

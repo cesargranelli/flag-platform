@@ -93,7 +93,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   void _markDirty() {
-    if (_saved) return;
+    if (_saved || _hasChanges) return;
     setState(() => _hasChanges = true);
   }
 
@@ -194,8 +194,10 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         danger: true,
       );
       if (discard != true) return;
+      if (!mounted) return;
       _saved = true;
     }
+    if (!mounted) return;
     _goBack();
   }
 
@@ -209,96 +211,95 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       child: AppScreen(
         title: 'Nova organização',
         breadcrumb: const [
+          BreadcrumbItem('Início', route: '/'),
           BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
+          BreadcrumbItem('Nova'),
         ],
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: AppLayout.form(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_errorMessage != null) _errorBanner(_errorMessage!),
-                  _section('Dados básicos', Icons.business_outlined, [
-                    _field('Nome fantasia', _tradeName,
-                        hint: 'Informe o nome fantasia',
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Informe o nome fantasia'
-                            : null),
-                    const SizedBox(height: 12),
-                    _field('Razão social', _legalName,
-                        hint: 'Informe a razão social',
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Informe a razão social'
-                            : null),
-                    const SizedBox(height: 12),
-                    _field('Sigla (opcional)', _abbreviation),
-                    const SizedBox(height: 12),
-                    _typeDropdown(),
-                    const SizedBox(height: 12),
-                    _documentField(),
-                  ]),
-                  _section('Presidente', Icons.person_outline, [
-                    _field('Nome do presidente', _presidentName,
-                        hint: 'Informe o nome do presidente',
-                        validator: (v) => (v == null || v.trim().isEmpty)
-                            ? 'Informe o nome do presidente'
-                            : null),
-                    const SizedBox(height: 12),
-                    _presidentCpfField(),
-                  ]),
-                  _section('Contato', Icons.contact_mail_outlined, [
-                    _emailField(),
-                    const SizedBox(height: 12),
-                    _phoneField(),
-                    const SizedBox(height: 12),
-                    _websiteField(),
-                    const SizedBox(height: 12),
-                    _instagramField(),
-                  ]),
-                  _section('Localização', Icons.location_on_outlined, [
-                    _countryDropdown(),
-                    const SizedBox(height: 12),
-                    if (_country == 'BR')
-                      _stateDropdown()
-                    else
-                      _field('Estado (opcional)', _state),
-                    const SizedBox(height: 12),
-                    _field('Cidade (opcional)', _city),
-                  ]),
-                  _section('Identidade', Icons.palette_outlined, [
-                    _brandPreview(),
-                    const SizedBox(height: 16),
-                    _logoField(),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _colorField('Cor primária (opcional)', _primaryColor),
-                        const SizedBox(width: 12),
-                        _colorField('Cor secundária (opcional)', _secondaryColor),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _colorField('Cor terciária (opcional)', _tertiaryColor),
-                        const SizedBox(width: 12),
-                        _colorField('Cor quaternária (opcional)', _quaternaryColor),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _localeDropdown(),
-                  ]),
-                  const SizedBox(height: 8),
-                  KicksterButton(
-                    label: 'Criar organização',
-                    icon: Icons.check,
-                    loading: _submitting,
-                    onPressed: _submitting ? null : _save,
+        body: AppLayout.form(
+          child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_errorMessage != null) _errorBanner(_errorMessage!),
+                    _section('Dados básicos', Icons.business_outlined, [
+                      _field('Nome fantasia', _tradeName,
+                          hint: 'Informe o nome fantasia',
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Informe o nome fantasia'
+                              : null),
+                      const SizedBox(height: 12),
+                      _field('Razão social', _legalName,
+                          hint: 'Informe a razão social',
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Informe a razão social'
+                              : null),
+                      const SizedBox(height: 12),
+                      _field('Sigla (opcional)', _abbreviation),
+                  const SizedBox(height: 12),
+                  _typeDropdown(),
+                  const SizedBox(height: 12),
+                  _documentField(),
+                ]),
+                _section('Presidente', Icons.person_outline, [
+                  _field('Nome do presidente', _presidentName,
+                      hint: 'Informe o nome do presidente',
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Informe o nome do presidente'
+                          : null),
+                  const SizedBox(height: 12),
+                  _presidentCpfField(),
+                ]),
+                _section('Contato', Icons.contact_mail_outlined, [
+                  _emailField(),
+                  const SizedBox(height: 12),
+                  _phoneField(),
+                  const SizedBox(height: 12),
+                  _websiteField(),
+                  const SizedBox(height: 12),
+                  _instagramField(),
+                ]),
+                _section('Localização', Icons.location_on_outlined, [
+                  _countryDropdown(),
+                  const SizedBox(height: 12),
+                  if (_country == 'BR')
+                    _stateDropdown()
+                  else
+                    _field('Estado (opcional)', _state),
+                  const SizedBox(height: 12),
+                  _field('Cidade (opcional)', _city),
+                ]),
+                _section('Identidade', Icons.palette_outlined, [
+                  _brandPreview(),
+                  const SizedBox(height: 16),
+                  _logoField(),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _colorField('Cor primária (opcional)', _primaryColor),
+                      const SizedBox(width: 12),
+                      _colorField('Cor secundária (opcional)', _secondaryColor),
+                    ],
                   ),
-                ],
-              ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _colorField('Cor terciária (opcional)', _tertiaryColor),
+                      const SizedBox(width: 12),
+                      _colorField('Cor quaternária (opcional)', _quaternaryColor),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _localeDropdown(),
+                ]),
+                const SizedBox(height: 8),
+                KicksterButton(
+                  label: 'Criar organização',
+                  icon: Icons.check,
+                  loading: _submitting,
+                  onPressed: _submitting ? null : _save,
+                ),
+              ],
             ),
           ),
         ),
@@ -315,7 +316,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.danger),
       ),
-      child: Row(
+        child: Row(
         children: [
           const Icon(Icons.error_outline, color: AppColors.danger),
           const SizedBox(width: 8),
@@ -356,7 +357,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                 title,
                 style: const TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -590,7 +591,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
             decoration: BoxDecoration(
               color: _parseHex(controller.text) ?? AppColors.primary,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.black26),
+              border: Border.all(color: AppColors.line),
             ),
           ),
         ),
@@ -625,7 +626,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
           'Prévia da marca',
           style: TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
             color: AppColors.textSecondary,
           ),
         ),
@@ -670,7 +671,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
                     ),
@@ -884,14 +885,12 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
+            KicksterInput(
+              label: 'Código hex',
               controller: _hex,
-              decoration: const InputDecoration(
-                labelText: 'Código hex',
-                hintText: 'FD6B22',
-                prefixText: '#',
-                suffixIcon: Icon(Icons.circle, color: Colors.black26),
-              ),
+              hintText: 'FD6B22',
+              prefix: const Text('#'),
+              suffixIcon: const Icon(Icons.circle, color: AppColors.line),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9a-fA-F]')),
                 LengthLimitingTextInputFormatter(6),
@@ -944,16 +943,17 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        KicksterButton(
+          label: 'Cancelar',
+          variant: KicksterButtonVariant.text,
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
         ),
-        FilledButton(
+        KicksterButton(
+          label: 'Aplicar',
           onPressed: () {
             final hex = _hex.text.trim();
             Navigator.pop(context, '#${hex.toUpperCase()}');
           },
-          child: const Text('Aplicar'),
         ),
       ],
     );

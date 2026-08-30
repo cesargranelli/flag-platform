@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/selectable_card.dart';
 
@@ -90,6 +91,22 @@ class _CompetitionEditScreenState
     ]) {
       controller.addListener(_markDirty);
     }
+
+    // Hidratação do formulário no ciclo do provider (B4 #457): em vez de
+    // mutar controllers dentro do `build` (side-effect que re-hidrataria a
+    // cada refetch), escuta o provider e aplica UMA vez (guard `_appliedRemote`).
+    final competitionId = widget.competitionId;
+    if (competitionId != null) {
+      ref.listen<AsyncValue<Competition>>(
+        competitionProvider(competitionId),
+        (prev, next) {
+          final value = next.valueOrNull;
+          if (value != null && !_appliedRemote) {
+            _applyCompetition(value);
+          }
+        },
+      );
+    }
   }
 
   void _markDirty() {
@@ -102,8 +119,8 @@ class _CompetitionEditScreenState
     _name.text = competition.name;
     _description.text = competition.description ?? '';
     _organizationId.text = competition.organizationId ?? '';
-    _startDate.text = _formatDate(competition.startDate);
-    _endDate.text = _formatDate(competition.endDate);
+    _startDate.text = formatIsoDate(competition.startDate);
+    _endDate.text = formatIsoDate(competition.endDate);
     _modality = competition.modality;
     _gender = competition.gender == null
         ? null
@@ -132,10 +149,6 @@ class _CompetitionEditScreenState
     }
     super.dispose();
   }
-
-  String _formatDate(DateTime? date) => date == null
-      ? ''
-      : '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
   void _selectModality(Modality value) {
     setState(() {
@@ -178,7 +191,7 @@ class _CompetitionEditScreenState
       lastDate: DateTime(2100),
     );
     if (picked != null && mounted) {
-      controller.text = _formatDate(picked);
+      controller.text = formatIsoDate(picked);
     }
   }
 
@@ -328,65 +341,71 @@ class _CompetitionEditScreenState
 
   @override
   Widget build(BuildContext context) {
-    if (!_appliedRemote) {
-      final asyncComp = ref.watch(competitionProvider(widget.competitionId!));
-      return asyncComp.when(
-        loading: () => AppScreen(
-          title: 'Editar campeonato',
-          breadcrumb: const [
-            BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
-          ],
-          body: const AppLoading(message: 'Carregando campeonato...'),
+    final asyncComp = ref.watch(competitionProvider(widget.competitionId!));
+    return asyncComp.when(
+      loading: () => AppScreen(
+        title: 'Editar campeonato',
+        breadcrumb: [
+          const BreadcrumbItem('Início', route: '/'),
+          const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+          if (widget.competition?.name != null)
+            BreadcrumbItem(widget.competition!.name),
+        ],
+        body: const AppLoading(message: 'Carregando campeonato...'),
+      ),
+      error: (error, stackTrace) => AppScreen(
+        title: 'Editar campeonato',
+        breadcrumb: [
+          const BreadcrumbItem('Início', route: '/'),
+          const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+          if (widget.competition?.name != null)
+            BreadcrumbItem(widget.competition!.name),
+        ],
+        body: AppErrorState(
+          message: 'Não foi possível carregar o campeonato',
+          onRetry: () =>
+              ref.invalidate(competitionProvider(widget.competitionId!)),
         ),
-        error: (error, stackTrace) => AppScreen(
-          title: 'Editar campeonato',
-          breadcrumb: const [
-            BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
-          ],
-          body: AppErrorState(
-            message: 'Não foi possível carregar o campeonato',
-            onRetry: () =>
-                ref.invalidate(competitionProvider(widget.competitionId!)),
-          ),
-        ),
-        data: (competition) {
-          // Issue #261: sem permissão (criador/ADMIN), estado informativo.
-          final user = ref.watch(authControllerProvider).state.user;
-          if (!canEditCompetition(user, competition)) {
-            return AppScreen(
-              title: 'Editar campeonato',
-              breadcrumb: const [
-                BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
-              ],
-              body: const AppEmptyState(
-                message: 'Você não tem permissão para editar este campeonato.',
-                icon: Icons.lock_outline,
-              ),
-            );
-          }
-          // Issue #257 (M4): apenas RASCUNHO é editável.
-          if (competition.status != CompetitionStatus.draft) {
-            return AppScreen(
-              title: 'Editar campeonato',
-              breadcrumb: const [
-                BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
-              ],
-              body: AppEmptyState(
-                message: competition.status == CompetitionStatus.published
-                    ? 'Campeonato publicado — não é mais editável.'
-                    : 'Campeonato '
-                           '${_statusLabel(competition.status).toLowerCase()} — '
-                           'não é mais editável.',
-                icon: Icons.lock,
-              ),
-            );
-          }
-          _applyCompetition(competition);
-          return _buildEditable(context);
-        },
-      );
-    }
-    return _buildEditable(context);
+      ),
+      data: (competition) {
+        // Issue #261: sem permissão (criador/ADMIN), estado informativo.
+        final user = ref.watch(authControllerProvider).state.user;
+        if (!canEditCompetition(user, competition)) {
+          return AppScreen(
+            title: 'Editar campeonato',
+            breadcrumb: [
+              const BreadcrumbItem('Início', route: '/'),
+              const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+              BreadcrumbItem(competition.name),
+            ],
+            body: const AppEmptyState(
+              message: 'Você não tem permissão para editar este campeonato.',
+              icon: Icons.lock_outline,
+            ),
+          );
+        }
+        // Issue #257 (M4): apenas RASCUNHO é editável.
+        if (competition.status != CompetitionStatus.draft) {
+          return AppScreen(
+            title: 'Editar campeonato',
+            breadcrumb: [
+              const BreadcrumbItem('Início', route: '/'),
+              const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+              BreadcrumbItem(competition.name),
+            ],
+            body: AppEmptyState(
+              message: competition.status == CompetitionStatus.published
+                  ? 'Campeonato publicado — não é mais editável.'
+                  : 'Campeonato '
+                         '${_statusLabel(competition.status).toLowerCase()} — '
+                         'não é mais editável.',
+              icon: Icons.lock,
+            ),
+          );
+        }
+        return _buildEditable(context);
+      },
+    );
   }
 
   Widget _buildEditable(BuildContext context) {
@@ -397,102 +416,94 @@ class _CompetitionEditScreenState
       },
       child: AppScreen(
         title: 'Editar campeonato',
-        breadcrumb: const [
-          BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+        breadcrumb: [
+          const BreadcrumbItem('Início', route: '/'),
+          const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+          if (_name.text.isNotEmpty) BreadcrumbItem(_name.text),
         ],
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: AppLayout.form(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Faixa de estado do status (issue #287): chip + Publicar.
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.grayFill.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.grayFill),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppLayout.form(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Faixa de estado do status (issue #287): chip + Publicar.
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.grayFill.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.grayFill),
+                      ),
+                      child: Row(
+                        children: [
+                          _statusChip(_status),
+                          const Spacer(),
+                          KicksterButton(
+                            label: 'Publicar',
+                            icon: Icons.publish_outlined,
+                            variant: KicksterButtonVariant.outline,
+                            onPressed: _submitting ? null : _publish,
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        _statusChip(_status),
-                        const Spacer(),
-                        KicksterButton(
-                          label: 'Publicar',
-                          icon: Icons.publish_outlined,
-                          variant: KicksterButtonVariant.outline,
-                          onPressed: _submitting ? null : _publish,
-                        ),
-                      ],
+                    const SizedBox(height: 20),
+                    if (_errorMessage != null) _errorBanner(_errorMessage!),
+                    _section(
+                      title: 'Campeonato',
+                      icon: Icons.emoji_events_outlined,
+                      child: _identityStep(context),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  if (_errorMessage != null) _errorBanner(_errorMessage!),
-                  _section(
-                    title: 'Campeonato',
-                    icon: Icons.emoji_events_outlined,
-                    child: _identityStep(context),
-                  ),
-                  _section(
-                    title: 'Modalidade',
-                    icon: Icons.sports_football_outlined,
-                    child: _modalityStep(context),
-                  ),
-                  _section(
-                    title: 'Categoria',
-                    icon: Icons.groups_outlined,
-                    child: _categoryStep(context),
-                  ),
-                  _section(
-                    title: 'Temporada',
-                    icon: Icons.date_range,
-                    child: _seasonStep(context),
-                  ),
-                  _section(
-                    title: 'Conferências',
-                    icon: Icons.account_tree_outlined,
-                    child: _conferencesStep(context),
-                  ),
-                  _section(
-                    title: 'Agrupamento',
-                    icon: Icons.hub_outlined,
-                    child: _structureStep(context),
-                  ),
-                  const SizedBox(height: 8),
-                  KicksterButton(
-                    label: 'Salvar',
-                    icon: Icons.check,
-                    loading: _submitting,
-                    onPressed: _submitting ? null : _save,
-                  ),
-                ],
+                    _section(
+                      title: 'Modalidade',
+                      icon: Icons.sports_football_outlined,
+                      child: _modalityStep(context),
+                    ),
+                    _section(
+                      title: 'Categoria',
+                      icon: Icons.groups_outlined,
+                      child: _categoryStep(context),
+                    ),
+                    _section(
+                      title: 'Temporada',
+                      icon: Icons.date_range,
+                      child: _seasonStep(context),
+                    ),
+                    _section(
+                      title: 'Conferências',
+                      icon: Icons.account_tree_outlined,
+                      child: _conferencesStep(context),
+                    ),
+                    _section(
+                      title: 'Agrupamento',
+                      icon: Icons.hub_outlined,
+                      child: _structureStep(context),
+                    ),
+                    const SizedBox(height: 8),
+                    KicksterButton(
+                      label: 'Salvar',
+                      icon: Icons.check,
+                      loading: _submitting,
+                      onPressed: _submitting ? null : _save,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
   Widget _statusChip(CompetitionStatus status) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.grayFill,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        _statusLabel(status),
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
-        ),
-      ),
-    );
+    // Status neutro no form de edição (era grayFill/textPrimary bold):
+    // token neutro mais próximo do design system (regra da Família 3).
+    return KicksterBadge(label: _statusLabel(status), color: AppColors.textSecondary);
   }
 
   Widget _errorBanner(String message) {
@@ -547,7 +558,7 @@ class _CompetitionEditScreenState
       text,
       style: const TextStyle(
         fontSize: 14,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
       ),
     );
@@ -945,10 +956,11 @@ class _CompetitionEditScreenState
             ),
           ),
           const SizedBox(height: 8),
-          TextButton.icon(
+          KicksterButton(
+            label: 'Usar conferências',
+            icon: Icons.undo,
+            variant: KicksterButtonVariant.text,
             onPressed: () => setState(() => _declinedConferences = false),
-            icon: const Icon(Icons.undo, size: 18),
-            label: const Text('Usar conferências'),
           ),
         ] else ...[
           Row(
@@ -962,10 +974,10 @@ class _CompetitionEditScreenState
                 ),
               ),
               const SizedBox(width: 12),
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Adicionar',
+                icon: Icons.add,
                 onPressed: _submitting ? null : _addConference,
-                icon: const Icon(Icons.add),
-                label: const Text('Adicionar'),
               ),
             ],
           ),
@@ -995,12 +1007,13 @@ class _CompetitionEditScreenState
                   ),
           ),
           const SizedBox(height: 12),
-          OutlinedButton(
+          KicksterButton(
+            label: 'Este campeonato não usa conferências',
+            variant: KicksterButtonVariant.outline,
             onPressed: () => setState(() {
               _declinedConferences = true;
               _markDirty();
             }),
-            child: const Text('Este campeonato não usa conferências'),
           ),
         ],
       ],
@@ -1104,10 +1117,10 @@ class _CompetitionEditScreenState
                 ),
               ),
               const SizedBox(width: 12),
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Adicionar',
+                icon: Icons.add,
                 onPressed: _submitting ? null : _addDivision,
-                icon: const Icon(Icons.add),
-                label: const Text('Adicionar'),
               ),
             ],
           ),
@@ -1137,13 +1150,14 @@ class _CompetitionEditScreenState
                   ),
           ),
           const SizedBox(height: 12),
-          OutlinedButton(
+          KicksterButton(
+            label: 'Não usar divisões nem grupos',
+            variant: KicksterButtonVariant.outline,
             onPressed: () => setState(() {
               _declinedStructure = true;
               _groupingChoice = null;
               _markDirty();
             }),
-            child: const Text('Não usar divisões nem grupos'),
           ),
         ],
       ],

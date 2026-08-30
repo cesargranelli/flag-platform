@@ -57,7 +57,9 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _adding.add(athlete.id));
     try {
-      await ref.read(rosterApiProvider).add(
+      await ref
+          .read(rosterApiProvider)
+          .add(
             teamId: teamId,
             athleteId: athlete.id,
             nickname: details.nickname,
@@ -96,10 +98,9 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _removing.add(entry.athleteId));
     try {
-      await ref.read(rosterApiProvider).remove(
-            teamId: teamId,
-            athleteId: entry.athleteId,
-          );
+      await ref
+          .read(rosterApiProvider)
+          .remove(teamId: teamId, athleteId: entry.athleteId);
       ref.invalidate(rosterProvider(teamId));
       messenger.showSnackBar(
         SnackBar(content: Text('${entry.athleteName} removido do elenco.')),
@@ -121,30 +122,46 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     final teamFuture = widget.team != null
         ? null
         : teamId != null
-            ? ref.watch(teamProvider(teamId))
-            : null;
+        ? ref.watch(teamProvider(teamId))
+        : null;
     final teamName = widget.team?.name ?? teamFuture?.valueOrNull?.name;
     final title = teamName ?? 'Elenco';
 
+    final breadcrumb = [
+      const BreadcrumbItem('Início', route: '/'),
+      const BreadcrumbItem(AppStrings.teams, route: '/teams'),
+      if (teamName != null) BreadcrumbItem(teamName),
+      const BreadcrumbItem('Elenco'),
+    ];
+
     return AppScreen(
       title: title,
-      breadcrumb: const [
-        BreadcrumbItem(AppStrings.teams, route: '/teams'),
-      ],
-      actions: [
-        if (teamId != null)
-          IconButton(
-            tooltip: 'Importar CSV',
-            icon: const Icon(Icons.upload_file),
-            onPressed: () => context.push('/rosters/import', extra: teamId),
+      breadcrumb: breadcrumb,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Spacer(),
+              if (teamId != null)
+                IconButton(
+                  tooltip: 'Importar CSV',
+                  icon: const Icon(Icons.upload_file),
+                  onPressed: () =>
+                      context.push('/rosters/import', extra: teamId),
+                ),
+            ],
           ),
-      ],
-      body: teamId == null
-          ? const AppEmptyState(
-              message: 'Time não identificado',
-              icon: Icons.groups_outlined,
-            )
-          : _buildRoster(context, teamId),
+          const SizedBox(height: 16),
+          // Conteúdo
+          teamId == null
+              ? const AppEmptyState(
+                  message: 'Time não identificado',
+                  icon: Icons.groups_outlined,
+                )
+              : _buildRoster(context, teamId),
+        ],
+      ),
     );
   }
 
@@ -175,9 +192,11 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
 
     final normalizedQuery = _query.trim().toLowerCase();
     final filtered = athletes
-        .where((a) =>
-            normalizedQuery.isEmpty ||
-            a.name.toLowerCase().contains(normalizedQuery))
+        .where(
+          (a) =>
+              normalizedQuery.isEmpty ||
+              a.name.toLowerCase().contains(normalizedQuery),
+        )
         .toList();
 
     return Column(
@@ -186,35 +205,18 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
         AppLayout.content(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextField(
+            child: KicksterSearchField(
               controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Buscar atleta',
-                hintText: 'Busque pelo nome',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _query.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        tooltip: 'Limpar busca',
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _query = '');
-                        },
-                      ),
-                border: const OutlineInputBorder(),
-              ),
               onChanged: (value) => setState(() => _query = value),
+              hint: 'Buscar atleta',
             ),
           ),
         ),
-        Expanded(
-          child: _buildList(
-            athletes: athletes,
-            filtered: filtered,
-            inRosterIds: inRosterIds,
-            entryByAthleteId: entryByAthleteId,
-          ),
+        _buildList(
+          athletes: athletes,
+          filtered: filtered,
+          inRosterIds: inRosterIds,
+          entryByAthleteId: entryByAthleteId,
         ),
       ],
     );
@@ -227,9 +229,15 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     required Map<String, RosterEntry> entryByAthleteId,
   }) {
     if (athletes.isEmpty) {
-      return const AppEmptyState(
-        message: 'Nenhum atleta encontrado',
+      return KicksterEmptyState(
         icon: Icons.person_outline,
+        message: 'Nenhum atleta cadastrado',
+        description: 'Cadastre atletas na plataforma para incluí-los no elenco.',
+        action: KicksterButton(
+          label: 'Cadastrar atleta',
+          icon: Icons.add,
+          onPressed: () => context.go('/athletes/new'),
+        ),
       );
     }
     if (filtered.isEmpty) {
@@ -256,23 +264,23 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
               ),
             ),
           ),
-        Expanded(
-          child: AppLayout.content(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: filtered.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final athlete = filtered[index];
-                final inRoster = inRosterIds.contains(athlete.id);
-                return _athleteCard(
-                  context,
-                  athlete,
-                  inRoster: inRoster,
-                  entry: inRoster ? entryByAthleteId[athlete.id] : null,
-                );
-              },
-            ),
+        AppLayout.content(
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            itemCount: filtered.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final athlete = filtered[index];
+              final inRoster = inRosterIds.contains(athlete.id);
+              return _athleteCard(
+                context,
+                athlete,
+                inRoster: inRoster,
+                entry: inRoster ? entryByAthleteId[athlete.id] : null,
+              );
+            },
           ),
         ),
       ],
@@ -297,7 +305,8 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     final position = athlete.positionsLabel;
     final subtitle = [
       if (displayNumber != null) '#$displayNumber',
-      if (displayNickname != null && displayNickname.isNotEmpty) displayNickname,
+      if (displayNickname != null && displayNickname.isNotEmpty)
+        displayNickname,
       if (position.isNotEmpty) position,
     ].join(' · ');
     final adding = _adding.contains(athlete.id);
@@ -309,7 +318,11 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
         padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
         child: Row(
           children: [
-            _athleteAvatar(athlete, size: 48),
+            KicksterAvatar(
+              name: athlete.name,
+              imageUrl: athlete.photoUrl,
+              size: 48,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -358,68 +371,22 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
                   IconButton(
                     tooltip: 'Remover atleta',
                     icon: const Icon(Icons.person_remove_outlined),
-                    onPressed: entry == null ? null : () => _removeAthlete(entry),
+                    onPressed: entry == null
+                        ? null
+                        : () => _removeAthlete(entry),
                   ),
                 ],
               )
             else
-              FilledButton.tonal(
+              KicksterButton(
+                label: 'Incluir',
+                variant: KicksterButtonVariant.outline,
                 onPressed: () => _addAthlete(athlete),
-                child: const Text('Incluir'),
               ),
           ],
         ),
       ),
     );
-  }
-
-  Widget _athleteAvatar(Athlete athlete, {required double size}) {
-    final photo = athlete.photoUrl;
-    final validPhoto = photo != null &&
-        photo.isNotEmpty &&
-        (Uri.tryParse(photo)?.hasScheme ?? false);
-    return Container(
-      width: size,
-      height: size,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-      ),
-      child: validPhoto
-          ? Image.network(
-              photo,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Center(
-                child: Text(
-                  _initials(athlete.name),
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: size * 0.4,
-                  ),
-                ),
-              ),
-            )
-          : Center(
-              child: Text(
-                _initials(athlete.name),
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: size * 0.4,
-                ),
-              ),
-            ),
-    );
-  }
-
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '?';
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
-        .toUpperCase();
   }
 }
 
@@ -429,20 +396,10 @@ class _InRosterBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.check_circle, color: AppColors.success, size: 20),
-        const SizedBox(width: 6),
-        Text(
-          'No elenco',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.success,
-          ),
-        ),
-      ],
+    return const KicksterBadge(
+      label: 'No elenco',
+      color: AppColors.success,
+      icon: Icons.check_circle,
     );
   }
 }
@@ -497,24 +454,18 @@ class _RosterDetailsDialogState extends State<_RosterDetailsDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextFormField(
+            KicksterInput(
+              label: 'Apelido',
               controller: _nicknameController,
               maxLength: 100,
-              decoration: const InputDecoration(
-                labelText: 'Apelido',
-                hintText: 'Ex.: "Veloz"',
-                border: OutlineInputBorder(),
-              ),
+              hintText: 'Ex.: "Veloz"',
             ),
             const SizedBox(height: 12),
-            TextFormField(
+            KicksterInput(
+              label: 'Número da camisa',
               controller: _numberController,
               keyboardType: TextInputType.number,
               maxLength: 3,
-              decoration: const InputDecoration(
-                labelText: 'Número da camisa',
-                border: OutlineInputBorder(),
-              ),
               validator: _validateNumber,
             ),
           ],
@@ -525,10 +476,7 @@ class _RosterDetailsDialogState extends State<_RosterDetailsDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
-        FilledButton(
-          onPressed: _submit,
-          child: const Text('Confirmar'),
-        ),
+        FilledButton(onPressed: _submit, child: const Text('Confirmar')),
       ],
     );
   }

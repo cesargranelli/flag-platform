@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 
 /// Detalhe de um campeonato em página única (#455): todas as seções
@@ -37,22 +38,31 @@ class _CompetitionDetailScreenState
 
     return AppScreen(
       title: widget.competition?.name ?? 'Campeonato',
-      breadcrumb: const [
-        BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+      breadcrumb: [
+        const BreadcrumbItem('Início', route: '/'),
+        const BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+        if (widget.competition?.name != null)
+          BreadcrumbItem(widget.competition!.name),
       ],
-      body: compFuture == null
-          ? _buildDetail(context, widget.competition!)
-          : compFuture.when(
-              loading: () =>
-                  const AppLoading(message: 'Carregando campeonato...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar o campeonato',
-                onRetry: () => ref.invalidate(
-                  competitionProvider(widget.competitionId!),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Conteúdo
+          compFuture == null
+              ? _buildDetail(context, widget.competition!)
+              : compFuture.when(
+                  loading: () =>
+                      const AppLoading(message: 'Carregando campeonato...'),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar o campeonato',
+                    onRetry: () => ref.invalidate(
+                      competitionProvider(widget.competitionId!),
+                    ),
+                  ),
+                  data: (comp) => _buildDetail(context, comp),
                 ),
-              ),
-              data: (comp) => _buildDetail(context, comp),
-            ),
+        ],
+      ),
     );
   }
 
@@ -65,9 +75,7 @@ class _CompetitionDetailScreenState
     );
     final isDraft = comp.status == CompetitionStatus.draft;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
+    return AppLayout.detail(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -108,7 +116,6 @@ class _CompetitionDetailScreenState
             ),
           ],
         ),
-      ),
     );
   }
 
@@ -167,8 +174,8 @@ class _CompetitionDetailScreenState
                       Text(
                         comp.name,
                         style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -267,9 +274,9 @@ class _CompetitionDetailScreenState
     return AppInfoCard(
       children: [
         if (comp.startDate != null)
-          AppInfoRow(label: 'Início', value: _formatDate(comp.startDate!)),
+          AppInfoRow(label: 'Início', value: formatBrDate(comp.startDate!)),
         if (comp.endDate != null)
-          AppInfoRow(label: 'Fim', value: _formatDate(comp.endDate!)),
+          AppInfoRow(label: 'Fim', value: formatBrDate(comp.endDate!)),
         if (comp.startDate == null && comp.endDate == null)
           AppInfoRow(label: 'Período', value: 'Não definido'),
       ],
@@ -556,17 +563,7 @@ class _CompetitionDetailScreenState
       CompetitionStatus.finished => AppColors.danger,
       CompetitionStatus.disabled => AppColors.textSecondary,
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        _statusLabel(status),
-        style: TextStyle(fontSize: 13, color: color),
-      ),
-    );
+    return KicksterBadge(label: _statusLabel(status), color: color);
   }
 
   String _statusLabel(CompetitionStatus status) => switch (status) {
@@ -595,9 +592,4 @@ class _CompetitionDetailScreenState
     'OPEN' => 'Livre',
     _ => 'Não definido',
   };
-
-  String _formatDate(DateTime value) {
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
-  }
 }

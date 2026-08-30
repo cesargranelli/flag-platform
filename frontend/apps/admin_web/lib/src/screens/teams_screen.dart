@@ -60,45 +60,58 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
 
     return AppScreen(
       title: 'Times',
-      titleVariant: AppScreenTitleVariant.titleLg,
-      actions: [
-        if (effectiveComp != null && canEdit)
-          KicksterButton(
-            label: 'Novo',
-            icon: Icons.add,
-            onPressed: () => context.go('/teams/new', extra: effectiveComp),
-          ),
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem('Times'),
       ],
-      body: competitions.when(
-        loading: () => const AppLoading(message: 'Carregando campeonatos...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os campeonatos',
-          onRetry: () => ref.invalidate(competitionsProvider),
-        ),
-        data: (_) {
-          if (compItems.isEmpty) {
-            return KicksterEmptyState(
-              icon: Icons.emoji_events_outlined,
-              message: 'Nenhum campeonato cadastrado',
-              description: 'Crie um campeonato para inscrever times.',
-              action: KicksterButton(
-                label: 'Criar campeonato',
-                icon: Icons.add,
-                onPressed: () => context.go('/competitions/new'),
-              ),
-            );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Actions
+          Row(
             children: [
-              AppLayout.content(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Column(
+              const Spacer(),
+              if (effectiveComp != null && canEdit)
+                KicksterButton(
+                  label: 'Novo',
+                  icon: Icons.add,
+                  onPressed: () =>
+                      context.go('/teams/new', extra: effectiveComp),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          competitions.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando campeonatos...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os campeonatos',
+              onRetry: () => ref.invalidate(competitionsProvider),
+            ),
+            data: (_) {
+              if (compItems.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.emoji_events_outlined,
+                  message: 'Nenhum campeonato cadastrado',
+                  description: 'Crie um campeonato para inscrever times.',
+                  action: KicksterButton(
+                    label: 'Criar campeonato',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/competitions/new'),
+                  ),
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       KicksterDropdown<String>(
-                        label: locked ? 'Campeonato (travado)' : 'Campeonato',
+                        label: locked
+                            ? 'Campeonato (travado)'
+                            : 'Campeonato',
                         value: effectiveComp,
                         items: compItems
                             .map(
@@ -115,7 +128,8 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                             ? null
                             : (value) {
                                 ref
-                                    .read(selectedCompetitionProvider.notifier)
+                                    .read(selectedCompetitionProvider
+                                        .notifier)
                                     .state = value;
                               },
                       ),
@@ -127,20 +141,18 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                         ),
                     ],
                   ),
-                ),
-              ),
-              Expanded(
-                child: effectiveComp != null
-                    ? ref
+                  if (effectiveComp != null)
+                    ref
                           .watch(teamsProvider(effectiveComp))
                           .when(
                             loading: () => const AppLoading(
                               message: 'Carregando times...',
                             ),
                             error: (error, stackTrace) => AppErrorState(
-                              message: 'Não foi possível carregar os times',
-                              onRetry: () =>
-                                  ref.invalidate(teamsProvider(effectiveComp)),
+                              message:
+                                  'Não foi possível carregar os times',
+                              onRetry: () => ref.invalidate(
+                                  teamsProvider(effectiveComp)),
                             ),
                             data: (items) {
                               if (items.isEmpty) {
@@ -164,101 +176,111 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                                   ? items
                                   : items
                                       .where(
-                                        (t) =>
-                                            t.name.toLowerCase().contains(query),
+                                        (t) => t.name
+                                            .toLowerCase()
+                                            .contains(query),
                                       )
                                       .toList(growable: false);
 
-                              return AppLayout.content(
-                                child: Column(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                          16, 16, 16, 0),
-                                      child: Row(
-                                        children: [
-                                          if (query.isNotEmpty)
-                                            Text(
-                                              '${filtered.length} '
-                                              '${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                color:
-                                                    AppColors.textSecondary,
-                                              ),
-                                            )
-                                          else
-                                            Text(
-                                              '${items.length} '
-                                              '${items.length == 1 ? 'time' : 'times'}',
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                color:
-                                                    AppColors.textSecondary,
-                                              ),
-                                            ),
-                                          const Spacer(),
-                                          SizedBox(
-                                            width: 280,
-                                            child: KicksterSearchField(
-                                              controller: _searchController,
-                                              onChanged: (value) => setState(
-                                                  () => _query = value),
-                                            ),
+                              return Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      if (query.isNotEmpty)
+                                        Text(
+                                          '${filtered.length} '
+                                          '${filtered.length == 1 ? 'resultado' : 'resultados'}',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color:
+                                                AppColors.textSecondary,
                                           ),
-                                        ],
+                                        )
+                                      else
+                                        Text(
+                                          '${items.length} '
+                                          '${items.length == 1 ? 'time' : 'times'}',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color:
+                                                AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      const Spacer(),
+                                      SizedBox(
+                                        width: 280,
+                                        child: KicksterSearchField(
+                                          controller: _searchController,
+                                          onChanged: (value) =>
+                                              setState(
+                                                  () => _query = value),
+                                        ),
                                       ),
-                                    ),
-                                    Expanded(
-                                      child: filtered.isEmpty
-                                          ? const AppEmptyState(
-                                              message:
-                                                  'Nenhum time encontrado',
-                                              icon: Icons.search_off,
-                                            )
-                                          : LayoutBuilder(
-                                              builder:
-                                                  (context, constraints) {
-                                                final columns =
-                                                    constraints.maxWidth >= 600
-                                                        ? 2
-                                                        : 1;
-                                                return GridView.builder(
-                                                  padding:
-                                                      const EdgeInsets.all(16),
-                                                  itemCount: filtered.length,
-                                                  gridDelegate:
-                                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                                        crossAxisCount:
-                                                            columns,
-                                                        crossAxisSpacing: 12,
-                                                        mainAxisSpacing: 12,
-                                                        mainAxisExtent: 96,
-                                                      ),
-                                                  itemBuilder:
-                                                      (context, index) {
-                                                    final team =
-                                                        filtered[index];
-                                                    return _teamCard(
-                                                        context, team);
-                                                  },
-                                                );
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  if (filtered.isEmpty)
+                                    const AppEmptyState(
+                                      message:
+                                          'Nenhum time encontrado',
+                                      icon: Icons.search_off,
+                                    )
+                                  else
+                                    LayoutBuilder(
+                                      builder:
+                                          (context, constraints) {
+                                        final columns =
+                                            constraints.maxWidth >=
+                                                    600
+                                                ? 2
+                                                : 1;
+                                        return GridView.builder(
+                                          shrinkWrap: true,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          padding:
+                                              const EdgeInsets.all(
+                                                  16),
+                                          itemCount: filtered.length,
+                                          gridDelegate:
+                                              SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount:
+                                                    columns,
+                                                crossAxisSpacing: 12,
+                                                mainAxisSpacing: 12,
+                                                mainAxisExtent: 96,
+                                              ),
+                                          itemBuilder:
+                                              (context, index) {
+                                                final team =
+                                                    filtered[index];
+                                                return _teamCard(
+                                                    context, team);
                                               },
-                                            ),
+                                        );
+                                      },
                                     ),
-                                  ],
-                                ),
+                                ],
                               );
                             },
                           )
-                    : const AppEmptyState(
-                        message: 'Nenhum time cadastrado',
-                        icon: Icons.groups_outlined,
+                  else
+                    KicksterEmptyState(
+                      icon: Icons.groups_outlined,
+                      message: 'Nenhum time cadastrado',
+                      description:
+                          'Crie um campeonato para inscrever times.',
+                      action: KicksterButton(
+                        label: 'Criar campeonato',
+                        icon: Icons.add,
+                        onPressed: () => context.go('/competitions/new'),
                       ),
-              ),
-            ],
-          );
-        },
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }

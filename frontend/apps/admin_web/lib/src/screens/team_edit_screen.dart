@@ -84,7 +84,7 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
         documentType: _documentType,
         logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
       );
-      ref.invalidate(teamsProvider);
+      ref.invalidate(teamsProvider(_competitionId ?? ''));
       if (mounted) {
         ref.invalidate(teamProvider(id));
         context.go('/teams/$id');
@@ -121,11 +121,14 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
     return AppScreen(
       title: 'Editar time',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.teams, route: '/teams'),
+        BreadcrumbItem('Editar'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -262,7 +265,7 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                      color: AppColors.danger,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -278,6 +281,7 @@ class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
             ),
           ),
         ),
+      ],
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/selectable_card.dart';
 
@@ -103,10 +104,6 @@ class _CompetitionCreateScreenState
     super.dispose();
   }
 
-  String _formatDate(DateTime? date) => date == null
-      ? ''
-      : '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-
   // Issue #257 (D): com exatamente 1 organização disponível, pré-seleciona.
   void _maybePreselectOrganization(List<Organization> orgs) {
     if (_organizationId.text.isNotEmpty || orgs.length != 1) return;
@@ -137,7 +134,7 @@ class _CompetitionCreateScreenState
       lastDate: DateTime(2100),
     );
     if (picked != null && mounted) {
-      controller.text = _formatDate(picked);
+      controller.text = formatIsoDate(picked);
     }
   }
 
@@ -226,8 +223,8 @@ class _CompetitionCreateScreenState
           organizationId: created.organizationId!,
           name: created.name,
           description: created.description,
-          startDate: _formatDate(created.startDate),
-          endDate: _formatDate(created.endDate),
+          startDate: formatIsoDate(created.startDate),
+          endDate: formatIsoDate(created.endDate),
           status: created.status,
           modality: created.modality,
           gender: created.gender,
@@ -382,58 +379,66 @@ class _CompetitionCreateScreenState
       child: AppScreen(
         title: 'Novo campeonato',
         breadcrumb: const [
+          BreadcrumbItem('Início', route: '/'),
           BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+          BreadcrumbItem('Novo'),
         ],
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: AppLayout.form(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_errorMessage != null) _errorBanner(_errorMessage!),
-                  _section(
-                    title: 'Campeonato',
-                    icon: Icons.emoji_events_outlined,
-                    child: _identityStep(context),
-                  ),
-                  _section(
-                    title: 'Modalidade',
-                    icon: Icons.sports_football_outlined,
-                    child: _modalityStep(context),
-                  ),
-                  _section(
-                    title: 'Categoria',
-                    icon: Icons.groups_outlined,
-                    child: _categoryStep(context),
-                  ),
-                  _section(
-                    title: 'Temporada',
-                    icon: Icons.date_range,
-                    child: _seasonStep(context),
-                  ),
-                  _section(
-                    title: 'Conferências',
-                    icon: Icons.account_tree_outlined,
-                    child: _conferencesStep(context),
-                  ),
-                  _section(
-                    title: 'Agrupamento',
-                    icon: Icons.hub_outlined,
-                    child: _structureStep(context),
-                  ),
-                  const SizedBox(height: 8),
-                  KicksterButton(
-                    label: _created == null ? 'Criar campeonato' : 'Concluir',
-                    icon: _created == null ? Icons.check : Icons.check_circle_outline,
-                    loading: _submitting,
-                    onPressed: _submitting ? null : _submit,
-                  ),
-                ],
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppLayout.form(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_errorMessage != null) _errorBanner(_errorMessage!),
+                    _section(
+                      title: 'Campeonato',
+                      icon: Icons.emoji_events_outlined,
+                      child: _identityStep(context),
+                    ),
+                    _section(
+                      title: 'Modalidade',
+                      icon: Icons.sports_football_outlined,
+                      child: _modalityStep(context),
+                    ),
+                    _section(
+                      title: 'Categoria',
+                      icon: Icons.groups_outlined,
+                      child: _categoryStep(context),
+                    ),
+                    _section(
+                      title: 'Temporada',
+                      icon: Icons.date_range,
+                      child: _seasonStep(context),
+                    ),
+                    _section(
+                      title: 'Conferências',
+                      icon: Icons.account_tree_outlined,
+                      child: _conferencesStep(context),
+                    ),
+                    _section(
+                      title: 'Agrupamento',
+                      icon: Icons.hub_outlined,
+                      child: _structureStep(context),
+                    ),
+                    const SizedBox(height: 8),
+                    KicksterButton(
+                      label: _created == null
+                          ? 'Criar campeonato'
+                          : 'Concluir',
+                      icon: _created == null
+                          ? Icons.check
+                          : Icons.check_circle_outline,
+                      loading: _submitting,
+                      onPressed: _submitting ? null : _submit,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -491,7 +496,7 @@ class _CompetitionCreateScreenState
       text,
       style: const TextStyle(
         fontSize: 14,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
       ),
     );
@@ -864,10 +869,11 @@ class _CompetitionCreateScreenState
             ),
           ),
           const SizedBox(height: 8),
-          TextButton.icon(
+          KicksterButton(
+            label: 'Usar conferências',
+            icon: Icons.undo,
+            variant: KicksterButtonVariant.text,
             onPressed: () => setState(() => _declinedConferences = false),
-            icon: const Icon(Icons.undo, size: 18),
-            label: const Text('Usar conferências'),
           ),
         ] else ...[
           Row(
@@ -882,11 +888,11 @@ class _CompetitionCreateScreenState
                 ),
               ),
               const SizedBox(width: 12),
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Adicionar',
+                icon: Icons.add,
                 onPressed:
                     _created == null || _submitting ? null : _addConference,
-                icon: const Icon(Icons.add),
-                label: const Text('Adicionar'),
               ),
             ],
           ),
@@ -916,12 +922,13 @@ class _CompetitionCreateScreenState
                   ),
           ),
           const SizedBox(height: 12),
-          OutlinedButton(
+          KicksterButton(
+            label: 'Este campeonato não usa conferências',
+            variant: KicksterButtonVariant.outline,
             onPressed: () => setState(() {
               _declinedConferences = true;
               _markDirty();
             }),
-            child: const Text('Este campeonato não usa conferências'),
           ),
         ],
       ],
@@ -1034,11 +1041,11 @@ class _CompetitionCreateScreenState
                 ),
               ),
               const SizedBox(width: 12),
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Adicionar',
+                icon: Icons.add,
                 onPressed:
                     _created == null || _submitting ? null : _addDivision,
-                icon: const Icon(Icons.add),
-                label: const Text('Adicionar'),
               ),
             ],
           ),
@@ -1068,13 +1075,14 @@ class _CompetitionCreateScreenState
                   ),
           ),
           const SizedBox(height: 12),
-          OutlinedButton(
+          KicksterButton(
+            label: 'Não usar divisões nem grupos',
+            variant: KicksterButtonVariant.outline,
             onPressed: () => setState(() {
               _declinedStructure = true;
               _groupingChoice = null;
               _markDirty();
             }),
-            child: const Text('Não usar divisões nem grupos'),
           ),
         ],
       ],

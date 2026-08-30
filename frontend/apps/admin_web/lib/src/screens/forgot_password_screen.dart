@@ -42,11 +42,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       await ref
           .read(authApiProvider)
           .forgotPassword(_emailController.text.trim());
-      setState(() => _sent = true);
+      if (mounted) setState(() => _sent = true);
     } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
+      if (mounted) setState(() => _errorMessage = e.message);
     } catch (_) {
-      setState(() => _errorMessage = AppStrings.loginConnectionError);
+      if (mounted) setState(() => _errorMessage = AppStrings.loginConnectionError);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -120,7 +120,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               _errorMessage!,
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: Theme.of(context).colorScheme.error, fontSize: 14),
+                  color: AppColors.danger, fontSize: 14),
             ),
           ],
           const SizedBox(height: 24),
@@ -148,7 +148,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 20,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),

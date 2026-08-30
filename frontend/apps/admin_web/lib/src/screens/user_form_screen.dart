@@ -92,11 +92,14 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
     return AppScreen(
       title: 'Novo usuário',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.users, route: '/users'),
+        BreadcrumbItem('Novo'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -143,7 +146,7 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                        color: AppColors.danger,
                         fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -158,6 +161,7 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
             ),
           ),
         ),
+      ],
       ),
     );
   }

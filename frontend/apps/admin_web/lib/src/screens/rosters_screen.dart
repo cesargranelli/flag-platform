@@ -50,60 +50,74 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
 
     return AppScreen(
       title: 'Elencos',
-      titleVariant: AppScreenTitleVariant.titleLg,
-      body: competitions.when(
-        loading: () => const AppLoading(message: 'Carregando campeonatos...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os campeonatos',
-          onRetry: () => ref.invalidate(competitionsProvider),
-        ),
-        data: (_) {
-          if (compItems.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum campeonato cadastrado',
-              icon: Icons.emoji_events_outlined,
-            );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppLayout.form(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: KicksterDropdown<String>(
-                    key: ValueKey('comp-$effectiveComp'),
-                    label: 'Campeonato',
-                    value: effectiveComp,
-                    items: compItems
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c.id,
-                            child: appDropdownItem(
-                              Icons.emoji_events_outlined,
-                              c.name,
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      ref.read(selectedCompetitionProvider.notifier).state =
-                          value;
-                      ref.read(selectedTeamProvider.notifier).state = null;
-                    },
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem('Elencos'),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          competitions.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando campeonatos...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os campeonatos',
+              onRetry: () => ref.invalidate(competitionsProvider),
+            ),
+            data: (_) {
+              if (compItems.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.emoji_events_outlined,
+                  message: 'Nenhum campeonato cadastrado',
+                  description:
+                      'Crie um campeonato para organizar os elencos.',
+                  action: KicksterButton(
+                    label: 'Criar campeonato',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/competitions/new'),
                   ),
-                ),
-              ),
-              Expanded(
-                child: effectiveComp != null
-                    ? _clubList(context, effectiveComp)
-                    : const AppEmptyState(
-                        message: 'Selecione um campeonato',
-                        icon: Icons.emoji_events_outlined,
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppLayout.form(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: KicksterDropdown<String>(
+                        key: ValueKey('comp-$effectiveComp'),
+                        label: 'Campeonato',
+                        value: effectiveComp,
+                        items: compItems
+                            .map(
+                              (c) => DropdownMenuItem(
+                                value: c.id,
+                                child: appDropdownItem(
+                                  Icons.emoji_events_outlined,
+                                  c.name,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          ref.read(selectedCompetitionProvider.notifier).state =
+                              value;
+                          ref.read(selectedTeamProvider.notifier).state = null;
+                        },
                       ),
-              ),
-            ],
-          );
-        },
+                    ),
+                  ),
+                  effectiveComp != null
+                      ? _clubList(context, effectiveComp)
+                      : const AppEmptyState(
+                          message: 'Selecione um campeonato',
+                          icon: Icons.emoji_events_outlined,
+                        ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -172,12 +186,12 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
     final filtered = query.isEmpty
         ? clubs
         : clubs
-            .where(
-              (c) =>
-                  c.tradeName.toLowerCase().contains(query) ||
-                  (c.city ?? '').toLowerCase().contains(query),
-            )
-            .toList(growable: false);
+              .where(
+                (c) =>
+                    c.tradeName.toLowerCase().contains(query) ||
+                    (c.city ?? '').toLowerCase().contains(query),
+              )
+              .toList(growable: false);
 
     return AppLayout.content(
       child: Column(
@@ -214,37 +228,38 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
               ],
             ),
           ),
-          Expanded(
-            child: filtered.isEmpty
-                ? const AppEmptyState(
-                    message: 'Nenhum clube encontrado',
-                    icon: Icons.search_off,
-                  )
-                : LayoutBuilder(
-                    builder: (context, constraints) {
-                      final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                      return GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filtered.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: columns,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          mainAxisExtent: 96,
-                        ),
-                        itemBuilder: (context, index) {
-                          final org = filtered[index];
-                          return _clubCard(
-                            context,
-                            org,
-                            team: teamByOrgId[org.id],
-                            competitionId: competitionId,
-                          );
-                        },
-                      );
-                    },
+          if (filtered.isEmpty)
+            const AppEmptyState(
+              message: 'Nenhum clube encontrado',
+              icon: Icons.search_off,
+            )
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 600 ? 2 : 1;
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  itemCount: filtered.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    mainAxisExtent: 112,
                   ),
-          ),
+                  itemBuilder: (context, index) {
+                    final org = filtered[index];
+                    return _clubCard(
+                      context,
+                      org,
+                      team: teamByOrgId[org.id],
+                      competitionId: competitionId,
+                    );
+                  },
+                );
+              },
+            ),
         ],
       ),
     );
@@ -264,71 +279,27 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
     final associating = _associatingOrgIds.contains(org.id);
     final isAssociated = team != null;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _handleCardTap(org, team, competitionId),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              _typeIcon(org.organizationType),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      org.tradeName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+    return KicksterCard(
+      icon: organizationTypeIcon(org.organizationType),
+      title: org.tradeName,
+      subtitle: subtitle.isEmpty ? null : subtitle,
+      trailing: !isAssociated
+          ? (associating
+                ? const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (!isAssociated) ...[
-                const SizedBox(width: 8),
-                associating
-                    ? const Padding(
-                        padding: EdgeInsets.all(8),
-                        child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : FilledButton(
-                        style: FilledButton.styleFrom(
-                          visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          minimumSize: const Size(0, 36),
-                          textStyle: const TextStyle(fontSize: 12),
-                        ),
-                        onPressed: () => _associate(org, competitionId),
-                        child: const Text('Associar à temporada'),
-                      ),
-              ],
-            ],
-          ),
-        ),
-      ),
+                  )
+                : KicksterButton(
+                    label: 'Associar',
+                    variant: KicksterButtonVariant.outline,
+                    onPressed: () => _associate(org, competitionId),
+                  ))
+          : null,
+      onTap: () => _handleCardTap(org, team, competitionId),
     );
   }
 
@@ -351,15 +322,12 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
 
     setState(() => _associatingOrgIds.add(org.id));
     try {
-      final team = await ref.read(teamApiProvider).associateClub(
-        competitionId: competitionId,
-        organizationId: org.id,
-      );
+      final team = await ref
+          .read(teamApiProvider)
+          .associateClub(competitionId: competitionId, organizationId: org.id);
       ref.invalidate(teamsProvider(competitionId));
       messenger.showSnackBar(
-        SnackBar(
-          content: Text('${org.tradeName} associado à temporada.'),
-        ),
+        SnackBar(content: Text('${org.tradeName} associado à temporada.')),
       );
       if (mounted) {
         context.go('/teams/${team.id}/roster', extra: team);
@@ -375,16 +343,4 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
     }
   }
 
-  /// Ícone destacado com o tipo de organização (fundo primary 12% + ícone).
-  Widget _typeIcon(OrganizationType? type) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(organizationTypeIcon(type), color: AppColors.primary),
-    );
   }
-}

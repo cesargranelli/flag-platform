@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 
 /// Argumentos de navegação do formulário de jogo.
@@ -57,7 +58,7 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
     final scheduledAt = _scheduledAt;
     return scheduledAt == null
         ? ''
-        : '${_formatDate(scheduledAt)} ${_formatTime(scheduledAt)}';
+        : '${formatBrDate(scheduledAt)} ${formatBrTime(scheduledAt)}';
   }
 
   Future<void> _pickSchedule() async {
@@ -154,11 +155,14 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
     return AppScreen(
       title: _isEditing ? 'Editar jogo' : 'Novo jogo',
       breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem(AppStrings.games, route: '/games'),
+        BreadcrumbItem('Formulário'),
       ],
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -273,7 +277,7 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                      color: AppColors.danger,
                     ),
                   ),
                 ],
@@ -288,12 +292,8 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
             ),
           ),
         ),
+      ],
       ),
     );
   }
 }
-
-String _formatDate(DateTime value) =>
-    '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
-String _formatTime(DateTime value) =>
-    '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
