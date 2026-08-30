@@ -38,14 +38,12 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
   @override
   Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
-    final selectedCompetition = ref.watch(selectedCompetitionProvider);
 
     final lockedCompetitionId = widget.lockedCompetitionId;
     final compItems = competitions.valueOrNull ?? const [];
+    // P4 #461: locked (rota) ?? efetivo (selecionado ?? primeiro da lista).
     final effectiveComp =
-        lockedCompetitionId ??
-        selectedCompetition ??
-        (compItems.isNotEmpty ? compItems.first.id : null);
+        lockedCompetitionId ?? ref.watch(effectiveCompetitionProvider);
     final locked = lockedCompetitionId != null;
 
     // Issue #261: inscrição de times exige ser criador do campeonato

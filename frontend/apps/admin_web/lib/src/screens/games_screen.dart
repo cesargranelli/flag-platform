@@ -34,13 +34,11 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
   @override
   Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
-    final selectedCompetition = ref.watch(selectedCompetitionProvider);
     final selectedRound = ref.watch(selectedRoundProvider);
 
     final compItems = competitions.valueOrNull ?? const [];
-    final effectiveComp =
-        selectedCompetition ??
-        (compItems.isNotEmpty ? compItems.first.id : null);
+    // P4 #461: campeonato efetivo = selecionado ?? primeiro da lista.
+    final effectiveComp = ref.watch(effectiveCompetitionProvider);
 
     // Rodadas do campeonato efetivo + rodada "efetiva" (B1 #457): quando
     // nenhuma rodada foi selecionada, usa a primeira — a lista de jogos

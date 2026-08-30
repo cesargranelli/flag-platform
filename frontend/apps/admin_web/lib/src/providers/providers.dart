@@ -57,7 +57,7 @@ final organizationsAdminProvider =
 );
 
 /// Detalhe de uma organização por id.
-final organizationProvider = FutureProvider.family<Organization, String>(
+final organizationProvider = FutureProvider.autoDispose.family<Organization, String>(
   (ref, id) => ref.watch(organizationApiProvider).getById(id),
 );
 
@@ -80,12 +80,22 @@ final competitionsAdminProvider =
 );
 
 /// Detalhe de um campeonato por id.
-final competitionProvider = FutureProvider.family<Competition, String>(
+final competitionProvider = FutureProvider.autoDispose.family<Competition, String>(
   (ref, id) => ref.watch(competitionApiProvider).getById(id),
 );
 
 /// Campeonato selecionado na tela de competições.
 final selectedCompetitionProvider = StateProvider<String?>((ref) => null);
+
+/// Campeonato "efetivo" (P4 #461): o selecionado, ou o primeiro da lista
+/// quando nada foi escolhido — padrão `selected ?? first` duplicado em
+/// várias telas (games, rounds, teams, rosters, associate_clubs, game_form).
+final effectiveCompetitionProvider = Provider<String?>((ref) {
+  final selected = ref.watch(selectedCompetitionProvider);
+  if (selected != null) return selected;
+  final comps = ref.watch(competitionsProvider).valueOrNull ?? const [];
+  return comps.isNotEmpty ? comps.first.id : null;
+});
 
 /// Serviço de times.
 final teamApiProvider = Provider<TeamApi>(
@@ -103,25 +113,25 @@ final divisionApiProvider = Provider<DivisionApi>(
 );
 
 /// Conferências de um campeonato.
-final conferencesProvider = FutureProvider.family<List<Conference>, String>(
+final conferencesProvider = FutureProvider.autoDispose.family<List<Conference>, String>(
   (ref, competitionId) =>
       ref.watch(conferenceApiProvider).listByCompetition(competitionId),
 );
 
 /// Divisões de um campeonato.
-final divisionsProvider = FutureProvider.family<List<Division>, String>(
+final divisionsProvider = FutureProvider.autoDispose.family<List<Division>, String>(
   (ref, competitionId) =>
       ref.watch(divisionApiProvider).listByCompetition(competitionId),
 );
 
 /// Times de um campeonato.
-final teamsProvider = FutureProvider.family<List<Team>, String>(
+final teamsProvider = FutureProvider.autoDispose.family<List<Team>, String>(
   (ref, competitionId) =>
       ref.watch(teamApiProvider).listByCompetition(competitionId),
 );
 
 /// Detalhe de um time por id.
-final teamProvider = FutureProvider.family<Team, String>(
+final teamProvider = FutureProvider.autoDispose.family<Team, String>(
   (ref, id) => ref.watch(teamApiProvider).getById(id),
 );
 
@@ -131,13 +141,13 @@ final roundApiProvider = Provider<RoundApi>(
 );
 
 /// Rodadas de um campeonato.
-final roundsProvider = FutureProvider.family<List<Round>, String>(
+final roundsProvider = FutureProvider.autoDispose.family<List<Round>, String>(
   (ref, competitionId) =>
       ref.watch(roundApiProvider).listByCompetition(competitionId),
 );
 
 /// Detalhe de uma rodada por id.
-final roundProvider = FutureProvider.family<Round, String>(
+final roundProvider = FutureProvider.autoDispose.family<Round, String>(
   (ref, id) => ref.watch(roundApiProvider).getById(id),
 );
 
@@ -150,12 +160,12 @@ final gameApiProvider = Provider<GameApi>(
 final selectedRoundProvider = StateProvider<String?>((ref) => null);
 
 /// Jogos de uma rodada.
-final gamesByRoundProvider = FutureProvider.family<List<Game>, String>(
+final gamesByRoundProvider = FutureProvider.autoDispose.family<List<Game>, String>(
   (ref, roundId) => ref.watch(gameApiProvider).listByRound(roundId),
 );
 
 /// Detalhe de um jogo por id.
-final gameProvider = FutureProvider.family<Game, String>(
+final gameProvider = FutureProvider.autoDispose.family<Game, String>(
   (ref, id) => ref.watch(gameApiProvider).getById(id),
 );
 
@@ -170,7 +180,7 @@ final athletesProvider = FutureProvider<List<Athlete>>(
 );
 
 /// Detalhe de um atleta por id.
-final athleteProvider = FutureProvider.family<Athlete, String>(
+final athleteProvider = FutureProvider.autoDispose.family<Athlete, String>(
   (ref, id) => ref.watch(athleteApiProvider).getById(id),
 );
 
@@ -183,7 +193,7 @@ final rosterApiProvider = Provider<RosterApi>(
 final selectedTeamProvider = StateProvider<String?>((ref) => null);
 
 /// Elenco de um time.
-final rosterProvider = FutureProvider.family<List<RosterEntry>, String>(
+final rosterProvider = FutureProvider.autoDispose.family<List<RosterEntry>, String>(
   (ref, teamId) => ref.watch(rosterApiProvider).listByTeam(teamId),
 );
 
@@ -208,6 +218,6 @@ final venuesProvider = FutureProvider<List<Venue>>(
 );
 
 /// Detalhe de um campo por id.
-final venueProvider = FutureProvider.family<Venue, String>(
+final venueProvider = FutureProvider.autoDispose.family<Venue, String>(
   (ref, id) => ref.watch(venueApiProvider).getById(id),
 );
