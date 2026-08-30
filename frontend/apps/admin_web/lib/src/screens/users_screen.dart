@@ -97,7 +97,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   }
 
   Widget _userCard(BuildContext context, User user) {
-    final role = _roleLabel(user.role);
+    final role = user.role.label;
     return Card(
       elevation: 1,
       shadowColor: AppColors.black.withValues(alpha: 0.08),
@@ -156,26 +156,18 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     );
   }
 
-  Widget _roleChip(String role, String label) {
+  Widget _roleChip(UserRole role, String label) {
     final color = switch (role) {
-      'ADMIN' => AppColors.danger,
-      'MESA' => AppColors.success,
-      _ => AppColors.primary,
+      UserRole.admin => AppColors.danger,
+      UserRole.mesa => AppColors.success,
+      UserRole.organizer => AppColors.primary,
     };
     return KicksterBadge(label: label, color: color);
   }
 
-  IconData _roleIcon(String role) => switch (role) {
-        'ADMIN' => Icons.admin_panel_settings,
-        'MESA' => Icons.sports_score,
-        _ => Icons.person,
+  IconData _roleIcon(UserRole role) => switch (role) {
+        UserRole.admin => Icons.admin_panel_settings,
+        UserRole.mesa => Icons.sports_score,
+        UserRole.organizer => Icons.person,
       };
 }
-
-/// Rótulo pt-BR de um papel de usuário.
-String _roleLabel(String role) => switch (role) {
-      'ADMIN' => 'Administrador',
-      'MESA' => 'Mesa',
-      'ORGANIZER' => 'Organizador',
-      _ => role,
-    };

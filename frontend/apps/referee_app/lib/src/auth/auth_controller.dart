@@ -54,7 +54,7 @@ class AuthController extends ChangeNotifier {
     final response = await _api.login(email: email, password: password);
     await _session.saveSession(
       token: response.token,
-      roles: [response.user.role],
+      roles: [response.user.role.toJson()],
       userName: response.user.name,
     );
     _set(AuthState(authenticated: true, user: response.user));

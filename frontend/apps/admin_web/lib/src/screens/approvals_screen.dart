@@ -86,7 +86,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
   }
 
   Widget _approvalCard(BuildContext context, WidgetRef ref, User user) {
-    final roleLabel = _roleLabel(user.role);
+    final roleLabel = user.role.label;
     final dateText = formatBrShortDateTime(user.createdAt);
 
     return Card(
@@ -239,10 +239,3 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
     );
   }
 }
-
-String _roleLabel(String role) => switch (role) {
-  'ADMIN' => 'Administrador',
-  'MESA' => 'Mesa',
-  'ORGANIZER' => 'Organizador',
-  _ => role,
-};

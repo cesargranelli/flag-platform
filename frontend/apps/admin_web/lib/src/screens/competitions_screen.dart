@@ -39,7 +39,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
   Widget build(BuildContext context) {
     final isAdmin =
         ref.watch(authControllerProvider.select((a) => a.state.user?.role)) ==
-        'ADMIN';
+        UserRole.admin;
     final user = ref.watch(authControllerProvider.select((a) => a.state.user));
     final showDisabled = isAdmin && _showDisabled;
     final competitions = showDisabled

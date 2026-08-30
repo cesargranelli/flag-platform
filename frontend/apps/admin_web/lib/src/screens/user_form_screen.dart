@@ -1,20 +1,12 @@
 import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
+import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 import '../widgets/app_screen.dart';
-
-const _roles = ['ADMIN', 'ORGANIZER', 'MESA'];
-
-String _roleLabel(String role) => switch (role) {
-      'ADMIN' => 'Administrador',
-      'MESA' => 'Mesa',
-      'ORGANIZER' => 'Organizador',
-      _ => role,
-    };
 
 /// Formulário de criação de usuário (somente ADMIN).
 class UserFormScreen extends ConsumerStatefulWidget {
@@ -30,7 +22,7 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
   late final TextEditingController _name;
   late final TextEditingController _email;
   late final TextEditingController _password;
-  String _role = 'ORGANIZER';
+  UserRole _role = UserRole.organizer;
   bool _submitting = false;
   String? _errorMessage;
 
@@ -63,7 +55,7 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
             name: _name.text.trim(),
             email: _email.text.trim(),
             password: _password.text,
-            role: _role,
+            role: _role.toJson(),
           );
       ref.invalidate(usersProvider);
       if (mounted) {
@@ -131,15 +123,16 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                       : null,
                 ),
                 const SizedBox(height: 12),
-                KicksterDropdown<String>(
+                KicksterDropdown<UserRole>(
                   label: 'Papel',
                   helperText: 'Mesa: opera partidas ao vivo',
                   value: _role,
-                  items: _roles
+                  items: UserRole.values
                       .map((r) =>
-                          DropdownMenuItem(value: r, child: Text(_roleLabel(r))))
+                          DropdownMenuItem(value: r, child: Text(r.label)))
                       .toList(),
-                  onChanged: (value) => setState(() => _role = value ?? 'ORGANIZER'),
+                  onChanged: (value) =>
+                      setState(() => _role = value ?? UserRole.organizer),
                 ),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 8),
