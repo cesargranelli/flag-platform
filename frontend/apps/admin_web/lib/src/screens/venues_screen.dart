@@ -132,7 +132,7 @@ class _VenuesScreenState extends ConsumerState<VenuesScreen> {
                           shrinkWrap: true,
                           physics:
                               const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.zero,
                           itemCount: filtered.length,
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(

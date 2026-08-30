@@ -291,7 +291,7 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.zero,
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final club = filtered[index];

@@ -129,7 +129,7 @@ class _AthletesScreenState extends ConsumerState<AthletesScreen> {
                         return GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.zero,
                           itemCount: filtered.length,
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(

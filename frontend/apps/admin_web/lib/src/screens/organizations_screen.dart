@@ -181,7 +181,7 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                           shrinkWrap: true,
                           physics:
                               const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.zero,
                           itemCount: filtered.length,
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(

@@ -155,7 +155,7 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
                           shrinkWrap: true,
                           physics:
                               const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.zero,
                           itemCount: filtered.length,
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
@@ -249,39 +249,42 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
     ref.invalidate(competitionsAdminProvider(true));
   }
 
-  Future<void> _deactivate(Competition competition) async {
-    try {
-      await ref.read(competitionApiProvider).deactivate(competition.id);
-      _invalidateLists();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${competition.name} desativado.')),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Não foi possível desativar o campeonato.')),
-        );
-      }
-    }
-  }
+  Future<void> _deactivate(Competition competition) => _toggleActive(
+        competition,
+        activate: false,
+        successMessage: '${competition.name} desativado.',
+        errorMessage: 'Não foi possível desativar o campeonato.',
+      );
 
-  Future<void> _reactivate(Competition competition) async {
+  Future<void> _reactivate(Competition competition) => _toggleActive(
+        competition,
+        activate: true,
+        successMessage: '${competition.name} reativado.',
+        errorMessage: 'Não foi possível reativar o campeonato.',
+      );
+
+  Future<void> _toggleActive(
+    Competition competition, {
+    required bool activate,
+    required String successMessage,
+    required String errorMessage,
+  }) async {
     try {
-      await ref.read(competitionApiProvider).reactivate(competition.id);
+      if (activate) {
+        await ref.read(competitionApiProvider).reactivate(competition.id);
+      } else {
+        await ref.read(competitionApiProvider).deactivate(competition.id);
+      }
       _invalidateLists();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${competition.name} reativado.')),
+          SnackBar(content: Text(successMessage)),
         );
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Não foi possível reativar o campeonato.')),
+          SnackBar(content: Text(errorMessage)),
         );
       }
     }

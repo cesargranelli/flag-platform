@@ -34,7 +34,18 @@ class KicksterBreadcrumb extends StatelessWidget {
     final isWide = MediaQuery.sizeOf(context).width >= 960;
 
     if (!isWide) {
-      return _MobileBackButton(item: items.first);
+      // Botão voltar: navega para o ÚLTIMO item com rota (a listagem do
+      // módulo, ex.: /organizations) em vez de sempre o primeiro ("Início") —
+      // o primeiro item é a home, não a origem da navegação (#457).
+      KicksterBreadcrumbItem? backItem;
+      for (final item in items.reversed) {
+        if (item.route != null) {
+          backItem = item;
+          break;
+        }
+      }
+      if (backItem == null) return const SizedBox.shrink();
+      return _MobileBackButton(item: backItem);
     }
 
     final shouldCollapse = items.length > maxVisible;

@@ -107,7 +107,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                         return GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.zero,
                           itemCount: filtered.length,
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(

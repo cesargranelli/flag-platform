@@ -129,7 +129,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                           shrinkWrap: true,
                           physics:
                               const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.zero,
                           itemCount: filtered.length,
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(

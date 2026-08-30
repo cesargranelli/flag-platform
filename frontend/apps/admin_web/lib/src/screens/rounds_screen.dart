@@ -58,6 +58,10 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
 
     return AppScreen(
       title: 'Rodadas',
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
+      ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
