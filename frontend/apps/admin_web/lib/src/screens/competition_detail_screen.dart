@@ -573,23 +573,24 @@ class _CompetitionDetailScreenState
     CompetitionStatus.disabled => 'Desativado',
   };
 
-  String _genderLabel(String? gender) => switch (gender) {
-    'MALE' => 'Masculino',
-    'FEMALE' => 'Feminino',
-    'MIXED' => 'Misto',
-    _ => 'Não definido',
-  };
+  // M12 #473: usa os labels do DOMAIN (Gender/AgeGroup.fromJson) em vez de
+  // switches sobre strings — sem drift quando o domain mudar. Fallback
+  // 'Não definido' para valores desconhecidos/nulos.
+  String _genderLabel(String? gender) {
+    if (gender == null) return 'Não definido';
+    try {
+      return Gender.fromJson(gender).label;
+    } on FormatException {
+      return 'Não definido';
+    }
+  }
 
-  String _ageGroupLabel(String? ageGroup) => switch (ageGroup) {
-    'SUB11' => 'Sub-11',
-    'SUB13' => 'Sub-13',
-    'SUB14' => 'Sub-14',
-    'SUB15' => 'Sub-15',
-    'SUB17' => 'Sub-17',
-    'SUB20' => 'Sub-20',
-    'ADULT' => 'Adulto',
-    'MASTER' => 'Master',
-    'OPEN' => 'Livre',
-    _ => 'Não definido',
-  };
+  String _ageGroupLabel(String? ageGroup) {
+    if (ageGroup == null) return 'Não definido';
+    try {
+      return AgeGroup.fromJson(ageGroup).label;
+    } on FormatException {
+      return 'Não definido';
+    }
+  }
 }
