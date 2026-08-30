@@ -1,4 +1,3 @@
-import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
 import '../utils/date_formats.dart';
+import '../utils/mutation.dart';
 import '../widgets/app_entity_list_screen.dart';
 import '../widgets/app_screen.dart';
 
@@ -19,6 +19,10 @@ class ApprovalsScreen extends ConsumerStatefulWidget {
 
 class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
   final _searchController = TextEditingController();
+
+  /// Ids de usuários com aprovação/rejeição em andamento (desabilita os
+  /// botões do card).
+  final Set<String> _mutating = {};
 
   @override
   void dispose() {
@@ -159,7 +163,8 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                   // TODO(#457): variante danger/semantic no KicksterButton
                   // quando o core evoluir.
                   child: FilledButton.icon(
-                    onPressed: () => _reject(context, ref, user),
+                    onPressed:
+                        _mutating.contains(user.id) ? null : () => _reject(context, ref, user),
                     icon: const Icon(Icons.close),
                     label: const Text('Rejeitar'),
                     style: FilledButton.styleFrom(
@@ -172,7 +177,8 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                   // TODO(#457): variante danger/semantic no KicksterButton
                   // quando o core evoluir.
                   child: FilledButton.icon(
-                    onPressed: () => _approve(context, ref, user),
+                    onPressed:
+                        _mutating.contains(user.id) ? null : () => _approve(context, ref, user),
                     icon: const Icon(Icons.check),
                     label: const Text('Aprovar'),
                     style: FilledButton.styleFrom(
@@ -189,27 +195,21 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
   }
 
   Future<void> _approve(BuildContext context, WidgetRef ref, User user) async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      await ref.read(authApiProvider).approveUser(user.id);
-      ref.invalidate(pendingUsersProvider);
-      ref.invalidate(usersProvider);
-      if (context.mounted) {
-        messenger.showSnackBar(
-          SnackBar(content: Text('${user.name} aprovado!')),
-        );
-      }
-    } on RepositoryException catch (e) {
-      if (context.mounted) {
-        messenger.showSnackBar(SnackBar(content: Text(e.message)));
-      }
-    } catch (_) {
-      if (context.mounted) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Não foi possível aprovar.')),
-        );
-      }
-    }
+    await runMutation(
+      context,
+      action: () => ref.read(authApiProvider).approveUser(user.id),
+      successMessage: '${user.name} aprovado!',
+      errorMessage: 'Não foi possível aprovar.',
+      progressId: user.id,
+      progressIds: _mutating,
+      notify: () {
+        if (mounted) setState(() {});
+      },
+      onSuccess: () {
+        ref.invalidate(pendingUsersProvider);
+        ref.invalidate(usersProvider);
+      },
+    );
   }
 
   Future<void> _reject(BuildContext context, WidgetRef ref, User user) async {
@@ -222,27 +222,21 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
     );
     if (confirmed != true || !context.mounted) return;
 
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      await ref.read(authApiProvider).rejectUser(user.id);
-      ref.invalidate(pendingUsersProvider);
-      ref.invalidate(usersProvider);
-      if (context.mounted) {
-        messenger.showSnackBar(
-          SnackBar(content: Text('${user.name} rejeitado.')),
-        );
-      }
-    } on RepositoryException catch (e) {
-      if (context.mounted) {
-        messenger.showSnackBar(SnackBar(content: Text(e.message)));
-      }
-    } catch (_) {
-      if (context.mounted) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Não foi possível rejeitar.')),
-        );
-      }
-    }
+    await runMutation(
+      context,
+      action: () => ref.read(authApiProvider).rejectUser(user.id),
+      successMessage: '${user.name} rejeitado.',
+      errorMessage: 'Não foi possível rejeitar.',
+      progressId: user.id,
+      progressIds: _mutating,
+      notify: () {
+        if (mounted) setState(() {});
+      },
+      onSuccess: () {
+        ref.invalidate(pendingUsersProvider);
+        ref.invalidate(usersProvider);
+      },
+    );
   }
 }
 

@@ -1,6 +1,6 @@
 name: flag_domain
 description: Modelos de dominio (DTOs) compartilhados entre os apps do Flag Platform.
-version: 0.2.0
+version: 0.3.0
 publish_to: none
 resolution: workspace
 

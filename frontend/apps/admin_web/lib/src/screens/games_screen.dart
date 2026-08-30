@@ -55,7 +55,7 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
         .where((c) => c.id == effectiveComp)
         .firstOrNull;
     final canEdit = canEditCompetition(
-      ref.watch(authControllerProvider).state.user,
+      ref.watch(authControllerProvider.select((a) => a.state.user)),
       selectedCompetitionObj,
     );
 

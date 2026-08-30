@@ -49,18 +49,16 @@ class GameDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildDetail(BuildContext context, WidgetRef ref, Game game) {
-    final competitions = ref.watch(competitionsProvider);
-    final competitionName = competitions.valueOrNull
-            ?.where((c) => c.id == game.competitionId)
-            .map((c) => c.name)
-            .firstOrNull ??
-        '';
+    // P3 #471: resolve o campeonato pelo family (autoDispose) em vez de
+    // assistir a lista completa — rebuild só quando ESTA competição muda.
+    final compAsync = game.competitionId != null
+        ? ref.watch(competitionProvider(game.competitionId!))
+        : null;
+    final competitionName = compAsync?.valueOrNull?.name ?? '';
     // Issue #261: edição do jogo exige ser criador do campeonato ou ADMIN.
-    final competition = competitions.valueOrNull
-        ?.where((c) => c.id == game.competitionId)
-        .firstOrNull;
+    final competition = compAsync?.valueOrNull;
     final canEdit = canEditCompetition(
-      ref.watch(authControllerProvider).state.user,
+      ref.watch(authControllerProvider.select((a) => a.state.user)),
       competition,
     );
 

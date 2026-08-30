@@ -114,7 +114,7 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
     // tem a estrutura travada (somente leitura).
     final canEdit =
         canEditCompetition(
-          ref.watch(authControllerProvider).state.user,
+          ref.watch(authControllerProvider.select((a) => a.state.user)),
           competition,
         ) &&
         competition.status == CompetitionStatus.draft;

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../utils/mutation.dart';
 import '../widgets/app_entity_list_screen.dart';
 import '../widgets/app_screen.dart';
 
@@ -25,8 +26,8 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   bool _showDisabled = false;
   final _searchController = TextEditingController();
 
-  bool get _isAdmin =>
-      ref.read(authControllerProvider).state.user?.role == 'ADMIN';
+  /// Ids de organizações com desativação/reativação em andamento.
+  final Set<String> _mutating = {};
 
   @override
   void dispose() {
@@ -36,7 +37,9 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = ref.watch(authControllerProvider).state.user?.role == 'ADMIN';
+    final isAdmin =
+        ref.watch(authControllerProvider.select((a) => a.state.user?.role)) ==
+        'ADMIN';
     final showDisabled = isAdmin && _showDisabled;
     final organizations = showDisabled
         ? ref.watch(organizationsAdminProvider(true))
@@ -90,7 +93,7 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
               return AppEntityListScreen<Organization>(
                 items: items,
                 cardBuilder: (organization) =>
-                    _organizationCard(context, organization),
+                    _organizationCard(context, organization, isAdmin),
                 searchField: _searchController,
                 emptyMessage: 'Nenhuma organização encontrada',
                 searchWidth: 220,
@@ -155,7 +158,11 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   /// Card de organização no padrão Kickster (core #439): ícone do tipo,
   /// nome fantasia + nome legal e, à direita, badge de desativada (quando
   /// inativa) e menu de gestão para ADMIN.
-  Widget _organizationCard(BuildContext context, Organization organization) {
+  Widget _organizationCard(
+    BuildContext context,
+    Organization organization,
+    bool isAdmin,
+  ) {
     final isDisabled = organization.status == OrganizationStatus.inactive;
     return KicksterCard(
       icon: organizationTypeIcon(organization.organizationType),
@@ -169,7 +176,7 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (isDisabled) _disabledBadge(),
-          if (_isAdmin)
+          if (isAdmin)
             PopupMenuButton<String>(
               tooltip: 'Ações',
               onSelected: (value) async {
@@ -225,41 +232,39 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
     ref.invalidate(organizationsAdminProvider(true));
   }
 
-  Future<void> _deactivate(Organization organization) async {
-    try {
-      await ref.read(organizationApiProvider).deactivate(organization.id);
-      _invalidateLists();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${organization.tradeName} desativada.')),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Não foi possível desativar a organização.')),
-        );
-      }
-    }
-  }
+  Future<void> _deactivate(Organization organization) => _toggleActive(
+        organization,
+        activate: false,
+        successMessage: '${organization.tradeName} desativada.',
+        errorMessage: 'Não foi possível desativar a organização.',
+      );
 
-  Future<void> _reactivate(Organization organization) async {
-    try {
-      await ref.read(organizationApiProvider).reactivate(organization.id);
-      _invalidateLists();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${organization.tradeName} reativada.')),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Não foi possível reativar a organização.')),
-        );
-      }
-    }
+  Future<void> _reactivate(Organization organization) => _toggleActive(
+        organization,
+        activate: true,
+        successMessage: '${organization.tradeName} reativada.',
+        errorMessage: 'Não foi possível reativar a organização.',
+      );
+
+  Future<void> _toggleActive(
+    Organization organization, {
+    required bool activate,
+    required String successMessage,
+    required String errorMessage,
+  }) async {
+    await runMutation(
+      context,
+      action: () => activate
+          ? ref.read(organizationApiProvider).reactivate(organization.id)
+          : ref.read(organizationApiProvider).deactivate(organization.id),
+      successMessage: successMessage,
+      errorMessage: errorMessage,
+      progressId: organization.id,
+      progressIds: _mutating,
+      notify: () {
+        if (mounted) setState(() {});
+      },
+      onSuccess: _invalidateLists,
+    );
   }
 }
