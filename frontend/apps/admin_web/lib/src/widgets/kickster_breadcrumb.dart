@@ -112,32 +112,36 @@ class _MobileBackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
-      child: InkWell(
-        onTap: item.route != null ? () => context.go(item.route!) : null,
-        hoverColor: Colors.transparent,
-        focusColor: Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.arrow_back,
-                size: 18,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                item.label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  height: 22 / 14,
-                  fontWeight: FontWeight.w500,
+      child: Semantics(
+        button: true,
+        label: 'Voltar para ${item.label}',
+        child: InkWell(
+          onTap: item.route != null ? () => context.go(item.route!) : null,
+          hoverColor: Colors.transparent,
+          focusColor: Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.arrow_back,
+                  size: 18,
                   color: AppColors.primary,
                 ),
-              ),
-            ],
+                const SizedBox(width: 6),
+                Text(
+                  item.label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 22 / 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -179,20 +183,27 @@ class _BreadcrumbItemWidgetState extends State<_BreadcrumbItemWidget> {
       );
     }
 
-    // Link clicável
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
+    // Link clicável: InkWell (hover + foco por Tab + ativação via Enter +
+    // Semantics de botão/link de graça), mantendo o texto com hover primary
+    // e o cursor de click.
+    return Semantics(
+      button: true,
+      link: true,
+      label: item.label,
+      child: InkWell(
         onTap: () => context.go(item.route!),
-        child: Text(
-          item.label,
-          style: TextStyle(
-            fontSize: 14,
-            height: 20 / 14,
-            fontWeight: FontWeight.w400,
-            color: _hovered ? AppColors.primary : AppColors.textSecondary,
+        onHover: (v) => setState(() => _hovered = v),
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+          child: Text(
+            item.label,
+            style: TextStyle(
+              fontSize: 14,
+              height: 20 / 14,
+              fontWeight: FontWeight.w400,
+              color: _hovered ? AppColors.primary : AppColors.textSecondary,
+            ),
           ),
         ),
       ),
