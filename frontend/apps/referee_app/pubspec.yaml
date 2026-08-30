@@ -1,7 +1,7 @@
 name: flag_referee_app
 description: Referee App do Flag Platform - operacao de partidas pela mesa (placar e validacao de atletas).
 publish_to: 'none'
-version: 0.1.0+1
+version: 0.2.0+1
 resolution: workspace
 
 environment:

@@ -1,7 +1,7 @@
 name: flag_admin_web
 description: Admin Web do Flag Platform - gestao de cadastros pelo organizador (Flutter Web).
 publish_to: 'none'
-version: 0.1.0+1
+version: 0.2.0+1
 resolution: workspace
 
 environment:
