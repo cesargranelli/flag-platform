@@ -1,4 +1,3 @@
-import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../utils/mutation.dart';
 import '../widgets/app_screen.dart';
 
 /// Elenco de um clube (time) num campeonato (issue #360/#363).
@@ -54,30 +54,23 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     final details = await _promptRosterDetails(athlete.name);
     if (details == null || !mounted) return;
 
-    final messenger = ScaffoldMessenger.of(context);
-    setState(() => _adding.add(athlete.id));
-    try {
-      await ref
-          .read(rosterApiProvider)
-          .add(
+    await runMutation(
+      context,
+      action: () => ref.read(rosterApiProvider).add(
             teamId: teamId,
             athleteId: athlete.id,
             nickname: details.nickname,
             number: details.number,
-          );
-      ref.invalidate(rosterProvider(teamId));
-      messenger.showSnackBar(
-        SnackBar(content: Text('${athlete.name} adicionado ao elenco.')),
-      );
-    } on RepositoryException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Não foi possível adicionar o atleta.')),
-      );
-    } finally {
-      if (mounted) setState(() => _adding.remove(athlete.id));
-    }
+          ),
+      successMessage: '${athlete.name} adicionado ao elenco.',
+      errorMessage: 'Não foi possível adicionar o atleta.',
+      progressId: athlete.id,
+      progressIds: _adding,
+      notify: () {
+        if (mounted) setState(() {});
+      },
+      onSuccess: () => ref.invalidate(rosterProvider(teamId)),
+    );
   }
 
   /// Diálogo para coletar apelido e número da camisa do atleta ao incluí-lo no
@@ -95,25 +88,20 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     final teamId = _teamId;
     if (teamId == null) return;
 
-    final messenger = ScaffoldMessenger.of(context);
-    setState(() => _removing.add(entry.athleteId));
-    try {
-      await ref
+    await runMutation(
+      context,
+      action: () => ref
           .read(rosterApiProvider)
-          .remove(teamId: teamId, athleteId: entry.athleteId);
-      ref.invalidate(rosterProvider(teamId));
-      messenger.showSnackBar(
-        SnackBar(content: Text('${entry.athleteName} removido do elenco.')),
-      );
-    } on RepositoryException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Não foi possível remover o atleta.')),
-      );
-    } finally {
-      if (mounted) setState(() => _removing.remove(entry.athleteId));
-    }
+          .remove(teamId: teamId, athleteId: entry.athleteId),
+      successMessage: '${entry.athleteName} removido do elenco.',
+      errorMessage: 'Não foi possível remover o atleta.',
+      progressId: entry.athleteId,
+      progressIds: _removing,
+      notify: () {
+        if (mounted) setState(() {});
+      },
+      onSuccess: () => ref.invalidate(rosterProvider(teamId)),
+    );
   }
 
   @override

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../utils/mutation.dart';
 import '../widgets/app_entity_list_screen.dart';
 import '../widgets/app_screen.dart';
 
@@ -24,6 +25,9 @@ class CompetitionsScreen extends ConsumerStatefulWidget {
 class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
   bool _showDisabled = false;
   final _searchController = TextEditingController();
+
+  /// Ids de campeonatos com desativação/reativação em andamento.
+  final Set<String> _mutating = {};
 
   @override
   void dispose() {
@@ -213,24 +217,19 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
     required String successMessage,
     required String errorMessage,
   }) async {
-    try {
-      if (activate) {
-        await ref.read(competitionApiProvider).reactivate(competition.id);
-      } else {
-        await ref.read(competitionApiProvider).deactivate(competition.id);
-      }
-      _invalidateLists();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(successMessage)),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
-      }
-    }
+    await runMutation(
+      context,
+      action: () => activate
+          ? ref.read(competitionApiProvider).reactivate(competition.id)
+          : ref.read(competitionApiProvider).deactivate(competition.id),
+      successMessage: successMessage,
+      errorMessage: errorMessage,
+      progressId: competition.id,
+      progressIds: _mutating,
+      notify: () {
+        if (mounted) setState(() {});
+      },
+      onSuccess: _invalidateLists,
+    );
   }
 }

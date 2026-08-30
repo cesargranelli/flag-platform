@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../utils/mutation.dart';
 import '../widgets/app_entity_list_screen.dart';
 import '../widgets/app_screen.dart';
 
@@ -24,6 +25,9 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   OrganizationType? _typeFilter;
   bool _showDisabled = false;
   final _searchController = TextEditingController();
+
+  /// Ids de organizações com desativação/reativação em andamento.
+  final Set<String> _mutating = {};
 
   @override
   void dispose() {
@@ -228,41 +232,39 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
     ref.invalidate(organizationsAdminProvider(true));
   }
 
-  Future<void> _deactivate(Organization organization) async {
-    try {
-      await ref.read(organizationApiProvider).deactivate(organization.id);
-      _invalidateLists();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${organization.tradeName} desativada.')),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Não foi possível desativar a organização.')),
-        );
-      }
-    }
-  }
+  Future<void> _deactivate(Organization organization) => _toggleActive(
+        organization,
+        activate: false,
+        successMessage: '${organization.tradeName} desativada.',
+        errorMessage: 'Não foi possível desativar a organização.',
+      );
 
-  Future<void> _reactivate(Organization organization) async {
-    try {
-      await ref.read(organizationApiProvider).reactivate(organization.id);
-      _invalidateLists();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${organization.tradeName} reativada.')),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Não foi possível reativar a organização.')),
-        );
-      }
-    }
+  Future<void> _reactivate(Organization organization) => _toggleActive(
+        organization,
+        activate: true,
+        successMessage: '${organization.tradeName} reativada.',
+        errorMessage: 'Não foi possível reativar a organização.',
+      );
+
+  Future<void> _toggleActive(
+    Organization organization, {
+    required bool activate,
+    required String successMessage,
+    required String errorMessage,
+  }) async {
+    await runMutation(
+      context,
+      action: () => activate
+          ? ref.read(organizationApiProvider).reactivate(organization.id)
+          : ref.read(organizationApiProvider).deactivate(organization.id),
+      successMessage: successMessage,
+      errorMessage: errorMessage,
+      progressId: organization.id,
+      progressIds: _mutating,
+      notify: () {
+        if (mounted) setState(() {});
+      },
+      onSuccess: _invalidateLists,
+    );
   }
 }

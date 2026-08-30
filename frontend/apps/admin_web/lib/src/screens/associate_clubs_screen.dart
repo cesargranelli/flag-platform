@@ -1,4 +1,3 @@
-import 'package:flag_api/flag_api.dart';
 import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../utils/mutation.dart';
 import '../widgets/app_screen.dart';
 
 /// Associação de clubes (organizações) a um campeonato (issue #351).
@@ -57,60 +57,42 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
 
   /// Cria o [Team] que inscreve o clube no campeonato.
   Future<void> _associate(Organization club, String competitionId) async {
-    // Capturados antes do await: o contexto pode sair de cena ao trocar de tela.
-    final messenger = ScaffoldMessenger.of(context);
-
-    setState(() => _associatingOrgIds.add(club.id));
-    try {
-      // Rota própria de associação de clube ao campeonato (#377) — o nome do
-      // time é derivado do clube no backend, sem cadastro de time completo.
-      await ref
+    await runMutation(
+      context,
+      action: () => ref
           .read(teamApiProvider)
-          .associateClub(competitionId: competitionId, organizationId: club.id);
-      ref.invalidate(teamsProvider(competitionId));
-      messenger.showSnackBar(
-        SnackBar(content: Text('${club.tradeName} associado ao campeonato.')),
-      );
-    } on RepositoryException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Não foi possível associar o clube.')),
-      );
-    } finally {
-      if (mounted) setState(() => _associatingOrgIds.remove(club.id));
-    }
+          .associateClub(competitionId: competitionId, organizationId: club.id),
+      successMessage: '${club.tradeName} associado ao campeonato.',
+      errorMessage: 'Não foi possível associar o clube.',
+      progressId: club.id,
+      progressIds: _associatingOrgIds,
+      notify: () {
+        if (mounted) setState(() {});
+      },
+      onSuccess: () => ref.invalidate(teamsProvider(competitionId)),
+    );
   }
 
   /// Remove a inscrição do clube no campeonato (desassociar).
   Future<void> _disassociate(Team team, String competitionId) async {
-    // Capturados antes do await: o contexto pode sair de cena ao trocar de tela.
-    final messenger = ScaffoldMessenger.of(context);
-
-    setState(() => _disassociatingTeamIds.add(team.id));
-    try {
-      await ref.read(teamApiProvider).delete(team.id);
-      ref.invalidate(teamsProvider(competitionId));
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Clube desassociado do campeonato.')),
-      );
-    } on RepositoryException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Não foi possível desassociar o clube.')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _disassociatingTeamIds.remove(team.id);
-          // O clube deixou de ser selecionável; remove da seleção se constar.
-          if (team.organizationId != null) {
-            _selectedOrgIds.remove(team.organizationId);
-          }
-        });
-      }
-    }
+    await runMutation(
+      context,
+      action: () => ref.read(teamApiProvider).delete(team.id),
+      successMessage: 'Clube desassociado do campeonato.',
+      errorMessage: 'Não foi possível desassociar o clube.',
+      progressId: team.id,
+      progressIds: _disassociatingTeamIds,
+      notify: () {
+        if (mounted) setState(() {});
+      },
+      onSuccess: () {
+        ref.invalidate(teamsProvider(competitionId));
+        // O clube deixou de ser selecionável; remove da seleção se constar.
+        if (team.organizationId != null && mounted) {
+          setState(() => _selectedOrgIds.remove(team.organizationId));
+        }
+      },
+    );
   }
 
   /// Associa em lote todos os clubes selecionados (cria um [Team] por clube).
