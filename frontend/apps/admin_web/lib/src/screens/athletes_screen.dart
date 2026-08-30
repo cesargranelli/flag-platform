@@ -31,6 +31,7 @@ class _AthletesScreenState extends ConsumerState<AthletesScreen> {
 
     return AppScreen(
       title: 'Atletas',
+      scrollable: false,
       breadcrumb: const [
         BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem('Atletas'),
@@ -57,41 +58,43 @@ class _AthletesScreenState extends ConsumerState<AthletesScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Conteúdo
-          athletes.when(
-            loading: () => const AppLoading(message: 'Carregando atletas...'),
-            error: (error, stackTrace) => AppErrorState(
-              message: 'Não foi possível carregar os atletas',
-              onRetry: () => ref.invalidate(athletesProvider),
-            ),
-            data: (items) {
-              if (items.isEmpty) {
-                return KicksterEmptyState(
-                  icon: Icons.person_outline,
-                  message: 'Nenhum atleta cadastrado',
-                  description: 'Crie o primeiro atleta para começar a usar.',
-                  action: KicksterButton(
-                    label: 'Criar atleta',
-                    icon: Icons.add,
-                    onPressed: () => context.go('/athletes/new'),
-                  ),
+          // Conteúdo (Expanded para dar altura finita ao grid)
+          Expanded(
+            child: athletes.when(
+              loading: () => const AppLoading(message: 'Carregando atletas...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar os atletas',
+                onRetry: () => ref.invalidate(athletesProvider),
+              ),
+              data: (items) {
+                if (items.isEmpty) {
+                  return KicksterEmptyState(
+                    icon: Icons.person_outline,
+                    message: 'Nenhum atleta cadastrado',
+                    description: 'Crie o primeiro atleta para começar a usar.',
+                    action: KicksterButton(
+                      label: 'Criar atleta',
+                      icon: Icons.add,
+                      onPressed: () => context.go('/athletes/new'),
+                    ),
+                  );
+                }
+                return AppEntityListScreen<Athlete>(
+                  items: items,
+                  cardBuilder: (athlete) => _athleteCard(context, athlete),
+                  searchField: _searchController,
+                  countLabel: 'atletas',
+                  countLabelSingular: 'atleta',
+                  emptyMessage: 'Nenhum atleta encontrado',
+                  filter: (all, query) => query.isEmpty
+                      ? all
+                      : all
+                          .where(
+                              (a) => a.name.toLowerCase().contains(query))
+                          .toList(growable: false),
                 );
-              }
-              return AppEntityListScreen<Athlete>(
-                items: items,
-                cardBuilder: (athlete) => _athleteCard(context, athlete),
-                searchField: _searchController,
-                countLabel: 'atletas',
-                countLabelSingular: 'atleta',
-                emptyMessage: 'Nenhum atleta encontrado',
-                filter: (all, query) => query.isEmpty
-                    ? all
-                    : all
-                        .where(
-                            (a) => a.name.toLowerCase().contains(query))
-                        .toList(growable: false),
-              );
-            },
+              },
+            ),
           ),
         ],
       ),

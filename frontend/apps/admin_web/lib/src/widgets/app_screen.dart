@@ -49,35 +49,50 @@ class AppScreen extends StatelessWidget {
       children: [
         // Header pessoal (sticky)
         if (showUserHeader) const _UserHeader(),
-        // Page body (breadcrumb + conteúdo, scrollável)
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Breadcrumb inline (sem barra separada)
-                if (crumbs.isNotEmpty) ...[
-                  KicksterBreadcrumb(
-                    items: [
-                      for (var i = 0; i < crumbs.length; i++)
-                        KicksterBreadcrumbItem(
-                          label: crumbs[i].label,
-                          route: crumbs[i].route,
-                          icon: crumbs[i].icon ??
-                              (i == 0 && crumbs[i].route == '/'
-                                  ? Icons.home_outlined
-                                  : null),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                body,
-              ],
+        if (scrollable)
+          // Page body (breadcrumb + conteúdo, scrollável)
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: _buildBody(crumbs),
+            ),
+          )
+        else
+          // Page body (breadcrumb + conteúdo) em altura finita (Expanded):
+          // usado pelas telas de listagem para permitir scroll raiz LIGHT
+          // (virtualização real via altura finita nos grids/lists).
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: _buildBody(crumbs),
             ),
           ),
-        ),
+      ],
+    );
+  }
+
+  Widget _buildBody(List<BreadcrumbItem> crumbs) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Breadcrumb inline (sem barra separada)
+        if (crumbs.isNotEmpty) ...[
+          KicksterBreadcrumb(
+            items: [
+              for (var i = 0; i < crumbs.length; i++)
+                KicksterBreadcrumbItem(
+                  label: crumbs[i].label,
+                  route: crumbs[i].route,
+                  icon: crumbs[i].icon ??
+                      (i == 0 && crumbs[i].route == '/'
+                          ? Icons.home_outlined
+                          : null),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+        body,
       ],
     );
   }

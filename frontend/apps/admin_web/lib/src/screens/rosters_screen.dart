@@ -48,6 +48,7 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
 
     return AppScreen(
       title: 'Elencos',
+      scrollable: false,
       breadcrumb: const [
         BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem('Elencos'),
@@ -55,65 +56,71 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          competitions.when(
-            loading: () =>
-                const AppLoading(message: 'Carregando campeonatos...'),
-            error: (error, stackTrace) => AppErrorState(
-              message: 'Não foi possível carregar os campeonatos',
-              onRetry: () => ref.invalidate(competitionsProvider),
-            ),
-            data: (_) {
-              if (compItems.isEmpty) {
-                return KicksterEmptyState(
-                  icon: Icons.emoji_events_outlined,
-                  message: 'Nenhum campeonato cadastrado',
-                  description:
-                      'Crie um campeonato para organizar os elencos.',
-                  action: KicksterButton(
-                    label: 'Criar campeonato',
-                    icon: Icons.add,
-                    onPressed: () => context.go('/competitions/new'),
-                  ),
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppLayout.form(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                      child: KicksterDropdown<String>(
-                        key: ValueKey('comp-$effectiveComp'),
-                        label: 'Campeonato',
-                        value: effectiveComp,
-                        items: compItems
-                            .map(
-                              (c) => DropdownMenuItem(
-                                value: c.id,
-                                child: appDropdownItem(
-                                  Icons.emoji_events_outlined,
-                                  c.name,
+          // Conteúdo (Expanded para dar altura finita à lista lazy)
+          Expanded(
+            child: competitions.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando campeonatos...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar os campeonatos',
+                onRetry: () => ref.invalidate(competitionsProvider),
+              ),
+              data: (_) {
+                if (compItems.isEmpty) {
+                  return KicksterEmptyState(
+                    icon: Icons.emoji_events_outlined,
+                    message: 'Nenhum campeonato cadastrado',
+                    description:
+                        'Crie um campeonato para organizar os elencos.',
+                    action: KicksterButton(
+                      label: 'Criar campeonato',
+                      icon: Icons.add,
+                      onPressed: () => context.go('/competitions/new'),
+                    ),
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppLayout.form(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: KicksterDropdown<String>(
+                          key: ValueKey('comp-$effectiveComp'),
+                          label: 'Campeonato',
+                          value: effectiveComp,
+                          items: compItems
+                              .map(
+                                (c) => DropdownMenuItem(
+                                  value: c.id,
+                                  child: appDropdownItem(
+                                    Icons.emoji_events_outlined,
+                                    c.name,
+                                  ),
                                 ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          ref.read(selectedCompetitionProvider.notifier).state =
-                              value;
-                          ref.read(selectedTeamProvider.notifier).state = null;
-                        },
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            ref.read(selectedCompetitionProvider.notifier).state =
+                                value;
+                            ref.read(selectedTeamProvider.notifier).state = null;
+                          },
+                        ),
                       ),
                     ),
-                  ),
-                  effectiveComp != null
-                      ? _clubList(context, effectiveComp)
-                      : const AppEmptyState(
-                          message: 'Selecione um campeonato',
-                          icon: Icons.emoji_events_outlined,
-                        ),
-                ],
-              );
-            },
+                    // Lista em altura finita (Expanded) → virtualização real.
+                    Expanded(
+                      child: effectiveComp != null
+                          ? _clubList(context, effectiveComp)
+                          : const AppEmptyState(
+                              message: 'Selecione um campeonato',
+                              icon: Icons.emoji_events_outlined,
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -226,38 +233,41 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
               ],
             ),
           ),
-          if (filtered.isEmpty)
-            const AppEmptyState(
-              message: 'Nenhum clube encontrado',
-              icon: Icons.search_off,
-            )
-          else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: EdgeInsets.zero,
-                  itemCount: filtered.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    mainAxisExtent: 112,
+          // Grid em altura finita (Expanded) → virtualização real (lazy).
+          const SizedBox(height: 16),
+          Expanded(
+            child: filtered.isEmpty
+                ? const AppEmptyState(
+                    message: 'Nenhum clube encontrado',
+                    icon: Icons.search_off,
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = constraints.maxWidth >= 600 ? 2 : 1;
+                      return GridView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        itemCount: filtered.length,
+                        gridDelegate:
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          mainAxisExtent: 112,
+                        ),
+                        itemBuilder: (context, index) {
+                          final org = filtered[index];
+                          return _clubCard(
+                            context,
+                            org,
+                            team: teamByOrgId[org.id],
+                            competitionId: competitionId,
+                          );
+                        },
+                      );
+                    },
                   ),
-                  itemBuilder: (context, index) {
-                    final org = filtered[index];
-                    return _clubCard(
-                      context,
-                      org,
-                      team: teamByOrgId[org.id],
-                      competitionId: competitionId,
-                    );
-                  },
-                );
-              },
-            ),
+          ),
         ],
       ),
     );

@@ -34,6 +34,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
 
     return AppScreen(
       title: 'Aprovações',
+      scrollable: false,
       breadcrumb: const [
         BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem('Aprovações'),
@@ -41,42 +42,45 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          pending.when(
-            loading: () =>
-                const AppLoading(message: 'Carregando pendências...'),
-            error: (error, stackTrace) => AppErrorState(
-              message: 'Não foi possível carregar as pendências',
-              onRetry: () => ref.invalidate(pendingUsersProvider),
-            ),
-            data: (items) {
-              if (items.isEmpty) {
-                return const KicksterEmptyState(
-                  message: 'Nenhuma conta aguardando aprovação',
-                  description:
-                      'Contas criadas por novos usuários aparecem aqui '
-                      'para revisão.',
-                  icon: Icons.verified_outlined,
+          // Conteúdo (Expanded para dar altura finita ao grid)
+          Expanded(
+            child: pending.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando pendências...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar as pendências',
+                onRetry: () => ref.invalidate(pendingUsersProvider),
+              ),
+              data: (items) {
+                if (items.isEmpty) {
+                  return const KicksterEmptyState(
+                    message: 'Nenhuma conta aguardando aprovação',
+                    description:
+                        'Contas criadas por novos usuários aparecem aqui '
+                        'para revisão.',
+                    icon: Icons.verified_outlined,
+                  );
+                }
+                return AppEntityListScreen<User>(
+                  items: items,
+                  cardBuilder: (user) => _approvalCard(context, ref, user),
+                  searchField: _searchController,
+                  countLabel: 'contas pendentes',
+                  countLabelSingular: 'conta pendente',
+                  emptyMessage: 'Nenhuma conta encontrada',
+                  mainAxisExtent: 200,
+                  filter: (all, query) => query.isEmpty
+                      ? all
+                      : all
+                          .where(
+                            (u) =>
+                                u.name.toLowerCase().contains(query) ||
+                                u.email.toLowerCase().contains(query),
+                          )
+                          .toList(growable: false),
                 );
-              }
-              return AppEntityListScreen<User>(
-                items: items,
-                cardBuilder: (user) => _approvalCard(context, ref, user),
-                searchField: _searchController,
-                countLabel: 'contas pendentes',
-                countLabelSingular: 'conta pendente',
-                emptyMessage: 'Nenhuma conta encontrada',
-                mainAxisExtent: 200,
-                filter: (all, query) => query.isEmpty
-                    ? all
-                    : all
-                        .where(
-                          (u) =>
-                              u.name.toLowerCase().contains(query) ||
-                              u.email.toLowerCase().contains(query),
-                        )
-                        .toList(growable: false),
-              );
-            },
+              },
+            ),
           ),
         ],
       ),

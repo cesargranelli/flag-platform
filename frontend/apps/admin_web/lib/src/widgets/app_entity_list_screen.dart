@@ -105,6 +105,7 @@ class _AppEntityListScreenState<T> extends State<AppEntityListScreen<T>> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Toolbar (contagem + leading + trailing + busca) fica fixa no topo.
         Row(
           children: [
             _countText(filtered.length, query.isNotEmpty),
@@ -121,34 +122,38 @@ class _AppEntityListScreenState<T> extends State<AppEntityListScreen<T>> {
           ],
         ),
         const SizedBox(height: 16),
-        if (filtered.isEmpty)
-          AppEmptyState(
-            message: widget.emptyMessage,
-            icon: Icons.search_off,
-          )
-        else
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 600
-                  ? widget.maxColumns
-                  : widget.minColumns;
-              return GridView.builder(
-                shrinkWrap: false,
-                physics: const AlwaysScrollableScrollPhysics(),
-                cacheExtent: 100,
-                padding: widget.gridPadding,
-                itemCount: filtered.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columns,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  mainAxisExtent: widget.mainAxisExtent,
+        // Grid em altura finita (Expanded) → virtualização REAL. O widget é
+        // usado dentro de um body com `scrollable:false` no AppScreen, que
+        // fornece altura finita (Expanded) ao grid.
+        Expanded(
+          child: filtered.isEmpty
+              ? AppEmptyState(
+                  message: widget.emptyMessage,
+                  icon: Icons.search_off,
+                )
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth >= 600
+                        ? widget.maxColumns
+                        : widget.minColumns;
+                    return GridView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      cacheExtent: 100,
+                      padding: widget.gridPadding,
+                      itemCount: filtered.length,
+                      gridDelegate:
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        mainAxisExtent: widget.mainAxisExtent,
+                      ),
+                      itemBuilder: (context, index) =>
+                          widget.cardBuilder(filtered[index]),
+                    );
+                  },
                 ),
-                itemBuilder: (context, index) =>
-                    widget.cardBuilder(filtered[index]),
-              );
-            },
-          ),
+        ),
       ],
     );
   }

@@ -46,6 +46,7 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
 
     return AppScreen(
       title: 'Organizações',
+      scrollable: false,
       breadcrumb: const [
         BreadcrumbItem('Início', route: '/'),
         BreadcrumbItem('Organizações'),
@@ -65,89 +66,91 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Conteúdo
-          organizations.when(
-            loading: () =>
-                const AppLoading(message: 'Carregando organizações...'),
-            error: (error, stackTrace) => AppErrorState(
-              message: 'Não foi possível carregar as organizações',
-              onRetry: () => showDisabled
-                  ? ref.invalidate(organizationsAdminProvider(true))
-                  : ref.invalidate(organizationsProvider),
-            ),
-            data: (items) {
-              if (items.isEmpty) {
-                return KicksterEmptyState(
-                  icon: Icons.business,
-                  message: 'Nenhuma organização cadastrada',
-                  description:
-                      'Crie a primeira organização para começar a usar.',
-                  action: KicksterButton(
-                    label: 'Criar organização',
-                    icon: Icons.add,
-                    onPressed: () => context.go('/organizations/new'),
-                  ),
-                );
-              }
-              return AppEntityListScreen<Organization>(
-                items: items,
-                cardBuilder: (organization) =>
-                    _organizationCard(context, organization, isAdmin),
-                searchField: _searchController,
-                emptyMessage: 'Nenhuma organização encontrada',
-                searchWidth: 220,
-                toolbarLeading: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(width: 8),
-                    if (isAdmin) ...[
-                      Tooltip(
-                        message: 'Exibir organizações desativadas',
-                        child: IconButton(
-                          isSelected: _showDisabled,
-                          selectedIcon: const Icon(Icons.visibility),
-                          icon: const Icon(Icons.visibility_off_outlined),
-                          tooltip: 'Desativadas',
-                          onPressed: () =>
-                              setState(() => _showDisabled = !_showDisabled),
+          // Conteúdo (Expanded para dar altura finita ao grid)
+          Expanded(
+            child: organizations.when(
+              loading: () =>
+                  const AppLoading(message: 'Carregando organizações...'),
+              error: (error, stackTrace) => AppErrorState(
+                message: 'Não foi possível carregar as organizações',
+                onRetry: () => showDisabled
+                    ? ref.invalidate(organizationsAdminProvider(true))
+                    : ref.invalidate(organizationsProvider),
+              ),
+              data: (items) {
+                if (items.isEmpty) {
+                  return KicksterEmptyState(
+                    icon: Icons.business,
+                    message: 'Nenhuma organização cadastrada',
+                    description:
+                        'Crie a primeira organização para começar a usar.',
+                    action: KicksterButton(
+                      label: 'Criar organização',
+                      icon: Icons.add,
+                      onPressed: () => context.go('/organizations/new'),
+                    ),
+                  );
+                }
+                return AppEntityListScreen<Organization>(
+                  items: items,
+                  cardBuilder: (organization) =>
+                      _organizationCard(context, organization, isAdmin),
+                  searchField: _searchController,
+                  emptyMessage: 'Nenhuma organização encontrada',
+                  searchWidth: 220,
+                  toolbarLeading: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(width: 8),
+                      if (isAdmin) ...[
+                        Tooltip(
+                          message: 'Exibir organizações desativadas',
+                          child: IconButton(
+                            isSelected: _showDisabled,
+                            selectedIcon: const Icon(Icons.visibility),
+                            icon: const Icon(Icons.visibility_off_outlined),
+                            tooltip: 'Desativadas',
+                            onPressed: () =>
+                                setState(() => _showDisabled = !_showDisabled),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      SizedBox(
+                        width: 260,
+                        child: KicksterDropdown<OrganizationType?>(
+                          label: 'Filtrar por tipo',
+                          value: _typeFilter,
+                          values: [null, ...OrganizationType.values],
+                          labels: [
+                            'Todas as organizações',
+                            ...OrganizationType.values.map((t) => t.label),
+                          ],
+                          icons: [
+                            null,
+                            ...OrganizationType.values
+                                .map(organizationTypeIcon),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _typeFilter = value),
                         ),
                       ),
-                      const SizedBox(width: 8),
                     ],
-                    SizedBox(
-                      width: 260,
-                      child: KicksterDropdown<OrganizationType?>(
-                        label: 'Filtrar por tipo',
-                        value: _typeFilter,
-                        values: [null, ...OrganizationType.values],
-                        labels: [
-                          'Todas as organizações',
-                          ...OrganizationType.values.map((t) => t.label),
-                        ],
-                        icons: [
-                          null,
-                          ...OrganizationType.values
-                              .map(organizationTypeIcon),
-                        ],
-                        onChanged: (value) =>
-                            setState(() => _typeFilter = value),
-                      ),
-                    ),
-                  ],
-                ),
-                filter: (all, query) => all
-                    .where((o) {
-                      if (_typeFilter != null &&
-                          o.organizationType != _typeFilter) {
-                        return false;
-                      }
-                      if (query.isEmpty) return true;
-                      return o.tradeName.toLowerCase().contains(query) ||
-                          o.legalName.toLowerCase().contains(query);
-                    })
-                    .toList(growable: false),
-              );
-            },
+                  ),
+                  filter: (all, query) => all
+                      .where((o) {
+                        if (_typeFilter != null &&
+                            o.organizationType != _typeFilter) {
+                          return false;
+                        }
+                        if (query.isEmpty) return true;
+                        return o.tradeName.toLowerCase().contains(query) ||
+                            o.legalName.toLowerCase().contains(query);
+                      })
+                      .toList(growable: false),
+                );
+              },
+            ),
           ),
         ],
       ),

@@ -117,6 +117,7 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
 
     return AppScreen(
       title: title,
+      scrollable: false,
       breadcrumb: breadcrumb,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -134,13 +135,15 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Conteúdo
-          teamId == null
-              ? const AppEmptyState(
-                  message: 'Time não identificado',
-                  icon: Icons.groups_outlined,
-                )
-              : _buildRoster(context, teamId),
+          // Conteúdo (Expanded para dar altura finita à lista lazy)
+          Expanded(
+            child: teamId == null
+                ? const AppEmptyState(
+                    message: 'Time não identificado',
+                    icon: Icons.groups_outlined,
+                  )
+                : _buildRoster(context, teamId),
+          ),
         ],
       ),
     );
@@ -193,11 +196,14 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
             ),
           ),
         ),
-        _buildList(
-          athletes: athletes,
-          filtered: filtered,
-          inRosterIds: inRosterIds,
-          entryByAthleteId: entryByAthleteId,
+        // Lista em altura finita (Expanded) → virtualização real.
+        Expanded(
+          child: _buildList(
+            athletes: athletes,
+            filtered: filtered,
+            inRosterIds: inRosterIds,
+            entryByAthleteId: entryByAthleteId,
+          ),
         ),
       ],
     );
@@ -234,34 +240,42 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (showAllInRosterNote)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              'Todos os atletas já estão no elenco',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
+        // Conteúdo em altura finita (Expanded) → lista virtualizada (lazy).
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (showAllInRosterNote)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Text(
+                    'Todos os atletas já estão no elenco',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: AppLayout.content(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final athlete = filtered[index];
+                      final inRoster = inRosterIds.contains(athlete.id);
+                      return _athleteCard(
+                        context,
+                        athlete,
+                        inRoster: inRoster,
+                        entry: inRoster ? entryByAthleteId[athlete.id] : null,
+                      );
+                    },
+                  ),
+                ),
               ),
-            ),
-          ),
-        AppLayout.content(
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            itemCount: filtered.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final athlete = filtered[index];
-              final inRoster = inRosterIds.contains(athlete.id);
-              return _athleteCard(
-                context,
-                athlete,
-                inRoster: inRoster,
-                entry: inRoster ? entryByAthleteId[athlete.id] : null,
-              );
-            },
+            ],
           ),
         ),
       ],
