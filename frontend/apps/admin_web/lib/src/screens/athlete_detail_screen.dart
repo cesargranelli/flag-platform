@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 
 /// Detalhe de um atleta: apresenta os dados e oferece a edição.
@@ -131,19 +132,13 @@ class AthleteDetailScreen extends ConsumerWidget {
             ]),
             const SizedBox(height: 16),
             Text(
-              'Criado em ${_formatDate(athlete.createdAt)}'
-              '${athlete.updatedAt != null ? ' • Atualizado em ${_formatDate(athlete.updatedAt)}' : ''}',
+              'Criado em ${formatBrDate(athlete.createdAt)}'
+              '${athlete.updatedAt != null ? ' • Atualizado em ${formatBrDate(athlete.updatedAt)}' : ''}',
               style: const TextStyle(
                   fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
     );
-  }
-
-  String _formatDate(DateTime? value) {
-    if (value == null) return '—';
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 }

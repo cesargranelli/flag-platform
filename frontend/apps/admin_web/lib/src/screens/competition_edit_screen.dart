@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/selectable_card.dart';
 
@@ -118,8 +119,8 @@ class _CompetitionEditScreenState
     _name.text = competition.name;
     _description.text = competition.description ?? '';
     _organizationId.text = competition.organizationId ?? '';
-    _startDate.text = _formatDate(competition.startDate);
-    _endDate.text = _formatDate(competition.endDate);
+    _startDate.text = formatIsoDate(competition.startDate);
+    _endDate.text = formatIsoDate(competition.endDate);
     _modality = competition.modality;
     _gender = competition.gender == null
         ? null
@@ -148,10 +149,6 @@ class _CompetitionEditScreenState
     }
     super.dispose();
   }
-
-  String _formatDate(DateTime? date) => date == null
-      ? ''
-      : '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
   void _selectModality(Modality value) {
     setState(() {
@@ -194,7 +191,7 @@ class _CompetitionEditScreenState
       lastDate: DateTime(2100),
     );
     if (picked != null && mounted) {
-      controller.text = _formatDate(picked);
+      controller.text = formatIsoDate(picked);
     }
   }
 

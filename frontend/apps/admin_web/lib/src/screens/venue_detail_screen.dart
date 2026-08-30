@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 
 /// Detalhe de um campo de jogo: apresenta os dados e oferece a edição.
@@ -139,8 +140,8 @@ class VenueDetailScreen extends ConsumerWidget {
             ],
             const SizedBox(height: 16),
             Text(
-              'Criado em ${_formatDate(venue.createdAt)}'
-              '${venue.updatedAt != null ? ' • Atualizado em ${_formatDate(venue.updatedAt)}' : ''}',
+              'Criado em ${formatBrDate(venue.createdAt)}'
+              '${venue.updatedAt != null ? ' • Atualizado em ${formatBrDate(venue.updatedAt)}' : ''}',
               style: const TextStyle(
                   fontSize: 12, color: AppColors.textSecondary),
             ),
@@ -165,11 +166,5 @@ class VenueDetailScreen extends ConsumerWidget {
         const SnackBar(content: Text('Não foi possível abrir o mapa')),
       );
     }
-  }
-
-  String _formatDate(DateTime? value) {
-    if (value == null) return '—';
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 }

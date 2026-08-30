@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 
 /// Detalhe de um campeonato em página única (#455): todas as seções
@@ -273,9 +274,9 @@ class _CompetitionDetailScreenState
     return AppInfoCard(
       children: [
         if (comp.startDate != null)
-          AppInfoRow(label: 'Início', value: _formatDate(comp.startDate!)),
+          AppInfoRow(label: 'Início', value: formatBrDate(comp.startDate!)),
         if (comp.endDate != null)
-          AppInfoRow(label: 'Fim', value: _formatDate(comp.endDate!)),
+          AppInfoRow(label: 'Fim', value: formatBrDate(comp.endDate!)),
         if (comp.startDate == null && comp.endDate == null)
           AppInfoRow(label: 'Período', value: 'Não definido'),
       ],
@@ -591,9 +592,4 @@ class _CompetitionDetailScreenState
     'OPEN' => 'Livre',
     _ => 'Não definido',
   };
-
-  String _formatDate(DateTime value) {
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
-  }
 }

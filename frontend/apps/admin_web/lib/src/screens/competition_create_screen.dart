@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/selectable_card.dart';
 
@@ -103,10 +104,6 @@ class _CompetitionCreateScreenState
     super.dispose();
   }
 
-  String _formatDate(DateTime? date) => date == null
-      ? ''
-      : '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-
   // Issue #257 (D): com exatamente 1 organização disponível, pré-seleciona.
   void _maybePreselectOrganization(List<Organization> orgs) {
     if (_organizationId.text.isNotEmpty || orgs.length != 1) return;
@@ -137,7 +134,7 @@ class _CompetitionCreateScreenState
       lastDate: DateTime(2100),
     );
     if (picked != null && mounted) {
-      controller.text = _formatDate(picked);
+      controller.text = formatIsoDate(picked);
     }
   }
 
@@ -226,8 +223,8 @@ class _CompetitionCreateScreenState
           organizationId: created.organizationId!,
           name: created.name,
           description: created.description,
-          startDate: _formatDate(created.startDate),
-          endDate: _formatDate(created.endDate),
+          startDate: formatIsoDate(created.startDate),
+          endDate: formatIsoDate(created.endDate),
           status: created.status,
           modality: created.modality,
           gender: created.gender,

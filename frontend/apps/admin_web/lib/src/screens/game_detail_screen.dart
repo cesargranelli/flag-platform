@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
@@ -120,7 +121,7 @@ class GameDetailScreen extends ConsumerWidget {
               ),
               if (competitionName.isNotEmpty)
                 AppInfoRow(label: 'Campeonato', value: competitionName),
-              AppInfoRow(label: 'Horário', value: _formatDateTime(game.scheduledAt)),
+              AppInfoRow(label: 'Horário', value: formatBrDateTime(game.scheduledAt)),
               if (game.venueName != null && game.venueName!.isNotEmpty)
                 AppInfoRow(label: 'Campo', value: game.venueName!),
               if (game.venueAddress != null && game.venueAddress!.isNotEmpty)
@@ -128,7 +129,7 @@ class GameDetailScreen extends ConsumerWidget {
             ]),
             const SizedBox(height: 16),
             Text(
-              'Criado em ${_formatDate(game.scheduledAt)}',
+              'Criado em ${formatBrDate(game.scheduledAt)}',
               style: const TextStyle(
                   fontSize: 12, color: AppColors.textSecondary),
             ),
@@ -145,14 +146,5 @@ class GameDetailScreen extends ConsumerWidget {
       GameStatus.cancelled => ('Cancelado', AppColors.danger),
     };
     return KicksterBadge(label: label, color: color);
-  }
-
-  String _formatDateTime(DateTime value) =>
-      '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year} '
-      '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
-
-  String _formatDate(DateTime value) {
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 }

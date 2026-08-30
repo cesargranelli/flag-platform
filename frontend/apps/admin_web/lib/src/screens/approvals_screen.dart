@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 
 /// Tela exclusiva do super usuário (ADMIN) para aprovar/rejeitar contas.
@@ -137,7 +138,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
 
   Widget _approvalCard(BuildContext context, WidgetRef ref, User user) {
     final roleLabel = _roleLabel(user.role);
-    final dateText = _formatDateTime(user.createdAt);
+    final dateText = formatBrShortDateTime(user.createdAt);
 
     return Card(
       elevation: 1,
@@ -306,12 +307,3 @@ String _roleLabel(String role) => switch (role) {
   'ORGANIZER' => 'Organizador',
   _ => role,
 };
-
-String _formatDateTime(DateTime? value) {
-  if (value == null) return 'agora';
-  final day = value.day.toString().padLeft(2, '0');
-  final month = value.month.toString().padLeft(2, '0');
-  final hour = value.hour.toString().padLeft(2, '0');
-  final minute = value.minute.toString().padLeft(2, '0');
-  return '$day/$month/${value.year} $hour:$minute';
-}

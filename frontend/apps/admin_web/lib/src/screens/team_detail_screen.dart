@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
@@ -143,8 +144,8 @@ class TeamDetailScreen extends ConsumerWidget {
             ]),
             const SizedBox(height: 16),
             Text(
-              'Criado em ${_formatDate(team.createdAt)}'
-              '${team.updatedAt != null ? ' • Atualizado em ${_formatDate(team.updatedAt)}' : ''}',
+              'Criado em ${formatBrDate(team.createdAt)}'
+              '${team.updatedAt != null ? ' • Atualizado em ${formatBrDate(team.updatedAt)}' : ''}',
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.textSecondary,
@@ -185,11 +186,5 @@ class TeamDetailScreen extends ConsumerWidget {
               size: 32,
             ),
     );
-  }
-
-  String _formatDate(DateTime? value) {
-    if (value == null) return '—';
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 }

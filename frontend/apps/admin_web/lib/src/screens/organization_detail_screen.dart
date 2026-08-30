@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 
 /// Detalhe de uma organização em página única (#455): todas as seções
@@ -164,7 +165,7 @@ class OrganizationDetailScreen extends ConsumerWidget {
             if (org.createdAt != null) ...[
               const SizedBox(height: 4),
               Text(
-                'Criada em ${_formatDate(org.createdAt!)}',
+                'Criada em ${formatBrDate(org.createdAt!)}',
                 style: const TextStyle(
                     fontSize: 12, color: AppColors.textSecondary),
               ),
@@ -233,10 +234,5 @@ class OrganizationDetailScreen extends ConsumerWidget {
           AppInfoRow(label: 'Logo', value: org.logoUrl!),
       ],
     );
-  }
-
-  String _formatDate(DateTime value) {
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 }

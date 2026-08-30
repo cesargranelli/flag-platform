@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../utils/date_formats.dart';
 import '../widgets/app_screen.dart';
 
 /// Argumentos de navegação do formulário de jogo.
@@ -57,7 +58,7 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
     final scheduledAt = _scheduledAt;
     return scheduledAt == null
         ? ''
-        : '${_formatDate(scheduledAt)} ${_formatTime(scheduledAt)}';
+        : '${formatBrDate(scheduledAt)} ${formatBrTime(scheduledAt)}';
   }
 
   Future<void> _pickSchedule() async {
@@ -296,8 +297,3 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
     );
   }
 }
-
-String _formatDate(DateTime value) =>
-    '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
-String _formatTime(DateTime value) =>
-    '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
