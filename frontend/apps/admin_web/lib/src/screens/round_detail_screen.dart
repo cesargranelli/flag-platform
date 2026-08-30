@@ -49,18 +49,14 @@ class RoundDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildDetail(BuildContext context, WidgetRef ref, Round round) {
-    final competitions = ref.watch(competitionsProvider);
-    final competitionName = competitions.valueOrNull
-            ?.where((c) => c.id == round.competitionId)
-            .map((c) => c.name)
-            .firstOrNull ??
-        '';
+    // P3 #471: resolve o campeonato pelo family (autoDispose) em vez de
+    // assistir a lista completa.
+    final compAsync = ref.watch(competitionProvider(round.competitionId));
+    final competitionName = compAsync.valueOrNull?.name ?? '';
     // Issue #261: edição da rodada exige ser criador do campeonato ou ADMIN.
     // Issue #305: e o campeonato precisa estar em DRAFT (estrutura travada
     // após a publicação).
-    final competition = competitions.valueOrNull
-        ?.where((c) => c.id == round.competitionId)
-        .firstOrNull;
+    final competition = compAsync.valueOrNull;
     final isDraft = competition?.status == CompetitionStatus.draft;
     final canEdit = canEditCompetition(
       ref.watch(authControllerProvider.select((a) => a.state.user)),
