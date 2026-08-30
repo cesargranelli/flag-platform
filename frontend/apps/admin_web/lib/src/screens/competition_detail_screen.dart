@@ -70,7 +70,7 @@ class _CompetitionDetailScreenState
   Widget _buildDetail(BuildContext context, Competition comp) {
     // Issue #261: edição exige ser criador do campeonato ou ADMIN.
     final canEdit = canEditCompetition(
-      ref.watch(authControllerProvider).state.user,
+      ref.watch(authControllerProvider.select((a) => a.state.user)),
       comp,
     );
     final isDraft = comp.status == CompetitionStatus.draft;

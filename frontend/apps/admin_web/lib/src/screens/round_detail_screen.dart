@@ -63,7 +63,7 @@ class RoundDetailScreen extends ConsumerWidget {
         .firstOrNull;
     final isDraft = competition?.status == CompetitionStatus.draft;
     final canEdit = canEditCompetition(
-      ref.watch(authControllerProvider).state.user,
+      ref.watch(authControllerProvider.select((a) => a.state.user)),
       competition,
     );
     final canManage = canEdit && isDraft;

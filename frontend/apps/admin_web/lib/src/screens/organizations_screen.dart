@@ -25,9 +25,6 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   bool _showDisabled = false;
   final _searchController = TextEditingController();
 
-  bool get _isAdmin =>
-      ref.read(authControllerProvider).state.user?.role == 'ADMIN';
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -36,7 +33,9 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = ref.watch(authControllerProvider).state.user?.role == 'ADMIN';
+    final isAdmin =
+        ref.watch(authControllerProvider.select((a) => a.state.user?.role)) ==
+        'ADMIN';
     final showDisabled = isAdmin && _showDisabled;
     final organizations = showDisabled
         ? ref.watch(organizationsAdminProvider(true))
@@ -90,7 +89,7 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
               return AppEntityListScreen<Organization>(
                 items: items,
                 cardBuilder: (organization) =>
-                    _organizationCard(context, organization),
+                    _organizationCard(context, organization, isAdmin),
                 searchField: _searchController,
                 emptyMessage: 'Nenhuma organização encontrada',
                 searchWidth: 220,
@@ -155,7 +154,11 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   /// Card de organização no padrão Kickster (core #439): ícone do tipo,
   /// nome fantasia + nome legal e, à direita, badge de desativada (quando
   /// inativa) e menu de gestão para ADMIN.
-  Widget _organizationCard(BuildContext context, Organization organization) {
+  Widget _organizationCard(
+    BuildContext context,
+    Organization organization,
+    bool isAdmin,
+  ) {
     final isDisabled = organization.status == OrganizationStatus.inactive;
     return KicksterCard(
       icon: organizationTypeIcon(organization.organizationType),
@@ -169,7 +172,7 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (isDisabled) _disabledBadge(),
-          if (_isAdmin)
+          if (isAdmin)
             PopupMenuButton<String>(
               tooltip: 'Ações',
               onSelected: (value) async {
