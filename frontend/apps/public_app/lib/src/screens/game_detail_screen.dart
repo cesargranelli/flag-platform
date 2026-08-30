@@ -4,7 +4,6 @@ import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/providers.dart';
@@ -53,12 +52,29 @@ class _GameDetailScreenState extends ConsumerState<GameDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _startAutoRefreshIfNeeded();
+  }
+
+  /// Inicia o timer de auto-refresh apenas se o jogo estiver em andamento.
+  void _startAutoRefreshIfNeeded() {
+    final game = ref.read(gameDetailProvider(widget.gameId)).valueOrNull;
+    if (game != null && game.status != GameStatus.inProgress) {
+      _timer?.cancel();
+      return;
+    }
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (mounted) {
         ref.invalidate(gameDetailProvider(widget.gameId));
         ref.invalidate(gameScoreEventsProvider(widget.gameId));
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant GameDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _startAutoRefreshIfNeeded();
   }
 
   @override
@@ -80,12 +96,18 @@ class _GameDetailScreenState extends ConsumerState<GameDetailScreen> {
           message: 'Não foi possível carregar o jogo',
           onRetry: () => ref.invalidate(gameDetailProvider(widget.gameId)),
         ),
-        data: (game) => _GameDetailContent(
-          game: game,
-          namesFrom: widget.game,
-          competitionName: widget.competitionName,
-          events: eventsAsync.valueOrNull ?? const [],
-        ),
+        data: (game) {
+          // Reavalia o timer de auto-refresh quando o jogo carrega.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _startAutoRefreshIfNeeded();
+          });
+          return _GameDetailContent(
+            game: game,
+            namesFrom: widget.game,
+            competitionName: widget.competitionName,
+            events: eventsAsync.valueOrNull ?? const [],
+          );
+        },
       ),
     );
   }
@@ -132,12 +154,6 @@ class _GameDetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final display = _mergeDisplay(game, namesFrom);
-    final dateLabel = DateFormat(
-      'dd/MM/yyyy \'às\' HH:mm',
-    ).format(game.scheduledAt);
-    final metaLabel = game.roundNumber != null
-        ? 'Rodada ${game.roundNumber} · $dateLabel'
-        : dateLabel;
     final venueName = display.venueName?.trim();
     final venueAddress = display.venueAddress?.trim();
 
@@ -183,28 +199,6 @@ class _GameDetailContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.schedule,
-              size: 16,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                metaLabel,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
         if (events.isNotEmpty) ...[
           _InfoCard(
             icon: Icons.timeline,

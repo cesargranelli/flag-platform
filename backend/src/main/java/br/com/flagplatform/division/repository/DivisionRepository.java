@@ -12,6 +12,8 @@ public interface DivisionRepository extends JpaRepository<DivisionEntity, UUID> 
 
     List<DivisionEntity> findAllByCompetitionIdOrderByNameAsc(UUID competitionId);
 
+    List<DivisionEntity> findAllByConferenceId(UUID conferenceId);
+
     boolean existsByCompetitionIdAndConferenceIdAndNameIgnoreCase(
             UUID competitionId, UUID conferenceId, String name);
 

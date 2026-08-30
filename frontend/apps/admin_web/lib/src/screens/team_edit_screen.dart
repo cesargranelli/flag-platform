@@ -6,20 +6,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 
-/// Formulário de criação/edição de time.
-class TeamFormScreen extends ConsumerStatefulWidget {
-  const TeamFormScreen({super.key, this.teamId, this.team});
+/// Formulário de edição de time.
+class TeamEditScreen extends ConsumerStatefulWidget {
+  const TeamEditScreen({super.key, this.teamId, this.team});
 
   final String? teamId;
   final Team? team;
 
   @override
-  ConsumerState<TeamFormScreen> createState() => _TeamFormScreenState();
+  ConsumerState<TeamEditScreen> createState() => _TeamEditScreenState();
 }
 
-class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
+class _TeamEditScreenState extends ConsumerState<TeamEditScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _name;
@@ -32,8 +32,6 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
   DocumentType? _documentType;
   bool _submitting = false;
   String? _errorMessage;
-
-  bool get _isEditing => widget.teamId != null || widget.team != null;
 
   @override
   void initState() {
@@ -71,46 +69,25 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
       final id = widget.teamId ?? widget.team?.id;
       // organizationId é obrigatório no backend (@NotNull) e o validador do
       // dropdown garante que esteja preenchido.
-      if (id == null) {
-        await api.create(
-          organizationId: _organizationId!,
-          competitionId: _competitionId ?? '',
-          divisionId: _divisionId,
-          name: _name.text.trim(),
-          shortName: _shortName.text.trim().isEmpty
-              ? null
-              : _shortName.text.trim(),
-          document: _document.text.trim().isEmpty
-              ? null
-              : _document.text.trim().replaceAll(RegExp(r'\D'), ''),
-          documentType: _documentType,
-          logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
-        );
-      } else {
-        await api.update(
-          id,
-          organizationId: _organizationId!,
-          competitionId: _competitionId ?? '',
-          divisionId: _divisionId,
-          name: _name.text.trim(),
-          shortName: _shortName.text.trim().isEmpty
-              ? null
-              : _shortName.text.trim(),
-          document: _document.text.trim().isEmpty
-              ? null
-              : _document.text.trim().replaceAll(RegExp(r'\D'), ''),
-          documentType: _documentType,
-          logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
-        );
-      }
-      ref.invalidate(teamsProvider);
+      await api.update(
+        id!,
+        organizationId: _organizationId!,
+        competitionId: _competitionId ?? '',
+        divisionId: _divisionId,
+        name: _name.text.trim(),
+        shortName: _shortName.text.trim().isEmpty
+            ? null
+            : _shortName.text.trim(),
+        document: _document.text.trim().isEmpty
+            ? null
+            : _document.text.trim().replaceAll(RegExp(r'\D'), ''),
+        documentType: _documentType,
+        logoUrl: _logoUrl.text.trim().isEmpty ? null : _logoUrl.text.trim(),
+      );
+      ref.invalidate(teamsProvider(_competitionId ?? ''));
       if (mounted) {
-        if (id != null) {
-          ref.invalidate(teamProvider(id));
-          context.go('/teams/$id');
-        } else {
-          context.pop();
-        }
+        ref.invalidate(teamProvider(id));
+        context.go('/teams/$id');
       }
     } on RepositoryException catch (e) {
       setState(() => _errorMessage = e.message);
@@ -136,19 +113,21 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
     final competitions = ref.watch(competitionsProvider);
     final organizations = ref.watch(organizationsProvider);
     final compItems = competitions.valueOrNull ?? const [];
+    // P4 #461: _competitionId (contexto) ?? efetivo (selecionado ?? primeiro).
     final effectiveComp =
-        _competitionId ??
-        ref.watch(selectedCompetitionProvider) ??
-        (compItems.isNotEmpty ? compItems.first.id : null);
+        _competitionId ?? ref.watch(effectiveCompetitionProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar time' : 'Novo time'),
-        leading: AppBackButton(fallbackRoute: '/teams'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+    return AppScreen(
+      title: 'Editar time',
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem(AppStrings.teams, route: '/teams'),
+        BreadcrumbItem('Editar'),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -156,8 +135,7 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
               children: [
                 organizations.when(
                   loading: () => const LinearProgressIndicator(),
-                  error: (e, s) =>
-                      const Text('Erro ao carregar organizações'),
+                  error: (e, s) => const Text('Erro ao carregar organizações'),
                   data: (orgs) {
                     // Ao editar, a organização atual pode não estar na lista
                     // (ex.: desativada); mantém como opção para o dropdown
@@ -178,17 +156,13 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
                         0,
                         DropdownMenuItem(
                           value: currentId,
-                          child:
-                              const Text('Organização atual (indisponível)'),
+                          child: const Text('Organização atual (indisponível)'),
                         ),
                       );
                     }
-                    return DropdownButtonFormField<String>(
-                      initialValue: _organizationId,
-                      decoration: const InputDecoration(
-                        labelText: 'Organização (clube)',
-                        border: OutlineInputBorder(),
-                      ),
+                    return KicksterDropdown<String>(
+                      label: 'Organização (clube)',
+                      value: _organizationId,
                       items: items,
                       onChanged: (value) =>
                           setState(() => _organizationId = value),
@@ -199,12 +173,9 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: effectiveComp,
-                  decoration: const InputDecoration(
-                    labelText: 'Campeonato',
-                    border: OutlineInputBorder(),
-                  ),
+                KicksterDropdown<String>(
+                  label: 'Campeonato',
+                  value: effectiveComp,
                   items: compItems
                       .map(
                         (c) =>
@@ -221,34 +192,26 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
                       : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Nome',
                   controller: _name,
                   maxLength: 100,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Informe o nome'
-                      : null,
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty)
+                          ? 'Informe o nome'
+                          : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Sigla',
                   controller: _shortName,
                   maxLength: 10,
-                  decoration: const InputDecoration(
-                    labelText: 'Sigla',
-                    helperText: 'Ex.: FLA',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: 'Ex.: FLA',
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<DocumentType>(
-                  initialValue: _documentType,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo de documento',
-                    border: OutlineInputBorder(),
-                  ),
+                KicksterDropdown<DocumentType>(
+                  label: 'Tipo de documento',
+                  value: _documentType,
                   items: DocumentType.values
                       .map(
                         (d) => DropdownMenuItem(value: d, child: Text(d.label)),
@@ -257,16 +220,13 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
                   onChanged: (value) => setState(() => _documentType = value),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'CNPJ do time ou CPF do representante',
                   controller: _document,
                   keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'CNPJ do time ou CPF do representante',
-                    hintText: _documentType == DocumentType.cpf
-                        ? '000.000.000-00'
-                        : '00.000.000/0000-00',
-                    border: const OutlineInputBorder(),
-                  ),
+                  hintText: _documentType == DocumentType.cpf
+                      ? '000.000.000-00'
+                      : '00.000.000/0000-00',
                   onChanged: (value) {
                     final masked = _documentType == DocumentType.cpf
                         ? DocumentUtils.maskCpf(value)
@@ -292,14 +252,11 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'URL do logo',
                   controller: _logoUrl,
                   keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    labelText: 'URL do logo',
-                    helperText: 'Ex.: https://...',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: 'Ex.: https://...',
                   validator: _validateLogoUrl,
                 ),
                 if (_errorMessage != null) ...[
@@ -307,26 +264,23 @@ class _TeamFormScreenState extends ConsumerState<TeamFormScreen> {
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                      color: AppColors.danger,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
+                KicksterButton(
+                  label: 'Salvar',
+                  icon: Icons.check,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _save,
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Salvar'),
                 ),
               ],
             ),
           ),
         ),
+      ],
       ),
     );
   }

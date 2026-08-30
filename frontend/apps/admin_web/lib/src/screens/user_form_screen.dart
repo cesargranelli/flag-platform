@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 
 const _roles = ['ADMIN', 'ORGANIZER', 'MESA'];
 
@@ -89,60 +89,52 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Novo usuário'),
-        leading: AppBackButton(fallbackRoute: '/users'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+    return AppScreen(
+      title: 'Novo usuário',
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem(AppStrings.users, route: '/users'),
+        BreadcrumbItem('Novo'),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextFormField(
+                KicksterInput(
+                  label: 'Nome',
                   controller: _name,
                   maxLength: 100,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Informe o nome'
-                      : null,
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty)
+                          ? 'Informe o nome'
+                          : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'E-mail',
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'E-mail',
-                    border: OutlineInputBorder(),
-                  ),
                   validator: _validateEmail,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Senha',
                   controller: _password,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Senha',
-                    border: OutlineInputBorder(),
-                  ),
                   validator: (value) => (value == null || value.length < 6)
                       ? 'Mínimo de 6 caracteres'
                       : null,
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: _role,
-                  decoration: const InputDecoration(
-                    labelText: 'Papel',
-                    helperText: 'Mesa: opera partidas ao vivo',
-                    border: OutlineInputBorder(),
-                  ),
+                KicksterDropdown<String>(
+                  label: 'Papel',
+                  helperText: 'Mesa: opera partidas ao vivo',
+                  value: _role,
                   items: _roles
                       .map((r) =>
                           DropdownMenuItem(value: r, child: Text(_roleLabel(r))))
@@ -154,25 +146,22 @@ class _UserFormScreenState extends ConsumerState<UserFormScreen> {
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                        color: AppColors.danger,
                         fontWeight: FontWeight.w600),
                   ),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
+                KicksterButton(
+                  label: 'Salvar',
+                  icon: Icons.check,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _save,
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Salvar'),
                 ),
               ],
             ),
           ),
         ),
+      ],
       ),
     );
   }

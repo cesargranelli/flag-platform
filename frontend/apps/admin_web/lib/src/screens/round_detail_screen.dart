@@ -6,7 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
+import '../utils/date_formats.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
 /// Detalhe de uma rodada: apresenta os dados e oferece a edição.
@@ -20,21 +21,30 @@ class RoundDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final roundFuture = round != null ? null : ref.watch(roundProvider(roundId!));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(round?.name ?? 'Rodada'),
-        leading: AppBackButton(fallbackRoute: '/rounds'),
+    return AppScreen(
+      title: round?.name ?? 'Rodada',
+      breadcrumb: [
+        const BreadcrumbItem('Início', route: '/'),
+        const BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
+        if (round?.name != null) BreadcrumbItem(round!.name),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Conteúdo
+          roundFuture == null
+              ? _buildDetail(context, ref, round!)
+              : roundFuture.when(
+                  loading: () =>
+                      const AppLoading(message: 'Carregando rodada...'),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar a rodada',
+                    onRetry: () => ref.invalidate(roundProvider(roundId!)),
+                  ),
+                  data: (round) => _buildDetail(context, ref, round),
+                ),
+        ],
       ),
-      body: roundFuture == null
-          ? _buildDetail(context, ref, round!)
-          : roundFuture.when(
-              loading: () => const AppLoading(message: 'Carregando rodada...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar a rodada',
-                onRetry: () => ref.invalidate(roundProvider(roundId!)),
-              ),
-              data: (round) => _buildDetail(context, ref, round),
-            ),
     );
   }
 
@@ -46,17 +56,19 @@ class RoundDetailScreen extends ConsumerWidget {
             .firstOrNull ??
         '';
     // Issue #261: edição da rodada exige ser criador do campeonato ou ADMIN.
+    // Issue #305: e o campeonato precisa estar em DRAFT (estrutura travada
+    // após a publicação).
     final competition = competitions.valueOrNull
         ?.where((c) => c.id == round.competitionId)
         .firstOrNull;
+    final isDraft = competition?.status == CompetitionStatus.draft;
     final canEdit = canEditCompetition(
       ref.watch(authControllerProvider).state.user,
       competition,
     );
+    final canManage = canEdit && isDraft;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
+    return AppLayout.detail(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -80,7 +92,7 @@ class RoundDetailScreen extends ConsumerWidget {
                               '${round.number}',
                               style: const TextStyle(
                                   fontSize: 24,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w700,
                                   color: AppColors.primary),
                             ),
                           ),
@@ -93,7 +105,7 @@ class RoundDetailScreen extends ConsumerWidget {
                               Text(
                                 round.name,
                                 style: const TextStyle(
-                                    fontSize: 22, fontWeight: FontWeight.bold),
+                                    fontSize: 20, fontWeight: FontWeight.w700),
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -108,89 +120,60 @@ class RoundDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    if (canEdit)
-                      FilledButton.icon(
-                        onPressed: () => context.push(
+                    if (canManage) ...[
+                      KicksterButton(
+                        label: 'Editar dados',
+                        icon: Icons.edit_outlined,
+                        onPressed: () => context.go(
                           '/rounds/${round.id}/edit',
                           extra: round,
                         ),
-                        icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Editar dados'),
-                      )
-                    else
-                      const EditRestrictionNote(
-                        message:
-                            'Apenas o criador do campeonato pode editar '
-                            'esta rodada.',
+                      ),
+                      const SizedBox(height: 8),
+                      // Issue #347: confrontos/jogos geridos via contexto do
+                      // campeonato (rodada → jogos), sem atalho global da home.
+                      KicksterButton(
+                        label: 'Confrontos',
+                        icon: Icons.sports,
+                        variant: KicksterButtonVariant.outline,
+                        onPressed: () {
+                          ref
+                                  .read(selectedCompetitionProvider.notifier)
+                                  .state =
+                              round.competitionId;
+                          ref.read(selectedRoundProvider.notifier).state =
+                              round.id;
+                          context.go('/games');
+                        },
+                      ),
+                    ] else
+                      EditRestrictionNote(
+                        message: !isDraft
+                            ? 'Campeonato publicado — as rodadas estão '
+                                'travadas.'
+                            : 'Apenas o criador do campeonato pode editar '
+                                'esta rodada.',
                       ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard(
-              'Informações',
-              [
-                _row('Número', '${round.number}'),
-                _row('Nome', round.name),
-                _row('Tipo', round.type.label),
-                _row('Campeonato', competitionName),
-              ],
-            ),
+            AppInfoCard(children: [
+              AppInfoRow(label: 'Número', value: '${round.number}'),
+              AppInfoRow(label: 'Nome', value: round.name),
+              AppInfoRow(label: 'Tipo', value: round.type.label),
+              AppInfoRow(label: 'Campeonato', value: competitionName),
+            ]),
             const SizedBox(height: 16),
             Text(
-              'Criado em ${_formatDate(round.createdAt)}'
-              '${round.updatedAt != null ? ' • Atualizado em ${_formatDate(round.updatedAt)}' : ''}',
+              'Criado em ${formatBrDate(round.createdAt)}'
+              '${round.updatedAt != null ? ' • Atualizado em ${formatBrDate(round.updatedAt)}' : ''}',
               style: const TextStyle(
                   fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
-      ),
     );
-  }
-
-  Widget _infoCard(String title, List<Widget> rows) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...rows,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _row(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-          ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime? value) {
-    if (value == null) return '—';
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 }

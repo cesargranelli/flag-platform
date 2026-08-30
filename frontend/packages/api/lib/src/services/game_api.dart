@@ -1,12 +1,20 @@
 import 'package:flag_domain/flag_domain.dart';
 
 import '../api_client.dart';
+import '../models/live_game_response.dart';
+import '../models/play_response.dart';
 
 /// Serviço REST de jogos.
 class GameApi {
   final ApiClient _client;
 
   GameApi(this._client);
+
+  /// Lista jogos ao vivo (em andamento ou encerrados recentemente).
+  Future<List<LiveGameResponse>> findLiveGames() => _client.getList(
+        '/api/v1/games/live',
+        LiveGameResponse.fromJson,
+      );
 
   /// Lista os jogos de uma competição (endpoint público, ordenados por data).
   Future<List<Game>> listByCompetition(String competitionId) => _client.getList(
@@ -84,6 +92,12 @@ class GameApi {
   Future<List<ScoreEvent>> listScoreEvents(String gameId) => _client.getList(
         '/api/v1/games/$gameId/score/events',
         ScoreEvent.fromJson,
+      );
+
+  /// Lista os lances (play-by-play) de um jogo.
+  Future<List<PlayResponse>> findPlaysByGameId(String gameId) => _client.getList(
+        '/api/v1/games/$gameId/plays',
+        PlayResponse.fromJson,
       );
 
   Map<String, dynamic> _body({

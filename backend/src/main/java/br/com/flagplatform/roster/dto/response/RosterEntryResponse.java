@@ -12,6 +12,7 @@ public record RosterEntryResponse(
         UUID athleteId,
         String athleteName,
         String athleteNickname,
+        String nickname,
         AthletePosition position,
         Integer number,
         String photoUrl,

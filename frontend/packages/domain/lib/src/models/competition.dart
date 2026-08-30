@@ -1,4 +1,5 @@
 import '../enums/competition_status.dart';
+import '../enums/grouping_type.dart';
 import '../enums/modality.dart';
 
 /// Campeonato do Flag Platform.
@@ -33,6 +34,10 @@ class Competition {
 
   final String? ageGroup;
 
+  /// Rótulo do agrupamento da estrutura — Divisões | Grupos (#308).
+  /// Nulo em registros legados (tratado como Divisões).
+  final GroupingType? groupingType;
+
   /// UUID do usuário criador do campeonato (base da regra de edição
   /// restrita ao criador ou ADMIN). Nulo em registros legados.
   final String? createdBy;
@@ -49,6 +54,7 @@ class Competition {
     this.modality,
     this.gender,
     this.ageGroup,
+    this.groupingType,
     this.createdBy,
   });
 
@@ -66,6 +72,8 @@ class Competition {
             : Modality.fromJson(json['modality'] as String),
         gender: json['gender'] as String?,
         ageGroup: json['ageGroup'] as String?,
+        groupingType: GroupingType.tryFromJson(
+            json['groupingType'] as String?),
         createdBy: json['createdBy'] as String?,
       );
 
@@ -81,6 +89,7 @@ class Competition {
         if (modality != null) 'modality': modality!.toJson(),
         if (gender != null) 'gender': gender,
         if (ageGroup != null) 'ageGroup': ageGroup,
+        if (groupingType != null) 'groupingType': groupingType!.toJson(),
         if (createdBy != null) 'createdBy': createdBy,
       };
 }

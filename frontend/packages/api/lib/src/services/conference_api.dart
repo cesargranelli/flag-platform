@@ -31,4 +31,7 @@ class ConferenceApi {
     {'name': name},
     Conference.fromJson,
   );
+
+  /// Exclui uma conferência (a estrutura só é alterável em DRAFT).
+  Future<void> delete(String id) => _client.delete('/api/v1/conferences/$id');
 }

@@ -1,6 +1,6 @@
 name: flag_core
 description: "Núcleo compartilhado dos apps do Flag Platform: tema, widgets de estado, configuração e sessão."
-version: 0.1.0
+version: 0.2.0
 publish_to: none
 resolution: workspace
 

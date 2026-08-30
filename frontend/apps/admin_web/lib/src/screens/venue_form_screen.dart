@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 
 /// Formulário de criação/edição de campo de jogo.
 class VenueFormScreen extends ConsumerStatefulWidget {
@@ -110,17 +110,20 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
   Widget build(BuildContext context) {
     final organizations = ref.watch(organizationsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar campo' : 'Novo campo'),
-        leading: AppBackButton(fallbackRoute: '/venues'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
-          child: Form(
-            key: _formKey,
-            child: Column(
+    return AppScreen(
+      title: _isEditing ? 'Editar campo' : 'Novo campo',
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem(AppStrings.venues, route: '/venues'),
+        BreadcrumbItem('Formulário'),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppLayout.form(
+        child: Form(
+          key: _formKey,
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 organizations.when(
@@ -136,12 +139,9 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
                         icon: Icons.business,
                       );
                     }
-                    return DropdownButtonFormField<String>(
-                      initialValue: _organizationId,
-                      decoration: const InputDecoration(
-                        labelText: 'Organização',
-                        border: OutlineInputBorder(),
-                      ),
+                    return KicksterDropdown<String>(
+                      label: 'Organização',
+                      value: _organizationId,
                       items: orgs
                           .map((o) => DropdownMenuItem(
                                 value: o.id,
@@ -157,56 +157,46 @@ class _VenueFormScreenState extends ConsumerState<VenueFormScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Nome',
                   controller: _name,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome',
-                    border: OutlineInputBorder(),
-                  ),
                   validator: (value) =>
-                      (value == null || value.trim().isEmpty) ? 'Informe o nome' : null,
+                      (value == null || value.trim().isEmpty)
+                          ? 'Informe o nome'
+                          : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Endereço',
                   controller: _address,
-                  decoration: const InputDecoration(
-                    labelText: 'Endereço',
-                    border: OutlineInputBorder(),
-                  ),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'URL do mapa',
                   controller: _mapsUrl,
                   keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    labelText: 'URL do mapa',
-                    helperText: 'Ex.: https://maps.app.goo.gl/...',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: 'Ex.: https://maps.app.goo.gl/...',
                   validator: _validateMapsUrl,
                 ),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 8),
                   Text(
                     _errorMessage!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(color: AppColors.danger),
                   ),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
+                KicksterButton(
+                  label: 'Salvar',
+                  icon: Icons.check,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _save,
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Salvar'),
                 ),
               ],
             ),
           ),
         ),
+      ],
       ),
     );
   }

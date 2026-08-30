@@ -22,20 +22,26 @@ class MatchScoreCard extends StatelessWidget {
   final bool showMeta;
   final bool showRound;
   final bool showVenue;
+  final bool showClubLogos;
+  final bool showPlayByPlay;
   final VoidCallback? onHomeTeamTap;
   final VoidCallback? onAwayTeamTap;
   final VoidCallback? onTap;
+  final VoidCallback? onPlayByPlayTap;
 
   const MatchScoreCard({
     super.key,
     required this.game,
     this.highlighted = false,
-    this.showMeta = false,
-    this.showRound = false,
-    this.showVenue = false,
+    this.showMeta = true,
+    this.showRound = true,
+    this.showVenue = true,
+    this.showClubLogos = true,
+    this.showPlayByPlay = false,
     this.onHomeTeamTap,
     this.onAwayTeamTap,
     this.onTap,
+    this.onPlayByPlayTap,
   });
 
   @override
@@ -66,65 +72,108 @@ class MatchScoreCard extends StatelessWidget {
           : null,
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (showMeta) ...[
-                _MetaLine(
-                  game: game,
-                  showRound: showRound,
-                  highlighted: highlighted,
-                ),
-                const SizedBox(height: 12),
-              ],
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: _TeamName(
-                      label: homeLabel,
-                      textAlign: TextAlign.right,
-                      onTap: onHomeTeamTap,
+                  if (showMeta) ...[
+                    _MetaLine(
+                      game: game,
+                      showRound: showRound,
+                      highlighted: highlighted,
                     ),
+                    const SizedBox(height: 12),
+                  ],
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            if (showClubLogos) ...[
+                              _ClubLogo(teamName: homeLabel, color: AppColors.primary),
+                              const SizedBox(height: 4),
+                            ],
+                            _TeamName(
+                              label: homeLabel,
+                              textAlign: TextAlign.right,
+                              onTap: onHomeTeamTap,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _ScoreText(
+                        score: showScores ? game.homeScore : null,
+                        color: game.status == GameStatus.finished
+                            ? AppColors.success
+                            : game.status == GameStatus.inProgress
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                      ),
+                      const SizedBox(width: 10),
+                      _CenterInfo(
+                        status: game.status,
+                        scheduledAt: game.scheduledAt,
+                        showScores: showScores,
+                      ),
+                      const SizedBox(width: 10),
+                      _ScoreText(
+                        score: showScores ? game.awayScore : null,
+                        color: game.status == GameStatus.finished
+                            ? AppColors.success
+                            : game.status == GameStatus.inProgress
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            if (showClubLogos) ...[
+                              _ClubLogo(teamName: awayLabel, color: AppColors.secondary),
+                              const SizedBox(height: 4),
+                            ],
+                            _TeamName(
+                              label: awayLabel,
+                              textAlign: TextAlign.left,
+                              onTap: onAwayTeamTap,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  _ScoreText(
-                    score: showScores ? game.homeScore : null,
-                    color: game.status == GameStatus.finished
-                        ? AppColors.success
-                        : AppColors.textPrimary,
-                  ),
-                  const SizedBox(width: 10),
-                  _CenterInfo(
-                    status: game.status,
-                    scheduledAt: game.scheduledAt,
-                    showScores: showScores,
-                  ),
-                  const SizedBox(width: 10),
-                  _ScoreText(
-                    score: showScores ? game.awayScore : null,
-                    color: game.status == GameStatus.finished
-                        ? AppColors.success
-                        : AppColors.textPrimary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _TeamName(
-                      label: awayLabel,
-                      textAlign: TextAlign.left,
-                      onTap: onAwayTeamTap,
+                  if (showVenue) ...[
+                    const SizedBox(height: 12),
+                    _VenueLine(game: game),
+                  ],
+                  if (showPlayByPlay && onPlayByPlayTap != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: onPlayByPlayTap,
+                        icon: const Icon(Icons.sports_football, size: 18),
+                        label: const Text('Lance a Lance'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
-              if (showVenue) ...[
-                const SizedBox(height: 12),
-                _VenueLine(game: game),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -136,7 +185,8 @@ class MatchScoreCard extends StatelessWidget {
   }
 }
 
-/// Linha superior do card: data/hora (+ rodada) e selo "Próximo".
+/// Linha superior do card: ícone de status, data/hora (+ rodada),
+/// label "AO VIVO" para jogos em andamento e selo "Próximo".
 class _MetaLine extends StatelessWidget {
   final Game game;
   final bool showRound;
@@ -157,8 +207,27 @@ class _MetaLine extends StatelessWidget {
 
     return Row(
       children: [
-        const Icon(Icons.schedule, size: 16, color: AppColors.textSecondary),
-        const SizedBox(width: 4),
+        _StatusIcon(status: game.status),
+        const SizedBox(width: 6),
+        if (game.status == GameStatus.inProgress) ...[
+          const Text(
+            'AO VIVO',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.danger,
+            ),
+          ),
+          const SizedBox(width: 4),
+          const Text(
+            '·',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
         Expanded(
           child: Text(
             metaLabel,
@@ -205,10 +274,10 @@ class _TeamName extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       textAlign: textAlign,
       style: const TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w700,
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
         height: 1.2,
-        color: AppColors.textPrimary,
+        color: AppColors.textSecondary,
       ),
     );
 
@@ -333,5 +402,129 @@ class _VenueLine extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// Ícone placeholder do escudo do time — exibe as iniciais do nome.
+///
+/// Em produção será substituído por Image.asset/Image.network com o escudo real.
+class _ClubLogo extends StatelessWidget {
+  final String teamName;
+  final Color color;
+
+  const _ClubLogo({required this.teamName, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = _extractInitials(teamName);
+
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Extrai até 2 iniciais do nome do time.
+  static String _extractInitials(String name) {
+    final words = name.trim().split(RegExp(r'\s+'));
+    if (words.isEmpty) return '?';
+    if (words.length == 1) return words[0].substring(0, 1).toUpperCase();
+    return '${words[0].substring(0, 1)}${words[1].substring(0, 1)}'.toUpperCase();
+  }
+}
+
+/// Indicador pulsante para jogos ao vivo (decorativo, sutil).
+///
+/// Animação de opacidade que repete indefinidamente, sinalizando que o
+/// jogo está em andamento. Usado na linha meta do card e como componente
+/// reutilizável.
+class _PulsingDot extends StatefulWidget {
+  const _PulsingDot();
+
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween<double>(
+        begin: 0.35,
+        end: 1,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
+      child: ExcludeSemantics(
+        child: Container(
+          width: 8,
+          height: 8,
+          decoration: const BoxDecoration(
+            color: AppColors.danger,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Ícone de status na linha meta: ponto pulsante (ao vivo), calendário
+/// (agendado), checkmark (encerrado) ou x (cancelado).
+class _StatusIcon extends StatelessWidget {
+  final GameStatus status;
+
+  const _StatusIcon({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (status) {
+      GameStatus.inProgress => const _PulsingDot(),
+      GameStatus.scheduled => const Icon(
+        Icons.calendar_today,
+        size: 16,
+        color: AppColors.textSecondary,
+      ),
+      GameStatus.finished => const Icon(
+        Icons.check_circle,
+        size: 16,
+        color: AppColors.success,
+      ),
+      GameStatus.cancelled => const Icon(
+        Icons.cancel,
+        size: 16,
+        color: AppColors.textSecondary,
+      ),
+    };
   }
 }

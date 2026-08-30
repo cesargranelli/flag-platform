@@ -15,8 +15,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -31,6 +34,8 @@ public class RoundService implements RoundLookup {
     public RoundResponse create(CreateRoundRequest request, String currentUserEmail) {
         // V260: apenas o criador do campeonato (ou ADMIN) gerencia o campeonato.
         competitionLookup.assertManagedBy(request.competitionId(), currentUserEmail);
+        // Issue #305: estrutura só é editável com o campeonato em DRAFT.
+        competitionLookup.assertEditable(request.competitionId());
 
         if (repository.existsByCompetitionIdAndNumber(request.competitionId(), request.number())) {
             throw new DuplicateRoundNumberException(request.number());
@@ -56,6 +61,12 @@ public class RoundService implements RoundLookup {
         competitionLookup.assertManagedBy(entity.getCompetitionId(), currentUserEmail);
         if (!entity.getCompetitionId().equals(request.competitionId())) {
             competitionLookup.assertManagedBy(request.competitionId(), currentUserEmail);
+        }
+        // Issue #305: estrutura só é editável com o campeonato em DRAFT
+        // (valida a rodada e o destino, se diferente).
+        competitionLookup.assertEditable(entity.getCompetitionId());
+        if (!entity.getCompetitionId().equals(request.competitionId())) {
+            competitionLookup.assertEditable(request.competitionId());
         }
 
         if (repository.existsByCompetitionIdAndNumberAndIdNot(
@@ -101,6 +112,25 @@ public class RoundService implements RoundLookup {
     public RoundInfo findRoundInfoById(UUID roundId) {
         RoundEntity round = findEntityById(roundId);
         return new RoundInfo(round.getId(), round.getNumber());
+    }
+
+    @Override
+    public Map<UUID, UUID> findCompetitionIdsByRoundIds(Collection<UUID> roundIds) {
+        if (roundIds == null || roundIds.isEmpty()) {
+            return Map.of();
+        }
+        return repository.findAllById(roundIds).stream()
+                .collect(Collectors.toMap(RoundEntity::getId, RoundEntity::getCompetitionId));
+    }
+
+    @Override
+    public Map<UUID, RoundInfo> findRoundInfoByIds(Collection<UUID> roundIds) {
+        if (roundIds == null || roundIds.isEmpty()) {
+            return Map.of();
+        }
+        return repository.findAllById(roundIds).stream()
+                .map(round -> new RoundInfo(round.getId(), round.getNumber()))
+                .collect(Collectors.toMap(RoundInfo::id, info -> info));
     }
 
 }

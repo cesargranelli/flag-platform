@@ -7,9 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_screen.dart';
 
-/// Formulário de criação/edição de organização em etapas (wizard).
-/// Formulário de criação de organização.
+/// Formulário de criação de organização em página única (#455): todas as
+/// seções (dados básicos, presidente, contato, localização, identidade)
+/// empilhadas com títulos de seção — o scroll é do body, sem barras internas.
+/// A validação cobre TODAS as seções no submit.
 ///
 /// V250: organizações não são editáveis após a criação — este formulário
 /// apenas cria. Alterações de cadastro não são suportadas.
@@ -48,45 +51,36 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
 
   OrganizationType? _type;
   DocumentType? _documentType;
-  int _step = 0;
   bool _submitting = false;
   bool _saved = false;
   bool _hasChanges = false;
   String? _errorMessage;
 
-  static const _titles = [
-    'Identificação',
-    'Presidente',
-    'Contato',
-    'Localização',
-    'Identidade',
-  ];
-
   @override
   void initState() {
     super.initState();
-    final Organization? org = null;
-    _tradeName = TextEditingController(text: org?.tradeName ?? '');
-    _legalName = TextEditingController(text: org?.legalName ?? '');
-    _abbreviation = TextEditingController(text: org?.abbreviation ?? '');
-    _document = TextEditingController(text: org?.document ?? '');
-    _presidentName = TextEditingController(text: org?.presidentName ?? '');
-    _presidentCpf = TextEditingController(text: org?.presidentCpf ?? '');
-    _email = TextEditingController(text: org?.email ?? '');
-    _phone = TextEditingController(text: org?.phone ?? '');
-    _website = TextEditingController(text: org?.website ?? '');
-    _instagram = TextEditingController(text: org?.instagram ?? '');
-    _state = TextEditingController(text: org?.state ?? '');
-    _city = TextEditingController(text: org?.city ?? '');
-    _logoUrl = TextEditingController(text: org?.logoUrl ?? '');
-    _primaryColor = TextEditingController(text: org?.primaryColor ?? '');
-    _secondaryColor = TextEditingController(text: org?.secondaryColor ?? '');
-    _tertiaryColor = TextEditingController(text: org?.tertiaryColor ?? '');
-    _quaternaryColor = TextEditingController(text: org?.quaternaryColor ?? '');
-    _locale = TextEditingController(text: org?.locale ?? 'pt-BR');
-    _country = org?.country.isNotEmpty == true ? org!.country : 'BR';
-    _type = org?.organizationType;
-    _documentType = org?.documentType ?? DocumentType.cnpj;
+    // Formulário apenas de criação: todos os campos iniciam vazios.
+    _tradeName = TextEditingController();
+    _legalName = TextEditingController();
+    _abbreviation = TextEditingController();
+    _document = TextEditingController();
+    _presidentName = TextEditingController();
+    _presidentCpf = TextEditingController();
+    _email = TextEditingController();
+    _phone = TextEditingController();
+    _website = TextEditingController();
+    _instagram = TextEditingController();
+    _state = TextEditingController();
+    _city = TextEditingController();
+    _logoUrl = TextEditingController();
+    _primaryColor = TextEditingController();
+    _secondaryColor = TextEditingController();
+    _tertiaryColor = TextEditingController();
+    _quaternaryColor = TextEditingController();
+    _locale = TextEditingController(text: 'pt-BR');
+    _country = 'BR';
+    _type = null;
+    _documentType = DocumentType.cnpj;
 
     for (final controller in [
       _tradeName, _legalName, _abbreviation, _document, _presidentName,
@@ -99,7 +93,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   void _markDirty() {
-    if (_saved) return;
+    if (_saved || _hasChanges) return;
     setState(() => _hasChanges = true);
   }
 
@@ -151,6 +145,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       };
 
   Future<void> _save() async {
+    // Valida TODAS as seções (form único) — não por etapa.
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -180,20 +175,6 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     }
   }
 
-  bool _validateStep() {
-    return _formKey.currentState!.validate();
-  }
-
-  void _next() {
-    if (_validateStep()) {
-      if (_step < _titles.length - 1) {
-        setState(() => _step += 1);
-      } else {
-        _save();
-      }
-    }
-  }
-
   void _goBack() {
     if (context.canPop()) {
       context.pop();
@@ -204,26 +185,19 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
 
   Future<void> _handleBack() async {
     if (_hasChanges && !_submitting && !_saved) {
-      final discard = await showDialog<bool>(
+      final discard = await showKicksterConfirm(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Descartar alterações?'),
-          content: const Text('As alterações não salvas serão perdidas.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Continuar editando'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Descartar'),
-            ),
-          ],
-        ),
+        title: 'Descartar alterações?',
+        content: 'As alterações não salvas serão perdidas.',
+        confirmLabel: 'Descartar',
+        cancelLabel: 'Continuar editando',
+        danger: true,
       );
       if (discard != true) return;
+      if (!mounted) return;
       _saved = true;
     }
+    if (!mounted) return;
     _goBack();
   }
 
@@ -234,96 +208,101 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) _handleBack();
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Nova organização'),
-          leading: BackButton(onPressed: _handleBack),
-        ),
-        body: _buildWizard(context),
-      ),
-    );
-  }
-
-  Widget _buildWizard(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          Expanded(
-            child: AppLayout.form(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-                    child: Row(
-                      children: [
-                        for (var i = 0; i < _titles.length; i++)
-                          Expanded(
-                            child: _stepIndicator(i),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (_errorMessage != null)
-                            _errorBanner(_errorMessage!),
-                          _stepContent(context, _step),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: AppLayout.form(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _submitting
-                        ? null
-                        : () {
-                            if (_step == 0) {
-                              _handleBack();
-                            } else {
-                              setState(() => _step -= 1);
-                            }
-                          },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
-                      minimumSize: const Size(120, 56),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(16)),
-                      ),
-                    ),
-                    icon: Icon(_step == 0 ? Icons.close : Icons.arrow_back),
-                    label: Text(_step == 0 ? 'Cancelar' : 'Voltar'),
-                  ),
-                  FilledButton.icon(
-                    onPressed: _submitting ? null : _next,
-                    icon: _submitting
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.arrow_forward),
-                    label: Text(_step == _titles.length - 1 ? 'Salvar' : 'Continuar'),
-                  ),
-                ],
-              ),
-            ),
-          ),
+      child: AppScreen(
+        title: 'Nova organização',
+        breadcrumb: const [
+          BreadcrumbItem('Início', route: '/'),
+          BreadcrumbItem(AppStrings.organizations, route: '/organizations'),
+          BreadcrumbItem('Nova'),
         ],
+        body: AppLayout.form(
+          child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_errorMessage != null) _errorBanner(_errorMessage!),
+                    _section('Dados básicos', Icons.business_outlined, [
+                      _field('Nome fantasia', _tradeName,
+                          hint: 'Informe o nome fantasia',
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Informe o nome fantasia'
+                              : null),
+                      const SizedBox(height: 12),
+                      _field('Razão social', _legalName,
+                          hint: 'Informe a razão social',
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'Informe a razão social'
+                              : null),
+                      const SizedBox(height: 12),
+                      _field('Sigla (opcional)', _abbreviation),
+                  const SizedBox(height: 12),
+                  _typeDropdown(),
+                  const SizedBox(height: 12),
+                  _documentField(),
+                ]),
+                _section('Presidente', Icons.person_outline, [
+                  _field('Nome do presidente', _presidentName,
+                      hint: 'Informe o nome do presidente',
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Informe o nome do presidente'
+                          : null),
+                  const SizedBox(height: 12),
+                  _presidentCpfField(),
+                ]),
+                _section('Contato', Icons.contact_mail_outlined, [
+                  _emailField(),
+                  const SizedBox(height: 12),
+                  _phoneField(),
+                  const SizedBox(height: 12),
+                  _websiteField(),
+                  const SizedBox(height: 12),
+                  _instagramField(),
+                ]),
+                _section('Localização', Icons.location_on_outlined, [
+                  _countryDropdown(),
+                  const SizedBox(height: 12),
+                  if (_country == 'BR')
+                    _stateDropdown()
+                  else
+                    _field('Estado (opcional)', _state),
+                  const SizedBox(height: 12),
+                  _field('Cidade (opcional)', _city),
+                ]),
+                _section('Identidade', Icons.palette_outlined, [
+                  _brandPreview(),
+                  const SizedBox(height: 16),
+                  _logoField(),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _colorField('Cor primária (opcional)', _primaryColor),
+                      const SizedBox(width: 12),
+                      _colorField('Cor secundária (opcional)', _secondaryColor),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _colorField('Cor terciária (opcional)', _tertiaryColor),
+                      const SizedBox(width: 12),
+                      _colorField('Cor quaternária (opcional)', _quaternaryColor),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _localeDropdown(),
+                ]),
+                const SizedBox(height: 8),
+                KicksterButton(
+                  label: 'Criar organização',
+                  icon: Icons.check,
+                  loading: _submitting,
+                  onPressed: _submitting ? null : _save,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -337,7 +316,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.danger),
       ),
-      child: Row(
+        child: Row(
         children: [
           const Icon(Icons.error_outline, color: AppColors.danger),
           const SizedBox(width: 8),
@@ -352,72 +331,22 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     );
   }
 
-  Widget _stepIndicator(int index) {
-    final selected = index == _step;
-    final done = index < _step;
-    final CircleAvatar circle;
-    if (done) {
-      circle = const CircleAvatar(
-        radius: 14,
-        backgroundColor: AppColors.success,
-        child: Icon(Icons.check, size: 20, color: AppColors.black),
-      );
-    } else if (selected) {
-      circle = const CircleAvatar(
-        radius: 14,
-        backgroundColor: AppColors.primary,
-        child: Icon(Icons.circle, size: 8, color: AppColors.black),
-      );
-    } else {
-      circle = CircleAvatar(
-        radius: 14,
-        backgroundColor: AppColors.grayFill,
-        child: Text(
-          '${index + 1}',
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
-        ),
-      );
-    }
-    return InkWell(
-      onTap: () {
-        if (index == _step) return;
-        // Só permite avançar um passo por vez, validando o passo atual
-        // antes (os passos intermediários só são validados na sequência).
-        if (index > _step) {
-          if (index > _step + 1) return;
-          if (!_validateStep()) return;
-        }
-        setState(() => _step = index);
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        child: Column(
-          children: [
-            circle,
-            const SizedBox(height: 4),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                _titles[index],
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                  color: selected
-                      ? AppColors.textPrimary
-                      : AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+  /// Seção empilhada: título (titleMedium) + card (#455).
+  Widget _section(String title, IconData icon, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KicksterSectionTitle(title: title, icon: icon),
+        const SizedBox(height: 12),
+        _card(null, children),
+        const SizedBox(height: 20),
+      ],
     );
   }
 
   Widget _card(String? title, List<Widget> children) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -428,7 +357,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                 title,
                 style: const TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -441,97 +370,15 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     );
   }
 
-  Widget _stepContent(BuildContext context, int step) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (step == 0) ...[
-          _card('Dados básicos', [
-            _field('Nome fantasia', _tradeName,
-                hint: 'Informe o nome fantasia',
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Informe o nome fantasia'
-                    : null),
-            const SizedBox(height: 12),
-            _field('Razão social', _legalName,
-                hint: 'Informe a razão social',
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Informe a razão social'
-                    : null),
-            const SizedBox(height: 12),
-            _field('Sigla (opcional)', _abbreviation),
-            const SizedBox(height: 12),
-            _typeDropdown(),
-            const SizedBox(height: 12),
-            _documentField(),
-          ]),
-        ] else if (step == 1) ...[
-          _card('Presidente', [
-            _field('Nome do presidente', _presidentName,
-                hint: 'Informe o nome do presidente',
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Informe o nome do presidente'
-                    : null),
-            const SizedBox(height: 12),
-            _presidentCpfField(),
-          ]),
-        ] else if (step == 2) ...[
-          _card('Contato', [
-            _emailField(),
-            const SizedBox(height: 12),
-            _phoneField(),
-            const SizedBox(height: 12),
-            _websiteField(),
-            const SizedBox(height: 12),
-            _instagramField(),
-          ]),
-        ] else if (step == 3) ...[
-          _card('Localização', [
-            _countryDropdown(),
-            const SizedBox(height: 12),
-            if (_country == 'BR')
-              _stateDropdown()
-            else
-              _field('Estado (opcional)', _state),
-            const SizedBox(height: 12),
-            _field('Cidade (opcional)', _city),
-          ]),
-        ] else ...[
-          _card(null, [
-            _brandPreview(),
-            const SizedBox(height: 16),
-            _logoField(),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _colorField('Cor primária (opcional)', _primaryColor),
-                const SizedBox(width: 12),
-                _colorField('Cor secundária (opcional)', _secondaryColor),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _colorField('Cor terciária (opcional)', _tertiaryColor),
-                const SizedBox(width: 12),
-                _colorField('Cor quaternária (opcional)', _quaternaryColor),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _localeDropdown(),
-          ]),
-        ],
-      ],
-    );
-  }
-
   Widget _typeDropdown() {
-    return DropdownButtonFormField<OrganizationType>(
-      initialValue: _type,
-      decoration: const InputDecoration(labelText: 'Tipo'),
+    return KicksterDropdown<OrganizationType>(
+      label: 'Tipo',
+      value: _type,
       items: OrganizationType.values
-          .map((t) =>
-              DropdownMenuItem(value: t, child: Text(_typeLabel(t))))
+          .map((t) => DropdownMenuItem(
+                value: t,
+                child: appDropdownItem(organizationTypeIcon(t), _typeLabel(t)),
+              ))
           .toList(),
       onChanged: (value) {
         setState(() => _type = value);
@@ -541,14 +388,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _documentField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'CNPJ (opcional)',
       controller: _document,
       keyboardType: TextInputType.number,
-      decoration: const InputDecoration(
-        labelText: 'CNPJ (opcional)',
-        hintText: '00.000.000/0000-00',
-        border: OutlineInputBorder(),
-      ),
+      hintText: '00.000.000/0000-00',
       onChanged: (value) {
         final masked = DocumentUtils.maskCnpj(value);
         if (masked != value) {
@@ -566,14 +410,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _presidentCpfField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'CPF do presidente',
       controller: _presidentCpf,
       keyboardType: TextInputType.number,
-      decoration: const InputDecoration(
-        labelText: 'CPF do presidente',
-        hintText: '000.000.000-00',
-        border: OutlineInputBorder(),
-      ),
+      hintText: '000.000.000-00',
       onChanged: (value) {
         final masked = DocumentUtils.maskCpf(value);
         if (masked != value) {
@@ -591,13 +432,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _emailField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'E-mail (opcional)',
       controller: _email,
       keyboardType: TextInputType.emailAddress,
-      decoration: const InputDecoration(
-        labelText: 'E-mail (opcional)',
-        hintText: 'contato@exemplo.com',
-      ),
+      hintText: 'contato@exemplo.com',
       validator: (v) {
         if (v == null || v.trim().isEmpty) return null;
         return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim())
@@ -608,13 +447,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _phoneField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'Telefone (opcional)',
       controller: _phone,
       keyboardType: TextInputType.phone,
-      decoration: const InputDecoration(
-        labelText: 'Telefone (opcional)',
-        hintText: '(11) 99999-9999',
-      ),
+      hintText: '(11) 99999-9999',
       onChanged: (value) {
         final masked = _maskPhone(value);
         if (masked != value) {
@@ -635,13 +472,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _websiteField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'Site (opcional)',
       controller: _website,
       keyboardType: TextInputType.url,
-      decoration: const InputDecoration(
-        labelText: 'Site (opcional)',
-        hintText: 'https://exemplo.com.br',
-      ),
+      hintText: 'https://exemplo.com.br',
       validator: (v) {
         if (v == null || v.trim().isEmpty) return null;
         final t = v.trim();
@@ -657,12 +492,10 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _instagramField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'Instagram (opcional)',
       controller: _instagram,
-      decoration: const InputDecoration(
-        labelText: 'Instagram (opcional)',
-        hintText: '@meuclube',
-      ),
+      hintText: '@meuclube',
       validator: (v) {
         if (v == null || v.trim().isEmpty) return null;
         final t = v.trim().replaceFirst('@', '');
@@ -674,13 +507,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _countryDropdown() {
-    return DropdownButtonFormField<String>(
-      initialValue: _country,
-      decoration: const InputDecoration(labelText: 'País'),
-      items: [
-        for (final c in _countryOptions)
-          DropdownMenuItem(value: c.code, child: Text(c.name)),
-      ],
+    return KicksterDropdown<String>(
+      label: 'País',
+      value: _country,
+      values: [for (final c in _countryOptions) c.code],
+      labels: [for (final c in _countryOptions) c.name],
       onChanged: (value) {
         if (value == null) return;
         setState(() {
@@ -693,17 +524,12 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _stateDropdown() {
-    return DropdownButtonFormField<String>(
-      initialValue: _state.text.isEmpty ? null : _state.text,
-      decoration: const InputDecoration(
-        labelText: 'Estado',
-        hintText: 'Selecione o estado',
-      ),
-      items: [
-        for (final uf in _ufs)
-          DropdownMenuItem(
-              value: uf.$1, child: Text('${uf.$2} (${uf.$1})')),
-      ],
+    return KicksterDropdown<String>(
+      label: 'Estado',
+      hint: 'Selecione o estado',
+      value: _state.text.isEmpty ? null : _state.text,
+      values: [for (final uf in _ufs) uf.$1],
+      labels: [for (final uf in _ufs) '${uf.$2} (${uf.$1})'],
       onChanged: (value) {
         setState(() {
           _state.text = value ?? '';
@@ -714,13 +540,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _logoField() {
-    return TextFormField(
+    return KicksterInput(
+      label: 'URL do logo (opcional)',
       controller: _logoUrl,
       keyboardType: TextInputType.url,
-      decoration: const InputDecoration(
-        labelText: 'URL do logo (opcional)',
-        hintText: 'https://exemplo.com/logo.png',
-      ),
+      hintText: 'https://exemplo.com/logo.png',
       validator: (v) {
         if (v == null || v.trim().isEmpty) return null;
         final uri = Uri.tryParse(v.trim());
@@ -735,7 +559,8 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
 
   Widget _colorField(String label, TextEditingController controller) {
     return Expanded(
-      child: TextFormField(
+      child: KicksterInput(
+        label: label,
         controller: controller,
         inputFormatters: [
           FilteringTextInputFormatter.allow(RegExp(r'[#0-9a-fA-F]')),
@@ -756,20 +581,17 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
               ? null
               : 'Use #RRGGBB';
         },
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: '#FD6B22',
-          prefixIcon: IconButton(
-            tooltip: 'Escolher cor',
-            onPressed: () => _openColorPicker(controller),
-            icon: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: _parseHex(controller.text) ?? AppColors.primary,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.black26),
-              ),
+        hintText: '#FD6B22',
+        prefix: IconButton(
+          tooltip: 'Escolher cor',
+          onPressed: () => _openColorPicker(controller),
+          icon: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: _parseHex(controller.text) ?? AppColors.primary,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.line),
             ),
           ),
         ),
@@ -778,13 +600,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
   }
 
   Widget _localeDropdown() {
-    return DropdownButtonFormField<String>(
-      initialValue: _locale.text,
-      decoration: const InputDecoration(labelText: 'Idioma'),
-      items: [
-        for (final l in _localeOptions)
-          DropdownMenuItem(value: l.code, child: Text(l.name)),
-      ],
+    return KicksterDropdown<String>(
+      label: 'Idioma',
+      value: _locale.text,
+      values: [for (final l in _localeOptions) l.code],
+      labels: [for (final l in _localeOptions) l.name],
       onChanged: (value) {
         if (value == null) return;
         setState(() => _locale.text = value);
@@ -806,7 +626,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
           'Prévia da marca',
           style: TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
             color: AppColors.textSecondary,
           ),
         ),
@@ -828,15 +648,16 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                     width: 40,
                     height: 40,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const Icon(
-                      Icons.business,
+                    errorBuilder: (_, _, _) => Icon(
+                      organizationTypeIcon(_type),
                       color: Colors.white,
                       size: 40,
                     ),
                   ),
                 )
               else
-                const Icon(Icons.business, color: Colors.white, size: 40),
+                Icon(organizationTypeIcon(_type),
+                    color: Colors.white, size: 40),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -850,7 +671,7 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
                     ),
@@ -905,13 +726,11 @@ class _OrganizationFormScreenState extends ConsumerState<OrganizationFormScreen>
     String? Function(String?)? validator,
     TextInputType? keyboardType,
   }) {
-    return TextFormField(
+    return KicksterInput(
+      label: label,
       controller: controller,
       keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-      ),
+      hintText: hint,
       validator: validator,
     );
   }
@@ -1066,14 +885,12 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
+            KicksterInput(
+              label: 'Código hex',
               controller: _hex,
-              decoration: const InputDecoration(
-                labelText: 'Código hex',
-                hintText: 'FD6B22',
-                prefixText: '#',
-                suffixIcon: Icon(Icons.circle, color: Colors.black26),
-              ),
+              hintText: 'FD6B22',
+              prefix: const Text('#'),
+              suffixIcon: const Icon(Icons.circle, color: AppColors.line),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9a-fA-F]')),
                 LengthLimitingTextInputFormatter(6),
@@ -1126,16 +943,17 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        KicksterButton(
+          label: 'Cancelar',
+          variant: KicksterButtonVariant.text,
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
         ),
-        FilledButton(
+        KicksterButton(
+          label: 'Aplicar',
           onPressed: () {
             final hex = _hex.text.trim();
             Navigator.pop(context, '#${hex.toUpperCase()}');
           },
-          child: const Text('Aplicar'),
         ),
       ],
     );

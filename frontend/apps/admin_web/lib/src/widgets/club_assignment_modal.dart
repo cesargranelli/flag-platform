@@ -133,23 +133,9 @@ class _ClubAssignmentModalState extends ConsumerState<ClubAssignmentModal> {
                     ),
               ),
               const SizedBox(height: 12),
-              TextField(
+              KicksterSearchField(
                 controller: _searchController,
-                decoration: InputDecoration(
-                  labelText: 'Buscar clube',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _query.isEmpty
-                      ? null
-                      : IconButton(
-                          icon: const Icon(Icons.clear),
-                          tooltip: 'Limpar busca',
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _query = '');
-                          },
-                        ),
-                  border: const OutlineInputBorder(),
-                ),
+                hint: 'Buscar clube',
                 onChanged: (value) => setState(() => _query = value),
               ),
               const SizedBox(height: 8),
@@ -203,9 +189,10 @@ class _ClubAssignmentModalState extends ConsumerState<ClubAssignmentModal> {
         ),
       ),
       actions: [
-        TextButton(
+        KicksterButton(
+          label: 'Fechar',
+          variant: KicksterButtonVariant.text,
           onPressed: () => Navigator.pop(context),
-          child: const Text('Fechar'),
         ),
       ],
     );

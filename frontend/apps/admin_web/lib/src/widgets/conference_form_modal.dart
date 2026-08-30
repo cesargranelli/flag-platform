@@ -118,15 +118,11 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextFormField(
+              KicksterInput(
+                label: 'Nome',
                 controller: _name,
                 maxLength: 100,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Nome',
-                  helperText: 'Ex.: Conferência Leste',
-                  border: OutlineInputBorder(),
-                ),
+                hintText: 'Ex.: Conferência Leste',
                 validator: (value) => (value == null || value.trim().isEmpty)
                     ? 'Informe o nome'
                     : null,
@@ -135,7 +131,7 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
                 Text(
                   _errorMessage!,
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
+                    color: AppColors.danger,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -144,20 +140,16 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
         ),
       ),
       actions: [
-        TextButton(
+        KicksterButton(
+          label: 'Cancelar',
+          variant: KicksterButtonVariant.text,
           onPressed: _submitting ? null : () => Navigator.pop(context),
-          child: const Text('Cancelar'),
         ),
-        FilledButton.icon(
+        KicksterButton(
+          label: 'Salvar',
           onPressed: _submitting ? null : _save,
-          icon: _submitting
-              ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.check),
-          label: const Text('Salvar'),
+          icon: Icons.check,
+          loading: _submitting,
         ),
       ],
     );

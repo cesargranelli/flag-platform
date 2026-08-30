@@ -29,43 +29,43 @@ class CompetitionGamesScreen extends ConsumerStatefulWidget {
 }
 
 class _CompetitionGamesScreenState
-    extends ConsumerState<CompetitionGamesScreen> {
+    extends ConsumerState<CompetitionGamesScreen>
+    with AutomaticKeepAliveClientMixin {
   /// Rodada selecionada no filtro; `null` significa "Todas".
   int? _selectedRound;
 
+  /// Mantém o filtro de rodada vivo ao trocar de aba (TabBarView).
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final gamesAsync = ref.watch(
       competitionGamesProvider(widget.competitionId),
     );
-    final title = widget.competitionName.isEmpty
-        ? 'Calendário de jogos'
-        : widget.competitionName;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: gamesAsync.when(
-        loading: () => const AppLoading(message: 'Carregando jogos...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os jogos',
-          onRetry: () =>
-              ref.invalidate(competitionGamesProvider(widget.competitionId)),
-        ),
-        data: (games) {
-          if (games.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum jogo disponível',
-              icon: Icons.sports_football,
-            );
-          }
-          return _GamesView(
-            games: games,
-            selectedRound: _selectedRound,
-            competitionName: widget.competitionName,
-            onRoundSelected: (round) => setState(() => _selectedRound = round),
-          );
-        },
+    return gamesAsync.when(
+      loading: () => const AppLoading(message: 'Carregando jogos...'),
+      error: (error, stackTrace) => AppErrorState(
+        message: 'Não foi possível carregar os jogos',
+        onRetry: () =>
+            ref.invalidate(competitionGamesProvider(widget.competitionId)),
       ),
+      data: (games) {
+        if (games.isEmpty) {
+          return const AppEmptyState(
+            message: 'Nenhum jogo disponível',
+            icon: Icons.sports_football,
+          );
+        }
+        return _GamesView(
+          games: games,
+          selectedRound: _selectedRound,
+          competitionName: widget.competitionName,
+          onRoundSelected: (round) => setState(() => _selectedRound = round),
+        );
+      },
     );
   }
 }
@@ -107,6 +107,7 @@ class _GamesView extends StatelessWidget {
           selectedRound: selectedRound,
           onSelected: onRoundSelected,
         ),
+        const SizedBox(height: 16),
         if (upcoming.isNotEmpty) ...[
           const SizedBox(height: 20),
           const _SectionTitle('Próximos jogos'),
@@ -117,8 +118,6 @@ class _GamesView extends StatelessWidget {
               child: MatchScoreCard(
                 game: game,
                 highlighted: true,
-                showMeta: true,
-                showVenue: true,
                 onTap: () => _openGameDetail(context, game),
                 onHomeTeamTap: () => openTeamDetail(
                   context,
@@ -140,10 +139,9 @@ class _GamesView extends StatelessWidget {
         if (visibleGames.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 32),
-            child: Text(
-              'Nenhum jogo nesta rodada',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            child: AppEmptyState(
+              message: 'Nenhum jogo nesta rodada',
+              icon: Icons.sports_football,
             ),
           )
         else
@@ -152,8 +150,6 @@ class _GamesView extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12),
               child: MatchScoreCard(
                 game: game,
-                showMeta: true,
-                showVenue: true,
                 onTap: () => _openGameDetail(context, game),
                 onHomeTeamTap: () => openTeamDetail(
                   context,
@@ -172,7 +168,11 @@ class _GamesView extends StatelessWidget {
     );
   }
 
-  /// Navega para o detalhe do jogo passando o objeto completo via `extra`.
+  /// Navega conforme o status do jogo:
+  /// - `inProgress` → detalhe do jogo (com auto-refresh)
+  /// - `finished` → detalhe do jogo (resultado final)
+  /// - `scheduled` → detalhe do jogo (comportamento original)
+  /// - `cancelled` → detalhe do jogo (mesmo comportamento de scheduled)
   void _openGameDetail(BuildContext context, Game game) {
     context.push(
       '/game/${game.id}',
@@ -240,23 +240,59 @@ class _RoundFilter extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: const Text('Todas'),
+            child: _RoundChip(
+              label: 'Todas',
               selected: selectedRound == null,
-              onSelected: (_) => onSelected(null),
+              onTap: () => onSelected(null),
             ),
           ),
           for (final round in rounds)
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text('Rodada $round'),
+              child: _RoundChip(
+                label: 'Rodada $round',
                 selected: selectedRound == round,
-                onSelected: (_) => onSelected(round),
+                onTap: () => onSelected(round),
               ),
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Chip de seleção de rodada seguindo o design system.
+///
+/// Selecionado: fundo `AppColors.primary`, texto branco.
+/// Não selecionado: fundo `AppColors.grayFill`, texto `AppColors.textSecondary`,
+/// sem contorno preto.
+class _RoundChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _RoundChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) => onTap(),
+      selectedColor: AppColors.primary,
+      checkmarkColor: Colors.white,
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : AppColors.textSecondary,
+        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+      ),
+      side: BorderSide(
+        color: selected ? AppColors.primary : AppColors.grayFill,
+      ),
+      backgroundColor: AppColors.grayFill,
     );
   }
 }

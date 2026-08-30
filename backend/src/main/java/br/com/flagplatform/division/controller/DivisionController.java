@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -80,6 +81,21 @@ public class DivisionController {
             @Valid @RequestBody UpdateDivisionRequest request,
             Authentication authentication) {
         return service.update(id, request, authentication.getName());
+    }
+
+    @Operation(
+            summary = "Excluir divisão",
+            description = "Remove uma divisão. Permitido apenas ao criador do campeonato ou ADMIN, " +
+                    "enquanto estiver em status DRAFT."
+    )
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
+    @DeleteMapping("/api/v1/divisions/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public void delete(
+            @Parameter(description = "Id da divisão") @PathVariable UUID id,
+            Authentication authentication) {
+        service.delete(id, authentication.getName());
     }
 
 }

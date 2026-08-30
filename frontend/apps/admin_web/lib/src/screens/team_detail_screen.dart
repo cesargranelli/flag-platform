@@ -6,7 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
+import '../utils/date_formats.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
 /// Detalhe de um time: apresenta os dados e oferece a edição.
@@ -20,21 +21,30 @@ class TeamDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final teamFuture = team != null ? null : ref.watch(teamProvider(teamId!));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(team?.name ?? 'Time'),
-        leading: AppBackButton(fallbackRoute: '/teams'),
+    return AppScreen(
+      title: team?.name ?? 'Time',
+      breadcrumb: [
+        const BreadcrumbItem('Início', route: '/'),
+        const BreadcrumbItem(AppStrings.teams, route: '/teams'),
+        if (team?.name != null) BreadcrumbItem(team!.name),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Conteúdo
+          teamFuture == null
+              ? _buildDetail(context, ref, team!)
+              : teamFuture.when(
+                  loading: () =>
+                      const AppLoading(message: 'Carregando time...'),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar o time',
+                    onRetry: () => ref.invalidate(teamProvider(teamId!)),
+                  ),
+                  data: (team) => _buildDetail(context, ref, team),
+                ),
+        ],
       ),
-      body: teamFuture == null
-          ? _buildDetail(context, ref, team!)
-          : teamFuture.when(
-              loading: () => const AppLoading(message: 'Carregando time...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar o time',
-                onRetry: () => ref.invalidate(teamProvider(teamId!)),
-              ),
-              data: (team) => _buildDetail(context, ref, team),
-            ),
     );
   }
 
@@ -62,9 +72,7 @@ class TeamDetailScreen extends ConsumerWidget {
       competition,
     );
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
+    return AppLayout.detail(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -85,8 +93,8 @@ class TeamDetailScreen extends ConsumerWidget {
                               Text(
                                 team.name,
                                 style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -106,11 +114,11 @@ class TeamDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     if (canEdit)
-                      FilledButton.icon(
+                      KicksterButton(
+                        label: 'Editar dados',
+                        icon: Icons.edit_outlined,
                         onPressed: () =>
-                            context.push('/teams/${team.id}/edit', extra: team),
-                        icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Editar dados'),
+                            context.go('/teams/${team.id}/edit', extra: team),
                       )
                     else
                       const EditRestrictionNote(
@@ -123,21 +131,21 @@ class TeamDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard('Informações', [
-              _row('Nome', team.name),
-              _row(
-                'Sigla',
-                team.shortName?.isNotEmpty == true ? team.shortName! : '—',
+            AppInfoCard(children: [
+              AppInfoRow(label: 'Nome', value: team.name),
+              AppInfoRow(
+                label: 'Sigla',
+                value: team.shortName?.isNotEmpty == true ? team.shortName! : '—',
               ),
-              _row('Competição', competitionName),
-              _row('Divisão', divisionName),
+              AppInfoRow(label: 'Competição', value: competitionName),
+              AppInfoRow(label: 'Divisão', value: divisionName),
               if (team.logoUrl != null && team.logoUrl!.isNotEmpty)
-                _row('URL do logo', team.logoUrl!),
+                AppInfoRow(label: 'URL do logo', value: team.logoUrl!),
             ]),
             const SizedBox(height: 16),
             Text(
-              'Criado em ${_formatDate(team.createdAt)}'
-              '${team.updatedAt != null ? ' • Atualizado em ${_formatDate(team.updatedAt)}' : ''}',
+              'Criado em ${formatBrDate(team.createdAt)}'
+              '${team.updatedAt != null ? ' • Atualizado em ${formatBrDate(team.updatedAt)}' : ''}',
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.textSecondary,
@@ -145,7 +153,6 @@ class TeamDetailScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
     );
   }
 
@@ -179,52 +186,5 @@ class TeamDetailScreen extends ConsumerWidget {
               size: 32,
             ),
     );
-  }
-
-  Widget _infoCard(String title, List<Widget> rows) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...rows,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _row(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime? value) {
-    if (value == null) return '—';
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 }

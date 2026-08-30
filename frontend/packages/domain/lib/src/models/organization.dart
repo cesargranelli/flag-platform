@@ -30,6 +30,9 @@ class Organization {
   final String timezone;
   final String locale;
   final OrganizationStatus? status;
+
+  /// UUID do usuário que criou a organização (exposto pelo backend, #359).
+  final String? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -58,6 +61,7 @@ class Organization {
     this.tertiaryColor,
     this.quaternaryColor,
     this.status,
+    this.createdBy,
     this.createdAt,
     this.updatedAt,
   });
@@ -93,6 +97,7 @@ class Organization {
         status: json['status'] is String
             ? OrganizationStatus.fromJson(json['status'] as String)
             : null,
+        createdBy: json['createdBy'] as String?,
         createdAt: _tryParseDate(json['createdAt']),
         updatedAt: _tryParseDate(json['updatedAt']),
       );
@@ -121,6 +126,7 @@ class Organization {
         if (quaternaryColor != null) 'quaternaryColor': quaternaryColor,
         'timezone': timezone,
         'locale': locale,
+        if (createdBy != null) 'createdBy': createdBy,
       };
 }
 

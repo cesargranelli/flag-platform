@@ -6,7 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
+import '../utils/date_formats.dart';
+import '../widgets/app_screen.dart';
 
 /// Argumentos de navegação do formulário de jogo.
 typedef GameFormArgs = ({String? competitionId, String? roundId, Game? game});
@@ -29,6 +30,7 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
   String? _awayTeamId;
   String? _venueId;
   DateTime? _scheduledAt;
+  late final TextEditingController _scheduleController;
   bool _submitting = false;
   String? _errorMessage;
 
@@ -43,6 +45,20 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
     _awayTeamId = game?.awayTeamId;
     _venueId = game?.venueId;
     _scheduledAt = game?.scheduledAt ?? DateTime.now();
+    _scheduleController = TextEditingController(text: _formatSchedule());
+  }
+
+  @override
+  void dispose() {
+    _scheduleController.dispose();
+    super.dispose();
+  }
+
+  String _formatSchedule() {
+    final scheduledAt = _scheduledAt;
+    return scheduledAt == null
+        ? ''
+        : '${formatBrDate(scheduledAt)} ${formatBrTime(scheduledAt)}';
   }
 
   Future<void> _pickSchedule() async {
@@ -70,6 +86,7 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
         time.hour,
         time.minute,
       );
+      _scheduleController.text = _formatSchedule();
     });
   }
 
@@ -135,14 +152,17 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
         : ref.watch(teamsProvider(competitionId));
     final venues = ref.watch(venuesProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar jogo' : 'Novo jogo'),
-        leading: AppBackButton(fallbackRoute: '/games'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+    return AppScreen(
+      title: _isEditing ? 'Editar jogo' : 'Novo jogo',
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem(AppStrings.games, route: '/games'),
+        BreadcrumbItem('Formulário'),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
@@ -151,12 +171,9 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                 (rounds?.when(
                       loading: () => const LinearProgressIndicator(),
                       error: (e, s) => const Text('Erro ao carregar rodadas'),
-                      data: (items) => DropdownButtonFormField<String>(
-                        initialValue: _roundId,
-                        decoration: const InputDecoration(
-                          labelText: 'Rodada',
-                          border: OutlineInputBorder(),
-                        ),
+                      data: (items) => KicksterDropdown<String>(
+                        label: 'Rodada',
+                        value: _roundId,
                         items: items
                             .map(
                               (r) => DropdownMenuItem(
@@ -176,12 +193,9 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                 (teams?.when(
                       loading: () => const LinearProgressIndicator(),
                       error: (e, s) => const Text('Erro ao carregar times'),
-                      data: (items) => DropdownButtonFormField<String>(
-                        initialValue: _homeTeamId,
-                        decoration: const InputDecoration(
-                          labelText: 'Time da casa',
-                          border: OutlineInputBorder(),
-                        ),
+                      data: (items) => KicksterDropdown<String>(
+                        label: 'Time da casa',
+                        value: _homeTeamId,
                         items: items
                             .map(
                               (t) => DropdownMenuItem(
@@ -202,12 +216,9 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                 (teams?.when(
                       loading: () => const LinearProgressIndicator(),
                       error: (e, s) => const Text('Erro ao carregar times'),
-                      data: (items) => DropdownButtonFormField<String>(
-                        initialValue: _awayTeamId,
-                        decoration: const InputDecoration(
-                          labelText: 'Time visitante',
-                          border: OutlineInputBorder(),
-                        ),
+                      data: (items) => KicksterDropdown<String>(
+                        label: 'Time visitante',
+                        value: _awayTeamId,
                         items: items
                             .map(
                               (t) => DropdownMenuItem(
@@ -234,12 +245,9 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                 venues.when(
                   loading: () => const LinearProgressIndicator(),
                   error: (e, s) => const Text('Erro ao carregar campos'),
-                  data: (items) => DropdownButtonFormField<String?>(
-                    initialValue: _venueId,
-                    decoration: const InputDecoration(
-                      labelText: 'Campo (opcional)',
-                      border: OutlineInputBorder(),
-                    ),
+                  data: (items) => KicksterDropdown<String?>(
+                    label: 'Campo (opcional)',
+                    value: _venueId,
                     items: [
                       const DropdownMenuItem<String?>(
                         value: null,
@@ -256,48 +264,36 @@ class _GameFormScreenState extends ConsumerState<GameFormScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Horário',
+                  controller: _scheduleController,
                   readOnly: true,
                   onTap: _pickSchedule,
-                  decoration: InputDecoration(
-                    labelText: 'Horário',
-                    suffixIcon: const Icon(Icons.schedule),
-                    border: const OutlineInputBorder(),
-                    hintText: _scheduledAt == null
-                        ? 'Selecione data e hora'
-                        : '${_formatDate(_scheduledAt!)} ${_formatTime(_scheduledAt!)}',
-                  ),
+                  hintText: 'Selecione data e hora',
+                  suffixIcon: const Icon(Icons.schedule),
                 ),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 16),
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                      color: AppColors.danger,
                     ),
                   ),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
+                KicksterButton(
+                  label: 'Salvar',
+                  icon: Icons.check,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _save,
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Salvar'),
                 ),
               ],
             ),
           ),
         ),
+      ],
       ),
     );
   }
 }
-
-String _formatDate(DateTime value) =>
-    '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
-String _formatTime(DateTime value) =>
-    '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';

@@ -5,10 +5,17 @@ import 'package:flutter/foundation.dart';
 
 /// Estado de autenticação do Referee App.
 class AuthState {
+  /// `true` enquanto a sessão persistida está sendo restaurada no boot
+  /// (issue #425#27) — evita o flash de login para usuários com token.
+  final bool restoring;
   final bool authenticated;
   final User? user;
 
-  const AuthState({this.authenticated = false, this.user});
+  const AuthState({
+    this.restoring = false,
+    this.authenticated = false,
+    this.user,
+  });
 }
 
 /// Controla a sessão da mesa: login, restauração e logout.
@@ -16,7 +23,7 @@ class AuthController extends ChangeNotifier {
   final SessionManager _session;
   final AuthApi _api;
 
-  AuthState _state = const AuthState();
+  AuthState _state = const AuthState(restoring: true);
 
   AuthState get state => _state;
 

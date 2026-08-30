@@ -138,8 +138,9 @@ public class RosterService implements RosterLookup {
                 entity.getAthleteId(),
                 athlete.name(),
                 athlete.nickname(),
+                entity.getNickname(),
                 athlete.position(),
-                athlete.number(),
+                entity.getNumber(),
                 athlete.photoUrl(),
                 entity.getStatus(),
                 entity.getCreatedAt());

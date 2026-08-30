@@ -1,6 +1,7 @@
 package br.com.flagplatform.game.service;
 
 import br.com.flagplatform.common.enums.GameStatus;
+import br.com.flagplatform.competition.CompetitionInfo;
 import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.game.FinishedGame;
 import br.com.flagplatform.game.GameInfo;
@@ -18,6 +19,7 @@ import br.com.flagplatform.game.dto.response.GameResponse;
 import br.com.flagplatform.game.dto.response.GameBatchLineResult;
 import br.com.flagplatform.game.dto.response.GameBatchResponse;
 import br.com.flagplatform.game.dto.response.GameSummaryResponse;
+import br.com.flagplatform.game.dto.response.LiveGameResponse;
 import br.com.flagplatform.game.dto.response.ScoreEventResponse;
 import br.com.flagplatform.game.entity.GameEntity;
 import br.com.flagplatform.game.entity.ScoreEventEntity;
@@ -39,6 +41,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -310,6 +313,59 @@ public class GameService implements GameLookup {
                         event.getGameId(),
                         event.getTeamId(),
                         event.getCreatedAt()))
+                .toList();
+    }
+
+    public List<LiveGameResponse> findLiveGames() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = now.minusHours(24);
+
+        List<GameStatus> statuses = List.of(GameStatus.IN_PROGRESS, GameStatus.FINISHED);
+
+        List<GameEntity> games = repository.findLiveGames(statuses, start, now);
+        if (games.isEmpty()) {
+            return List.of();
+        }
+
+        // Batch resolve round → competitionId
+        List<UUID> roundIds = games.stream().map(GameEntity::getRoundId).distinct().toList();
+        Map<UUID, UUID> roundToCompetition = roundLookup.findCompetitionIdsByRoundIds(roundIds);
+
+        // Batch resolve competition metadata
+        List<UUID> competitionIds = roundToCompetition.values().stream().distinct().toList();
+        Map<UUID, CompetitionInfo> competitionInfoMap = competitionLookup.findCompetitionInfoByIds(competitionIds);
+
+        // Batch resolve round numbers
+        Map<UUID, RoundInfo> roundInfoMap = roundLookup.findRoundInfoByIds(roundIds);
+
+        return games.stream()
+                .map(game -> {
+                    VenueInfo venue = game.getVenueId() != null
+                            ? venueLookup.findVenueInfoById(game.getVenueId())
+                            : null;
+                    UUID competitionId = roundToCompetition.get(game.getRoundId());
+                    CompetitionInfo comp = competitionId != null ? competitionInfoMap.get(competitionId) : null;
+                    RoundInfo roundInfo = roundInfoMap.get(game.getRoundId());
+
+                    return new LiveGameResponse(
+                            game.getId(),
+                            game.getRoundId(),
+                            roundInfo != null ? roundInfo.number() : null,
+                            teamLookup.findTeamInfoById(game.getHomeTeamId()).name(),
+                            teamLookup.findTeamInfoById(game.getAwayTeamId()).name(),
+                            game.getVenueId(),
+                            venue != null ? venue.name() : null,
+                            venue != null ? venue.address() : null,
+                            venue != null ? venue.mapsUrl() : null,
+                            game.getScheduledAt(),
+                            game.getStatus(),
+                            game.getHomeScore(),
+                            game.getAwayScore(),
+                            competitionId,
+                            comp != null ? comp.name() : null,
+                            comp != null ? comp.modality() : null,
+                            comp != null ? comp.gender() : null);
+                })
                 .toList();
     }
 

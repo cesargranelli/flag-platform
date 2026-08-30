@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../widgets/app_entity_list_screen.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
 /// Gestão de times: lista por campeonato e acesso ao detalhe.
@@ -13,18 +15,36 @@ import '../widgets/edit_restriction_note.dart';
 /// O fluxo agora é: campeonato → times.
 /// Os times associam-se diretamente ao competition_id (migração V24);
 /// as categories foram removidas.
-class TeamsScreen extends ConsumerWidget {
-  const TeamsScreen({super.key});
+class TeamsScreen extends ConsumerStatefulWidget {
+  const TeamsScreen({super.key, this.lockedCompetitionId});
+
+  /// Quando informado, a tela fica "travada" nesse campeonato (dropdown
+  /// desabilitado) — usado ao vir do detalhe do campeonato (#349).
+  final String? lockedCompetitionId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final competitions = ref.watch(competitionsProvider);
-    final selectedCompetition = ref.watch(selectedCompetitionProvider);
+  ConsumerState<TeamsScreen> createState() => _TeamsScreenState();
+}
 
+class _TeamsScreenState extends ConsumerState<TeamsScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final competitions = ref.watch(competitionsProvider);
+
+    final lockedCompetitionId = widget.lockedCompetitionId;
     final compItems = competitions.valueOrNull ?? const [];
+    // P4 #461: locked (rota) ?? efetivo (selecionado ?? primeiro da lista).
     final effectiveComp =
-        selectedCompetition ??
-        (compItems.isNotEmpty ? compItems.first.id : null);
+        lockedCompetitionId ?? ref.watch(effectiveCompetitionProvider);
+    final locked = lockedCompetitionId != null;
 
     // Issue #261: inscrição de times exige ser criador do campeonato
     // ou ADMIN (o backend já bloqueia as escritas).
@@ -36,60 +56,80 @@ class TeamsScreen extends ConsumerWidget {
       selectedCompetitionObj,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Times'),
-        leading: BackButton(onPressed: () => context.go('/')),
-      ),
-      floatingActionButton:
-          effectiveComp != null && canEdit
-              ? FloatingActionButton(
-                  tooltip: 'Novo time',
-                  onPressed: () =>
-                      context.push('/teams/new', extra: effectiveComp),
-                  child: const Icon(Icons.add),
-                )
-              : null,
-      body: competitions.when(
-        loading: () => const AppLoading(message: 'Carregando campeonatos...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os campeonatos',
-          onRetry: () => ref.invalidate(competitionsProvider),
-        ),
-        data: (_) {
-          if (compItems.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum campeonato cadastrado',
-              icon: Icons.emoji_events_outlined,
-            );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return AppScreen(
+      title: 'Times',
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem('Times'),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Actions
+          Row(
             children: [
-              AppLayout.content(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Column(
+              const Spacer(),
+              if (effectiveComp != null && canEdit)
+                KicksterButton(
+                  label: 'Novo',
+                  icon: Icons.add,
+                  onPressed: () =>
+                      context.go('/teams/new', extra: effectiveComp),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          competitions.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando campeonatos...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os campeonatos',
+              onRetry: () => ref.invalidate(competitionsProvider),
+            ),
+            data: (_) {
+              if (compItems.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.emoji_events_outlined,
+                  message: 'Nenhum campeonato cadastrado',
+                  description: 'Crie um campeonato para inscrever times.',
+                  action: KicksterButton(
+                    label: 'Criar campeonato',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/competitions/new'),
+                  ),
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      DropdownButtonFormField<String>(
-                        initialValue: effectiveComp,
-                        decoration: const InputDecoration(
-                          labelText: 'Campeonato',
-                          border: OutlineInputBorder(),
-                        ),
+                      KicksterDropdown<String>(
+                        label: locked
+                            ? 'Campeonato (travado)'
+                            : 'Campeonato',
+                        value: effectiveComp,
                         items: compItems
                             .map(
                               (c) => DropdownMenuItem(
                                 value: c.id,
-                                child: Text(c.name),
+                                child: appDropdownItem(
+                                  Icons.emoji_events_outlined,
+                                  c.name,
+                                ),
                               ),
                             )
                             .toList(),
-                        onChanged: (value) {
-                          ref.read(selectedCompetitionProvider.notifier).state =
-                              value;
-                        },
+                        onChanged: locked
+                            ? null
+                            : (value) {
+                                ref
+                                    .read(selectedCompetitionProvider
+                                        .notifier)
+                                    .state = value;
+                              },
                       ),
                       if (!canEdit)
                         const EditRestrictionNote(
@@ -99,120 +139,92 @@ class TeamsScreen extends ConsumerWidget {
                         ),
                     ],
                   ),
-                ),
-              ),
-              Expanded(
-                child: effectiveComp != null
-                    ? ref
+                  if (effectiveComp != null)
+                    ref
                           .watch(teamsProvider(effectiveComp))
                           .when(
                             loading: () => const AppLoading(
                               message: 'Carregando times...',
                             ),
                             error: (error, stackTrace) => AppErrorState(
-                              message: 'Não foi possível carregar os times',
-                              onRetry: () =>
-                                  ref.invalidate(teamsProvider(effectiveComp)),
+                              message:
+                                  'Não foi possível carregar os times',
+                              onRetry: () => ref.invalidate(
+                                  teamsProvider(effectiveComp)),
                             ),
                             data: (items) {
                               if (items.isEmpty) {
-                                return const AppEmptyState(
-                                  message: 'Nenhum time cadastrado',
+                                return KicksterEmptyState(
                                   icon: Icons.groups_outlined,
+                                  message: 'Nenhum time cadastrado',
+                                  description:
+                                      'Inscreva o primeiro time no campeonato.',
+                                  action: KicksterButton(
+                                    label: 'Criar time',
+                                    icon: Icons.add,
+                                    onPressed: () => context.go(
+                                      '/teams/new',
+                                      extra: effectiveComp,
+                                    ),
+                                  ),
                                 );
                               }
-                              return AppLayout.content(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final columns = constraints.maxWidth >= 600
-                                        ? 2
-                                        : 1;
-                                    return GridView.builder(
-                                      padding: const EdgeInsets.all(16),
-                                      itemCount: items.length,
-                                      gridDelegate:
-                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount: columns,
-                                            crossAxisSpacing: 12,
-                                            mainAxisSpacing: 12,
-                                            mainAxisExtent: 96,
-                                          ),
-                                      itemBuilder: (context, index) {
-                                        final team = items[index];
-                                        return _teamCard(context, team);
-                                      },
-                                    );
-                                  },
-                                ),
-                              );
+                              return AppEntityListScreen<Team>(
+                                items: items,
+                                  cardBuilder: (team) =>
+                                      _teamCard(context, team),
+                                  searchField: _searchController,
+                                  countLabel: 'times',
+                                  countLabelSingular: 'time',
+                                  emptyMessage: 'Nenhum time encontrado',
+                                  gridPadding:
+                                      const EdgeInsets.all(16),
+                                  filter: (all, query) => query.isEmpty
+                                      ? all
+                                      : all
+                                          .where(
+                                            (t) => t.name
+                                                .toLowerCase()
+                                                .contains(query),
+                                          )
+                                          .toList(growable: false),
+                                );
                             },
                           )
-                    : const AppEmptyState(
-                        message: 'Nenhum time cadastrado',
-                        icon: Icons.groups_outlined,
+                  else
+                    KicksterEmptyState(
+                      icon: Icons.groups_outlined,
+                      message: 'Nenhum time cadastrado',
+                      description:
+                          'Crie um campeonato para inscrever times.',
+                      action: KicksterButton(
+                        label: 'Criar campeonato',
+                        icon: Icons.add,
+                        onPressed: () => context.go('/competitions/new'),
                       ),
-              ),
-            ],
-          );
-        },
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
+  /// Card de time no padrão Kickster (core #439): ícone de grupo, nome e
+  /// subtítulo com esporte + contagem de atletas.
   Widget _teamCard(BuildContext context, Team team) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.push('/teams/${team.id}', extra: team),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    team.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      team.sportName ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${team.athleteCount ?? 0} atletas',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    final subtitle = [
+      if (team.sportName?.isNotEmpty ?? false) team.sportName!,
+      '${team.athleteCount ?? 0} atletas',
+    ].join(' · ');
+
+    return KicksterCard(
+      icon: Icons.groups_outlined,
+      title: team.name,
+      subtitle: subtitle,
+      onTap: () => context.push('/teams/${team.id}', extra: team),
     );
   }
 }

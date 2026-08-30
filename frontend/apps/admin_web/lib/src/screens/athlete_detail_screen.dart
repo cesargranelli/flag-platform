@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
+import '../utils/date_formats.dart';
+import '../widgets/app_screen.dart';
 
 /// Detalhe de um atleta: apresenta os dados e oferece a edição.
 ///
@@ -23,28 +24,36 @@ class AthleteDetailScreen extends ConsumerWidget {
         ? null
         : ref.watch(athleteProvider(athleteId!));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(athlete?.name ?? 'Atleta'),
-        leading: AppBackButton(fallbackRoute: '/athletes'),
+    return AppScreen(
+      title: athlete?.name ?? 'Atleta',
+      breadcrumb: [
+        const BreadcrumbItem('Início', route: '/'),
+        const BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
+        if (athlete?.name != null) BreadcrumbItem(athlete!.name),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Conteúdo
+          athleteFuture == null
+              ? _buildDetail(context, athlete!)
+              : athleteFuture.when(
+                  loading: () =>
+                      const AppLoading(message: 'Carregando atleta...'),
+                  error: (error, stackTrace) => AppErrorState(
+                    message: 'Não foi possível carregar o atleta',
+                    onRetry: () =>
+                        ref.invalidate(athleteProvider(athleteId!)),
+                  ),
+                  data: (athlete) => _buildDetail(context, athlete),
+                ),
+        ],
       ),
-      body: athleteFuture == null
-          ? _buildDetail(context, athlete!)
-          : athleteFuture.when(
-              loading: () => const AppLoading(message: 'Carregando atleta...'),
-              error: (error, stackTrace) => AppErrorState(
-                message: 'Não foi possível carregar o atleta',
-                onRetry: () => ref.invalidate(athleteProvider(athleteId!)),
-              ),
-              data: (athlete) => _buildDetail(context, athlete),
-            ),
     );
   }
 
   Widget _buildDetail(BuildContext context, Athlete athlete) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: AppLayout.detail(
+    return AppLayout.detail(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -56,7 +65,11 @@ class AthleteDetailScreen extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        _avatar(athlete, size: 64, radius: 32),
+                        KicksterAvatar(
+                          name: athlete.name,
+                          imageUrl: athlete.photoUrl,
+                          size: 64,
+                        ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -65,7 +78,7 @@ class AthleteDetailScreen extends ConsumerWidget {
                               Text(
                                 athlete.name,
                                 style: const TextStyle(
-                                    fontSize: 22, fontWeight: FontWeight.bold),
+                                    fontSize: 20, fontWeight: FontWeight.w700),
                               ),
                               if (athlete.nickname != null &&
                                   athlete.nickname!.isNotEmpty) ...[
@@ -83,131 +96,49 @@ class AthleteDetailScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: () => context.push(
+                    KicksterButton(
+                      label: 'Editar dados',
+                      icon: Icons.edit_outlined,
+                      onPressed: () => context.go(
                         '/athletes/${athlete.id}/edit',
                         extra: athlete,
                       ),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Editar dados'),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard(
-              'Informações',
-              [
-                _row('Nome', athlete.name),
-                _row('Apelido', athlete.nickname?.isNotEmpty == true ? athlete.nickname! : '—'),
-                _row('Posição', athlete.position?.label ?? 'Sem posição'),
-                _row('Número da camisa', athlete.number?.toString() ?? '—'),
-                if (athlete.photoUrl != null && athlete.photoUrl!.isNotEmpty)
-                  _row('URL da foto', athlete.photoUrl!),
-              ],
-            ),
+            AppInfoCard(children: [
+              AppInfoRow(label: 'Nome', value: athlete.name),
+              AppInfoRow(
+                label: 'Apelido',
+                value: athlete.nickname?.isNotEmpty == true
+                    ? athlete.nickname!
+                    : '—',
+              ),
+              AppInfoRow(
+                label: 'Posição',
+                value: athlete.positionsLabel.isNotEmpty
+                    ? athlete.positionsLabel
+                    : 'Sem posição',
+              ),
+              AppInfoRow(
+                label: 'Número da camisa',
+                value: athlete.number?.toString() ?? '—',
+              ),
+              if (athlete.photoUrl != null && athlete.photoUrl!.isNotEmpty)
+                AppInfoRow(label: 'URL da foto', value: athlete.photoUrl!),
+            ]),
             const SizedBox(height: 16),
             Text(
-              'Criado em ${_formatDate(athlete.createdAt)}'
-              '${athlete.updatedAt != null ? ' • Atualizado em ${_formatDate(athlete.updatedAt)}' : ''}',
+              'Criado em ${formatBrDate(athlete.createdAt)}'
+              '${athlete.updatedAt != null ? ' • Atualizado em ${formatBrDate(athlete.updatedAt)}' : ''}',
               style: const TextStyle(
                   fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
-      ),
     );
-  }
-
-  Widget _avatar(Athlete athlete, {required double size, required double radius}) {
-    final photo = athlete.photoUrl;
-    final validPhoto = photo != null &&
-        photo.isNotEmpty &&
-        (Uri.tryParse(photo)?.hasScheme ?? false);
-    return Container(
-      width: size,
-      height: size,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-      ),
-      child: validPhoto
-          ? Image.network(
-              photo,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Center(
-                child: Text(
-                  _initials(athlete.name),
-                  style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: size * 0.4),
-                ),
-              ),
-            )
-          : Center(
-              child: Text(
-                _initials(athlete.name),
-                style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: size * 0.4),
-              ),
-            ),
-    );
-  }
-
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '?';
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
-        .toUpperCase();
-  }
-
-  Widget _infoCard(String title, List<Widget> rows) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...rows,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _row(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 130,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-          ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime? value) {
-    if (value == null) return '—';
-    final local = value.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
   }
 }

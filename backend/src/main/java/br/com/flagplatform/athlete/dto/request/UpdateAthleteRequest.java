@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
+
 public record UpdateAthleteRequest(
         @NotBlank
         @Size(max = 150)
@@ -17,7 +19,8 @@ public record UpdateAthleteRequest(
         @Size(max = 100)
         String nickname,
 
-        AthletePosition position,
+        @Size(max = 3)
+        List<AthletePosition> positions,
 
         @Positive
         Integer number,

@@ -1,11 +1,12 @@
-﻿import 'package:flag_core/flag_core.dart';
+import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/club_assignment_modal.dart';
 import '../widgets/conference_form_modal.dart';
 import '../widgets/division_form_modal.dart';
@@ -28,77 +29,179 @@ class GroupingsScreen extends ConsumerWidget {
     final competitions = ref.watch(competitionsProvider);
     final selectedCompetitionId = ref.watch(selectedCompetitionProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Conferências e divisões'),
-        leading: const AppBackButton(fallbackRoute: '/'),
-      ),
-      body: competitions.when(
-        loading: () => const AppLoading(message: 'Carregando campeonatos...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os campeonatos',
-          onRetry: () => ref.invalidate(competitionsProvider),
-        ),
-        data: (compItems) {
-          if (compItems.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum campeonato cadastrado. '
-                  'Crie um campeonato para organizar conferências e divisões.',
-              icon: Icons.emoji_events_outlined,
-            );
-          }
-          // O id selecionado pode estar obsoleto (ex.: campeonato removido
-          // em outra sessão); nesse caso cai para o primeiro disponível.
-          var selected = compItems.first;
-          for (final c in compItems) {
-            if (c.id == selectedCompetitionId) {
-              selected = c;
-              break;
-            }
-          }
-          return _GroupingsBody(competitions: compItems, competition: selected);
-        },
+    return AppScreen(
+      title: 'Conferências e divisões',
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem(AppStrings.competitions, route: '/competitions'),
+        BreadcrumbItem('Conferências e divisões'),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          competitions.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando campeonatos...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os campeonatos',
+              onRetry: () => ref.invalidate(competitionsProvider),
+            ),
+            data: (compItems) {
+              if (compItems.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.emoji_events_outlined,
+                  message: 'Nenhum campeonato cadastrado',
+                  description:
+                      'Crie um campeonato para organizar conferências e divisões.',
+                  action: KicksterButton(
+                    label: 'Criar campeonato',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/competitions/new'),
+                  ),
+                );
+              }
+              // O id selecionado pode estar obsoleto (ex.: campeonato removido
+              // em outra sessão); nesse caso cai para o primeiro disponível.
+              var selected = compItems.first;
+              for (final c in compItems) {
+                if (c.id == selectedCompetitionId) {
+                  selected = c;
+                  break;
+                }
+              }
+              return _GroupingsBody(
+                competitions: compItems,
+                competition: selected,
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 }
 
 /// Corpo da tela para o campeonato selecionado.
-class _GroupingsBody extends ConsumerWidget {
+class _GroupingsBody extends ConsumerStatefulWidget {
   const _GroupingsBody({required this.competitions, required this.competition});
 
   final List<Competition> competitions;
   final Competition competition;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_GroupingsBody> createState() => _GroupingsBodyState();
+}
+
+class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  Competition get competition => widget.competition;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final conferences = ref.watch(conferencesProvider(competition.id));
     final divisions = ref.watch(divisionsProvider(competition.id));
     // Issue #261: criação/edição de conferências e divisões exige ser
     // criador do campeonato ou ADMIN (o backend já bloqueia as escritas).
-    final canEdit = canEditCompetition(
-      ref.watch(authControllerProvider).state.user,
-      competition,
-    );
+    // Issue #305: e apenas com o campeonato em DRAFT — publicado/encerrado
+    // tem a estrutura travada (somente leitura).
+    final canEdit =
+        canEditCompetition(
+          ref.watch(authControllerProvider).state.user,
+          competition,
+        ) &&
+        competition.status == CompetitionStatus.draft;
+    final lockedByStatus = competition.status != CompetitionStatus.draft;
+    final query = _query.trim().toLowerCase();
 
     return AppLayout.content(
       child: ListView(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
+          Row(
+            children: [
+              if (query.isNotEmpty)
+                Text(
+                  '${_filteredCount(conferences, divisions, query)} '
+                  '${_filteredCount(conferences, divisions, query) == 1 ? 'resultado' : 'resultados'}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                )
+              else
+                Text(
+                  _countersLabel(conferences, divisions),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              const Spacer(),
+              SizedBox(
+                width: 280,
+                child: KicksterSearchField(
+                  controller: _searchController,
+                  onChanged: (value) => setState(() => _query = value),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           _contextHeader(context, ref, conferences, divisions),
-          if (!canEdit)
+          if (!canEdit && !lockedByStatus)
             const EditRestrictionNote(
               message:
                   'Apenas o criador do campeonato pode gerenciar '
                   'conferências e divisões.',
             ),
+          if (lockedByStatus)
+            const EditRestrictionNote(
+              message:
+                  'Campeonato publicado — conferências, divisões e grupos '
+                  'estão travados.',
+            ),
           const SizedBox(height: 24),
-          _conferencesSection(context, ref, conferences, divisions, canEdit),
+          _conferencesSection(
+            context,
+            ref,
+            conferences,
+            divisions,
+            canEdit,
+            query,
+          ),
           const SizedBox(height: 24),
-          _standaloneDivisionsSection(context, ref, divisions, canEdit),
+          _standaloneDivisionsSection(context, ref, divisions, canEdit, query),
         ],
       ),
     );
+  }
+
+  /// Total de itens visíveis (conferências + divisões) para o contador.
+  int _filteredCount(
+    AsyncValue<List<Conference>> conferences,
+    AsyncValue<List<Division>> divisions,
+    String query,
+  ) {
+    if (query.isEmpty) return 0;
+    final confItems = conferences.valueOrNull ?? const <Conference>[];
+    final divItems = divisions.valueOrNull ?? const <Division>[];
+    final confCount = confItems
+        .where((c) => c.name.toLowerCase().contains(query))
+        .length;
+    final divCount = divItems
+        .where((d) => d.name.toLowerCase().contains(query))
+        .length;
+    return confCount + divCount;
   }
 
   /// Cabeçalho de contexto: campeonato, status, contadores e seletor.
@@ -110,8 +213,16 @@ class _GroupingsBody extends ConsumerWidget {
   ) {
     return Card(
       margin: EdgeInsets.zero,
+      elevation: 1,
+      shadowColor: AppColors.black.withValues(alpha: 0.08),
+      color: AppColors.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.line, width: 1),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -122,8 +233,8 @@ class _GroupingsBody extends ConsumerWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(16),
+                    color: AppColors.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
                     Icons.emoji_events_outlined,
@@ -137,14 +248,19 @@ class _GroupingsBody extends ConsumerWidget {
                     children: [
                       Text(
                         competition.name,
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         _countersLabel(conferences, divisions),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -158,17 +274,17 @@ class _GroupingsBody extends ConsumerWidget {
               alignment: Alignment.centerLeft,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 360),
-                child: DropdownButtonFormField<String>(
-                  initialValue: competition.id,
-                  decoration: const InputDecoration(
-                    labelText: 'Campeonato',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: competitions
+                child: KicksterDropdown<String>(
+                  label: 'Campeonato',
+                  value: competition.id,
+                  items: widget.competitions
                       .map(
                         (c) => DropdownMenuItem(
                           value: c.id,
-                          child: Text(c.name),
+                          child: appDropdownItem(
+                            Icons.emoji_events_outlined,
+                            c.name,
+                          ),
                         ),
                       )
                       .toList(),
@@ -194,6 +310,7 @@ class _GroupingsBody extends ConsumerWidget {
     AsyncValue<List<Conference>> conferences,
     AsyncValue<List<Division>> divisions,
     bool canEdit,
+    String query,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -207,13 +324,13 @@ class _GroupingsBody extends ConsumerWidget {
               ),
             ),
             if (canEdit)
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Nova conferência',
+                icon: Icons.add,
                 onPressed: () => showConferenceFormModal(
                   context,
                   competitionId: competition.id,
                 ),
-                icon: const Icon(Icons.add),
-                label: const Text('Nova conferência'),
               ),
           ],
         ),
@@ -226,9 +343,21 @@ class _GroupingsBody extends ConsumerWidget {
             onRetry: () => ref.invalidate(conferencesProvider(competition.id)),
           ),
           data: (confItems) {
-            if (confItems.isEmpty) {
+            final filteredConf = query.isEmpty
+                ? confItems
+                : confItems
+                      .where((c) => c.name.toLowerCase().contains(query))
+                      .toList(growable: false);
+            if (filteredConf.isEmpty && query.isNotEmpty) {
               return const AppEmptyState(
-                message: 'Nenhuma conferência criada. '
+                message: 'Nenhuma conferência encontrada',
+                icon: Icons.search_off,
+              );
+            }
+            if (filteredConf.isEmpty) {
+              return const AppEmptyState(
+                message:
+                    'Nenhuma conferência criada. '
                     'Crie a primeira para organizar seu campeonato.',
                 icon: Icons.account_tree_outlined,
               );
@@ -236,18 +365,23 @@ class _GroupingsBody extends ConsumerWidget {
             final divItems = divisions.valueOrNull ?? const <Division>[];
             return Column(
               children: [
-                for (final conf in confItems)
+                for (final conf in filteredConf)
                   _ConferenceCard(
                     key: ValueKey(conf.id),
                     conference: conf,
                     divisions: divItems
                         .where((d) => d.conferenceId == conf.id)
+                        .where(
+                          (d) =>
+                              query.isEmpty ||
+                              d.name.toLowerCase().contains(query),
+                        )
                         .toList(),
                     divisionsLoading: divisions.isLoading,
                     divisionsFailed: divisions.hasError,
                     // Com uma única conferência, abre-a para dar contexto
                     // imediato da estrutura (critério da issue #218).
-                    initiallyExpanded: confItems.length == 1,
+                    initiallyExpanded: filteredConf.length == 1,
                     competitionId: competition.id,
                     canEdit: canEdit,
                   ),
@@ -265,6 +399,7 @@ class _GroupingsBody extends ConsumerWidget {
     WidgetRef ref,
     AsyncValue<List<Division>> divisions,
     bool canEdit,
+    String query,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -278,19 +413,28 @@ class _GroupingsBody extends ConsumerWidget {
               ),
             ),
             if (canEdit)
-              TextButton.icon(
+              KicksterButton(
+                label: 'Adicionar divisão',
+                icon: Icons.add,
+                variant: KicksterButtonVariant.outline,
                 onPressed: () => showDivisionFormModal(
                   context,
                   competitionId: competition.id,
                 ),
-                icon: const Icon(Icons.add),
-                label: const Text('Adicionar divisão'),
               ),
           ],
         ),
         const SizedBox(height: 12),
         Card(
           margin: EdgeInsets.zero,
+          elevation: 1,
+          shadowColor: AppColors.black.withValues(alpha: 0.08),
+          color: AppColors.surface,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppColors.line, width: 1),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: divisions.when(
@@ -304,10 +448,21 @@ class _GroupingsBody extends ConsumerWidget {
               data: (divItems) {
                 final standalone = divItems
                     .where((d) => d.conferenceId == null)
+                    .where(
+                      (d) =>
+                          query.isEmpty || d.name.toLowerCase().contains(query),
+                    )
                     .toList();
                 if (standalone.isEmpty) {
+                  if (query.isNotEmpty) {
+                    return const AppEmptyState(
+                      message: 'Nenhuma divisão encontrada',
+                      icon: Icons.search_off,
+                    );
+                  }
                   return const AppEmptyState(
-                    message: 'Nenhuma divisão sem conferência. '
+                    message:
+                        'Nenhuma divisão sem conferência. '
                         'Use "Adicionar divisão" para criar uma.',
                     icon: Icons.subdirectory_arrow_right,
                   );
@@ -339,17 +494,7 @@ class _GroupingsBody extends ConsumerWidget {
       CompetitionStatus.finished => AppColors.danger,
       CompetitionStatus.disabled => AppColors.textSecondary,
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        _statusLabel(status),
-        style: TextStyle(fontSize: 13, color: color),
-      ),
-    );
+    return KicksterBadge(label: _statusLabel(status), color: color);
   }
 
   String _statusLabel(CompetitionStatus status) => switch (status) {
@@ -422,7 +567,14 @@ class _ConferenceCardState extends State<_ConferenceCard> {
     final conference = widget.conference;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shadowColor: AppColors.black.withValues(alpha: 0.08),
+      color: AppColors.surface,
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.line, width: 1),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -433,15 +585,27 @@ class _ConferenceCardState extends State<_ConferenceCard> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.account_tree_outlined,
-                    color: AppColors.primary,
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.account_tree_outlined,
+                      color: AppColors.primary,
+                    ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       conference.name,
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -501,14 +665,15 @@ class _ConferenceCardState extends State<_ConferenceCard> {
                       if (widget.canEdit)
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
+                          child: KicksterButton(
+                            label: 'Adicionar divisão',
+                            icon: Icons.add,
+                            variant: KicksterButtonVariant.text,
                             onPressed: () => showDivisionFormModal(
                               context,
                               competitionId: widget.competitionId,
                               initialConferenceId: conference.id,
                             ),
-                            icon: const Icon(Icons.add),
-                            label: const Text('Adicionar divisão'),
                           ),
                         ),
                     ],
@@ -547,9 +712,9 @@ class _ConferenceCardState extends State<_ConferenceCard> {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
       ),
     );
   }

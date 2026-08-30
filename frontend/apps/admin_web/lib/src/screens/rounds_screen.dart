@@ -6,7 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
+import '../widgets/app_entity_list_screen.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
 /// Gestão de rodadas: lista por campeonato e acesso ao detalhe.
@@ -14,75 +15,99 @@ import '../widgets/edit_restriction_note.dart';
 /// O fluxo agora é: campeonato → rodadas.
 /// As categories foram removidas; as rodadas associam-se diretamente
 /// ao competition_id (migração V24).
-class RoundsScreen extends ConsumerWidget {
+class RoundsScreen extends ConsumerStatefulWidget {
   const RoundsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RoundsScreen> createState() => _RoundsScreenState();
+}
+
+class _RoundsScreenState extends ConsumerState<RoundsScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
-    final selectedCompetition = ref.watch(selectedCompetitionProvider);
 
     final compItems = competitions.valueOrNull ?? const [];
-    final effectiveComp =
-        selectedCompetition ??
-        (compItems.isNotEmpty ? compItems.first.id : null);
+    // P4 #461: campeonato efetivo = selecionado ?? primeiro da lista.
+    final effectiveComp = ref.watch(effectiveCompetitionProvider);
 
     // Issue #261: criação/edição de rodadas exige ser criador do
     // campeonato ou ADMIN (o backend já bloqueia as escritas).
+    // Issue #305: e apenas com o campeonato em DRAFT — publicado/encerrado
+    // tem a estrutura travada (somente leitura).
     final selectedCompetitionObj = compItems
         .where((c) => c.id == effectiveComp)
         .firstOrNull;
+    final isDraft =
+        selectedCompetitionObj?.status == CompetitionStatus.draft;
     final canEdit = canEditCompetition(
       ref.watch(authControllerProvider).state.user,
       selectedCompetitionObj,
     );
+    final canManage = canEdit && isDraft;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Rodadas'),
-        // Issue #259: com pilha de navegação (ex.: vindo da tela do
-        // campeonato), o voltar retorna à origem via pop; em deep link/
-        // refresh cai no fallback (home), como antes.
-        leading: const AppBackButton(fallbackRoute: '/'),
-      ),
-      floatingActionButton:
-          effectiveComp != null && canEdit
-              ? FloatingActionButton(
-                  tooltip: 'Nova rodada',
-                  onPressed: () =>
-                      context.push('/rounds/new', extra: effectiveComp),
-                  child: const Icon(Icons.add),
-                )
-              : null,
-      body: competitions.when(
-        loading: () => const AppLoading(message: 'Carregando campeonatos...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os campeonatos',
-          onRetry: () => ref.invalidate(competitionsProvider),
-        ),
-        data: (_) {
-          if (compItems.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum campeonato cadastrado',
-              icon: Icons.emoji_events_outlined,
-            );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return AppScreen(
+      title: 'Rodadas',
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Actions
+          Row(
             children: [
-              AppLayout.content(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Column(
+              const Spacer(),
+              if (effectiveComp != null && canManage)
+                KicksterButton(
+                  label: 'Novo',
+                  icon: Icons.add,
+                  onPressed: () =>
+                      context.go('/rounds/new', extra: effectiveComp),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          competitions.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando campeonatos...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os campeonatos',
+              onRetry: () => ref.invalidate(competitionsProvider),
+            ),
+            data: (_) {
+              if (compItems.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.emoji_events_outlined,
+                  message: 'Nenhum campeonato cadastrado',
+                  description: 'Crie um campeonato para adicionar rodadas.',
+                  action: KicksterButton(
+                    label: 'Criar campeonato',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/competitions/new'),
+                  ),
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      DropdownButtonFormField<String>(
+                      KicksterDropdown<String>(
                         key: ValueKey('comp-$effectiveComp'),
-                        initialValue: effectiveComp,
-                        decoration: const InputDecoration(
-                          labelText: 'Campeonato',
-                          border: OutlineInputBorder(),
-                        ),
+                        label: 'Campeonato',
+                        value: effectiveComp,
                         items: compItems
                             .map(
                               (c) => DropdownMenuItem(
@@ -92,82 +117,106 @@ class RoundsScreen extends ConsumerWidget {
                             )
                             .toList(),
                         onChanged: (value) {
-                          ref.read(selectedCompetitionProvider.notifier).state =
-                              value;
-                          ref.read(selectedRoundProvider.notifier).state = null;
+                          ref
+                              .read(selectedCompetitionProvider.notifier)
+                              .state = value;
+                          ref.read(selectedRoundProvider.notifier).state =
+                              null;
                         },
                       ),
-                      if (!canEdit)
-                        const EditRestrictionNote(
-                          message:
-                              'Apenas o criador do campeonato pode '
-                              'gerenciar rodadas.',
+                      if (!canManage)
+                        EditRestrictionNote(
+                          message: !isDraft
+                              ? 'Campeonato publicado — as rodadas estão '
+                                  'travadas.'
+                              : 'Apenas o criador do campeonato pode '
+                                  'gerenciar rodadas.',
                         ),
                     ],
                   ),
-                ),
-              ),
-              Expanded(
-                child: effectiveComp != null
-                    ? ref
+                  if (effectiveComp != null)
+                    ref
                           .watch(roundsProvider(effectiveComp))
                           .when(
                             loading: () => const AppLoading(
                               message: 'Carregando rodadas...',
                             ),
                             error: (error, stackTrace) => AppErrorState(
-                              message: 'Não foi possível carregar as rodadas',
-                              onRetry: () =>
-                                  ref.invalidate(roundsProvider(effectiveComp)),
+                              message:
+                                  'Não foi possível carregar as rodadas',
+                              onRetry: () => ref.invalidate(
+                                  roundsProvider(effectiveComp)),
                             ),
                             data: (items) {
                               if (items.isEmpty) {
-                                return const AppEmptyState(
-                                  message: 'Nenhuma rodada cadastrada',
+                                return KicksterEmptyState(
                                   icon: Icons.format_list_numbered,
+                                  message: 'Nenhuma rodada cadastrada',
+                                  description:
+                                      'Crie a primeira rodada do campeonato.',
+                                  action: KicksterButton(
+                                    label: 'Criar rodada',
+                                    icon: Icons.add,
+                                    onPressed: () => context.go(
+                                      '/rounds/new',
+                                      extra: effectiveComp,
+                                    ),
+                                  ),
                                 );
                               }
-                              return AppLayout.content(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final columns = constraints.maxWidth >= 600
-                                        ? 2
-                                        : 1;
-                                    return GridView.builder(
-                                      padding: const EdgeInsets.all(16),
-                                      itemCount: items.length,
-                                      gridDelegate:
-                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount: columns,
-                                            crossAxisSpacing: 12,
-                                            mainAxisSpacing: 12,
-                                            mainAxisExtent: 96,
-                                          ),
-                                      itemBuilder: (context, index) {
-                                        final round = items[index];
-                                        return _roundCard(context, round);
-                                      },
-                                    );
-                                  },
-                                ),
-                              );
+                              return AppEntityListScreen<Round>(
+                                items: items,
+                                  cardBuilder: (round) =>
+                                      _roundCard(context, round),
+                                  searchField: _searchController,
+                                  countLabel: 'rodadas',
+                                  countLabelSingular: 'rodada',
+                                  emptyMessage: 'Nenhuma rodada encontrada',
+                                  gridPadding:
+                                      const EdgeInsets.all(16),
+                                  filter: (all, query) => query.isEmpty
+                                      ? all
+                                      : all
+                                          .where(
+                                            (r) => r.name
+                                                .toLowerCase()
+                                                .contains(query),
+                                          )
+                                          .toList(growable: false),
+                                );
                             },
                           )
-                    : const AppEmptyState(
-                        message: 'Nenhuma rodada cadastrada',
-                        icon: Icons.format_list_numbered,
+                  else
+                    KicksterEmptyState(
+                      icon: Icons.format_list_numbered,
+                      message: 'Nenhuma rodada cadastrada',
+                      description:
+                          'Crie um campeonato para adicionar rodadas.',
+                      action: KicksterButton(
+                        label: 'Criar campeonato',
+                        icon: Icons.add,
+                        onPressed: () => context.go('/competitions/new'),
                       ),
-              ),
-            ],
-          );
-        },
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
   Widget _roundCard(BuildContext context, Round round) {
     return Card(
+      elevation: 1,
+      shadowColor: AppColors.black.withValues(alpha: 0.08),
+      color: AppColors.surface,
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.line, width: 1),
+      ),
       child: InkWell(
         onTap: () => context.push('/rounds/${round.id}', extra: round),
         child: Padding(
@@ -178,7 +227,7 @@ class RoundsScreen extends ConsumerWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
+                  color: AppColors.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -186,7 +235,7 @@ class RoundsScreen extends ConsumerWidget {
                     '${round.number}',
                     style: const TextStyle(
                       fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.primary,
                     ),
                   ),
@@ -205,6 +254,7 @@ class RoundsScreen extends ConsumerWidget {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),

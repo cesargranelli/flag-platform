@@ -7,14 +7,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
 
 /// Formulário de criação/edição de rodada.
 class RoundFormScreen extends ConsumerStatefulWidget {
-  const RoundFormScreen({super.key, this.roundId, this.round});
+  const RoundFormScreen({super.key, this.roundId, this.round, this.competitionId});
 
   final String? roundId;
   final Round? round;
+
+  /// Campeonato vindo da listagem (via extra da rota) — evita perder o
+  /// contexto ao abrir "Nova rodada" (B5 #457).
+  final String? competitionId;
 
   @override
   ConsumerState<RoundFormScreen> createState() => _RoundFormScreenState();
@@ -58,6 +62,7 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
     try {
       final api = ref.read(roundApiProvider);
       final competitionId =
+          widget.competitionId ??
           widget.round?.competitionId ??
           ref.read(selectedCompetitionProvider) ??
           '';
@@ -110,29 +115,28 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
   Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
     final compItems = competitions.valueOrNull ?? const [];
-    final effectiveComp =
-        ref.watch(selectedCompetitionProvider) ??
-        (compItems.isNotEmpty ? compItems.first.id : null);
+    // P4 #461: campeonato efetivo = selecionado ?? primeiro da lista.
+    final effectiveComp = ref.watch(effectiveCompetitionProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar rodada' : 'Nova rodada'),
-        leading: AppBackButton(fallbackRoute: '/rounds'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+    return AppScreen(
+      title: _isEditing ? 'Editar rodada' : 'Nova rodada',
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem(AppStrings.rounds, route: '/rounds'),
+        BreadcrumbItem('Formulário'),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                DropdownButtonFormField<String>(
-                  initialValue: effectiveComp,
-                  decoration: const InputDecoration(
-                    labelText: 'Campeonato',
-                    border: OutlineInputBorder(),
-                  ),
+                KicksterDropdown<String>(
+                  label: 'Campeonato',
+                  value: effectiveComp,
                   items: compItems
                       .map(
                         (c) =>
@@ -148,40 +152,32 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
                       : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Número',
                   controller: _number,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   maxLength: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Número',
-                    helperText: 'Ex.: 1',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: 'Ex.: 1',
                   validator: _validateNumber,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Nome',
                   controller: _name,
                   maxLength: 100,
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Informe o nome'
-                      : null,
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty)
+                          ? 'Informe o nome'
+                          : null,
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<RoundType>(
-                  initialValue: _type,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo',
-                    helperText:
-                        'Fases: Regular, Playoffs, Wildcard, Semifinal, Final',
-                    border: OutlineInputBorder(),
-                  ),
+                KicksterDropdown<RoundType>(
+                  label: 'Tipo',
+                  helperText:
+                      'Fases: Regular, Playoffs, Wildcard, Semifinal, Final',
+                  value: _type,
                   items: RoundType.values
                       .map(
                         (t) => DropdownMenuItem(value: t, child: Text(t.label)),
@@ -196,26 +192,23 @@ class _RoundFormScreenState extends ConsumerState<RoundFormScreen> {
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                      color: AppColors.danger,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
+                KicksterButton(
+                  label: 'Salvar',
+                  icon: Icons.check,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _save,
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Salvar'),
                 ),
               ],
             ),
           ),
         ),
+      ],
       ),
     );
   }

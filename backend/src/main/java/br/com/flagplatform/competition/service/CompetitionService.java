@@ -1,6 +1,8 @@
 package br.com.flagplatform.competition.service;
 
 import br.com.flagplatform.common.enums.CompetitionStatus;
+import br.com.flagplatform.common.enums.GroupingType;
+import br.com.flagplatform.competition.CompetitionInfo;
 import br.com.flagplatform.competition.CompetitionLookup;
 import br.com.flagplatform.common.pagination.PagedResponse;
 import br.com.flagplatform.competition.dto.request.CreateCompetitionRequest;
@@ -25,8 +27,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -50,6 +55,10 @@ public class CompetitionService implements CompetitionLookup {
         CompetitionEntity entity = mapper.toEntity(request);
         if (entity.getStatus() == null) {
             entity.setStatus(CompetitionStatus.DRAFT);
+        }
+        // Issue #308: rótulo do agrupamento — default DIVISIONS.
+        if (entity.getGroupingType() == null) {
+            entity.setGroupingType(GroupingType.DIVISIONS);
         }
         // V260: registra quem criou o campeonato — base da regra de
         // edição restrita ao criador (ou ADMIN).
@@ -158,6 +167,30 @@ public class CompetitionService implements CompetitionLookup {
         }
     }
 
+    @Override
+    public void assertEditable(UUID competitionId) {
+        CompetitionEntity entity = findEntityById(competitionId);
+        if (entity.getStatus() != CompetitionStatus.DRAFT) {
+            throw new CompetitionNotEditableException(entity.getStatus());
+        }
+    }
+
+    @Override
+    public CompetitionInfo findCompetitionInfoById(UUID id) {
+        CompetitionEntity entity = findEntityById(id);
+        return new CompetitionInfo(entity.getId(), entity.getName(), entity.getModality(), entity.getGender());
+    }
+
+    @Override
+    public Map<UUID, CompetitionInfo> findCompetitionInfoByIds(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Map.of();
+        }
+        return repository.findAllById(ids).stream()
+                .map(entity -> new CompetitionInfo(entity.getId(), entity.getName(), entity.getModality(), entity.getGender()))
+                .collect(Collectors.toMap(CompetitionInfo::id, info -> info));
+    }
+
     private CompetitionEntity findEntityById(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new CompetitionNotFoundException(id));
@@ -198,6 +231,7 @@ public class CompetitionService implements CompetitionLookup {
                 base.startDate(),
                 base.endDate(),
                 base.status(),
+                base.groupingType(),
                 base.createdBy(),
                 base.createdAt(),
                 base.updatedAt());

@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../widgets/app_entity_list_screen.dart';
+import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
 /// Gestão de jogos: lista por rodada e acesso ao detalhe.
@@ -13,19 +15,39 @@ import '../widgets/edit_restriction_note.dart';
 /// O fluxo agora é: campeonato → divisão → rodada → jogo.
 /// As categories foram removidas; a associação competition→round
 /// ocorre diretamente pela competition_id (migração V24).
-class GamesScreen extends ConsumerWidget {
+class GamesScreen extends ConsumerStatefulWidget {
   const GamesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GamesScreen> createState() => _GamesScreenState();
+}
+
+class _GamesScreenState extends ConsumerState<GamesScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final competitions = ref.watch(competitionsProvider);
-    final selectedCompetition = ref.watch(selectedCompetitionProvider);
     final selectedRound = ref.watch(selectedRoundProvider);
 
     final compItems = competitions.valueOrNull ?? const [];
-    final effectiveComp =
-        selectedCompetition ??
-        (compItems.isNotEmpty ? compItems.first.id : null);
+    // P4 #461: campeonato efetivo = selecionado ?? primeiro da lista.
+    final effectiveComp = ref.watch(effectiveCompetitionProvider);
+
+    // Rodadas do campeonato efetivo + rodada "efetiva" (B1 #457): quando
+    // nenhuma rodada foi selecionada, usa a primeira — a lista de jogos
+    // aparece sem depender de um clique no dropdown.
+    final roundsAsync = effectiveComp != null
+        ? ref.watch(roundsProvider(effectiveComp))
+        : null;
+    final roundItems = roundsAsync?.valueOrNull ?? const <Round>[];
+    final effectiveRound = selectedRound ?? roundItems.firstOrNull?.id;
 
     // Issue #261: criação/edição de jogos (incluída a importação CSV)
     // exige ser criador do campeonato ou ADMIN.
@@ -37,122 +59,136 @@ class GamesScreen extends ConsumerWidget {
       selectedCompetitionObj,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Jogos'),
-        leading: BackButton(onPressed: () => context.go('/')),
-        actions: [
-          if (selectedRound != null && canEdit)
-            IconButton(
-              tooltip: 'Importar CSV',
-              icon: const Icon(Icons.upload_file),
-              onPressed: () =>
-                  context.push('/games/import', extra: selectedRound),
-            ),
-        ],
-      ),
-      floatingActionButton:
-          effectiveComp != null && canEdit
-              ? FloatingActionButton(
-                  tooltip: 'Novo jogo',
+    return AppScreen(
+      title: 'Jogos',
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem('Jogos'),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Actions
+          Row(
+            children: [
+              const Spacer(),
+              if (effectiveRound != null && canEdit)
+                KicksterButton(
+                  label: 'Importar',
+                  icon: Icons.upload_file,
+                  variant: KicksterButtonVariant.outline,
                   onPressed: () => context.push(
+                    '/games/import',
+                    extra: (
+                      roundId: effectiveRound,
+                      competitionId: effectiveComp,
+                    ),
+                  ),
+                ),
+              if (effectiveRound != null && canEdit)
+                const SizedBox(width: 8),
+              if (effectiveComp != null && canEdit)
+                KicksterButton(
+                  label: 'Novo',
+                  icon: Icons.add,
+                  onPressed: () => context.go(
                     '/games/new',
                     extra: (
                       competitionId: effectiveComp,
-                      roundId: selectedRound,
+                      roundId: effectiveRound,
                       game: null,
                     ),
                   ),
-                  child: const Icon(Icons.add),
-                )
-              : null,
-      body: competitions.when(
-        loading: () => const AppLoading(message: 'Carregando campeonatos...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os campeonatos',
-          onRetry: () => ref.invalidate(competitionsProvider),
-        ),
-        data: (_) {
-          if (compItems.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum campeonato cadastrado',
-              icon: Icons.emoji_events_outlined,
-            );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppLayout.content(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Column(
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          competitions.when(
+            loading: () =>
+                const AppLoading(message: 'Carregando campeonatos...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os campeonatos',
+              onRetry: () => ref.invalidate(competitionsProvider),
+            ),
+            data: (_) {
+              if (compItems.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.emoji_events_outlined,
+                  message: 'Nenhum campeonato cadastrado',
+                  description: 'Crie um campeonato para adicionar jogos.',
+                  action: KicksterButton(
+                    label: 'Criar campeonato',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/competitions/new'),
+                  ),
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      DropdownButtonFormField<String>(
+                      KicksterDropdown<String>(
                         key: ValueKey('comp-$effectiveComp'),
-                        initialValue: effectiveComp,
-                        decoration: const InputDecoration(
-                          labelText: 'Campeonato',
-                          border: OutlineInputBorder(),
-                        ),
+                        label: 'Campeonato',
+                        value: effectiveComp,
                         items: compItems
                             .map(
                               (c) => DropdownMenuItem(
                                 value: c.id,
-                                child: Text(c.name),
+                                child: appDropdownItem(
+                                  Icons.emoji_events_outlined,
+                                  c.name,
+                                ),
                               ),
                             )
                             .toList(),
                         onChanged: (value) {
-                          ref.read(selectedCompetitionProvider.notifier).state =
-                              value;
-                          ref.read(selectedRoundProvider.notifier).state = null;
+                          ref
+                              .read(selectedCompetitionProvider.notifier)
+                              .state = value;
+                          ref.read(selectedRoundProvider.notifier).state =
+                              null;
                         },
                       ),
                       const SizedBox(height: 12),
                       (effectiveComp != null)
-                          ? ref
-                                .watch(roundsProvider(effectiveComp))
-                                .when(
-                                  loading: () =>
-                                      const LinearProgressIndicator(),
-                                  error: (e, s) => AppErrorState(
-                                    message:
-                                        'Não foi possível carregar as rodadas',
-                                    onRetry: () => ref.invalidate(
-                                      roundsProvider(effectiveComp),
-                                    ),
+                          ? roundsAsync!.when(
+                              loading: () =>
+                                  const LinearProgressIndicator(),
+                              error: (e, s) => AppErrorState(
+                                message:
+                                    'Não foi possível carregar as rodadas',
+                                onRetry: () => ref.invalidate(
+                                  roundsProvider(effectiveComp),
+                                ),
+                              ),
+                              data: (roundItems) =>
+                                  KicksterDropdown<String>(
+                                    key: ValueKey(
+                                        'round-$effectiveComp'),
+                                    label: 'Rodada',
+                                    value: effectiveRound,
+                                    items: roundItems
+                                        .map(
+                                          (r) => DropdownMenuItem(
+                                            value: r.id,
+                                            child: Text(
+                                              'Rodada ${r.number} - ${r.name}',
+                                            ),
+                                          ),
+                                        )
+                                        .toList(),
+                                    onChanged: (value) => ref
+                                        .read(
+                                          selectedRoundProvider
+                                              .notifier,
+                                        )
+                                        .state = value,
                                   ),
-                                  data: (roundItems) =>
-                                      DropdownButtonFormField<String>(
-                                        key: ValueKey('round-$effectiveComp'),
-                                        initialValue:
-                                            selectedRound ??
-                                            roundItems.first.id,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Rodada',
-                                          border: OutlineInputBorder(),
-                                        ),
-                                        items: roundItems
-                                            .map(
-                                              (r) => DropdownMenuItem(
-                                                value: r.id,
-                                                child: Text(
-                                                  'Rodada ${r.number} - ${r.name}',
-                                                ),
-                                              ),
-                                            )
-                                            .toList(),
-                                        onChanged: (value) =>
-                                            ref
-                                                    .read(
-                                                      selectedRoundProvider
-                                                          .notifier,
-                                                    )
-                                                    .state =
-                                                value,
-                                      ),
-                                )
+                            )
                           : const LinearProgressIndicator(),
                       if (!canEdit)
                         const EditRestrictionNote(
@@ -162,16 +198,9 @@ class GamesScreen extends ConsumerWidget {
                         ),
                     ],
                   ),
-                ),
-              ),
-              Expanded(
-                child: selectedRound == null
-                    ? const AppEmptyState(
-                        message: 'Nenhuma rodada cadastrada',
-                        icon: Icons.format_list_numbered,
-                      )
-                    : ref
-                          .watch(gamesByRoundProvider(selectedRound))
+                  if (effectiveRound != null)
+                    ref
+                          .watch(gamesByRoundProvider(effectiveRound))
                           .when(
                             loading: () => const AppLoading(
                               message: 'Carregando jogos...',
@@ -179,136 +208,95 @@ class GamesScreen extends ConsumerWidget {
                             error: (error, stackTrace) => AppErrorState(
                               message: 'Não foi possível carregar os jogos',
                               onRetry: () => ref.invalidate(
-                                gamesByRoundProvider(selectedRound),
+                                gamesByRoundProvider(effectiveRound),
                               ),
                             ),
                             data: (items) {
                               if (items.isEmpty) {
-                                return const AppEmptyState(
-                                  message: 'Nenhum jogo cadastrado',
+                                return KicksterEmptyState(
                                   icon: Icons.sports,
+                                  message: 'Nenhum jogo cadastrado',
+                                  description:
+                                      'Crie o primeiro jogo desta rodada.',
+                                  action: KicksterButton(
+                                    label: 'Criar jogo',
+                                    icon: Icons.add,
+                                    onPressed: () => context.go(
+                                      '/games/new',
+                                      extra: (
+                                        competitionId: effectiveComp,
+                                        roundId: effectiveRound,
+                                        game: null,
+                                      ),
+                                    ),
+                                  ),
                                 );
                               }
-                              return AppLayout.content(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final columns = constraints.maxWidth >= 600
-                                        ? 2
-                                        : 1;
-                                    return GridView.builder(
-                                      padding: const EdgeInsets.all(16),
-                                      itemCount: items.length,
-                                      gridDelegate:
-                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount: columns,
-                                            crossAxisSpacing: 12,
-                                            mainAxisSpacing: 12,
-                                            mainAxisExtent: 104,
-                                          ),
-                                      itemBuilder: (context, index) {
-                                        final game = items[index];
-                                        return _gameCard(
-                                          context,
-                                          game,
-                                          onTap: () => context.push(
-                                            '/games/${game.id}',
-                                            extra: (
-                                              competitionId: effectiveComp,
-                                              roundId: game.roundId,
-                                              game: game,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
-                              );
+                              return AppEntityListScreen<Game>(
+                                items: items,
+                                  cardBuilder: (game) => _gameCard(
+                                    context,
+                                    game,
+                                    onTap: () => context.push(
+                                      '/games/${game.id}',
+                                      extra: (
+                                        competitionId: effectiveComp,
+                                        roundId: game.roundId,
+                                        game: game,
+                                      ),
+                                    ),
+                                  ),
+                                  searchField: _searchController,
+                                  countLabel: 'jogos',
+                                  countLabelSingular: 'jogo',
+                                  emptyMessage: 'Nenhum jogo encontrado',
+                                  mainAxisExtent: 120,
+                                  gridPadding:
+                                      const EdgeInsets.all(16),
+                                  filter: (all, query) => query.isEmpty
+                                      ? all
+                                      : all
+                                          .where(
+                                            (g) =>
+                                                (g.homeTeamName ?? '')
+                                                    .toLowerCase()
+                                                    .contains(query) ||
+                                                (g.awayTeamName ?? '')
+                                                    .toLowerCase()
+                                                    .contains(query),
+                                          )
+                                          .toList(growable: false),
+                                );
                             },
-                          ),
-              ),
-            ],
-          );
-        },
+                          )
+                    else
+                      const AppEmptyState(
+                          message: 'Nenhuma rodada cadastrada',
+                          icon: Icons.format_list_numbered,
+                        ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
+  /// Card de jogo no padrão Kickster (core #439): confronto com placar em
+  /// destaque e badge de status semântico.
   Widget _gameCard(
     BuildContext context,
     Game game, {
     required VoidCallback onTap,
   }) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${game.homeTeamName ?? 'Casa'} x ${game.awayTeamName ?? 'Fora'}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _statusChip(game.status),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '${_formatDateTime(game.scheduledAt)}'
-                '${game.venueName != null ? ' · ${game.venueName}' : ''}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              if (game.homeScore != null || game.awayScore != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Placar: ${game.homeScore ?? 0} x ${game.awayScore ?? 0}',
-                  style: const TextStyle(fontSize: 13),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _statusChip(GameStatus status) {
-    final (label, color) = switch (status) {
-      GameStatus.scheduled => ('Agendado', AppColors.textSecondary),
-      GameStatus.inProgress => ('Ao vivo', AppColors.success),
-      GameStatus.finished => ('Encerrado', AppColors.danger),
-      GameStatus.cancelled => ('Cancelado', AppColors.disabled),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(label, style: TextStyle(fontSize: 12, color: color)),
+    return KicksterScoreCard(
+      homeTeamName: game.homeTeamName ?? 'Casa',
+      awayTeamName: game.awayTeamName ?? 'Fora',
+      homeScore: game.homeScore ?? 0,
+      awayScore: game.awayScore ?? 0,
+      status: game.status,
+      onTap: onTap,
     );
   }
 }
-
-String _formatDateTime(DateTime value) =>
-    '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year} '
-    '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';

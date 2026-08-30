@@ -11,8 +11,10 @@ import br.com.flagplatform.athlete.dto.response.AthleteBatchLineResult;
 import br.com.flagplatform.athlete.dto.response.AthleteBatchResponse;
 import br.com.flagplatform.athlete.entity.AthleteEntity;
 import br.com.flagplatform.athlete.exception.AthleteNotFoundException;
+import br.com.flagplatform.athlete.exception.InvalidAthletePositionsException;
 import br.com.flagplatform.athlete.mapper.AthleteMapper;
 import br.com.flagplatform.athlete.repository.AthleteRepository;
+import br.com.flagplatform.common.enums.AthletePosition;
 import br.com.flagplatform.common.enums.DocumentType;
 import br.com.flagplatform.common.exception.DuplicateDocumentException;
 import br.com.flagplatform.common.exception.InvalidDocumentException;
@@ -34,13 +36,18 @@ import java.util.UUID;
 @Service
 public class AthleteService implements AthleteLookup {
 
+    private static final int MAX_POSITIONS = 3;
+
     private final AthleteMapper mapper;
     private final AthleteRepository repository;
 
     @Transactional
     public AthleteResponse create(CreateAthleteRequest request) {
         validateCpf(request.cpf(), null);
-        return mapper.toResponse(repository.save(mapper.toEntity(request)));
+        List<AthletePosition> positions = validatePositions(request.positions());
+        AthleteEntity entity = mapper.toEntity(request);
+        entity.setPositions(positions);
+        return mapper.toResponse(repository.save(entity));
     }
 
     /**
@@ -62,6 +69,8 @@ public class AthleteService implements AthleteLookup {
                 lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "CPF já cadastrado", item));
             } else if (repository.existsByNameIgnoreCase(item.name().trim())) {
                 lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "Atleta já existe", item));
+            } else if (validateBatchPositions(item.positions()) != null) {
+                lines.add(new AthleteBatchLineResult(line, "INVALID", validateBatchPositions(item.positions()), item));
             } else {
                 valid++;
                 lines.add(new AthleteBatchLineResult(line, "VALID", null, item));
@@ -89,10 +98,12 @@ public class AthleteService implements AthleteLookup {
                 lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "CPF já cadastrado", item));
             } else if (repository.existsByNameIgnoreCase(item.name().trim())) {
                 lines.add(new AthleteBatchLineResult(line, "DUPLICATE", "Atleta já existe", item));
+            } else if (validateBatchPositions(item.positions()) != null) {
+                lines.add(new AthleteBatchLineResult(line, "INVALID", validateBatchPositions(item.positions()), item));
             } else {
                 CreateAthleteRequest createRequest = new CreateAthleteRequest(
                         item.name().trim(), item.cpf().replaceAll("\\D", ""),
-                        item.nickname(), item.position(), item.number(), item.photoUrl());
+                        item.nickname(), item.positions(), item.number(), item.photoUrl());
                 repository.save(mapper.toEntity(createRequest));
                 imported++;
                 lines.add(new AthleteBatchLineResult(line, "IMPORTED", null, item));
@@ -118,7 +129,9 @@ public class AthleteService implements AthleteLookup {
     public AthleteResponse update(UUID id, UpdateAthleteRequest request) {
         AthleteEntity entity = findEntityById(id);
         validateCpf(request.cpf(), id);
+        List<AthletePosition> positions = validatePositions(request.positions());
         mapper.updateEntity(entity, request);
+        entity.setPositions(positions);
 
         return mapper.toResponse(repository.save(entity));
     }
@@ -145,9 +158,51 @@ public class AthleteService implements AthleteLookup {
                 entity.getId(),
                 entity.getName(),
                 entity.getNickname(),
-                entity.getPosition(),
+                primaryPosition(entity.getPositions()),
                 entity.getNumber(),
                 entity.getPhotoUrl());
+    }
+
+    /**
+     * Valida as posições do atleta: até {@value #MAX_POSITIONS} posições e sem
+     * duplicatas. {@code null} é tratado como lista vazia.
+     */
+    private List<AthletePosition> validatePositions(List<AthletePosition> positions) {
+        List<AthletePosition> normalized = normalizePositions(positions);
+        if (normalized.size() > MAX_POSITIONS) {
+            throw new InvalidAthletePositionsException(
+                    "O atleta pode ter no máximo %d posições.".formatted(MAX_POSITIONS));
+        }
+        if (normalized.stream().map(AthletePosition::name).distinct().count() != normalized.size()) {
+            throw new InvalidAthletePositionsException("Posições duplicadas não são permitidas.");
+        }
+        return normalized;
+    }
+
+    private List<AthletePosition> normalizePositions(List<AthletePosition> positions) {
+        return positions == null ? List.of() : positions;
+    }
+
+    /**
+     * Valida as posições de uma linha do import em lote (máx. 3, sem
+     * duplicatas). Retorna mensagem de erro, ou {@code null} se válido.
+     */
+    private String validateBatchPositions(List<AthletePosition> positions) {
+        List<AthletePosition> normalized = normalizePositions(positions);
+        if (normalized.size() > MAX_POSITIONS) {
+            return "O atleta pode ter no máximo %d posições.".formatted(MAX_POSITIONS);
+        }
+        if (normalized.stream().map(AthletePosition::name).distinct().count() != normalized.size()) {
+            return "Posições duplicadas não são permitidas.";
+        }
+        return null;
+    }
+
+    private AthletePosition primaryPosition(List<AthletePosition> positions) {
+        if (positions == null || positions.isEmpty()) {
+            return null;
+        }
+        return positions.get(0);
     }
 
     /**

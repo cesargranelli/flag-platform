@@ -5,164 +5,113 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_entity_list_screen.dart';
+import '../widgets/app_screen.dart';
 
 /// Gestão de atletas: cards e navegação para o detalhe.
-class AthletesScreen extends ConsumerWidget {
+class AthletesScreen extends ConsumerStatefulWidget {
   const AthletesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final athletes = ref.watch(athletesProvider);
+  ConsumerState<AthletesScreen> createState() => _AthletesScreenState();
+}
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Atletas'),
-        leading: BackButton(onPressed: () => context.go('/')),
-        actions: [
-          IconButton(
-            tooltip: 'Importar CSV',
-            icon: const Icon(Icons.upload_file),
-            onPressed: () => context.push('/athletes/import'),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Novo atleta',
-        onPressed: () => context.push('/athletes/new'),
-        child: const Icon(Icons.add),
-      ),
-      body: athletes.when(
-        loading: () => const AppLoading(message: 'Carregando atletas...'),
-        error: (error, stackTrace) => AppErrorState(
-          message: 'Não foi possível carregar os atletas',
-          onRetry: () => ref.invalidate(athletesProvider),
-        ),
-        data: (items) {
-          if (items.isEmpty) {
-            return const AppEmptyState(
-              message: 'Nenhum atleta cadastrado',
-              icon: Icons.person_outline,
-            );
-          }
-          return AppLayout.content(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: items.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    mainAxisExtent: 96,
-                  ),
-                  itemBuilder: (context, index) {
-                    final athlete = items[index];
-                    return _athleteCard(context, athlete);
-                  },
-                );
-              },
-            ),
-          );
-        },
-      ),
-    );
+class _AthletesScreenState extends ConsumerState<AthletesScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
-  Widget _athleteCard(BuildContext context, Athlete athlete) {
-    final position = athlete.position?.label ?? '';
-    final subtitle = [
-      if (athlete.number != null) '#${athlete.number}',
-      if (position.isNotEmpty) position,
-    ].join(' · ');
+  @override
+  Widget build(BuildContext context) {
+    final athletes = ref.watch(athletesProvider);
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.push('/athletes/${athlete.id}', extra: athlete),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+    return AppScreen(
+      title: 'Atletas',
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem('Atletas'),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Actions
+          Row(
             children: [
-              _avatar(athlete, size: 48, radius: 12),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      athlete.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 13, color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ],
-                ),
+              const Spacer(),
+              KicksterButton(
+                label: 'Importar',
+                icon: Icons.upload_file,
+                variant: KicksterButtonVariant.outline,
+                onPressed: () => context.push('/athletes/import'),
+              ),
+              const SizedBox(width: 8),
+              KicksterButton(
+                label: 'Novo',
+                icon: Icons.add,
+                onPressed: () => context.go('/athletes/new'),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _avatar(Athlete athlete, {required double size, required double radius}) {
-    final photo = athlete.photoUrl;
-    final validPhoto = photo != null &&
-        photo.isNotEmpty &&
-        (Uri.tryParse(photo)?.hasScheme ?? false);
-    return Container(
-      width: size,
-      height: size,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-      ),
-      child: validPhoto
-          ? Image.network(
-              photo,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Center(
-                child: Text(
-                  _initials(athlete.name),
-                  style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: size * 0.4),
-                ),
-              ),
-            )
-          : Center(
-              child: Text(
-                _initials(athlete.name),
-                style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: size * 0.4),
-              ),
+          const SizedBox(height: 16),
+          // Conteúdo
+          athletes.when(
+            loading: () => const AppLoading(message: 'Carregando atletas...'),
+            error: (error, stackTrace) => AppErrorState(
+              message: 'Não foi possível carregar os atletas',
+              onRetry: () => ref.invalidate(athletesProvider),
             ),
+            data: (items) {
+              if (items.isEmpty) {
+                return KicksterEmptyState(
+                  icon: Icons.person_outline,
+                  message: 'Nenhum atleta cadastrado',
+                  description: 'Crie o primeiro atleta para começar a usar.',
+                  action: KicksterButton(
+                    label: 'Criar atleta',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/athletes/new'),
+                  ),
+                );
+              }
+              return AppEntityListScreen<Athlete>(
+                items: items,
+                cardBuilder: (athlete) => _athleteCard(context, athlete),
+                searchField: _searchController,
+                countLabel: 'atletas',
+                countLabelSingular: 'atleta',
+                emptyMessage: 'Nenhum atleta encontrado',
+                filter: (all, query) => query.isEmpty
+                    ? all
+                    : all
+                        .where(
+                            (a) => a.name.toLowerCase().contains(query))
+                        .toList(growable: false),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '?';
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
-        .toUpperCase();
+  /// Card de atleta no padrão Kickster (core #439): ícone de pessoa, nome e
+  /// subtítulo com número + posições.
+  Widget _athleteCard(BuildContext context, Athlete athlete) {
+    final positions = athlete.positionsLabel;
+    final subtitle = [
+      if (athlete.number != null) '#${athlete.number}',
+      if (positions.isNotEmpty) positions,
+    ].join(' · ');
+
+    return KicksterCard(
+      icon: Icons.person_outline,
+      title: athlete.name,
+      subtitle: subtitle.isEmpty ? null : subtitle,
+      onTap: () => context.push('/athletes/${athlete.id}', extra: athlete),
+    );
   }
 }

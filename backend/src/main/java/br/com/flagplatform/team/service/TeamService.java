@@ -16,10 +16,12 @@ import br.com.flagplatform.team.dto.response.TeamResponse;
 import br.com.flagplatform.team.entity.TeamEntity;
 import br.com.flagplatform.team.exception.DuplicateTeamRegistrationException;
 import br.com.flagplatform.team.exception.DuplicateTeamNameException;
+import br.com.flagplatform.team.exception.TeamInUseException;
 import br.com.flagplatform.team.exception.TeamNotFoundException;
 import br.com.flagplatform.team.mapper.TeamMapper;
 import br.com.flagplatform.team.repository.TeamRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +61,29 @@ public class TeamService implements TeamLookup {
         validateDocument(request.document(), request.documentType(), null);
 
         return mapper.toResponse(repository.save(mapper.toEntity(request)));
+    }
+
+    /**
+     * Associa um clube (organização) a um campeonato (#377). Ação própria de
+     * associação (separada do cadastro de time): o nome do time é derivado do
+     * próprio clube; documento/divisão não são exigidos. V260: apenas o
+     * criador do campeonato (ou ADMIN) gerencia o campeonato.
+     */
+    @Transactional
+    public TeamResponse associateClub(UUID competitionId, UUID organizationId, String currentUserEmail) {
+        competitionLookup.assertManagedBy(competitionId, currentUserEmail);
+        organizationLookup.assertExists(organizationId);
+
+        if (repository.existsByCompetitionIdAndOrganizationId(competitionId, organizationId)) {
+            throw new DuplicateTeamRegistrationException(organizationId, competitionId);
+        }
+
+        TeamEntity entity = new TeamEntity();
+        entity.setOrganizationId(organizationId);
+        entity.setCompetitionId(competitionId);
+        entity.setName(organizationLookup.findTradeNameById(organizationId));
+
+        return mapper.toResponse(repository.save(entity));
     }
 
     public List<TeamResponse> findByCompetitionId(UUID competitionId) {
@@ -119,12 +144,13 @@ public class TeamService implements TeamLookup {
     }
 
     /**
-     * Valida o documento do time: obrigatorio CNPJ do time ou CPF do
-     * representante; formato valido; documento unico.
+     * Valida o documento do time: OPCIONAL (#375). O clube (organização) já
+     * possui CNPJ/CPF próprio, então não é exigido de novo no time. Quando
+     * informado, valida formato e unicidade.
      */
     private void validateDocument(String document, DocumentType type, UUID currentId) {
         if (document == null || document.isBlank()) {
-            throw new InvalidDocumentException("Informe o CNPJ do time ou o CPF do representante.");
+            return;
         }
         if (type == null) {
             throw new InvalidDocumentException("Informe o tipo do documento (CNPJ ou CPF).");
@@ -138,6 +164,27 @@ public class TeamService implements TeamLookup {
                 : repository.existsByDocumentAndIdNot(normalized, currentId);
         if (duplicate) {
             throw new DuplicateDocumentException(normalized);
+        }
+    }
+
+    /**
+     * Remove a inscrição do clube no campeonato (desassociar). V260: apenas o
+     * criador do campeonato (ou ADMIN); issue #305: somente com o campeonato em
+     * DRAFT. Se o time já possui jogos vinculados, a integridade referencial
+     * impede a remoção (TeamInUseException).
+     */
+    @Transactional
+    public void delete(UUID id, String currentUserEmail) {
+        TeamEntity entity = findEntityById(id);
+
+        competitionLookup.assertManagedBy(entity.getCompetitionId(), currentUserEmail);
+        competitionLookup.assertEditable(entity.getCompetitionId());
+
+        try {
+            repository.delete(entity);
+            repository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new TeamInUseException(id);
         }
     }
 

@@ -47,11 +47,11 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             token: widget.token,
             newPassword: _passwordController.text,
           );
-      setState(() => _done = true);
+      if (mounted) setState(() => _done = true);
     } on RepositoryException catch (e) {
-      setState(() => _errorMessage = e.message);
+      if (mounted) setState(() => _errorMessage = e.message);
     } catch (_) {
-      setState(() => _errorMessage = AppStrings.loginConnectionError);
+      if (mounted) setState(() => _errorMessage = AppStrings.loginConnectionError);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -88,37 +88,33 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 24,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 24),
-          TextFormField(
+          KicksterInput(
+            label: 'Nova senha',
             controller: _passwordController,
             obscureText: _obscurePassword,
-            decoration: InputDecoration(
-              labelText: 'Nova senha',
-              prefixIcon: const Icon(Icons.lock_outline),
-              suffixIcon: IconButton(
-                tooltip: _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
-                icon: Icon(_obscurePassword
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined),
-                onPressed: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
-              ),
+            prefixIcon: Icons.lock_outline,
+            suffixIcon: IconButton(
+              tooltip: _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
+              icon: Icon(_obscurePassword
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
             validator: (value) => (value == null || value.length < 6)
                 ? 'Mínimo de 6 caracteres'
                 : null,
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          KicksterInput(
+            label: 'Confirmar nova senha',
             controller: _confirmController,
             obscureText: _obscurePassword,
-            decoration: const InputDecoration(
-              labelText: 'Confirmar nova senha',
-              prefixIcon: Icon(Icons.lock_outline),
-            ),
+            prefixIcon: Icons.lock_outline,
             validator: (value) => (value != _passwordController.text)
                 ? 'As senhas não coincidem'
                 : null,
@@ -130,19 +126,14 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               _errorMessage!,
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: Theme.of(context).colorScheme.error, fontSize: 14),
+                  color: AppColors.danger, fontSize: 14),
             ),
           ],
           const SizedBox(height: 24),
-          FilledButton(
+          KicksterButton(
+            label: 'Redefinir senha',
             onPressed: _submitting ? null : _submit,
-            child: _submitting
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Redefinir senha'),
+            loading: _submitting,
           ),
         ],
       ),
@@ -162,13 +153,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 20,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 24),
-        FilledButton(
+        KicksterButton(
+          label: 'Ir para o login',
           onPressed: () => context.go('/login'),
-          child: const Text('Ir para o login'),
         ),
       ],
     );

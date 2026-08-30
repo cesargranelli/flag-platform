@@ -6,7 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
-import '../widgets/app_back_button.dart';
+import '../widgets/app_screen.dart';
+import '../widgets/selectable_card.dart';
 
 /// Formulário de criação/edição de atleta.
 class AthleteFormScreen extends ConsumerStatefulWidget {
@@ -27,7 +28,7 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
   late final TextEditingController _nickname;
   late final TextEditingController _number;
   late final TextEditingController _photoUrl;
-  AthletePosition? _position;
+  List<AthletePosition> _positions = [];
   bool _submitting = false;
   String? _errorMessage;
 
@@ -42,7 +43,7 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
     _nickname = TextEditingController(text: athlete?.nickname ?? '');
     _number = TextEditingController(text: athlete?.number?.toString() ?? '');
     _photoUrl = TextEditingController(text: athlete?.photoUrl ?? '');
-    _position = athlete?.position;
+    _positions = List.of(athlete?.positions ?? []);
   }
 
   @override
@@ -78,11 +79,65 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
         'name': _name.text.trim(),
         'cpf': _cpf.text.trim().replaceAll(RegExp(r'\D'), ''),
         if (_nickname.text.trim().isNotEmpty) 'nickname': _nickname.text.trim(),
-        if (_position != null) 'position': _position!.toJson(),
+        'positions': _positions.map((p) => p.toJson()).toList(),
         if (int.tryParse(_number.text.trim()) != null)
           'number': int.parse(_number.text.trim()),
         if (_photoUrl.text.trim().isNotEmpty) 'photoUrl': _photoUrl.text.trim(),
       };
+
+  /// Alterna a seleção de uma posição, respeitando o limite de 3 e evitando
+  /// duplicatas.
+  void _togglePosition(AthletePosition position) {
+    setState(() {
+      if (_positions.contains(position)) {
+        _positions.remove(position);
+      } else if (_positions.length < 3) {
+        _positions.add(position);
+      }
+    });
+  }
+
+  /// Campo de posições: um conjunto de chips de seleção, limitado a 3
+  /// posições, sem duplicatas. As opções não selecionadas são desabilitadas ao
+  /// atingir o limite para deixar claro que não há mais vagas.
+  Widget _positionsField() {
+    final maxed = _positions.length >= 3;
+    return InputDecorator(
+      decoration: kicksterFieldDecoration(
+        labelText: 'Posições',
+        helperText: 'Selecione até 3 posições',
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final position in AthletePosition.values)
+                SelectableChip(
+                  label: position.label,
+                  selected: _positions.contains(position),
+                  // Desabilitadas as opções livres quando o limite é atingido
+                  // (#371/#290): sem bordas; selecionado = fundo `primary` +
+                  // texto branco (padrão do projeto).
+                  onTap: maxed && !_positions.contains(position)
+                      ? null
+                      : () => _togglePosition(position),
+                ),
+            ],
+          ),
+          if (maxed) ...[
+            const SizedBox(height: 6),
+            const Text(
+              'Máximo de 3 posições atingido. Desmarque uma para alterar.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -121,97 +176,71 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar atleta' : 'Novo atleta'),
-        leading: AppBackButton(fallbackRoute: '/athletes'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: AppLayout.form(
+    return AppScreen(
+      title: _isEditing ? 'Editar atleta' : 'Novo atleta',
+      breadcrumb: const [
+        BreadcrumbItem('Início', route: '/'),
+        BreadcrumbItem(AppStrings.athletes, route: '/athletes'),
+        BreadcrumbItem('Formulário'),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppLayout.form(
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextFormField(
+                KicksterInput(
+                  label: 'Nome',
                   controller: _name,
                   maxLength: 100,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Informe o nome'
-                      : null,
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty)
+                          ? 'Informe o nome'
+                          : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'CPF',
                   controller: _cpf,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'CPF',
-                    hintText: '000.000.000-00',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: '000.000.000-00',
                   onChanged: (value) {
                     final masked = DocumentUtils.maskCpf(value);
                     if (masked != value) {
                       _cpf.value = TextEditingValue(
                         text: masked,
-                        selection: TextSelection.collapsed(offset: masked.length),
+                        selection:
+                            TextSelection.collapsed(offset: masked.length),
                       );
                     }
                   },
                   validator: _validateCpf,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Apelido',
                   controller: _nickname,
                   maxLength: 100,
-                  decoration: const InputDecoration(
-                    labelText: 'Apelido',
-                    border: OutlineInputBorder(),
-                  ),
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<AthletePosition>(
-                  initialValue: _position,
-                  decoration: const InputDecoration(
-                    labelText: 'Posição',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: [
-                    const DropdownMenuItem<AthletePosition>(
-                        value: null, child: Text('Sem posição')),
-                    ...AthletePosition.values.map((p) =>
-                        DropdownMenuItem<AthletePosition>(
-                          value: p,
-                          child: Text(p.label),
-                        )),
-                  ],
-                  onChanged: (value) => setState(() => _position = value),
-                ),
+                _positionsField(),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'Número da camisa',
                   controller: _number,
                   keyboardType: TextInputType.number,
                   maxLength: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Número da camisa',
-                    border: OutlineInputBorder(),
-                  ),
                   validator: _validateNumber,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                KicksterInput(
+                  label: 'URL da foto',
                   controller: _photoUrl,
                   keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    labelText: 'URL da foto',
-                    helperText: 'Ex.: https://...',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: 'Ex.: https://...',
                   validator: _validatePhotoUrl,
                 ),
                 if (_errorMessage != null) ...[
@@ -219,25 +248,22 @@ class _AthleteFormScreenState extends ConsumerState<AthleteFormScreen> {
                   Text(
                     _errorMessage!,
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                        color: AppColors.danger,
                         fontWeight: FontWeight.w600),
                   ),
                 ],
                 const SizedBox(height: 24),
-                FilledButton(
+                KicksterButton(
+                  label: 'Salvar',
+                  icon: Icons.check,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _save,
-                  child: _submitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Salvar'),
                 ),
               ],
             ),
           ),
         ),
+      ],
       ),
     );
   }
