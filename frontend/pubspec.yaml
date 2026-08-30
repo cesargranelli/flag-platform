@@ -1,6 +1,6 @@
 name: flag_platform_frontend
 description: "Monorepo Flutter do Flag Platform (Public App, Referee App, Admin Web + packages compartilhados)."
-version: 0.2.0
+version: 0.3.0
 publish_to: none
 
 environment:
