@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_entity_list_screen.dart';
 import '../widgets/app_screen.dart';
 
 /// Gestão de campos de jogo: cards e navegação para o detalhe.
@@ -20,7 +21,6 @@ class VenuesScreen extends ConsumerStatefulWidget {
 
 class _VenuesScreenState extends ConsumerState<VenuesScreen> {
   final _searchController = TextEditingController();
-  String _query = '';
 
   @override
   void dispose() {
@@ -78,81 +78,20 @@ class _VenuesScreenState extends ConsumerState<VenuesScreen> {
               }
               final orgNames =
                   organizations.valueOrNull ?? const <Organization>[];
-              final query = _query.trim().toLowerCase();
-              final filtered = query.isEmpty
-                  ? items
-                  : items
-                      .where(
-                          (v) => v.name.toLowerCase().contains(query))
-                      .toList(growable: false);
-
-              return Column(
-                children: [
-                  Row(
-                    children: [
-                      if (query.isNotEmpty)
-                        Text(
-                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        )
-                      else
-                        Text(
-                          '${items.length} ${items.length == 1 ? 'campo' : 'campos'}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      const Spacer(),
-                      SizedBox(
-                        width: 280,
-                        child: KicksterSearchField(
-                          controller: _searchController,
-                          onChanged: (value) =>
-                              setState(() => _query = value),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (filtered.isEmpty)
-                    const AppEmptyState(
-                      message: 'Nenhum campo encontrado',
-                      icon: Icons.search_off,
-                    )
-                  else
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final columns =
-                            constraints.maxWidth >= 600 ? 2 : 1;
-                        return GridView.builder(
-                          shrinkWrap: true,
-                          physics:
-                              const NeverScrollableScrollPhysics(),
-                          padding: EdgeInsets.zero,
-                          itemCount: filtered.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: columns,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            mainAxisExtent: 96,
-                          ),
-                          itemBuilder: (context, index) {
-                            final venue = filtered[index];
-                            return _venueCard(
-                              context,
-                              venue,
-                              orgNames,
-                            );
-                          },
-                        );
-                      },
-                    ),
-                ],
+              return AppEntityListScreen<Venue>(
+                items: items,
+                cardBuilder: (venue) =>
+                    _venueCard(context, venue, orgNames),
+                searchField: _searchController,
+                countLabel: 'campos',
+                countLabelSingular: 'campo',
+                emptyMessage: 'Nenhum campo encontrado',
+                filter: (all, query) => query.isEmpty
+                    ? all
+                    : all
+                        .where(
+                            (v) => v.name.toLowerCase().contains(query))
+                        .toList(growable: false),
               );
             },
           ),

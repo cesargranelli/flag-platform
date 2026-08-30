@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../widgets/app_entity_list_screen.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
@@ -23,7 +24,6 @@ class GamesScreen extends ConsumerStatefulWidget {
 
 class _GamesScreenState extends ConsumerState<GamesScreen> {
   final _searchController = TextEditingController();
-  String _query = '';
 
   @override
   void dispose() {
@@ -232,114 +232,41 @@ class _GamesScreenState extends ConsumerState<GamesScreen> {
                                   ),
                                 );
                               }
-                              final query = _query.trim().toLowerCase();
-                              final filtered = query.isEmpty
-                                  ? items
-                                  : items
-                                      .where(
-                                        (g) =>
-                                            (g.homeTeamName ?? '')
-                                                .toLowerCase()
-                                                .contains(query) ||
-                                            (g.awayTeamName ?? '')
-                                                .toLowerCase()
-                                                .contains(query),
-                                      )
-                                      .toList(growable: false);
-
-                              return Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      if (query.isNotEmpty)
-                                        Text(
-                                          '${filtered.length} '
-                                          '${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            color:
-                                                AppColors.textSecondary,
-                                          ),
-                                        )
-                                      else
-                                        Text(
-                                          '${items.length} '
-                                          '${items.length == 1 ? 'jogo' : 'jogos'}',
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            color:
-                                                AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      const Spacer(),
-                                      SizedBox(
-                                        width: 280,
-                                        child: KicksterSearchField(
-                                          controller: _searchController,
-                                          onChanged: (value) =>
-                                              setState(
-                                                  () => _query = value),
-                                        ),
+                              return AppEntityListScreen<Game>(
+                                items: items,
+                                  cardBuilder: (game) => _gameCard(
+                                    context,
+                                    game,
+                                    onTap: () => context.push(
+                                      '/games/${game.id}',
+                                      extra: (
+                                        competitionId: effectiveComp,
+                                        roundId: game.roundId,
+                                        game: game,
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  if (filtered.isEmpty)
-                                    const AppEmptyState(
-                                      message:
-                                          'Nenhum jogo encontrado',
-                                      icon: Icons.search_off,
-                                    )
-                                  else
-                                    LayoutBuilder(
-                                      builder:
-                                          (context, constraints) {
-                                        final columns =
-                                            constraints.maxWidth >=
-                                                    600
-                                                ? 2
-                                                : 1;
-                                        return GridView.builder(
-                                          shrinkWrap: true,
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          padding:
-                                              const EdgeInsets.all(
-                                                  16),
-                                          itemCount: filtered.length,
-                                          gridDelegate:
-                                              SliverGridDelegateWithFixedCrossAxisCount(
-                                                crossAxisCount:
-                                                    columns,
-                                                crossAxisSpacing: 12,
-                                                mainAxisSpacing: 12,
-                                                mainAxisExtent: 120,
-                                              ),
-                                          itemBuilder:
-                                              (context, index) {
-                                                final game =
-                                                    filtered[index];
-                                                return _gameCard(
-                                                  context,
-                                                  game,
-                                                  onTap: () =>
-                                                      context.push(
-                                                    '/games/${game.id}',
-                                                    extra: (
-                                                      competitionId:
-                                                          effectiveComp,
-                                                      roundId:
-                                                          game.roundId,
-                                                      game: game,
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                        );
-                                      },
                                     ),
-                                ],
-                              );
+                                  ),
+                                  searchField: _searchController,
+                                  countLabel: 'jogos',
+                                  countLabelSingular: 'jogo',
+                                  emptyMessage: 'Nenhum jogo encontrado',
+                                  mainAxisExtent: 120,
+                                  gridPadding:
+                                      const EdgeInsets.all(16),
+                                  filter: (all, query) => query.isEmpty
+                                      ? all
+                                      : all
+                                          .where(
+                                            (g) =>
+                                                (g.homeTeamName ?? '')
+                                                    .toLowerCase()
+                                                    .contains(query) ||
+                                                (g.awayTeamName ?? '')
+                                                    .toLowerCase()
+                                                    .contains(query),
+                                          )
+                                          .toList(growable: false),
+                                );
                             },
                           )
                     else

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_entity_list_screen.dart';
 import '../widgets/app_screen.dart';
 
 /// Gestão de atletas: cards e navegação para o detalhe.
@@ -17,7 +18,6 @@ class AthletesScreen extends ConsumerStatefulWidget {
 
 class _AthletesScreenState extends ConsumerState<AthletesScreen> {
   final _searchController = TextEditingController();
-  String _query = '';
 
   @override
   void dispose() {
@@ -77,75 +77,19 @@ class _AthletesScreenState extends ConsumerState<AthletesScreen> {
                   ),
                 );
               }
-              final query = _query.trim().toLowerCase();
-              final filtered = query.isEmpty
-                  ? items
-                  : items
-                      .where((a) => a.name.toLowerCase().contains(query))
-                      .toList(growable: false);
-
-              return Column(
-                children: [
-                  Row(
-                    children: [
-                      if (query.isNotEmpty)
-                        Text(
-                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        )
-                      else
-                        Text(
-                          '${items.length} ${items.length == 1 ? 'atleta' : 'atletas'}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      const Spacer(),
-                      SizedBox(
-                        width: 280,
-                        child: KicksterSearchField(
-                          controller: _searchController,
-                          onChanged: (value) =>
-                              setState(() => _query = value),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (filtered.isEmpty)
-                    const AppEmptyState(
-                      message: 'Nenhum atleta encontrado',
-                      icon: Icons.search_off,
-                    )
-                  else
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final columns =
-                            constraints.maxWidth >= 600 ? 2 : 1;
-                        return GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: EdgeInsets.zero,
-                          itemCount: filtered.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: columns,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            mainAxisExtent: 96,
-                          ),
-                          itemBuilder: (context, index) {
-                            final athlete = filtered[index];
-                            return _athleteCard(context, athlete);
-                          },
-                        );
-                      },
-                    ),
-                ],
+              return AppEntityListScreen<Athlete>(
+                items: items,
+                cardBuilder: (athlete) => _athleteCard(context, athlete),
+                searchField: _searchController,
+                countLabel: 'atletas',
+                countLabelSingular: 'atleta',
+                emptyMessage: 'Nenhum atleta encontrado',
+                filter: (all, query) => query.isEmpty
+                    ? all
+                    : all
+                        .where(
+                            (a) => a.name.toLowerCase().contains(query))
+                        .toList(growable: false),
               );
             },
           ),

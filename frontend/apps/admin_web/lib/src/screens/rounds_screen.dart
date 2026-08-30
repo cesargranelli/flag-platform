@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../widgets/app_entity_list_screen.dart';
 import '../widgets/app_screen.dart';
 import '../widgets/edit_restriction_note.dart';
 
@@ -23,7 +24,6 @@ class RoundsScreen extends ConsumerStatefulWidget {
 
 class _RoundsScreenState extends ConsumerState<RoundsScreen> {
   final _searchController = TextEditingController();
-  String _query = '';
 
   @override
   void dispose() {
@@ -164,97 +164,26 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
                                   ),
                                 );
                               }
-                              final query = _query.trim().toLowerCase();
-                              final filtered = query.isEmpty
-                                  ? items
-                                  : items
-                                      .where(
-                                        (r) => r.name
-                                            .toLowerCase()
-                                            .contains(query),
-                                      )
-                                      .toList(growable: false);
-
-                              return Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      if (query.isNotEmpty)
-                                        Text(
-                                          '${filtered.length} '
-                                          '${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            color:
-                                                AppColors.textSecondary,
-                                          ),
-                                        )
-                                      else
-                                        Text(
-                                          '${items.length} '
-                                          '${items.length == 1 ? 'rodada' : 'rodadas'}',
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            color:
-                                                AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      const Spacer(),
-                                      SizedBox(
-                                        width: 280,
-                                        child: KicksterSearchField(
-                                          controller: _searchController,
-                                          onChanged: (value) =>
-                                              setState(
-                                                  () => _query = value),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  if (filtered.isEmpty)
-                                    const AppEmptyState(
-                                      message:
-                                          'Nenhuma rodada encontrada',
-                                      icon: Icons.search_off,
-                                    )
-                                  else
-                                    LayoutBuilder(
-                                      builder:
-                                          (context, constraints) {
-                                        final columns =
-                                            constraints.maxWidth >=
-                                                    600
-                                                ? 2
-                                                : 1;
-                                        return GridView.builder(
-                                          shrinkWrap: true,
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          padding:
-                                              const EdgeInsets.all(
-                                                  16),
-                                          itemCount: filtered.length,
-                                          gridDelegate:
-                                              SliverGridDelegateWithFixedCrossAxisCount(
-                                                crossAxisCount:
-                                                    columns,
-                                                crossAxisSpacing: 12,
-                                                mainAxisSpacing: 12,
-                                                mainAxisExtent: 96,
-                                              ),
-                                          itemBuilder:
-                                              (context, index) {
-                                                final round =
-                                                    filtered[index];
-                                                return _roundCard(
-                                                    context, round);
-                                              },
-                                        );
-                                      },
-                                    ),
-                                ],
-                              );
+                              return AppEntityListScreen<Round>(
+                                items: items,
+                                  cardBuilder: (round) =>
+                                      _roundCard(context, round),
+                                  searchField: _searchController,
+                                  countLabel: 'rodadas',
+                                  countLabelSingular: 'rodada',
+                                  emptyMessage: 'Nenhuma rodada encontrada',
+                                  gridPadding:
+                                      const EdgeInsets.all(16),
+                                  filter: (all, query) => query.isEmpty
+                                      ? all
+                                      : all
+                                          .where(
+                                            (r) => r.name
+                                                .toLowerCase()
+                                                .contains(query),
+                                          )
+                                          .toList(growable: false),
+                                );
                             },
                           )
                   else

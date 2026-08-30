@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
 import '../utils/date_formats.dart';
+import '../widgets/app_entity_list_screen.dart';
 import '../widgets/app_screen.dart';
 
 /// Tela exclusiva do super usuário (ADMIN) para aprovar/rejeitar contas.
@@ -18,7 +19,6 @@ class ApprovalsScreen extends ConsumerStatefulWidget {
 
 class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
   final _searchController = TextEditingController();
-  String _query = '';
 
   @override
   void dispose() {
@@ -56,78 +56,23 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                   icon: Icons.verified_outlined,
                 );
               }
-              final query = _query.trim().toLowerCase();
-              final filtered = query.isEmpty
-                  ? items
-                  : items
+              return AppEntityListScreen<User>(
+                items: items,
+                cardBuilder: (user) => _approvalCard(context, ref, user),
+                searchField: _searchController,
+                countLabel: 'contas pendentes',
+                countLabelSingular: 'conta pendente',
+                emptyMessage: 'Nenhuma conta encontrada',
+                mainAxisExtent: 200,
+                filter: (all, query) => query.isEmpty
+                    ? all
+                    : all
                         .where(
                           (u) =>
                               u.name.toLowerCase().contains(query) ||
                               u.email.toLowerCase().contains(query),
                         )
-                        .toList(growable: false);
-
-              return Column(
-                children: [
-                  Row(
-                    children: [
-                      if (query.isNotEmpty)
-                        Text(
-                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        )
-                      else
-                        Text(
-                          '${items.length} '
-                          '${items.length == 1 ? 'conta' : 'contas'} pendentes',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      const Spacer(),
-                      SizedBox(
-                        width: 280,
-                        child: KicksterSearchField(
-                          controller: _searchController,
-                          onChanged: (value) => setState(() => _query = value),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (filtered.isEmpty)
-                    const AppEmptyState(
-                      message: 'Nenhuma conta encontrada',
-                      icon: Icons.search_off,
-                    )
-                  else
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final columns = constraints.maxWidth >= 600 ? 2 : 1;
-                        return GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: EdgeInsets.zero,
-                          itemCount: filtered.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: columns,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                mainAxisExtent: 200,
-                              ),
-                          itemBuilder: (context, index) {
-                            final user = filtered[index];
-                            return _approvalCard(context, ref, user);
-                          },
-                        );
-                      },
-                    ),
-                ],
+                        .toList(growable: false),
               );
             },
           ),

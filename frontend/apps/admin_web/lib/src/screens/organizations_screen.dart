@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/app_entity_list_screen.dart';
 import '../widgets/app_screen.dart';
 
 /// Gestão de organizações: cards de acesso e navegação para o detalhe.
@@ -23,7 +24,6 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   OrganizationType? _typeFilter;
   bool _showDisabled = false;
   final _searchController = TextEditingController();
-  String _query = '';
 
   bool get _isAdmin =>
       ref.read(authControllerProvider).state.user?.role == 'ADMIN';
@@ -87,118 +87,63 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
                   ),
                 );
               }
-              final query = _query.trim().toLowerCase();
-              final filtered = items
-                  .where((o) {
-                    if (_typeFilter != null &&
-                        o.organizationType != _typeFilter) {
-                      return false;
-                    }
-                    if (query.isEmpty) return true;
-                    return o.tradeName.toLowerCase().contains(query) ||
-                        o.legalName.toLowerCase().contains(query);
-                  })
-                  .toList(growable: false);
-
-              return Column(
-                children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      if (query.isNotEmpty)
-                        Text(
-                          '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        )
-                      else
-                        Text(
-                          '${filtered.length} de ${items.length}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      if (isAdmin)
-                        Tooltip(
-                          message: 'Exibir organizações desativadas',
-                          child: IconButton(
-                            isSelected: _showDisabled,
-                            selectedIcon: const Icon(Icons.visibility),
-                            icon:
-                                const Icon(Icons.visibility_off_outlined),
-                            tooltip: 'Desativadas',
-                            onPressed: () => setState(
-                                () => _showDisabled = !_showDisabled),
-                          ),
-                        ),
-                      SizedBox(
-                        width: 260,
-                        child: KicksterDropdown<OrganizationType?>(
-                          label: 'Filtrar por tipo',
-                          value: _typeFilter,
-                          values: [null, ...OrganizationType.values],
-                          labels: [
-                            'Todas as organizações',
-                            ...OrganizationType.values
-                                .map((t) => t.label),
-                          ],
-                          icons: [
-                            null,
-                            ...OrganizationType.values
-                                .map(organizationTypeIcon),
-                          ],
-                          onChanged: (value) =>
-                              setState(() => _typeFilter = value),
+              return AppEntityListScreen<Organization>(
+                items: items,
+                cardBuilder: (organization) =>
+                    _organizationCard(context, organization),
+                searchField: _searchController,
+                emptyMessage: 'Nenhuma organização encontrada',
+                searchWidth: 220,
+                toolbarLeading: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(width: 8),
+                    if (isAdmin) ...[
+                      Tooltip(
+                        message: 'Exibir organizações desativadas',
+                        child: IconButton(
+                          isSelected: _showDisabled,
+                          selectedIcon: const Icon(Icons.visibility),
+                          icon: const Icon(Icons.visibility_off_outlined),
+                          tooltip: 'Desativadas',
+                          onPressed: () =>
+                              setState(() => _showDisabled = !_showDisabled),
                         ),
                       ),
-                      SizedBox(
-                        width: 220,
-                        child: KicksterSearchField(
-                          controller: _searchController,
-                          onChanged: (value) =>
-                              setState(() => _query = value),
-                        ),
-                      ),
+                      const SizedBox(width: 8),
                     ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (filtered.isEmpty)
-                    const AppEmptyState(
-                      message: 'Nenhuma organização encontrada',
-                      icon: Icons.search_off,
-                    )
-                  else
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final columns =
-                            constraints.maxWidth >= 600 ? 2 : 1;
-                        return GridView.builder(
-                          shrinkWrap: true,
-                          physics:
-                              const NeverScrollableScrollPhysics(),
-                          padding: EdgeInsets.zero,
-                          itemCount: filtered.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: columns,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            mainAxisExtent: 96,
-                          ),
-                          itemBuilder: (context, index) {
-                            final organization = filtered[index];
-                            return _organizationCard(
-                                context, organization);
-                          },
-                        );
-                      },
+                    SizedBox(
+                      width: 260,
+                      child: KicksterDropdown<OrganizationType?>(
+                        label: 'Filtrar por tipo',
+                        value: _typeFilter,
+                        values: [null, ...OrganizationType.values],
+                        labels: [
+                          'Todas as organizações',
+                          ...OrganizationType.values.map((t) => t.label),
+                        ],
+                        icons: [
+                          null,
+                          ...OrganizationType.values
+                              .map(organizationTypeIcon),
+                        ],
+                        onChanged: (value) =>
+                            setState(() => _typeFilter = value),
+                      ),
                     ),
-                ],
+                  ],
+                ),
+                filter: (all, query) => all
+                    .where((o) {
+                      if (_typeFilter != null &&
+                          o.organizationType != _typeFilter) {
+                        return false;
+                      }
+                      if (query.isEmpty) return true;
+                      return o.tradeName.toLowerCase().contains(query) ||
+                          o.legalName.toLowerCase().contains(query);
+                    })
+                    .toList(growable: false),
               );
             },
           ),
