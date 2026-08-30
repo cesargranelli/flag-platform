@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
+import '../widgets/app_entity_list_screen.dart';
 import '../widgets/app_screen.dart';
 
 /// Gestão de campeonatos: cards de acesso e navegação para o detalhe.
@@ -23,7 +24,6 @@ class CompetitionsScreen extends ConsumerStatefulWidget {
 class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
   bool _showDisabled = false;
   final _searchController = TextEditingController();
-  String _query = '';
 
   @override
   void dispose() {
@@ -85,94 +85,36 @@ class _CompetitionsScreenState extends ConsumerState<CompetitionsScreen> {
                   ),
                 );
               }
-              final query = _query.trim().toLowerCase();
-              final filtered = query.isEmpty
-                  ? items
-                  : items
-                      .where((c) => c.name.toLowerCase().contains(query))
-                      .toList(growable: false);
-
-              return Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-                    child: Row(
-                      children: [
-                        if (query.isNotEmpty)
-                          Text(
-                            '${filtered.length} ${filtered.length == 1 ? 'resultado' : 'resultados'}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          )
-                        else
-                          Text(
-                            '${items.length} campeonatos',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        const Spacer(),
-                        if (isAdmin)
-                          Tooltip(
-                            message: 'Exibir campeonatos desativados',
-                            child: IconButton(
-                              isSelected: _showDisabled,
-                              selectedIcon: const Icon(Icons.visibility),
-                              icon: const Icon(
-                                  Icons.visibility_off_outlined),
-                              tooltip: 'Desativados',
-                              onPressed: () => setState(
-                                  () => _showDisabled = !_showDisabled),
-                            ),
-                          ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 280,
-                          child: KicksterSearchField(
-                            controller: _searchController,
-                            onChanged: (value) =>
-                                setState(() => _query = value),
-                          ),
+              return AppEntityListScreen<Competition>(
+                items: items,
+                cardBuilder: (competition) =>
+                    _competitionCard(context, competition, user),
+                searchField: _searchController,
+                countLabel: 'campeonatos',
+                emptyMessage: 'Nenhum campeonato encontrado',
+                toolbarTrailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isAdmin)
+                      Tooltip(
+                        message: 'Exibir campeonatos desativados',
+                        child: IconButton(
+                          isSelected: _showDisabled,
+                          selectedIcon: const Icon(Icons.visibility),
+                          icon: const Icon(Icons.visibility_off_outlined),
+                          tooltip: 'Desativados',
+                          onPressed: () =>
+                              setState(() => _showDisabled = !_showDisabled),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (filtered.isEmpty)
-                    const AppEmptyState(
-                      message: 'Nenhum campeonato encontrado',
-                      icon: Icons.search_off,
-                    )
-                  else
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final columns =
-                            constraints.maxWidth >= 600 ? 2 : 1;
-                        return GridView.builder(
-                          shrinkWrap: true,
-                          physics:
-                              const NeverScrollableScrollPhysics(),
-                          padding: EdgeInsets.zero,
-                          itemCount: filtered.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: columns,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            mainAxisExtent: 96,
-                          ),
-                          itemBuilder: (context, index) {
-                            final competition = filtered[index];
-                            return _competitionCard(
-                                context, competition, user);
-                          },
-                        );
-                      },
-                    ),
-                ],
+                      ),
+                    const SizedBox(width: 8),
+                  ],
+                ),
+                filter: (all, query) => query.isEmpty
+                    ? all
+                    : all
+                        .where((c) => c.name.toLowerCase().contains(query))
+                        .toList(growable: false),
               );
             },
           ),
