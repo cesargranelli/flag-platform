@@ -53,12 +53,10 @@ class VenueDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildDetail(BuildContext context, WidgetRef ref, Venue venue) {
-    final organizations = ref.watch(organizationsProvider);
-    final orgName = organizations.valueOrNull
-            ?.where((o) => o.id == venue.organizationId)
-            .map((o) => o.tradeName)
-            .firstOrNull ??
-        '';
+    // P3 #471: resolve a organização pelo family (autoDispose) em vez de
+    // assistir a lista completa.
+    final orgAsync = ref.watch(organizationProvider(venue.organizationId));
+    final orgName = orgAsync.valueOrNull?.tradeName ?? '';
 
     return AppLayout.detail(
         child: Column(
