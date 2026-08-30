@@ -20,9 +20,7 @@ class ApprovalsScreen extends ConsumerStatefulWidget {
 class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
   final _searchController = TextEditingController();
 
-  /// Ids de usuários com aprovação/rejeição em andamento (desabilita os
-  /// botões do card).
-  final Set<String> _mutating = {};
+  static const _scope = 'approvals';
 
   @override
   void dispose() {
@@ -164,7 +162,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                   // quando o core evoluir.
                   child: FilledButton.icon(
                     onPressed:
-                        _mutating.contains(user.id) ? null : () => _reject(context, ref, user),
+                        ref.watch(mutationProgressProvider(_scope)).contains(user.id)
+                            ? null
+                            : () => _reject(context, ref, user),
                     icon: const Icon(Icons.close),
                     label: const Text('Rejeitar'),
                     style: FilledButton.styleFrom(
@@ -178,7 +178,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                   // quando o core evoluir.
                   child: FilledButton.icon(
                     onPressed:
-                        _mutating.contains(user.id) ? null : () => _approve(context, ref, user),
+                        ref.watch(mutationProgressProvider(_scope)).contains(user.id)
+                            ? null
+                            : () => _approve(context, ref, user),
                     icon: const Icon(Icons.check),
                     label: const Text('Aprovar'),
                     style: FilledButton.styleFrom(
@@ -197,14 +199,12 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
   Future<void> _approve(BuildContext context, WidgetRef ref, User user) async {
     await runMutation(
       context,
+      ref: ref,
+      scope: _scope,
       action: () => ref.read(authApiProvider).approveUser(user.id),
       successMessage: '${user.name} aprovado!',
       errorMessage: 'Não foi possível aprovar.',
       progressId: user.id,
-      progressIds: _mutating,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: () {
         ref.invalidate(pendingUsersProvider);
         ref.invalidate(usersProvider);
@@ -224,14 +224,12 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
 
     await runMutation(
       context,
+      ref: ref,
+      scope: _scope,
       action: () => ref.read(authApiProvider).rejectUser(user.id),
       successMessage: '${user.name} rejeitado.',
       errorMessage: 'Não foi possível rejeitar.',
       progressId: user.id,
-      progressIds: _mutating,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: () {
         ref.invalidate(pendingUsersProvider);
         ref.invalidate(usersProvider);

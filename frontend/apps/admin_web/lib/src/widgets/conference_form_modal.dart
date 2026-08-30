@@ -46,10 +46,8 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _name;
-  bool _submitting = false;
 
-  /// Ids de mutações em andamento (sincroniza o spinner do botão Salvar).
-  final Set<String> _mutatingIds = {};
+  static const _scope = 'conference-form';
 
   bool get _isEditing => widget.conference != null;
 
@@ -70,6 +68,8 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
 
     await runMutation(
       context,
+      ref: ref,
+      scope: _scope,
       action: () async {
         final api = ref.read(conferenceApiProvider);
         if (_isEditing) {
@@ -85,10 +85,6 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
           _isEditing ? 'Conferência atualizada.' : 'Conferência criada.',
       errorMessage: 'Não foi possível salvar a conferência.',
       progressId: 'save',
-      progressIds: _mutatingIds,
-      notify: () {
-        if (mounted) setState(() => _submitting = _mutatingIds.isNotEmpty);
-      },
       onSuccess: () {
         ref.invalidate(conferencesProvider(widget.competitionId));
         if (mounted) Navigator.pop(context);
@@ -98,6 +94,8 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
 
   @override
   Widget build(BuildContext context) {
+    final submitting =
+        ref.watch(mutationProgressProvider(_scope)).contains('save');
     return AlertDialog(
       title: Text(_isEditing ? 'Editar conferência' : 'Nova conferência'),
       content: SizedBox(
@@ -126,13 +124,13 @@ class _ConferenceFormModalState extends ConsumerState<ConferenceFormModal> {
         KicksterButton(
           label: 'Cancelar',
           variant: KicksterButtonVariant.text,
-          onPressed: _submitting ? null : () => Navigator.pop(context),
+          onPressed: submitting ? null : () => Navigator.pop(context),
         ),
         KicksterButton(
           label: 'Salvar',
-          onPressed: _submitting ? null : _save,
+          onPressed: submitting ? null : _save,
           icon: Icons.check,
-          loading: _submitting,
+          loading: submitting,
         ),
       ],
     );

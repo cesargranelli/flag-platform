@@ -55,10 +55,8 @@ class _DivisionFormModalState extends ConsumerState<DivisionFormModal> {
 
   late final TextEditingController _name;
   late String? _conferenceId;
-  bool _submitting = false;
 
-  /// Ids de mutações em andamento (sincroniza o spinner do botão Salvar).
-  final Set<String> _mutatingIds = {};
+  static const _scope = 'division-form';
 
   bool get _isEditing => widget.division != null;
 
@@ -90,6 +88,8 @@ class _DivisionFormModalState extends ConsumerState<DivisionFormModal> {
 
     await runMutation(
       context,
+      ref: ref,
+      scope: _scope,
       action: () async {
         final api = ref.read(divisionApiProvider);
         if (_isEditing) {
@@ -110,10 +110,6 @@ class _DivisionFormModalState extends ConsumerState<DivisionFormModal> {
       successMessage: _isEditing ? 'Divisão atualizada.' : 'Divisão criada.',
       errorMessage: 'Não foi possível salvar a divisão.',
       progressId: 'save',
-      progressIds: _mutatingIds,
-      notify: () {
-        if (mounted) setState(() => _submitting = _mutatingIds.isNotEmpty);
-      },
       onSuccess: () {
         ref.invalidate(divisionsProvider(widget.competitionId));
         if (mounted) Navigator.pop(context);
@@ -125,6 +121,8 @@ class _DivisionFormModalState extends ConsumerState<DivisionFormModal> {
   Widget build(BuildContext context) {
     final conferences = ref.watch(conferencesProvider(widget.competitionId));
     final confItems = conferences.valueOrNull ?? const <Conference>[];
+    final submitting =
+        ref.watch(mutationProgressProvider(_scope)).contains('save');
 
     return AlertDialog(
       title: Text(_isEditing ? 'Editar divisão' : 'Nova divisão'),
@@ -192,13 +190,13 @@ class _DivisionFormModalState extends ConsumerState<DivisionFormModal> {
         KicksterButton(
           label: 'Cancelar',
           variant: KicksterButtonVariant.text,
-          onPressed: _submitting ? null : () => Navigator.pop(context),
+          onPressed: submitting ? null : () => Navigator.pop(context),
         ),
         KicksterButton(
           label: 'Salvar',
-          onPressed: _submitting ? null : _save,
+          onPressed: submitting ? null : _save,
           icon: Icons.check,
-          loading: _submitting,
+          loading: submitting,
         ),
       ],
     );

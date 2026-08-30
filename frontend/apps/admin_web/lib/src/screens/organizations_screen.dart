@@ -26,8 +26,7 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   bool _showDisabled = false;
   final _searchController = TextEditingController();
 
-  /// Ids de organizações com desativação/reativação em andamento.
-  final Set<String> _mutating = {};
+  static const _scope = 'organizations';
 
   @override
   void dispose() {
@@ -254,16 +253,14 @@ class _OrganizationsScreenState extends ConsumerState<OrganizationsScreen> {
   }) async {
     await runMutation(
       context,
+      ref: ref,
+      scope: _scope,
       action: () => activate
           ? ref.read(organizationApiProvider).reactivate(organization.id)
           : ref.read(organizationApiProvider).deactivate(organization.id),
       successMessage: successMessage,
       errorMessage: errorMessage,
       progressId: organization.id,
-      progressIds: _mutating,
-      notify: () {
-        if (mounted) setState(() {});
-      },
       onSuccess: _invalidateLists,
     );
   }
