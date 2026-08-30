@@ -49,7 +49,7 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
     final isDraft =
         selectedCompetitionObj?.status == CompetitionStatus.draft;
     final canEdit = canEditCompetition(
-      ref.watch(authControllerProvider).state.user,
+      ref.watch(authControllerProvider.select((a) => a.state.user)),
       selectedCompetitionObj,
     );
     final canManage = canEdit && isDraft;

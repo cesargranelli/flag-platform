@@ -16,8 +16,9 @@ class AdminHomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authControllerProvider).state;
-    final isAdmin = authState.user?.role == 'ADMIN';
+    final isAdmin =
+        ref.watch(authControllerProvider.select((a) => a.state.user?.role)) ==
+        'ADMIN';
 
     final modules = <_Module>[
       _Module(

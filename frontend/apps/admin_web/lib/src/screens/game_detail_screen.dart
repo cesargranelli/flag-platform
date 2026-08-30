@@ -60,7 +60,7 @@ class GameDetailScreen extends ConsumerWidget {
         ?.where((c) => c.id == game.competitionId)
         .firstOrNull;
     final canEdit = canEditCompetition(
-      ref.watch(authControllerProvider).state.user,
+      ref.watch(authControllerProvider.select((a) => a.state.user)),
       competition,
     );
 

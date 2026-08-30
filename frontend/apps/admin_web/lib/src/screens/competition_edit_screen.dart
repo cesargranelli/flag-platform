@@ -252,7 +252,7 @@ class _CompetitionEditScreenState
       ),
       data: (competition) {
         // Issue #261: sem permissão (criador/ADMIN), estado informativo.
-        final user = ref.watch(authControllerProvider).state.user;
+        final user = ref.watch(authControllerProvider.select((a) => a.state.user));
         if (!canEditCompetition(user, competition)) {
           return AppScreen(
             title: 'Editar campeonato',
