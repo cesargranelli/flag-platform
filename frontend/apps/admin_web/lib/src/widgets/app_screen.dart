@@ -31,6 +31,7 @@ class AppScreen extends StatelessWidget {
     required this.body,
     this.breadcrumb,
     this.showUserHeader = true,
+    this.scrollable = true,
   });
 
   final String title;

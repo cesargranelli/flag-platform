@@ -8,9 +8,10 @@ import 'package:flutter/material.dart';
 ///   [KicksterSearchField] (debounce nativo do campo, não duplicado);
 /// - filtro local por query (trim + lowercase, via [filter]);
 /// - empty de busca ([AppEmptyState] com `Icons.search_off`);
-/// - grid responsivo: [LayoutBuilder] → [GridView.builder] com `shrinkWrap`,
-///   `NeverScrollableScrollPhysics`, 1/2 colunas (>= 600px) e
-///   `mainAxisExtent` configurável.
+/// - grid responsivo: [LayoutBuilder] → [GridView.builder] com `shrinkWrap` **desativado**,
+///   `AlwaysScrollableScrollPhysics` e `cacheExtent` configurado para renderizar apenas
+///   itens visíveis (lazy grid). A altura de cada célula é definida por
+///   [mainAxisExtent].
 ///
 /// O widget retorna um `Column` pensado para ser usado DENTRO do body da
 /// tela — o body continua com seus próprios actions e `provider.when`
@@ -132,8 +133,9 @@ class _AppEntityListScreenState<T> extends State<AppEntityListScreen<T>> {
                   ? widget.maxColumns
                   : widget.minColumns;
               return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
+                shrinkWrap: false,
+                physics: const AlwaysScrollableScrollPhysics(),
+                cacheExtent: 100,
                 padding: widget.gridPadding,
                 itemCount: filtered.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
