@@ -158,11 +158,11 @@ class RoundDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard([
-              _row('Número', '${round.number}'),
-              _row('Nome', round.name),
-              _row('Tipo', round.type.label),
-              _row('Campeonato', competitionName),
+            AppInfoCard(children: [
+              AppInfoRow(label: 'Número', value: '${round.number}'),
+              AppInfoRow(label: 'Nome', value: round.name),
+              AppInfoRow(label: 'Tipo', value: round.type.label),
+              AppInfoRow(label: 'Campeonato', value: competitionName),
             ]),
             const SizedBox(height: 16),
             Text(
@@ -173,37 +173,6 @@ class RoundDetailScreen extends ConsumerWidget {
             ),
           ],
         ),
-    );
-  }
-
-  Widget _infoCard(List<Widget> rows) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: rows,
-        ),
-      ),
-    );
-  }
-
-  Widget _row(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-          ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
-        ],
-      ),
     );
   }
 

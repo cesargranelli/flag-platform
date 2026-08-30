@@ -243,24 +243,7 @@ class _UserMenuAnchorState extends State<_UserMenuAnchor> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            child: widget.initials.isNotEmpty
-                ? Text(
-                    widget.initials,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  )
-                : const Icon(
-                    Icons.person_outline,
-                    size: 20,
-                    color: AppColors.primary,
-                  ),
-          ),
+          KicksterAvatar(name: widget.displayName, size: 40),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,

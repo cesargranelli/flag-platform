@@ -229,9 +229,15 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
     required Map<String, RosterEntry> entryByAthleteId,
   }) {
     if (athletes.isEmpty) {
-      return const AppEmptyState(
-        message: 'Nenhum atleta cadastrado',
+      return KicksterEmptyState(
         icon: Icons.person_outline,
+        message: 'Nenhum atleta cadastrado',
+        description: 'Cadastre atletas na plataforma para incluí-los no elenco.',
+        action: KicksterButton(
+          label: 'Cadastrar atleta',
+          icon: Icons.add,
+          onPressed: () => context.go('/athletes/new'),
+        ),
       );
     }
     if (filtered.isEmpty) {
@@ -312,7 +318,11 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
         padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
         child: Row(
           children: [
-            _athleteAvatar(athlete, size: 48),
+            KicksterAvatar(
+              name: athlete.name,
+              imageUrl: athlete.photoUrl,
+              size: 48,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -377,56 +387,6 @@ class _TeamRosterScreenState extends ConsumerState<TeamRosterScreen> {
         ),
       ),
     );
-  }
-
-  Widget _athleteAvatar(Athlete athlete, {required double size}) {
-    final photo = athlete.photoUrl;
-    final validPhoto =
-        photo != null &&
-        photo.isNotEmpty &&
-        (Uri.tryParse(photo)?.hasScheme ?? false);
-    return Container(
-      width: size,
-      height: size,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-      ),
-      child: validPhoto
-          ? Image.network(
-              photo,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Center(
-                child: Text(
-                  _initials(athlete.name),
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: size * 0.4,
-                  ),
-                ),
-              ),
-            )
-          : Center(
-              child: Text(
-                _initials(athlete.name),
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: size * 0.4,
-                ),
-              ),
-            ),
-    );
-  }
-
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '?';
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
-        .toUpperCase();
   }
 }
 

@@ -64,7 +64,11 @@ class AthleteDetailScreen extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        _avatar(athlete, size: 64, radius: 32),
+                        KicksterAvatar(
+                          name: athlete.name,
+                          imageUrl: athlete.photoUrl,
+                          size: 64,
+                        ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -104,13 +108,26 @@ class AthleteDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard([
-              _row('Nome', athlete.name),
-              _row('Apelido', athlete.nickname?.isNotEmpty == true ? athlete.nickname! : '—'),
-              _row('Posição', athlete.positionsLabel.isNotEmpty ? athlete.positionsLabel : 'Sem posição'),
-              _row('Número da camisa', athlete.number?.toString() ?? '—'),
+            AppInfoCard(children: [
+              AppInfoRow(label: 'Nome', value: athlete.name),
+              AppInfoRow(
+                label: 'Apelido',
+                value: athlete.nickname?.isNotEmpty == true
+                    ? athlete.nickname!
+                    : '—',
+              ),
+              AppInfoRow(
+                label: 'Posição',
+                value: athlete.positionsLabel.isNotEmpty
+                    ? athlete.positionsLabel
+                    : 'Sem posição',
+              ),
+              AppInfoRow(
+                label: 'Número da camisa',
+                value: athlete.number?.toString() ?? '—',
+              ),
               if (athlete.photoUrl != null && athlete.photoUrl!.isNotEmpty)
-                _row('URL da foto', athlete.photoUrl!),
+                AppInfoRow(label: 'URL da foto', value: athlete.photoUrl!),
             ]),
             const SizedBox(height: 16),
             Text(
@@ -121,84 +138,6 @@ class AthleteDetailScreen extends ConsumerWidget {
             ),
           ],
         ),
-    );
-  }
-
-  Widget _avatar(Athlete athlete, {required double size, required double radius}) {
-    final photo = athlete.photoUrl;
-    final validPhoto = photo != null &&
-        photo.isNotEmpty &&
-        (Uri.tryParse(photo)?.hasScheme ?? false);
-    return Container(
-      width: size,
-      height: size,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-      ),
-      child: validPhoto
-          ? Image.network(
-              photo,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Center(
-                child: Text(
-                  _initials(athlete.name),
-                  style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: size * 0.4),
-                ),
-              ),
-            )
-          : Center(
-              child: Text(
-                _initials(athlete.name),
-                style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: size * 0.4),
-              ),
-            ),
-    );
-  }
-
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '?';
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
-        .toUpperCase();
-  }
-
-  Widget _infoCard(List<Widget> rows) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: rows,
-        ),
-      ),
-    );
-  }
-
-  Widget _row(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 130,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-          ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
-        ],
-      ),
     );
   }
 

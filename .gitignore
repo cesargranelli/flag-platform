@@ -6,6 +6,12 @@ backend/*.class
 backend/*.jar
 backend/*.war
 
+# Perfis locais com credenciais reais (NUNCA commitar — ex.: application-dev/staging.yml)
+backend/src/main/resources/application-*.local.yml
+backend/src/main/resources/application-dev.yml
+backend/src/main/resources/application-staging.yml
+backend/src/main/resources/application-prod.yml
+
 # IDE
 .idea/
 out/

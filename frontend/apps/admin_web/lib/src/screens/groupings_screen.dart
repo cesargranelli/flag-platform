@@ -2,6 +2,7 @@ import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../auth/competition_permissions.dart';
 import '../providers/providers.dart';
@@ -47,11 +48,16 @@ class GroupingsScreen extends ConsumerWidget {
             ),
             data: (compItems) {
               if (compItems.isEmpty) {
-                return const AppEmptyState(
-                  message:
-                      'Nenhum campeonato cadastrado. '
-                      'Crie um campeonato para organizar conferências e divisões.',
+                return KicksterEmptyState(
                   icon: Icons.emoji_events_outlined,
+                  message: 'Nenhum campeonato cadastrado',
+                  description:
+                      'Crie um campeonato para organizar conferências e divisões.',
+                  action: KicksterButton(
+                    label: 'Criar campeonato',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/competitions/new'),
+                  ),
                 );
               }
               // O id selecionado pode estar obsoleto (ex.: campeonato removido
@@ -407,13 +413,14 @@ class _GroupingsBodyState extends ConsumerState<_GroupingsBody> {
               ),
             ),
             if (canEdit)
-              TextButton.icon(
+              KicksterButton(
+                label: 'Adicionar divisão',
+                icon: Icons.add,
+                variant: KicksterButtonVariant.outline,
                 onPressed: () => showDivisionFormModal(
                   context,
                   competitionId: competition.id,
                 ),
-                icon: const Icon(Icons.add),
-                label: const Text('Adicionar divisão'),
               ),
           ],
         ),
@@ -658,14 +665,15 @@ class _ConferenceCardState extends State<_ConferenceCard> {
                       if (widget.canEdit)
                         Align(
                           alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
+                          child: KicksterButton(
+                            label: 'Adicionar divisão',
+                            icon: Icons.add,
+                            variant: KicksterButtonVariant.text,
                             onPressed: () => showDivisionFormModal(
                               context,
                               competitionId: widget.competitionId,
                               initialConferenceId: conference.id,
                             ),
-                            icon: const Icon(Icons.add),
-                            label: const Text('Adicionar divisão'),
                           ),
                         ),
                     ],

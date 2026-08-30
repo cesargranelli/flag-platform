@@ -47,8 +47,11 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
             ),
             data: (items) {
               if (items.isEmpty) {
-                return const AppEmptyState(
+                return const KicksterEmptyState(
                   message: 'Nenhuma conta aguardando aprovação',
+                  description:
+                      'Contas criadas por novos usuários aparecem aqui '
+                      'para revisão.',
                   icon: Icons.verified_outlined,
                 );
               }

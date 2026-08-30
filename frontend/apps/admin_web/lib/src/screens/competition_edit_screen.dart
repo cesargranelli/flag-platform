@@ -959,10 +959,11 @@ class _CompetitionEditScreenState
             ),
           ),
           const SizedBox(height: 8),
-          TextButton.icon(
+          KicksterButton(
+            label: 'Usar conferências',
+            icon: Icons.undo,
+            variant: KicksterButtonVariant.text,
             onPressed: () => setState(() => _declinedConferences = false),
-            icon: const Icon(Icons.undo, size: 18),
-            label: const Text('Usar conferências'),
           ),
         ] else ...[
           Row(
@@ -976,10 +977,10 @@ class _CompetitionEditScreenState
                 ),
               ),
               const SizedBox(width: 12),
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Adicionar',
+                icon: Icons.add,
                 onPressed: _submitting ? null : _addConference,
-                icon: const Icon(Icons.add),
-                label: const Text('Adicionar'),
               ),
             ],
           ),
@@ -1009,12 +1010,13 @@ class _CompetitionEditScreenState
                   ),
           ),
           const SizedBox(height: 12),
-          OutlinedButton(
+          KicksterButton(
+            label: 'Este campeonato não usa conferências',
+            variant: KicksterButtonVariant.outline,
             onPressed: () => setState(() {
               _declinedConferences = true;
               _markDirty();
             }),
-            child: const Text('Este campeonato não usa conferências'),
           ),
         ],
       ],
@@ -1118,10 +1120,10 @@ class _CompetitionEditScreenState
                 ),
               ),
               const SizedBox(width: 12),
-              FilledButton.icon(
+              KicksterButton(
+                label: 'Adicionar',
+                icon: Icons.add,
                 onPressed: _submitting ? null : _addDivision,
-                icon: const Icon(Icons.add),
-                label: const Text('Adicionar'),
               ),
             ],
           ),
@@ -1151,13 +1153,14 @@ class _CompetitionEditScreenState
                   ),
           ),
           const SizedBox(height: 12),
-          OutlinedButton(
+          KicksterButton(
+            label: 'Não usar divisões nem grupos',
+            variant: KicksterButtonVariant.outline,
             onPressed: () => setState(() {
               _declinedStructure = true;
               _groupingChoice = null;
               _markDirty();
             }),
-            child: const Text('Não usar divisões nem grupos'),
           ),
         ],
       ],

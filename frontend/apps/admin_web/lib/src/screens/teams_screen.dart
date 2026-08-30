@@ -265,10 +265,17 @@ class _TeamsScreenState extends ConsumerState<TeamsScreen> {
                             },
                           )
                   else
-                    const AppEmptyState(
-                        message: 'Nenhum time cadastrado',
-                        icon: Icons.groups_outlined,
+                    KicksterEmptyState(
+                      icon: Icons.groups_outlined,
+                      message: 'Nenhum time cadastrado',
+                      description:
+                          'Crie um campeonato para inscrever times.',
+                      action: KicksterButton(
+                        label: 'Criar campeonato',
+                        icon: Icons.add,
+                        onPressed: () => context.go('/competitions/new'),
                       ),
+                    ),
                 ],
               );
             },

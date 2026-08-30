@@ -3,6 +3,7 @@ import 'package:flag_core/flag_core.dart';
 import 'package:flag_domain/flag_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
 import '../widgets/app_screen.dart';
@@ -202,9 +203,16 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
                   (compItems.isNotEmpty ? compItems.first.id : null);
 
               if (effectiveComp == null) {
-                return const AppEmptyState(
-                  message: 'Nenhum campeonato cadastrado',
+                return KicksterEmptyState(
                   icon: Icons.emoji_events_outlined,
+                  message: 'Nenhum campeonato cadastrado',
+                  description:
+                      'Crie um campeonato para associar clubes a ele.',
+                  action: KicksterButton(
+                    label: 'Criar campeonato',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/competitions/new'),
+                  ),
                 );
               }
 
@@ -267,9 +275,17 @@ class _AssociateClubsScreenState extends ConsumerState<AssociateClubsScreen> {
             // associáveis nesta tela.
             final clubs = orgs.where(_isAssociableType).toList();
             if (clubs.isEmpty) {
-              return const AppEmptyState(
-                message: 'Nenhum clube/universidade disponível',
+              return KicksterEmptyState(
                 icon: Icons.groups_outlined,
+                message: 'Nenhum clube/universidade disponível',
+                description:
+                    'Crie a organização clube/universidade para associá-la '
+                    'ao campeonato.',
+                action: KicksterButton(
+                  label: 'Criar organização',
+                  icon: Icons.add,
+                  onPressed: () => context.go('/organizations/new'),
+                ),
               );
             }
             final filtered = _filter(clubs);

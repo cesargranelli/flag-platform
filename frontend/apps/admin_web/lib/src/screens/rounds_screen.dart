@@ -260,10 +260,17 @@ class _RoundsScreenState extends ConsumerState<RoundsScreen> {
                             },
                           )
                   else
-                    const AppEmptyState(
-                        message: 'Nenhuma rodada cadastrada',
-                        icon: Icons.format_list_numbered,
+                    KicksterEmptyState(
+                      icon: Icons.format_list_numbered,
+                      message: 'Nenhuma rodada cadastrada',
+                      description:
+                          'Crie um campeonato para adicionar rodadas.',
+                      action: KicksterButton(
+                        label: 'Criar campeonato',
+                        icon: Icons.add,
+                        onPressed: () => context.go('/competitions/new'),
                       ),
+                    ),
                 ],
               );
             },

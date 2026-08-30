@@ -130,16 +130,16 @@ class TeamDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard([
-              _row('Nome', team.name),
-              _row(
-                'Sigla',
-                team.shortName?.isNotEmpty == true ? team.shortName! : '—',
+            AppInfoCard(children: [
+              AppInfoRow(label: 'Nome', value: team.name),
+              AppInfoRow(
+                label: 'Sigla',
+                value: team.shortName?.isNotEmpty == true ? team.shortName! : '—',
               ),
-              _row('Competição', competitionName),
-              _row('Divisão', divisionName),
+              AppInfoRow(label: 'Competição', value: competitionName),
+              AppInfoRow(label: 'Divisão', value: divisionName),
               if (team.logoUrl != null && team.logoUrl!.isNotEmpty)
-                _row('URL do logo', team.logoUrl!),
+                AppInfoRow(label: 'URL do logo', value: team.logoUrl!),
             ]),
             const SizedBox(height: 16),
             Text(
@@ -184,40 +184,6 @@ class TeamDetailScreen extends ConsumerWidget {
               color: AppColors.primary,
               size: 32,
             ),
-    );
-  }
-
-  Widget _infoCard(List<Widget> rows) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: rows,
-        ),
-      ),
-    );
-  }
-
-  Widget _row(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
-        ],
-      ),
     );
   }
 

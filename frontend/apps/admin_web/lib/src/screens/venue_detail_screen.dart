@@ -118,11 +118,15 @@ class VenueDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _infoCard([
-              if (orgName.isNotEmpty) _row('Organização', orgName),
-              _row('Endereço', venue.address?.isNotEmpty == true ? venue.address! : '—'),
+            AppInfoCard(children: [
+              if (orgName.isNotEmpty)
+                AppInfoRow(label: 'Organização', value: orgName),
+              AppInfoRow(
+                label: 'Endereço',
+                value: venue.address?.isNotEmpty == true ? venue.address! : '—',
+              ),
               if (venue.mapsUrl != null && venue.mapsUrl!.isNotEmpty)
-                _row('URL do mapa', venue.mapsUrl!),
+                AppInfoRow(label: 'URL do mapa', value: venue.mapsUrl!),
             ]),
             if (venue.mapsUrl != null && venue.mapsUrl!.isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -161,37 +165,6 @@ class VenueDetailScreen extends ConsumerWidget {
         const SnackBar(content: Text('Não foi possível abrir o mapa')),
       );
     }
-  }
-
-  Widget _infoCard(List<Widget> rows) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: rows,
-        ),
-      ),
-    );
-  }
-
-  Widget _row(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-          ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
-        ],
-      ),
-    );
   }
 
   String _formatDate(DateTime? value) {

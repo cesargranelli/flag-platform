@@ -66,9 +66,16 @@ class _RostersScreenState extends ConsumerState<RostersScreen> {
             ),
             data: (_) {
               if (compItems.isEmpty) {
-                return const AppEmptyState(
-                  message: 'Nenhum campeonato cadastrado',
+                return KicksterEmptyState(
                   icon: Icons.emoji_events_outlined,
+                  message: 'Nenhum campeonato cadastrado',
+                  description:
+                      'Crie um campeonato para organizar os elencos.',
+                  action: KicksterButton(
+                    label: 'Criar campeonato',
+                    icon: Icons.add,
+                    onPressed: () => context.go('/competitions/new'),
+                  ),
                 );
               }
               return Column(
