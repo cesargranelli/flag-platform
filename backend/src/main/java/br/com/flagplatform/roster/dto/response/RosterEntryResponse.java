@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public record RosterEntryResponse(
         UUID id,
-        UUID teamId,
+        UUID rosterId,
         UUID athleteId,
         String athleteName,
         String athleteNickname,

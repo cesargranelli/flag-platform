@@ -18,15 +18,15 @@ import java.util.UUID;
         name = "team_roster",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_team_roster_team_athlete",
-                        columnNames = {"team_id", "athlete_id"}
+                        name = "uk_team_roster_roster_athlete",
+                        columnNames = {"roster_id", "athlete_id"}
                 )
         }
 )
 public class RosterEntryEntity extends BaseEntity {
 
-    @Column(name = "team_id", nullable = false)
-    private UUID teamId;
+    @Column(name = "roster_id", nullable = false)
+    private UUID rosterId;
 
     @Column(name = "athlete_id", nullable = false)
     private UUID athleteId;

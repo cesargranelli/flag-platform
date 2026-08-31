@@ -26,11 +26,15 @@ import br.com.flagplatform.play.entity.PlayType;
 import br.com.flagplatform.play.repository.PlayRepository;
 import br.com.flagplatform.round.entity.RoundEntity;
 import br.com.flagplatform.round.repository.RoundRepository;
+import br.com.flagplatform.roster.entity.RosterEntity;
 import br.com.flagplatform.roster.entity.RosterEntryEntity;
 import br.com.flagplatform.roster.repository.RosterEntryRepository;
+import br.com.flagplatform.roster.repository.RosterRepository;
 import br.com.flagplatform.standing.entity.StandingEntity;
 import br.com.flagplatform.standing.repository.StandingRepository;
+import br.com.flagplatform.team.entity.CompetitionTeamEntity;
 import br.com.flagplatform.team.entity.TeamEntity;
+import br.com.flagplatform.team.repository.CompetitionTeamRepository;
 import br.com.flagplatform.team.repository.TeamRepository;
 import br.com.flagplatform.venue.entity.VenueEntity;
 import br.com.flagplatform.venue.repository.VenueRepository;
@@ -67,11 +71,13 @@ public class DemoDataSeeder implements CommandLineRunner {
     private final VenueRepository venueRepository;
     private final CompetitionRepository competitionRepository;
     private final TeamRepository teamRepository;
+    private final CompetitionTeamRepository competitionTeamRepository;
     private final RoundRepository roundRepository;
     private final GameRepository gameRepository;
     private final ScoreEventRepository scoreEventRepository;
     private final StandingRepository standingRepository;
     private final AthleteRepository athleteRepository;
+    private final RosterRepository rosterRepository;
     private final RosterEntryRepository rosterEntryRepository;
     private final PlayRepository playRepository;
 
@@ -101,8 +107,8 @@ public class DemoDataSeeder implements CommandLineRunner {
         createPlaysForGames(games2, teams2);
         createStandings(comp1, teams1, games1);
         createStandings(comp2, teams2, games2);
-        createAthletesAndRosters(teams1);
-        createAthletesAndRosters(teams2);
+        createAthletesAndRosters(teams1, comp1);
+        createAthletesAndRosters(teams2, comp2);
 
         log.info("=== Seed de dados demo concluído ===");
     }
@@ -170,6 +176,7 @@ public class DemoDataSeeder implements CommandLineRunner {
         comp.setEndDate(LocalDate.of(2026, 8, 30));
         comp.setStatus(CompetitionStatus.PUBLISHED);
         comp.setGroupingType(GroupingType.GROUPS);
+        comp.setSeason("2026");
         competitionRepository.save(comp);
         log.info("Competição criada: {}", comp.getName());
         return comp;
@@ -187,6 +194,7 @@ public class DemoDataSeeder implements CommandLineRunner {
         comp.setEndDate(LocalDate.of(2026, 9, 15));
         comp.setStatus(CompetitionStatus.PUBLISHED);
         comp.setGroupingType(GroupingType.GROUPS);
+        comp.setSeason("2026");
         competitionRepository.save(comp);
         log.info("Competição criada: {}", comp.getName());
         return comp;
@@ -201,11 +209,17 @@ public class DemoDataSeeder implements CommandLineRunner {
         for (int i = 0; i < names.length; i++) {
             TeamEntity t = new TeamEntity();
             t.setOrganizationId(org.getId());
-            t.setCompetitionId(comp.getId());
             t.setName(names[i]);
             t.setShortName(shortNames[i]);
+            t.setStatus(OrganizationStatus.ACTIVE);
             teamRepository.save(t);
             teams.add(t);
+
+            // Inscrever time na competição
+            CompetitionTeamEntity ct = new CompetitionTeamEntity();
+            ct.setCompetitionId(comp.getId());
+            ct.setTeamId(t.getId());
+            competitionTeamRepository.save(ct);
         }
         log.info("Times Copa Brasil criados: {}", teams.stream().map(TeamEntity::getName).toList());
         return teams;
@@ -218,11 +232,17 @@ public class DemoDataSeeder implements CommandLineRunner {
         for (int i = 0; i < names.length; i++) {
             TeamEntity t = new TeamEntity();
             t.setOrganizationId(org.getId());
-            t.setCompetitionId(comp.getId());
             t.setName(names[i]);
             t.setShortName(shortNames[i]);
+            t.setStatus(OrganizationStatus.ACTIVE);
             teamRepository.save(t);
             teams.add(t);
+
+            // Inscrever time na competição
+            CompetitionTeamEntity ct = new CompetitionTeamEntity();
+            ct.setCompetitionId(comp.getId());
+            ct.setTeamId(t.getId());
+            competitionTeamRepository.save(ct);
         }
         log.info("Times Liga Regional criados: {}", teams.stream().map(TeamEntity::getName).toList());
         return teams;
@@ -366,8 +386,6 @@ public class DemoDataSeeder implements CommandLineRunner {
         ScoreEventEntity e = new ScoreEventEntity();
         e.setGameId(gameId);
         e.setTeamId(teamId);
-        // createdAt is insertable=false in entity, so we set it via native approach if needed
-        // For the seed, the DB default NOW() is sufficient
         return e;
     }
 
@@ -428,7 +446,7 @@ public class DemoDataSeeder implements CommandLineRunner {
 
     // ── Athletes & Rosters ────────────────────────────────────────────────
 
-    private void createAthletesAndRosters(List<TeamEntity> teams) {
+    private void createAthletesAndRosters(List<TeamEntity> teams, CompetitionEntity comp) {
         AthletePosition[][] positionSets = {
                 {AthletePosition.QB, AthletePosition.WR},
                 {AthletePosition.RB, AthletePosition.WR},
@@ -442,6 +460,15 @@ public class DemoDataSeeder implements CommandLineRunner {
 
         int athleteCounter = 0;
         for (TeamEntity team : teams) {
+            // Criar roster para o time na competição
+            RosterEntity roster = new RosterEntity();
+            roster.setTeamId(team.getId());
+            roster.setCompetitionId(comp.getId());
+            roster.setName("Elenco " + team.getName() + " " + comp.getSeason());
+            roster.setSeason(comp.getSeason());
+            roster.setStatus(RosterStatus.ACTIVE);
+            rosterRepository.save(roster);
+
             // 5 athletes per team (flag 5x5)
             for (int i = 0; i < 5; i++) {
                 int idx = athleteCounter % positionSets.length;
@@ -460,9 +487,9 @@ public class DemoDataSeeder implements CommandLineRunner {
                 a.setPositions(java.util.Arrays.asList(positionSets[idx]));
                 athleteRepository.save(a);
 
-                if (!rosterEntryRepository.existsByTeamIdAndAthleteId(team.getId(), a.getId())) {
+                if (!rosterEntryRepository.existsByRosterIdAndAthleteId(roster.getId(), a.getId())) {
                     RosterEntryEntity re = new RosterEntryEntity();
-                    re.setTeamId(team.getId());
+                    re.setRosterId(roster.getId());
                     re.setAthleteId(a.getId());
                     re.setStatus(RosterStatus.ACTIVE);
                     re.setNumber(a.getNumber());

@@ -7,6 +7,8 @@ import br.com.flagplatform.standing.entity.StandingEntity;
 import br.com.flagplatform.standing.repository.StandingRepository;
 import br.com.flagplatform.team.TeamInfo;
 import br.com.flagplatform.team.TeamLookup;
+import br.com.flagplatform.team.repository.CompetitionTeamRepository;
+import br.com.flagplatform.team.repository.TeamRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -27,6 +29,8 @@ public class StandingService {
     private final StandingRepository repository;
     private final TeamLookup teamLookup;
     private final GameLookup gameLookup;
+    private final CompetitionTeamRepository competitionTeamRepository;
+    private final TeamRepository teamRepository;
 
     /**
      * REQUIRES_NEW é necessário porque o listener roda no afterCommit da transação
@@ -37,7 +41,10 @@ public class StandingService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recalculate(UUID competitionId) {
-        List<UUID> teamIds = teamLookup.findTeamIdsByCompetitionId(competitionId);
+        List<UUID> teamIds = competitionTeamRepository.findAllByCompetitionIdOrderByCreatedAtAsc(competitionId)
+                .stream()
+                .map(ct -> ct.getTeamId())
+                .toList();
         List<FinishedGame> games = gameLookup.findFinishedByCompetitionId(competitionId);
 
         repository.deleteAllByCompetitionId(competitionId);
@@ -99,9 +106,13 @@ public class StandingService {
      */
     public List<StandingResponse> findByCompetitionId(UUID competitionId) {
         Map<UUID, String> teamNames = new HashMap<>();
-        for (TeamInfo team : teamLookup.findTeamInfoByCompetitionId(competitionId)) {
-            // name é opcional desde V24; normaliza para manter a ordenação estável
-            teamNames.put(team.id(), team.name() == null ? "" : team.name());
+        List<UUID> teamIds = competitionTeamRepository.findAllByCompetitionIdOrderByCreatedAtAsc(competitionId)
+                .stream()
+                .map(ct -> ct.getTeamId())
+                .toList();
+        for (UUID teamId : teamIds) {
+            teamRepository.findById(teamId).ifPresent(team ->
+                    teamNames.put(teamId, team.getName() == null ? "" : team.getName()));
         }
 
         List<Entry> entries = repository.findAllByCompetitionId(competitionId).stream()

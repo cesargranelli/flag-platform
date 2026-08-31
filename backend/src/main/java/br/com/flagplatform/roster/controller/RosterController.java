@@ -35,57 +35,61 @@ public class RosterController {
 
     @Operation(
             summary = "Inscrever atleta no time",
-            description = "Adiciona um atleta ao elenco de um time. Permitido apenas ao criador do campeonato ou ADMIN."
+            description = "Adiciona um atleta ao elenco de um time em uma competição. Permitido apenas para ADMIN ou ORGANIZER."
     )
-    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
-    @PostMapping("/api/v1/teams/{teamId}/roster")
+    @ApiResponse(responseCode = "403", description = "Usuário não é ADMIN nem ORGANIZER")
+    @PostMapping("/api/v1/teams/{teamId}/competitions/{competitionId}/roster")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public RosterEntryResponse add(
             @Parameter(description = "Id do time") @PathVariable UUID teamId,
+            @Parameter(description = "Id da competição") @PathVariable UUID competitionId,
             @Valid @RequestBody AddRosterEntryRequest request,
             Authentication authentication) {
-        return service.add(teamId, request, authentication.getName());
+        return service.add(teamId, competitionId, request, authentication.getName());
     }
 
     @Operation(
             summary = "Importar elenco em lote",
-            description = "Inscreve varios atletas em um time de uma vez. Atletas ja inscritos sao pulados. Permitido apenas ao criador do campeonato ou ADMIN."
+            description = "Inscreve varios atletas em um time de uma vez para uma competição. Atletas ja inscritos sao pulados. Permitido apenas para ADMIN ou ORGANIZER."
     )
-    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
-    @PostMapping("/api/v1/teams/{teamId}/roster/batch")
+    @ApiResponse(responseCode = "403", description = "Usuário não é ADMIN nem ORGANIZER")
+    @PostMapping("/api/v1/teams/{teamId}/competitions/{competitionId}/roster/batch")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public RosterBatchResponse createBatch(
             @Parameter(description = "Id do time") @PathVariable UUID teamId,
+            @Parameter(description = "Id da competição") @PathVariable UUID competitionId,
             @Valid @RequestBody RosterBatchRequest request,
             Authentication authentication) {
-        return service.createBatch(teamId, request, authentication.getName());
+        return service.createBatch(teamId, competitionId, request, authentication.getName());
     }
 
     @Operation(
-            summary = "Listar elenco do time",
-            description = "Lista os atletas inscritos em um time, ordenados por nome. Acesso público."
+            summary = "Listar elenco do time na competição",
+            description = "Lista os atletas inscritos em um time para uma competição, ordenados por nome. Acesso público."
     )
-    @GetMapping("/api/v1/teams/{teamId}/roster")
-    public List<RosterEntryResponse> findRosterByTeam(
-            @Parameter(description = "Id do time") @PathVariable UUID teamId) {
-        return service.findRosterByTeam(teamId);
+    @GetMapping("/api/v1/teams/{teamId}/competitions/{competitionId}/roster")
+    public List<RosterEntryResponse> findRosterByTeamAndCompetition(
+            @Parameter(description = "Id do time") @PathVariable UUID teamId,
+            @Parameter(description = "Id da competição") @PathVariable UUID competitionId) {
+        return service.findRosterByTeamAndCompetition(teamId, competitionId);
     }
 
     @Operation(
             summary = "Remover atleta do time",
-            description = "Remove um atleta do elenco de um time. Permitido apenas ao criador do campeonato ou ADMIN."
+            description = "Remove um atleta do elenco de um time em uma competição. Permitido apenas para ADMIN ou ORGANIZER."
     )
-    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
-    @DeleteMapping("/api/v1/teams/{teamId}/roster/{athleteId}")
+    @ApiResponse(responseCode = "403", description = "Usuário não é ADMIN nem ORGANIZER")
+    @DeleteMapping("/api/v1/teams/{teamId}/competitions/{competitionId}/roster/{athleteId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public void remove(
             @Parameter(description = "Id do time") @PathVariable UUID teamId,
+            @Parameter(description = "Id da competição") @PathVariable UUID competitionId,
             @Parameter(description = "Id do atleta") @PathVariable UUID athleteId,
             Authentication authentication) {
-        service.remove(teamId, athleteId, authentication.getName());
+        service.remove(teamId, competitionId, athleteId, authentication.getName());
     }
 
 }

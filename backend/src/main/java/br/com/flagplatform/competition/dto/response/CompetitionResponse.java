@@ -23,6 +23,7 @@ public record CompetitionResponse(
         LocalDate endDate,
         CompetitionStatus status,
         GroupingType groupingType,
+        String season,
         UUID createdBy,
         LocalDateTime createdAt,
         LocalDateTime updatedAt

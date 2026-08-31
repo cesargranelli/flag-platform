@@ -60,4 +60,7 @@ public class CompetitionEntity extends BaseEntity {
     // (tratado como DIVISIONS).
     @Column(name = "grouping_type", length = 20)
     private GroupingType groupingType;
+
+    @Column(nullable = false, length = 50)
+    private String season;
 }

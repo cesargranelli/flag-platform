@@ -232,6 +232,7 @@ public class CompetitionService implements CompetitionLookup {
                 base.endDate(),
                 base.status(),
                 base.groupingType(),
+                base.season(),
                 base.createdBy(),
                 base.createdAt(),
                 base.updatedAt());

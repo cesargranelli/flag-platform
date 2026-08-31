@@ -1,9 +1,10 @@
 package br.com.flagplatform.team.controller;
 
 import br.com.flagplatform.common.security.SecurityExpressions;
-import br.com.flagplatform.team.dto.request.AssociateClubRequest;
 import br.com.flagplatform.team.dto.request.CreateTeamRequest;
+import br.com.flagplatform.team.dto.request.EnrollTeamRequest;
 import br.com.flagplatform.team.dto.request.UpdateTeamRequest;
+import br.com.flagplatform.team.dto.response.CompetitionTeamResponse;
 import br.com.flagplatform.team.dto.response.TeamResponse;
 import br.com.flagplatform.team.service.TeamService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,42 +35,36 @@ public class TeamController {
 
     private final TeamService service;
 
+    // --- Team CRUD (sub-entity of Organization) ---
+
     @Operation(
             summary = "Criar time",
-            description = "Cria a inscrição de uma organização (clube) no campeonato. Permitido apenas ao criador do campeonato ou ADMIN."
+            description = "Cria um time dentro de um clube (organização). Permitido apenas para ADMIN ou ORGANIZER."
     )
-    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
-    @PostMapping("/api/v1/teams")
+    @PostMapping("/api/v1/organizations/{organizationId}/teams")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
-    public TeamResponse create(@Valid @RequestBody CreateTeamRequest request, Authentication authentication) {
-        return service.create(request, authentication.getName());
-    }
-
-    @Operation(
-            summary = "Associar clube ao campeonato",
-            description = "Associa uma organização (clube) ao campeonato, criando o time automaticamente com o nome do clube. Permitido apenas ao criador do campeonato ou ADMIN. Ação própria de associação (separada do cadastro de time)."
-    )
-    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
-    @ApiResponse(responseCode = "409", description = "O clube já está associado a este campeonato")
-    @PostMapping("/api/v1/competitions/{competitionId}/clubs")
-    @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
-    public TeamResponse associateClub(
-            @Parameter(description = "Id do campeonato") @PathVariable UUID competitionId,
-            @Valid @RequestBody AssociateClubRequest request,
+    public TeamResponse create(
+            @Parameter(description = "Id da organização (clube)") @PathVariable UUID organizationId,
+            @Valid @RequestBody CreateTeamRequest request,
             Authentication authentication) {
-        return service.associateClub(competitionId, request.organizationId(), authentication.getName());
+        CreateTeamRequest adjusted = new CreateTeamRequest(
+                organizationId,
+                request.name(),
+                request.shortName(),
+                request.sportName(),
+                request.logoUrl());
+        return service.create(adjusted, authentication.getName());
     }
 
     @Operation(
-            summary = "Listar times por campeonato",
-            description = "Lista os times inscritos em um campeonato, ordenados por nome. Acesso público."
+            summary = "Listar times de um clube",
+            description = "Lista os times de uma organização (clube), ordenados por nome. Acesso público."
     )
-    @GetMapping("/api/v1/competitions/{competitionId}/teams")
-    public List<TeamResponse> findByCompetitionId(
-            @Parameter(description = "Id do campeonato") @PathVariable UUID competitionId) {
-        return service.findByCompetitionId(competitionId);
+    @GetMapping("/api/v1/organizations/{organizationId}/teams")
+    public List<TeamResponse> findByOrganizationId(
+            @Parameter(description = "Id da organização") @PathVariable UUID organizationId) {
+        return service.findByOrganizationId(organizationId);
     }
 
     @Operation(
@@ -84,9 +79,8 @@ public class TeamController {
 
     @Operation(
             summary = "Atualizar time",
-            description = "Atualiza um time existente. Permitido apenas ao criador do campeonato ou ADMIN."
+            description = "Atualiza um time existente. Permitido apenas para ADMIN ou ORGANIZER."
     )
-    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
     @PutMapping("/api/v1/teams/{id}")
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public TeamResponse update(
@@ -97,11 +91,9 @@ public class TeamController {
     }
 
     @Operation(
-            summary = "Excluir time (desassociar clube)",
-            description = "Remove a inscri��ǜo do clube no campeonato. Permitido apenas ao criador do campeonato ou ADMIN, enquanto estiver em DRAFT."
+            summary = "Excluir time",
+            description = "Remove um time. Permitido apenas para ADMIN ou ORGANIZER."
     )
-    @ApiResponse(responseCode = "403", description = "Usuǭrio nǜo Ǹ o criador do campeonato nem ADMIN")
-    @ApiResponse(responseCode = "409", description = "O clube jǭ possui jogos associados")
     @DeleteMapping("/api/v1/teams/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
@@ -109,6 +101,46 @@ public class TeamController {
             @Parameter(description = "Id do time") @PathVariable UUID id,
             Authentication authentication) {
         service.delete(id, authentication.getName());
+    }
+
+    // --- CompetitionTeam endpoints ---
+
+    @Operation(
+            summary = "Inscrever time em competição",
+            description = "Inscreve um time em uma competição. Permitido apenas para ADMIN ou ORGANIZER."
+    )
+    @PostMapping("/api/v1/competitions/{competitionId}/teams")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public CompetitionTeamResponse enrollInCompetition(
+            @Parameter(description = "Id da competição") @PathVariable UUID competitionId,
+            @Valid @RequestBody EnrollTeamRequest request,
+            Authentication authentication) {
+        return service.enrollInCompetition(competitionId, request, authentication.getName());
+    }
+
+    @Operation(
+            summary = "Listar times inscritos na competição",
+            description = "Lista os times inscritos em uma competição. Acesso público."
+    )
+    @GetMapping("/api/v1/competitions/{competitionId}/teams")
+    public List<CompetitionTeamResponse> findByCompetitionId(
+            @Parameter(description = "Id da competição") @PathVariable UUID competitionId) {
+        return service.findByCompetitionId(competitionId);
+    }
+
+    @Operation(
+            summary = "Remover time da competição",
+            description = "Remove a inscrição de um time em uma competição. Permitido apenas para ADMIN ou ORGANIZER."
+    )
+    @DeleteMapping("/api/v1/competitions/{competitionId}/teams/{teamId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public void removeFromCompetition(
+            @Parameter(description = "Id da competição") @PathVariable UUID competitionId,
+            @Parameter(description = "Id do time") @PathVariable UUID teamId,
+            Authentication authentication) {
+        service.removeFromCompetition(competitionId, teamId);
     }
 
 }

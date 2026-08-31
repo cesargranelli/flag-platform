@@ -40,6 +40,10 @@ public record UpdateCompetitionRequest(
         CompetitionStatus status,
 
         // Issue #308: rótulo do agrupamento — DIVISIONS (default) | GROUPS.
-        GroupingType groupingType
+        GroupingType groupingType,
+
+        @NotBlank
+        @Size(max = 50)
+        String season
 ) {
 }
