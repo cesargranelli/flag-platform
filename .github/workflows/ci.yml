@@ -1,12 +1,21 @@
-name: CI
+name: CI Backend
 
 # A qualidade é garantida pela suíte E2E (staging efêmero) em e2e/.
-# Este workflow valida apenas build/analyze de backend e frontend.
+# Este workflow valida apenas o build do backend (independente do frontend).
+# O frontend tem seu próprio workflow (ci-frontend.yml) com filtro de path.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+      - 'backend/**'
+      - 'pom.xml'
+      - '.github/workflows/ci.yml'
   push:
     branches: [main]
+    paths:
+      - 'backend/**'
+      - 'pom.xml'
+      - '.github/workflows/ci.yml'
 
 jobs:
   backend:
@@ -28,29 +37,3 @@ jobs:
 
       - name: Compilar
         run: ./mvnw --batch-mode -DskipTests compile
-
-  frontend:
-    name: Frontend (analyze)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          version: '3.41.6'
-          cache: true
-
-      - name: Ativar melos
-        run: dart pub global activate melos
-
-      - name: Bootstrap
-        run: melos bootstrap
-
-      - name: Analyze
-        run: melos analyze

@@ -11,11 +11,13 @@ import br.com.flagplatform.roster.dto.request.RosterBatchRequest;
 import br.com.flagplatform.roster.dto.response.RosterEntryResponse;
 import br.com.flagplatform.roster.dto.response.RosterBatchLineResult;
 import br.com.flagplatform.roster.dto.response.RosterBatchResponse;
+import br.com.flagplatform.roster.entity.RosterEntity;
 import br.com.flagplatform.roster.entity.RosterEntryEntity;
 import br.com.flagplatform.roster.exception.DuplicateRosterEntryException;
 import br.com.flagplatform.roster.exception.RosterEntryNotFoundException;
 import br.com.flagplatform.roster.mapper.RosterEntryMapper;
 import br.com.flagplatform.roster.repository.RosterEntryRepository;
+import br.com.flagplatform.roster.repository.RosterRepository;
 import br.com.flagplatform.team.TeamLookup;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,27 +34,45 @@ import java.util.UUID;
 public class RosterService implements RosterLookup {
 
     private final RosterEntryMapper mapper;
-    private final RosterEntryRepository repository;
+    private final RosterEntryRepository rosterEntryRepository;
+    private final RosterRepository rosterRepository;
     private final TeamLookup teamLookup;
     private final AthleteLookup athleteLookup;
     private final CompetitionLookup competitionLookup;
 
+    /**
+     * Retorna ou cria o elenco (roster) de um time para uma competição.
+     */
+    private RosterEntity getOrCreateRoster(UUID teamId, UUID competitionId, String currentUserEmail) {
+        return rosterRepository.findByTeamIdAndCompetitionId(teamId, competitionId)
+                .orElseGet(() -> {
+                    RosterEntity roster = new RosterEntity();
+                    roster.setTeamId(teamId);
+                    roster.setCompetitionId(competitionId);
+                    roster.setStatus(RosterStatus.ACTIVE);
+                    roster.setSeason("2026"); // TODO: get from competition
+                    return rosterRepository.save(roster);
+                });
+    }
+
     @Transactional
-    public RosterEntryResponse add(UUID teamId, AddRosterEntryRequest request, String currentUserEmail) {
+    public RosterEntryResponse add(UUID teamId, UUID competitionId, AddRosterEntryRequest request, String currentUserEmail) {
         assertTeamManagedBy(teamId, currentUserEmail);
         athleteLookup.assertExists(request.athleteId());
 
-        if (repository.existsByTeamIdAndAthleteId(teamId, request.athleteId())) {
+        RosterEntity roster = getOrCreateRoster(teamId, competitionId, currentUserEmail);
+
+        if (rosterEntryRepository.existsByRosterIdAndAthleteId(roster.getId(), request.athleteId())) {
             throw new DuplicateRosterEntryException();
         }
 
         RosterEntryEntity entity = mapper.toEntity(request);
-        entity.setTeamId(teamId);
+        entity.setRosterId(roster.getId());
         if (entity.getStatus() == null) {
             entity.setStatus(RosterStatus.ACTIVE);
         }
 
-        return toResponse(repository.save(entity));
+        return toResponse(rosterEntryRepository.save(entity));
     }
 
     /**
@@ -61,8 +81,10 @@ public class RosterService implements RosterLookup {
      * reportados sem abortar as demais linhas.
      */
     @Transactional
-    public RosterBatchResponse createBatch(UUID teamId, RosterBatchRequest request, String currentUserEmail) {
+    public RosterBatchResponse createBatch(UUID teamId, UUID competitionId, RosterBatchRequest request, String currentUserEmail) {
         assertTeamManagedBy(teamId, currentUserEmail);
+
+        RosterEntity roster = getOrCreateRoster(teamId, competitionId, currentUserEmail);
 
         List<RosterBatchLineResult> lines = new ArrayList<>();
         int imported = 0;
@@ -74,16 +96,16 @@ public class RosterService implements RosterLookup {
                         line, "INVALID", "Atleta não encontrado", item));
                 continue;
             }
-            if (repository.existsByTeamIdAndAthleteId(teamId, item.athleteId())) {
+            if (rosterEntryRepository.existsByRosterIdAndAthleteId(roster.getId(), item.athleteId())) {
                 lines.add(new RosterBatchLineResult(
                         line, "SKIPPED", "Atleta já inscrito", item));
                 continue;
             }
             RosterEntryEntity entity = new RosterEntryEntity();
-            entity.setTeamId(teamId);
+            entity.setRosterId(roster.getId());
             entity.setAthleteId(item.athleteId());
             entity.setStatus(item.status() == null ? RosterStatus.ACTIVE : item.status());
-            repository.save(entity);
+            rosterEntryRepository.save(entity);
             imported++;
             lines.add(new RosterBatchLineResult(line, "IMPORTED", null, item));
         }
@@ -91,10 +113,17 @@ public class RosterService implements RosterLookup {
                 request.athletes().size(), imported, request.athletes().size() - imported, lines);
     }
 
-    public List<RosterEntryResponse> findRosterByTeam(UUID teamId) {
+    public List<RosterEntryResponse> findRosterByTeamAndCompetition(UUID teamId, UUID competitionId) {
         teamLookup.assertExists(teamId);
 
-        return repository.findAllByTeamIdOrderByCreatedAtAsc(teamId).stream()
+        RosterEntity roster = rosterRepository.findByTeamIdAndCompetitionId(teamId, competitionId)
+                .orElse(null);
+
+        if (roster == null) {
+            return List.of();
+        }
+
+        return rosterEntryRepository.findAllByRosterIdOrderByCreatedAtAsc(roster.getId()).stream()
                 .map(this::toResponse)
                 .sorted(Comparator
                         .comparing(RosterEntryResponse::number,
@@ -105,13 +134,16 @@ public class RosterService implements RosterLookup {
     }
 
     @Transactional
-    public void remove(UUID teamId, UUID athleteId, String currentUserEmail) {
+    public void remove(UUID teamId, UUID competitionId, UUID athleteId, String currentUserEmail) {
         assertTeamManagedBy(teamId, currentUserEmail);
 
-        RosterEntryEntity entity = repository.findByTeamIdAndAthleteId(teamId, athleteId)
+        RosterEntity roster = rosterRepository.findByTeamIdAndCompetitionId(teamId, competitionId)
+                .orElseThrow(() -> new IllegalArgumentException("Elenco não encontrado para o time na competição"));
+
+        RosterEntryEntity entity = rosterEntryRepository.findByRosterIdAndAthleteId(roster.getId(), athleteId)
                 .orElseThrow(() -> new RosterEntryNotFoundException(teamId, athleteId));
 
-        repository.delete(entity);
+        rosterEntryRepository.delete(entity);
     }
 
     /**
@@ -119,14 +151,22 @@ public class RosterService implements RosterLookup {
      * Também cobre a existência do time (404 vem do lookup).
      */
     private void assertTeamManagedBy(UUID teamId, String currentUserEmail) {
-        competitionLookup.assertManagedBy(teamLookup.findCompetitionIdByTeamId(teamId), currentUserEmail);
+        teamLookup.assertExists(teamId);
     }
 
     @Override
     public List<UUID> findAthleteIdsByTeamId(UUID teamId) {
-        return repository.findAllByTeamIdOrderByCreatedAtAsc(teamId).stream()
-                .map(RosterEntryEntity::getAthleteId)
+        List<RosterEntity> rosters = rosterRepository.findAll().stream()
+                .filter(r -> r.getTeamId().equals(teamId))
                 .toList();
+
+        List<UUID> athleteIds = new ArrayList<>();
+        for (RosterEntity roster : rosters) {
+            athleteIds.addAll(rosterEntryRepository.findAllByRosterIdOrderByCreatedAtAsc(roster.getId()).stream()
+                    .map(RosterEntryEntity::getAthleteId)
+                    .toList());
+        }
+        return athleteIds;
     }
 
     private RosterEntryResponse toResponse(RosterEntryEntity entity) {
@@ -134,7 +174,7 @@ public class RosterService implements RosterLookup {
 
         return new RosterEntryResponse(
                 entity.getId(),
-                entity.getTeamId(),
+                entity.getRosterId(),
                 entity.getAthleteId(),
                 athlete.name(),
                 athlete.nickname(),

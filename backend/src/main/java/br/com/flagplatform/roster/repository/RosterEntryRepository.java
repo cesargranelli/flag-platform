@@ -9,10 +9,10 @@ import java.util.UUID;
 
 public interface RosterEntryRepository extends JpaRepository<RosterEntryEntity, UUID> {
 
-    List<RosterEntryEntity> findAllByTeamIdOrderByCreatedAtAsc(UUID teamId);
+    List<RosterEntryEntity> findAllByRosterIdOrderByCreatedAtAsc(UUID rosterId);
 
-    boolean existsByTeamIdAndAthleteId(UUID teamId, UUID athleteId);
+    boolean existsByRosterIdAndAthleteId(UUID rosterId, UUID athleteId);
 
-    Optional<RosterEntryEntity> findByTeamIdAndAthleteId(UUID teamId, UUID athleteId);
+    Optional<RosterEntryEntity> findByRosterIdAndAthleteId(UUID rosterId, UUID athleteId);
 
 }

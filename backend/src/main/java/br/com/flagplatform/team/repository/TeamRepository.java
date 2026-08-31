@@ -10,16 +10,10 @@ import java.util.UUID;
 @Repository
 public interface TeamRepository extends JpaRepository<TeamEntity, UUID> {
 
-    List<TeamEntity> findAllByCompetitionIdOrderByNameAsc(UUID competitionId);
+    List<TeamEntity> findAllByOrganizationIdOrderByNameAsc(UUID organizationId);
 
-    boolean existsByCompetitionIdAndOrganizationId(UUID competitionId, UUID organizationId);
+    boolean existsByOrganizationIdAndNameIgnoreCase(UUID organizationId, String name);
 
-    boolean existsByCompetitionIdAndNameIgnoreCase(UUID competitionId, String name);
-
-    boolean existsByCompetitionIdAndNameIgnoreCaseAndIdNot(UUID competitionId, String name, UUID id);
-
-    boolean existsByDocument(String document);
-
-    boolean existsByDocumentAndIdNot(String document, UUID id);
+    boolean existsByOrganizationIdAndNameIgnoreCaseAndIdNot(UUID organizationId, String name, UUID id);
 
 }
