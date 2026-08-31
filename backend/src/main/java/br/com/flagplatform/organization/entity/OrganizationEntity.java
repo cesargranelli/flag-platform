@@ -4,11 +4,14 @@ import br.com.flagplatform.common.enums.DocumentType;
 import br.com.flagplatform.common.enums.OrganizationStatus;
 import br.com.flagplatform.common.enums.OrganizationType;
 import br.com.flagplatform.common.persistence.entity.BaseEntity;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -23,6 +26,9 @@ import lombok.Setter;
         }
 )
 public class OrganizationEntity extends BaseEntity {
+    @Column(name = "parent_id")
+    private UUID parentId;
+
     private String legalName;
     private String tradeName;
     private String abbreviation;

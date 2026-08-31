@@ -9,6 +9,7 @@ import java.util.UUID;
 
 public record OrganizationResponse(
         UUID id,
+        UUID parentId,
         String legalName,
         String tradeName,
         String abbreviation,
