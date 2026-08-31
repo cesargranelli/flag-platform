@@ -8,6 +8,8 @@ public record CompetitionTeamResponse(
         UUID competitionId,
         UUID teamId,
         String teamName,
+        UUID organizationId,
+        String organizationName,
         UUID divisionId,
         LocalDateTime createdAt
 ) {

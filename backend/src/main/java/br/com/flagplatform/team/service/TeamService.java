@@ -48,15 +48,15 @@ public class TeamService implements TeamLookup {
         TeamEntity entity = mapper.toEntity(request);
         entity.setStatus(OrganizationStatus.ACTIVE);
 
-        return mapper.toResponse(teamRepository.save(entity));
+        return toResponse(teamRepository.save(entity));
     }
 
     public List<TeamResponse> findByOrganizationId(UUID organizationId) {
-        return mapper.toResponseList(teamRepository.findAllByOrganizationIdOrderByNameAsc(organizationId));
+        return toResponseList(teamRepository.findAllByOrganizationIdOrderByNameAsc(organizationId));
     }
 
     public TeamResponse findById(UUID id) {
-        return mapper.toResponse(findEntityById(id));
+        return toResponse(findEntityById(id));
     }
 
     @Transactional
@@ -72,7 +72,7 @@ public class TeamService implements TeamLookup {
 
         mapper.updateEntity(entity, request);
 
-        return mapper.toResponse(teamRepository.save(entity));
+        return toResponse(teamRepository.save(entity));
     }
 
     @Transactional
@@ -85,10 +85,10 @@ public class TeamService implements TeamLookup {
 
     @Transactional
     public CompetitionTeamResponse enrollInCompetition(
-            UUID competitionId, EnrollTeamRequest request, String currentUserEmail) {
-        TeamEntity team = findEntityById(request.teamId());
+            UUID competitionId, UUID teamId, EnrollTeamRequest request, String currentUserEmail) {
+        TeamEntity team = findEntityById(teamId);
 
-        if (request.divisionId() != null) {
+        if (request != null && request.divisionId() != null) {
             divisionLookup.assertExists(request.divisionId());
             UUID divisionCompetition = divisionLookup.findCompetitionId(request.divisionId());
             if (!divisionCompetition.equals(competitionId)) {
@@ -96,24 +96,18 @@ public class TeamService implements TeamLookup {
             }
         }
 
-        if (competitionTeamRepository.existsByCompetitionIdAndTeamId(competitionId, request.teamId())) {
+        if (competitionTeamRepository.existsByCompetitionIdAndTeamId(competitionId, teamId)) {
             throw new IllegalArgumentException("Time já inscrito nesta competição");
         }
 
         CompetitionTeamEntity entity = new CompetitionTeamEntity();
         entity.setCompetitionId(competitionId);
-        entity.setTeamId(request.teamId());
-        entity.setDivisionId(request.divisionId());
+        entity.setTeamId(teamId);
+        entity.setDivisionId(request != null ? request.divisionId() : null);
 
         CompetitionTeamEntity saved = competitionTeamRepository.save(entity);
 
-        return new CompetitionTeamResponse(
-                saved.getId(),
-                saved.getCompetitionId(),
-                saved.getTeamId(),
-                team.getName(),
-                saved.getDivisionId(),
-                saved.getCreatedAt());
+        return toCompetitionTeamResponse(saved);
     }
 
     @Transactional
@@ -128,18 +122,59 @@ public class TeamService implements TeamLookup {
     public List<CompetitionTeamResponse> findByCompetitionId(UUID competitionId) {
         return competitionTeamRepository.findAllByCompetitionIdOrderByCreatedAtAsc(competitionId)
                 .stream()
-                .map(ct -> {
-                    TeamEntity team = teamRepository.findById(ct.getTeamId()).orElse(null);
-                    String teamName = team != null ? team.getName() : "Desconhecido";
-                    return new CompetitionTeamResponse(
-                            ct.getId(),
-                            ct.getCompetitionId(),
-                            ct.getTeamId(),
-                            teamName,
-                            ct.getDivisionId(),
-                            ct.getCreatedAt());
-                })
+                .map(this::toCompetitionTeamResponse)
                 .toList();
+    }
+
+    /**
+     * Lista todos os times da plataforma com o nome da organização (clube).
+     * Usado pelas telas de associação de times a campeonatos.
+     */
+    public List<TeamResponse> findAll() {
+        return toResponseList(teamRepository.findAll());
+    }
+
+    private CompetitionTeamResponse toCompetitionTeamResponse(CompetitionTeamEntity ct) {
+        TeamEntity team = teamRepository.findById(ct.getTeamId()).orElse(null);
+        String teamName = team != null ? team.getName() : "Desconhecido";
+        UUID organizationId = team != null ? team.getOrganizationId() : null;
+        String organizationName = organizationId != null
+                ? organizationLookup.findTradeNameById(organizationId)
+                : null;
+        return new CompetitionTeamResponse(
+                ct.getId(),
+                ct.getCompetitionId(),
+                ct.getTeamId(),
+                teamName,
+                organizationId,
+                organizationName,
+                ct.getDivisionId(),
+                ct.getCreatedAt());
+    }
+
+    /**
+     * Resolve o nome da organização (clube) para enriquecer o TeamResponse.
+     */
+    private TeamResponse toResponse(TeamEntity entity) {
+        TeamResponse base = mapper.toResponse(entity);
+        String organizationName = entity.getOrganizationId() != null
+                ? organizationLookup.findTradeNameById(entity.getOrganizationId())
+                : null;
+        return new TeamResponse(
+                base.id(),
+                base.organizationId(),
+                organizationName,
+                base.name(),
+                base.shortName(),
+                base.sportName(),
+                base.logoUrl(),
+                base.status(),
+                base.createdAt(),
+                base.updatedAt());
+    }
+
+    private List<TeamResponse> toResponseList(List<TeamEntity> entities) {
+        return entities.stream().map(this::toResponse).toList();
     }
 
     // --- TeamLookup implementation ---

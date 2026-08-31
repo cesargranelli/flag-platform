@@ -68,6 +68,15 @@ public class TeamController {
     }
 
     @Operation(
+            summary = "Listar todos os times",
+            description = "Lista todos os times da plataforma. Usado pelas telas de associação de times a campeonatos. Acesso público."
+    )
+    @GetMapping("/api/v1/teams")
+    public List<TeamResponse> findAll() {
+        return service.findAll();
+    }
+
+    @Operation(
             summary = "Buscar time por id",
             description = "Retorna o detalhe de um time. Acesso público."
     )
@@ -109,14 +118,15 @@ public class TeamController {
             summary = "Inscrever time em competição",
             description = "Inscreve um time em uma competição. Permitido apenas para ADMIN ou ORGANIZER."
     )
-    @PostMapping("/api/v1/competitions/{competitionId}/teams")
+    @PostMapping("/api/v1/competitions/{competitionId}/teams/{teamId}")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
     public CompetitionTeamResponse enrollInCompetition(
             @Parameter(description = "Id da competição") @PathVariable UUID competitionId,
-            @Valid @RequestBody EnrollTeamRequest request,
+            @Parameter(description = "Id do time") @PathVariable UUID teamId,
+            @RequestBody(required = false) EnrollTeamRequest request,
             Authentication authentication) {
-        return service.enrollInCompetition(competitionId, request, authentication.getName());
+        return service.enrollInCompetition(competitionId, teamId, request, authentication.getName());
     }
 
     @Operation(

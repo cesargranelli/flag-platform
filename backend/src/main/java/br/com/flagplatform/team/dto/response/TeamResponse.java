@@ -8,6 +8,7 @@ import java.util.UUID;
 public record TeamResponse(
         UUID id,
         UUID organizationId,
+        String organizationName,
         String name,
         String shortName,
         String sportName,
