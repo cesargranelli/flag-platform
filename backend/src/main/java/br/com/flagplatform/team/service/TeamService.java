@@ -37,15 +37,16 @@ public class TeamService implements TeamLookup {
     private final DivisionLookup divisionLookup;
 
     @Transactional
-    public TeamResponse create(CreateTeamRequest request, String currentUserEmail) {
-        organizationLookup.assertExists(request.organizationId());
+    public TeamResponse create(UUID organizationId, CreateTeamRequest request, String currentUserEmail) {
+        organizationLookup.assertExists(organizationId);
 
         if (teamRepository.existsByOrganizationIdAndNameIgnoreCase(
-                request.organizationId(), request.name())) {
+                organizationId, request.name())) {
             throw new DuplicateTeamNameException(request.name());
         }
 
         TeamEntity entity = mapper.toEntity(request);
+        entity.setOrganizationId(organizationId);
         entity.setStatus(OrganizationStatus.ACTIVE);
 
         return toResponse(teamRepository.save(entity));

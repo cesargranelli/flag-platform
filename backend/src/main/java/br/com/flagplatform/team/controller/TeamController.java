@@ -48,13 +48,7 @@ public class TeamController {
             @Parameter(description = "Id da organização (clube)") @PathVariable UUID organizationId,
             @Valid @RequestBody CreateTeamRequest request,
             Authentication authentication) {
-        CreateTeamRequest adjusted = new CreateTeamRequest(
-                organizationId,
-                request.name(),
-                request.shortName(),
-                request.sportName(),
-                request.logoUrl());
-        return service.create(adjusted, authentication.getName());
+        return service.create(organizationId, request, authentication.getName());
     }
 
     @Operation(
