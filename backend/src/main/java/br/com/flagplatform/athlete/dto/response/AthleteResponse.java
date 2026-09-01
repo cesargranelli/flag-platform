@@ -1,6 +1,7 @@
 package br.com.flagplatform.athlete.dto.response;
 
 import br.com.flagplatform.common.enums.AthletePosition;
+import br.com.flagplatform.common.enums.AthleteStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,6 +15,7 @@ public record AthleteResponse(
         List<AthletePosition> positions,
         Integer number,
         String photoUrl,
+        AthleteStatus status,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

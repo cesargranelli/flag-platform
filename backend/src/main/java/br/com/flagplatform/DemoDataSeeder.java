@@ -4,6 +4,7 @@ import br.com.flagplatform.athlete.entity.AthleteEntity;
 import br.com.flagplatform.athlete.repository.AthleteRepository;
 import br.com.flagplatform.common.enums.AgeGroup;
 import br.com.flagplatform.common.enums.AthletePosition;
+import br.com.flagplatform.common.enums.AthleteStatus;
 import br.com.flagplatform.common.enums.CompetitionStatus;
 import br.com.flagplatform.common.enums.GameStatus;
 import br.com.flagplatform.common.enums.Gender;
@@ -485,6 +486,7 @@ public class DemoDataSeeder implements CommandLineRunner {
                 a.setNickname("Nick" + (athleteCounter + 1));
                 a.setNumber((athleteCounter % 99) + 1);
                 a.setPositions(java.util.Arrays.asList(positionSets[idx]));
+                a.setStatus(AthleteStatus.ACTIVE);
                 athleteRepository.save(a);
 
                 if (!rosterEntryRepository.existsByRosterIdAndAthleteId(roster.getId(), a.getId())) {

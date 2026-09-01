@@ -106,6 +106,30 @@ public class TeamController {
         service.delete(id, authentication.getName());
     }
 
+    @Operation(
+            summary = "Desativar time",
+            description = "Exclusão lógica: marca o time como INACTIVE. Permitido apenas para ADMIN ou ORGANIZER."
+    )
+    @PostMapping("/api/v1/teams/{id}/deactivate")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public void deactivate(
+            @Parameter(description = "Id do time") @PathVariable UUID id,
+            Authentication authentication) {
+        service.deactivate(id, authentication.getName());
+    }
+
+    @Operation(
+            summary = "Reativar time",
+            description = "Reverte a desativação lógica, voltando o time para ACTIVE. Permitido apenas para ADMIN ou ORGANIZER."
+    )
+    @PostMapping("/api/v1/teams/{id}/reactivate")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public void reactivate(
+            @Parameter(description = "Id do time") @PathVariable UUID id,
+            Authentication authentication) {
+        service.reactivate(id, authentication.getName());
+    }
+
     // --- CompetitionTeam endpoints ---
 
     @Operation(

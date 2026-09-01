@@ -154,6 +154,24 @@ public class RosterService implements RosterLookup {
         rosterEntryRepository.delete(entity);
     }
 
+    @Transactional
+    public void deactivate(UUID teamId, UUID competitionId, String currentUserEmail) {
+        assertTeamManagedBy(teamId, currentUserEmail);
+
+        RosterEntity roster = getOrCreateRoster(teamId, competitionId, currentUserEmail);
+        roster.setStatus(RosterStatus.INACTIVE);
+        rosterRepository.save(roster);
+    }
+
+    @Transactional
+    public void reactivate(UUID teamId, UUID competitionId, String currentUserEmail) {
+        assertTeamManagedBy(teamId, currentUserEmail);
+
+        RosterEntity roster = getOrCreateRoster(teamId, competitionId, currentUserEmail);
+        roster.setStatus(RosterStatus.ACTIVE);
+        rosterRepository.save(roster);
+    }
+
     /**
      * V260: gerenciar elenco exige ser criador do campeonato do time (ou ADMIN).
      * Também cobre a existência do time (404 vem do lookup).

@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -102,6 +103,28 @@ public class AthleteController {
             @Parameter(description = "Id do atleta") @PathVariable UUID id,
             @Valid @RequestBody UpdateAthleteRequest request) {
         return service.update(id, request);
+    }
+
+    @Operation(
+            summary = "Desativar atleta",
+            description = "Exclusão lógica: marca o atleta como INACTIVE. Requer ADMIN ou ORGANIZER."
+    )
+    @DeleteMapping("/api/v1/athletes/{id}")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public void deactivate(
+            @Parameter(description = "Id do atleta") @PathVariable UUID id) {
+        service.deactivate(id);
+    }
+
+    @Operation(
+            summary = "Reativar atleta",
+            description = "Reverte a desativação lógica, voltando o atleta para ACTIVE. Requer ADMIN ou ORGANIZER."
+    )
+    @PostMapping("/api/v1/athletes/{id}/reactivate")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public void reactivate(
+            @Parameter(description = "Id do atleta") @PathVariable UUID id) {
+        service.reactivate(id);
     }
 
 }

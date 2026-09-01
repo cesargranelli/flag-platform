@@ -82,6 +82,20 @@ public class TeamService implements TeamLookup {
         teamRepository.delete(entity);
     }
 
+    @Transactional
+    public void deactivate(UUID id, String currentUserEmail) {
+        TeamEntity entity = findEntityById(id);
+        entity.setStatus(OrganizationStatus.INACTIVE);
+        teamRepository.save(entity);
+    }
+
+    @Transactional
+    public void reactivate(UUID id, String currentUserEmail) {
+        TeamEntity entity = findEntityById(id);
+        entity.setStatus(OrganizationStatus.ACTIVE);
+        teamRepository.save(entity);
+    }
+
     // --- CompetitionTeam endpoints ---
 
     @Transactional
