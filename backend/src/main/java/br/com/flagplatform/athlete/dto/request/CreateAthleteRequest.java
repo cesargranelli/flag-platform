@@ -1,10 +1,12 @@
 package br.com.flagplatform.athlete.dto.request;
 
 import br.com.flagplatform.common.enums.AthletePosition;
+import br.com.flagplatform.common.enums.Gender;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public record CreateAthleteRequest(
@@ -26,6 +28,10 @@ public record CreateAthleteRequest(
         Integer number,
 
         @Size(max = 500)
-        String photoUrl
+        String photoUrl,
+
+        LocalDate birthDate,
+
+        Gender gender
 ) {
 }

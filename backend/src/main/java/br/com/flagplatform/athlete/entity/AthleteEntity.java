@@ -2,6 +2,7 @@ package br.com.flagplatform.athlete.entity;
 
 import br.com.flagplatform.common.enums.AthletePosition;
 import br.com.flagplatform.common.enums.AthleteStatus;
+import br.com.flagplatform.common.enums.Gender;
 import br.com.flagplatform.common.persistence.entity.BaseEntity;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -13,6 +14,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,4 +45,10 @@ public class AthleteEntity extends BaseEntity {
 
     @Column(nullable = false, length = 20)
     private AthleteStatus status;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
+
+    @Column(length = 20)
+    private Gender gender;
 }

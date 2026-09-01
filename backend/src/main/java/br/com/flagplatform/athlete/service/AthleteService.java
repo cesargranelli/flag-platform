@@ -105,7 +105,8 @@ public class AthleteService implements AthleteLookup {
             } else {
                 CreateAthleteRequest createRequest = new CreateAthleteRequest(
                         item.name().trim(), item.cpf().replaceAll("\\D", ""),
-                        item.nickname(), item.positions(), item.number(), item.photoUrl());
+                        item.nickname(), item.positions(), item.number(), item.photoUrl(),
+                        null, null);
                 AthleteEntity entity = mapper.toEntity(createRequest);
                 entity.setStatus(AthleteStatus.ACTIVE);
                 repository.save(entity);
@@ -136,6 +137,12 @@ public class AthleteService implements AthleteLookup {
         List<AthletePosition> positions = validatePositions(request.positions());
         mapper.updateEntity(entity, request);
         entity.setPositions(positions);
+        if (request.birthDate() != null) {
+            entity.setBirthDate(request.birthDate());
+        }
+        if (request.gender() != null) {
+            entity.setGender(request.gender());
+        }
 
         return mapper.toResponse(repository.save(entity));
     }
