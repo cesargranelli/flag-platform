@@ -15,4 +15,6 @@ public interface RosterRepository extends JpaRepository<RosterEntity, UUID> {
 
     Optional<RosterEntity> findByTeamIdAndCompetitionId(UUID teamId, UUID competitionId);
 
+    List<RosterEntity> findAllByTeamIdOrderByCreatedAtDesc(UUID teamId);
+
 }

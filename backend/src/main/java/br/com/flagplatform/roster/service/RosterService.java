@@ -9,6 +9,7 @@ import br.com.flagplatform.roster.dto.request.AddRosterEntryRequest;
 import br.com.flagplatform.roster.dto.request.RosterBatchItem;
 import br.com.flagplatform.roster.dto.request.RosterBatchRequest;
 import br.com.flagplatform.roster.dto.response.RosterEntryResponse;
+import br.com.flagplatform.roster.dto.response.RosterResponse;
 import br.com.flagplatform.roster.dto.response.RosterBatchLineResult;
 import br.com.flagplatform.roster.dto.response.RosterBatchResponse;
 import br.com.flagplatform.roster.entity.RosterEntity;
@@ -113,6 +114,13 @@ public class RosterService implements RosterLookup {
                 request.athletes().size(), imported, request.athletes().size() - imported, lines);
     }
 
+    public List<RosterResponse> findByTeamId(UUID teamId) {
+        teamLookup.assertExists(teamId);
+        return rosterRepository.findAllByTeamIdOrderByCreatedAtDesc(teamId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public List<RosterEntryResponse> findRosterByTeamAndCompetition(UUID teamId, UUID competitionId) {
         teamLookup.assertExists(teamId);
 
@@ -184,6 +192,18 @@ public class RosterService implements RosterLookup {
                 athlete.photoUrl(),
                 entity.getStatus(),
                 entity.getCreatedAt());
+    }
+
+    private RosterResponse toResponse(RosterEntity entity) {
+        return new RosterResponse(
+                entity.getId(),
+                entity.getTeamId(),
+                entity.getCompetitionId(),
+                entity.getName(),
+                entity.getSeason(),
+                entity.getStatus(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt());
     }
 
 }
