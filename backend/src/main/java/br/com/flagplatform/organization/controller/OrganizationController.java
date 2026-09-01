@@ -2,6 +2,7 @@ package br.com.flagplatform.organization.controller;
 
 import br.com.flagplatform.common.security.CurrentUser;
 import br.com.flagplatform.common.security.SecurityExpressions;
+import br.com.flagplatform.organization.dto.request.AssociateClubRequest;
 import br.com.flagplatform.organization.dto.request.CreateOrganizationRequest;
 import br.com.flagplatform.organization.dto.response.OrganizationCreatedResponse;
 import br.com.flagplatform.organization.dto.response.OrganizationResponse;
@@ -95,6 +96,45 @@ public class OrganizationController {
     public void reactivate(
             @Parameter(description = "Id da organização") @PathVariable UUID id) {
         service.reactivate(id);
+    }
+
+    @Operation(
+            summary = "Listar clubes/universidades de uma organização",
+            description = "Lista as organizações filhas (CLUB/UNIVERSITY) associadas à organização informada, "
+                    + "ordenadas por razão social. Acesso público."
+    )
+    @GetMapping("/{id}/clubs")
+    public List<OrganizationResponse> listClubs(
+            @Parameter(description = "Id da organização (federação/liga/associação)") @PathVariable UUID id) {
+        return service.findClubs(id);
+    }
+
+    @Operation(
+            summary = "Associar clube/universidade a uma organização",
+            description = "Associa uma organização filha (CLUB/UNIVERSITY) à organização pai "
+                    + "(FEDERATION/LEAGUE/ASSOCIATION). Requer ADMIN ou ORGANIZER. "
+                    + "Retorna 409 se a organização filha já estiver associada."
+    )
+    @PostMapping("/{id}/clubs")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public OrganizationResponse associateClub(
+            @Parameter(description = "Id da organização pai") @PathVariable UUID id,
+            @Valid @RequestBody AssociateClubRequest request) {
+        return service.associateClub(id, request.organizationId());
+    }
+
+    @Operation(
+            summary = "Remover associação de clube/universidade",
+            description = "Remove a associação de uma organização filha à organização pai "
+                    + "(parent_id volta a null). Requer ADMIN ou ORGANIZER."
+    )
+    @DeleteMapping("/{id}/clubs/{clubId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public void removeClub(
+            @Parameter(description = "Id da organização pai") @PathVariable UUID id,
+            @Parameter(description = "Id da organização filha (clube/universidade)") @PathVariable UUID clubId) {
+        service.removeClubAssociation(id, clubId);
     }
 
 }

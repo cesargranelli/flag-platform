@@ -2,6 +2,7 @@ package br.com.flagplatform.organization.service;
 
 import br.com.flagplatform.common.enums.DocumentType;
 import br.com.flagplatform.common.enums.OrganizationStatus;
+import br.com.flagplatform.common.enums.OrganizationType;
 import br.com.flagplatform.common.exception.DuplicateDocumentException;
 import br.com.flagplatform.common.exception.InvalidDocumentException;
 import br.com.flagplatform.common.pagination.PagedResponse;
@@ -12,6 +13,9 @@ import br.com.flagplatform.organization.dto.response.OrganizationCreatedResponse
 import br.com.flagplatform.organization.dto.response.OrganizationResponse;
 import br.com.flagplatform.organization.entity.OrganizationEntity;
 import br.com.flagplatform.organization.exception.DuplicateTradeNameException;
+import br.com.flagplatform.organization.exception.InvalidOrganizationHierarchyException;
+import br.com.flagplatform.organization.exception.OrganizationAssociationConflictException;
+import br.com.flagplatform.organization.exception.OrganizationAssociationNotFoundException;
 import br.com.flagplatform.organization.exception.OrganizationNotFoundException;
 import br.com.flagplatform.organization.mapper.OrganizationMapper;
 import br.com.flagplatform.organization.repository.OrganizationRepository;
@@ -29,6 +33,21 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 @Service
 public class OrganizationService implements OrganizationLookup {
+
+    /**
+     * Tipos que podem atuar como organização mãe na hierarquia (ADR-006).
+     */
+    private static final List<OrganizationType> PARENT_TYPES = List.of(
+            OrganizationType.FEDERATION,
+            OrganizationType.LEAGUE,
+            OrganizationType.ASSOCIATION);
+
+    /**
+     * Tipos que podem ser associados como organização filha (clube/universidade).
+     */
+    private static final List<OrganizationType> CHILD_TYPES = List.of(
+            OrganizationType.CLUB,
+            OrganizationType.UNIVERSITY);
 
     private final OrganizationMapper mapper;
     private final OrganizationRepository repository;
@@ -88,6 +107,52 @@ public class OrganizationService implements OrganizationLookup {
         OrganizationEntity entity = findEntityById(id);
         entity.setStatus(OrganizationStatus.ACTIVE);
         repository.save(entity);
+    }
+
+    public List<OrganizationResponse> findClubs(UUID parentId) {
+        findEntityById(parentId);
+        return mapper.toDetailResponseList(repository
+                .findAllByParentIdAndOrganizationTypeInOrderByTradeNameAsc(parentId, CHILD_TYPES));
+    }
+
+    @Transactional
+    public OrganizationResponse associateClub(UUID parentId, UUID clubId) {
+        OrganizationEntity parent = findEntityById(parentId);
+        OrganizationEntity child = findEntityById(clubId);
+
+        if (parentId.equals(clubId)) {
+            throw new InvalidOrganizationHierarchyException(
+                    "Uma organização não pode ser associada a si mesma.");
+        }
+        if (!PARENT_TYPES.contains(parent.getOrganizationType())) {
+            throw new InvalidOrganizationHierarchyException(
+                    "A organização pai deve ser FEDERAÇÃO, LIGA ou ASSOCIAÇÃO.");
+        }
+        if (!CHILD_TYPES.contains(child.getOrganizationType())) {
+            throw new InvalidOrganizationHierarchyException(
+                    "A organização filha deve ser CLUBE ou UNIVERSIDADE.");
+        }
+        if (child.getParentId() != null) {
+            throw new OrganizationAssociationConflictException(clubId, child.getParentId());
+        }
+
+        child.setParentId(parentId);
+        repository.save(child);
+
+        return mapper.toDetailResponse(child);
+    }
+
+    @Transactional
+    public void removeClubAssociation(UUID parentId, UUID clubId) {
+        findEntityById(parentId);
+        OrganizationEntity child = findEntityById(clubId);
+
+        if (child.getParentId() == null || !child.getParentId().equals(parentId)) {
+            throw new OrganizationAssociationNotFoundException(parentId, clubId);
+        }
+
+        child.setParentId(null);
+        repository.save(child);
     }
 
     @Transactional
