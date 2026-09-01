@@ -5,6 +5,7 @@ import br.com.flagplatform.roster.dto.request.AddRosterEntryRequest;
 import br.com.flagplatform.roster.dto.request.RosterBatchRequest;
 import br.com.flagplatform.roster.dto.response.RosterEntryResponse;
 import br.com.flagplatform.roster.dto.response.RosterBatchResponse;
+import br.com.flagplatform.roster.dto.response.RosterResponse;
 import br.com.flagplatform.roster.service.RosterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -63,6 +64,16 @@ public class RosterController {
             @Valid @RequestBody RosterBatchRequest request,
             Authentication authentication) {
         return service.createBatch(teamId, competitionId, request, authentication.getName());
+    }
+
+    @Operation(
+            summary = "Listar elencos do time",
+            description = "Lista todos os elencos (rosters) de um time, independente da competição, ordenados por criação (mais recentes primeiro). Acesso público."
+    )
+    @GetMapping("/api/v1/teams/{teamId}/rosters")
+    public List<RosterResponse> findRostersByTeam(
+            @Parameter(description = "Id do time") @PathVariable UUID teamId) {
+        return service.findByTeamId(teamId);
     }
 
     @Operation(
