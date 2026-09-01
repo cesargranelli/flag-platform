@@ -15,6 +15,7 @@ import br.com.flagplatform.athlete.exception.InvalidAthletePositionsException;
 import br.com.flagplatform.athlete.mapper.AthleteMapper;
 import br.com.flagplatform.athlete.repository.AthleteRepository;
 import br.com.flagplatform.common.enums.AthletePosition;
+import br.com.flagplatform.common.enums.AthleteStatus;
 import br.com.flagplatform.common.enums.DocumentType;
 import br.com.flagplatform.common.exception.DuplicateDocumentException;
 import br.com.flagplatform.common.exception.InvalidDocumentException;
@@ -47,6 +48,7 @@ public class AthleteService implements AthleteLookup {
         List<AthletePosition> positions = validatePositions(request.positions());
         AthleteEntity entity = mapper.toEntity(request);
         entity.setPositions(positions);
+        entity.setStatus(AthleteStatus.ACTIVE);
         return mapper.toResponse(repository.save(entity));
     }
 
@@ -103,8 +105,11 @@ public class AthleteService implements AthleteLookup {
             } else {
                 CreateAthleteRequest createRequest = new CreateAthleteRequest(
                         item.name().trim(), item.cpf().replaceAll("\\D", ""),
-                        item.nickname(), item.positions(), item.number(), item.photoUrl());
-                repository.save(mapper.toEntity(createRequest));
+                        item.nickname(), item.positions(), item.number(), item.photoUrl(),
+                        null, null);
+                AthleteEntity entity = mapper.toEntity(createRequest);
+                entity.setStatus(AthleteStatus.ACTIVE);
+                repository.save(entity);
                 imported++;
                 lines.add(new AthleteBatchLineResult(line, "IMPORTED", null, item));
             }
@@ -132,8 +137,28 @@ public class AthleteService implements AthleteLookup {
         List<AthletePosition> positions = validatePositions(request.positions());
         mapper.updateEntity(entity, request);
         entity.setPositions(positions);
+        if (request.birthDate() != null) {
+            entity.setBirthDate(request.birthDate());
+        }
+        if (request.gender() != null) {
+            entity.setGender(request.gender());
+        }
 
         return mapper.toResponse(repository.save(entity));
+    }
+
+    @Transactional
+    public void deactivate(UUID id) {
+        AthleteEntity entity = findEntityById(id);
+        entity.setStatus(AthleteStatus.INACTIVE);
+        repository.save(entity);
+    }
+
+    @Transactional
+    public void reactivate(UUID id) {
+        AthleteEntity entity = findEntityById(id);
+        entity.setStatus(AthleteStatus.ACTIVE);
+        repository.save(entity);
     }
 
     private AthleteEntity findEntityById(UUID id) {

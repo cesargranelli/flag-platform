@@ -103,4 +103,34 @@ public class RosterController {
         service.remove(teamId, competitionId, athleteId, authentication.getName());
     }
 
+    @Operation(
+            summary = "Desativar elenco do time na competição",
+            description = "Marca o elenco (roster) de um time em uma competição como INACTIVE. "
+                    + "Permitido apenas para ADMIN ou ORGANIZER."
+    )
+    @ApiResponse(responseCode = "403", description = "Usuário não é ADMIN nem ORGANIZER")
+    @PostMapping("/api/v1/teams/{teamId}/competitions/{competitionId}/roster/deactivate")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public void deactivate(
+            @Parameter(description = "Id do time") @PathVariable UUID teamId,
+            @Parameter(description = "Id da competição") @PathVariable UUID competitionId,
+            Authentication authentication) {
+        service.deactivate(teamId, competitionId, authentication.getName());
+    }
+
+    @Operation(
+            summary = "Reativar elenco do time na competição",
+            description = "Marca o elenco (roster) de um time em uma competição como ACTIVE. "
+                    + "Permitido apenas para ADMIN ou ORGANIZER."
+    )
+    @ApiResponse(responseCode = "403", description = "Usuário não é ADMIN nem ORGANIZER")
+    @PostMapping("/api/v1/teams/{teamId}/competitions/{competitionId}/roster/reactivate")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public void reactivate(
+            @Parameter(description = "Id do time") @PathVariable UUID teamId,
+            @Parameter(description = "Id da competição") @PathVariable UUID competitionId,
+            Authentication authentication) {
+        service.reactivate(teamId, competitionId, authentication.getName());
+    }
+
 }

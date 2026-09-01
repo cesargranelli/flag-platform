@@ -107,6 +107,21 @@ public class CompetitionController {
     }
 
     @Operation(
+            summary = "Encerrar campeonato",
+            description = "Marca o campeonato como FINISHED (transição PUBLISHED → FINISHED). "
+                    + "Permitido apenas ao criador do campeonato ou ADMIN, enquanto estiver em status PUBLISHED."
+    )
+    @ApiResponse(responseCode = "400", description = "Campeonato não está em status PUBLISHED")
+    @ApiResponse(responseCode = "403", description = "Usuário não é o criador do campeonato nem ADMIN")
+    @PostMapping("/api/v1/competitions/{id}/finish")
+    @PreAuthorize(SecurityExpressions.ADMIN_OR_ORGANIZER)
+    public void finish(
+            @Parameter(description = "Id do campeonato") @PathVariable UUID id,
+            Authentication authentication) {
+        service.finish(id, authentication.getName());
+    }
+
+    @Operation(
             summary = "Listar campeonatos por organização",
             description = "Lista os campeonatos de uma organização, ordenados por nome. Desativados só aparecem para ADMIN com includeDisabled=true. Acesso público."
     )

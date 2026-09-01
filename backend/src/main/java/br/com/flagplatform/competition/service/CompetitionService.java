@@ -12,6 +12,7 @@ import br.com.flagplatform.competition.dto.response.CompetitionSummaryResponse;
 import br.com.flagplatform.competition.entity.CompetitionEntity;
 import br.com.flagplatform.competition.exception.CompetitionNotFoundException;
 import br.com.flagplatform.competition.exception.CompetitionNotEditableException;
+import br.com.flagplatform.competition.exception.CompetitionNotFinishableException;
 import br.com.flagplatform.competition.exception.CompetitionNotOwnedByCreatorException;
 import br.com.flagplatform.competition.exception.DuplicateCompetitionNameException;
 import br.com.flagplatform.competition.mapper.CompetitionMapper;
@@ -120,6 +121,19 @@ public class CompetitionService implements CompetitionLookup {
     public void reactivate(UUID id) {
         CompetitionEntity entity = findEntityById(id);
         entity.setStatus(CompetitionStatus.DRAFT);
+        repository.save(entity);
+    }
+
+    @Transactional
+    public void finish(UUID id, String currentUserEmail) {
+        assertManagedBy(id, currentUserEmail);
+
+        CompetitionEntity entity = findEntityById(id);
+        if (entity.getStatus() != CompetitionStatus.PUBLISHED) {
+            throw new CompetitionNotFinishableException(entity.getStatus());
+        }
+
+        entity.setStatus(CompetitionStatus.FINISHED);
         repository.save(entity);
     }
 
